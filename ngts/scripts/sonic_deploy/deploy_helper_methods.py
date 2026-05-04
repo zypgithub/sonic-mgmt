@@ -266,7 +266,7 @@ class DeployImageHelper:
     @staticmethod
     def get_image_for_dut(base_version, target_version, dut):
         if dut['cli_type'] == CliType.NVUE:
-            if target_version.startswith('http'):
+            if target_version.startswith('http') and '/auto/' in target_version:
                 target_version = '/auto/' + target_version.split('/auto/')[1]
         return base_version, target_version
 

@@ -113,9 +113,12 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             image_url = f"{MarsConstants.HTTP_SERVER_NBU_NFS}{image_path}"
         else:
             assert nos_image.startswith(
-                'http://'), f'Argument "nos_image" should start with one of ["/auto/", "http://"]. ' \
+                ('http://', 'https://')), f'Argument "nos_image" should start with one of ["/auto/", "http://", "https://"]. ' \
                 f'Actual "nos_image"={nos_image}'
-            image_path = f'/auto/{nos_image.split("/auto/")[1]}'
+            if '/auto/' in nos_image:
+                image_path = f'/auto/{nos_image.split("/auto/")[1]}'
+            else:
+                image_path = '/' + nos_image.split('/', 3)[-1]
             image_url = nos_image
         return image_path, image_url
 
@@ -193,7 +196,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def _scp_image(self, ssh_engine, image_path, file_name_on_switch):
         logger.info('onie-nos-install failed because of wget error. install with scp')
         with allure.step('Upload nvos to switch with scp'):
-            if not image_path.startswith('/auto'):
+            if not image_path.startswith('/auto') and '/auto/' in image_path:
                 image_path = f'/auto/{image_path.split("/auto/")[1]}'
             scp_engine = LinuxSshEngine(ssh_engine.ip,
                                         DefaultConnectionValues.ONIE_USERNAME,
