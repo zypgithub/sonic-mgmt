@@ -58,6 +58,7 @@ def test_cluster_chassis_id(engines, devices, random_api):
             output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn().get_returned_value()
             filename = get_name_from_generate_config_file(output)
 
+        TestToolkit.tested_api = ApiType.NVUE
         if ClusterTools.verify_control_plane_state(cluster, ClusterConsts.CONTROL_PLANE_STATE_CONFIGURED, engine=engines.dut):
             with allure.step("Verify content of config file is as expected"):
                 dict_output = OutputParsingTool.parse_show_output_to_dict(
@@ -69,6 +70,7 @@ def test_cluster_chassis_id(engines, devices, random_api):
                 ValidationTool.verify_expected_output(current_config_content, expected_contect).verify_result()
 
     finally:
+        TestToolkit.tested_api = random_api
         with allure.step("Delete config file"):
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[
                 filename].action_delete().verify_result()

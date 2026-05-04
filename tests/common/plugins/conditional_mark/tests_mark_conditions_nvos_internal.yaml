@@ -585,4 +585,22 @@ tests_nvos/cluster/test_nmx_t_distributed.py:
     reason: "nmx-t distributed tests are supported only on Rosalind systems"
     conditions:
       - "'rosalind' not in testbed"
+
+tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_get_cmd:
+  skip:
+    reason: "Test should be supported on non-standalone systems - nmx-c should be in ok state"
+    conditions:
+      - "'sws_rtf2_rosalind_198' not in testbed"
+
+tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_set_cmd:
+  skip:
+    reason: "Test should be supported on non-standalone systems - nmx-c should be in ok state"
+    conditions:
+      - "'sws_rtf2_rosalind_198' not in testbed"
+
+tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_cmd_rotation_policy:
+  skip:
+    reason: "Test should be supported on non-standalone systems - nmx-c should be in ok state"
+    conditions:
+      - "'sws_rtf2_rosalind_198' not in testbed"
 ########################## NVOS IGNORE END ##########################
