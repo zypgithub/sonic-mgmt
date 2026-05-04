@@ -29,19 +29,6 @@ ROTATION_POLICY_MAX_FILES_TO_KEEP = 20
 ROTATION_POLICY_MAX_SIZE_BYTES = 20 * 1024 * 1024  # 20 MiB
 
 
-@pytest.fixture
-def sdn_cluster_ready(engines, setup_name):
-    """Enable cluster, wait for nmxc-conn up, then wait until nmx-controller reports ok."""
-    cluster = Cluster()
-    with allure.step("Enable cluster; wait for nmxc-conn up"):
-        ClusterTools.start_cluster(cluster, setup_name)
-    with allure.step("Wait until nmx-controller status is ok (nv show cluster apps running)"):
-        ClusterTools.wait_until_app_expected_status(
-            cluster, ClusterConsts.NMX_CONTROLLER, "ok", engine=engines.dut
-        )
-    return cluster
-
-
 @pytest.mark.nmx
 @pytest.mark.timeout(10 * MINUTE, func_only=True)
 def test_sdn_cmd_rejection(engines, devices, has_loopbox, random_api):
@@ -89,7 +76,7 @@ def test_sdn_cmd_rejection(engines, devices, has_loopbox, random_api):
 @pytest.mark.nmx
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_sdn_get_cmd(
-    engines, devices, has_loopbox, setup_name, standalone_system, random_api, sdn_cluster_ready,
+    engines, devices, has_loopbox, setup_name, standalone_system, random_api,
 ):
     """
     Verify generic sdn get cmd without/with file option.
@@ -109,7 +96,7 @@ def test_sdn_get_cmd(
 
     For ``help`` only check command runs and returns output.
     """
-    cluster = sdn_cluster_ready
+    cluster = _cluster_ready_for_sdn_cmd(setup_name, engines.dut)
     sdn = Sdn()
     sdn_cmd_str = _get_sdn_cmd_command()
     logger.info("chosen get command: %s", sdn_cmd_str)
@@ -220,7 +207,7 @@ def test_sdn_get_cmd(
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
-def test_sdn_set_cmd(engines, devices, has_loopbox, setup_name, standalone_system, random_api, sdn_cluster_ready):
+def test_sdn_set_cmd(engines, devices, has_loopbox, setup_name, standalone_system, random_api):
     """
     Verify generic sdn set cmd works as expected.
 
@@ -230,7 +217,7 @@ def test_sdn_set_cmd(engines, devices, has_loopbox, setup_name, standalone_syste
     4. Revert back to original value/state.
     5. Clean up: disable cluster; wait for nmxc-conn down.
     """
-    cluster = sdn_cluster_ready
+    cluster = _cluster_ready_for_sdn_cmd(setup_name, engines.dut)
     sdn = Sdn()
     chosen = _get_sdn_cmd_command(is_set_cmd=True, standalone_system=standalone_system)
     logger.info("chosen set command: %s", chosen)
@@ -416,7 +403,7 @@ def test_sdn_invalid_cmd(engines, devices, has_loopbox, setup_name, random_api):
 @pytest.mark.nmx
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_sdn_cmd_rotation_policy(
-    engines, devices, has_loopbox, setup_name, standalone_system, random_api, sdn_cluster_ready,
+    engines, devices, has_loopbox, setup_name, standalone_system, random_api,
 ):
     """
     Verify rotation policy for SDN cmd output files.
@@ -427,7 +414,7 @@ def test_sdn_cmd_rotation_policy(
     4. Clean up: delete generated files
     5. Clean up: disable cluster and wait for nmxc-conn down.
     """
-    cluster = sdn_cluster_ready
+    cluster = _cluster_ready_for_sdn_cmd(setup_name, engines.dut)
     sdn = Sdn()
     sdn_cmd_str = _get_sdn_cmd_command()
     try:
@@ -537,3 +524,15 @@ def _get_sdn_cmd_command(is_set_cmd=False, *, standalone_system=True):
             if standalone_system
             else SdnCmdConsts.SET_COMMAND_NON_STANDALONE_LIST)
     return random.choice(SdnCmdConsts.GET_COMMAND_LIST)
+
+
+def _cluster_ready_for_sdn_cmd(setup_name, dut_engine):
+    """Enable cluster after @disabled_access_ports preamble (not a pytest fixture: fixtures run before decorators)."""
+    cluster = Cluster()
+    with allure.step("Enable cluster; wait for nmxc-conn up"):
+        ClusterTools.start_cluster(cluster, setup_name)
+    with allure.step("Wait until nmx-controller status is ok (nv show cluster apps running)"):
+        ClusterTools.wait_until_app_expected_status(
+            cluster, ClusterConsts.NMX_CONTROLLER, "ok", engine=dut_engine
+        )
+    return cluster
