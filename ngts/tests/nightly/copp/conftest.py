@@ -11,7 +11,7 @@ CONFIG_DB_COPP_CONFIG = '/etc/sonic/copp_cfg.json'
 
 # LLDP configuration constants
 LLDP_PAUSE_PROTOCOLS = ['LLDP', 'LLDP_REBOOT']
-LLDP_PAUSE_PLATFORMS = ['sn5640']
+LLDP_PAUSE_PLATFORMS = ['sn5640', 'sn6600_ld']
 
 
 @pytest.fixture(scope='module', autouse=True)
