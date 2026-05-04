@@ -202,6 +202,15 @@ def clear_cl_conf(dut_engine, markers=None, dut=None):
                 result = RandomizationTool.select_random_ports(num_of_ports_to_select=1, dut_engine=dut_engine)
                 if result.result:
                     active_port = result.returned_value[-1]
+                else:
+                    # No swp port in `up` state is fine here — `active_port` is
+                    # only used at the end of cleanup to wait for the chosen
+                    # port to recover. If there is no such port (e.g. on a
+                    # Cumulus DUT where all swp ports are admin-down), this
+                    # cleanup step is a no-op. We must still consume the
+                    # ResultObj so the autouse `verify_result_objects` fixture
+                    # does not trip in a later test's teardown.
+                    result.ignore_result()
 
                 unset_iface_cli = "nv unset interface"
                 unset_iface_cmd = ""

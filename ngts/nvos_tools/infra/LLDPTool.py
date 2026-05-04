@@ -6,9 +6,19 @@ from retry import retry
 from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.nvos_constants.constants_nvos import TcpDumpConsts
+from ngts.nvos_tools.infra.EngineAdapterTool import EngineAdapterTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+
+# Sudo prints one of these strings to stderr/stdout when `-n` is used and a
+# password would be required. We detect them to fall back to `sudo -S` with the
+# engine's password instead of silently failing the test.
+_SUDO_NEEDS_PASSWORD_MARKERS = (
+    "a password is required",
+    "sudo: a terminal is required",
+    "sudo: no tty present",
+)
 
 
 class LLDPTool:
@@ -33,11 +43,43 @@ class LLDPTool:
     }
 
     @staticmethod
+    def _sudo_run(engine, cmd):
+        """
+        Run `sudo -n <cmd>` and return its output. If sudo refuses non-interactively
+        because a password is required, fall back to `echo '<pw>' | sudo -S <cmd>`
+        using the engine's password attribute (set on both LinuxSshEngine and
+        PexpectSerialEngine).
+
+        This is needed for serial-console paths where the default user does not
+        have NOPASSWD in sudoers; without the fallback `sudo -n` immediately fails
+        and the caller observes an empty/error output unrelated to the actual
+        command result.
+        """
+        non_interactive = f"sudo -n {cmd}"
+        output = engine.run_cmd_and_get_output(non_interactive) \
+            if hasattr(engine, "run_cmd_and_get_output") else engine.run_cmd(non_interactive)
+        output_str = output if isinstance(output, str) else str(output)
+        if not any(marker in output_str for marker in _SUDO_NEEDS_PASSWORD_MARKERS):
+            return output_str
+        password = getattr(engine, "password", None)
+        if not password:
+            raise AssertionError(
+                f"`sudo -n {cmd}` failed because sudo requires a password and no "
+                f"password is available on the engine. Configure NOPASSWD for this "
+                f"command in /etc/sudoers or use an engine that exposes `password`. "
+                f"Output was: {output_str}"
+            )
+        interactive = f"echo '{password}' | sudo -S {cmd}"
+        output = engine.run_cmd_and_get_output(interactive) \
+            if hasattr(engine, "run_cmd_and_get_output") else engine.run_cmd(interactive)
+        return output if isinstance(output, str) else str(output)
+
+    @staticmethod
     def start_dump_lldp_packets(engine: LinuxSshEngine, interface="eth0"):
         with allure.step(f"Dump lldp {interface} packets into {LLDPTool.file_path}"):
-            engine.run_cmd(f"sudo rm -rf {LLDPTool.file_path}")
+            engine.run_cmd(f"sudo -n rm -rf {LLDPTool.file_path}")
             engine.run_cmd(
-                f'sudo tcpdump -Q out -lne -i {interface} -vv ether proto {LLDPTool.lldp_proto} > {LLDPTool.file_path} &')
+                f'sudo -n tcpdump -Q out -lne -i {interface} -vv ether proto {LLDPTool.lldp_proto} > {LLDPTool.file_path} &')
 
     @staticmethod
     @retry(AssertionError, 10, 5)
@@ -48,13 +90,22 @@ class LLDPTool:
             if not mgmt_ports:
                 raise ValueError("Device has no mgmt ports")
             for mgmt_port in mgmt_ports:
-                ifconfig_output = engine.run_cmd_and_get_output(f"sudo ifconfig {mgmt_port}")
+                ifconfig_output = LLDPTool._sudo_run(engine, f"ifconfig {mgmt_port}")
                 ValidationTool.verify_expected_output(ifconfig_output, 'UP').verify_result()
 
     @staticmethod
     def finish_dump_lldp_packets(engine: LinuxSshEngine):
-        with allure.step(f"Kill tcpdump instances"):
-            engine.run_cmd("sudo killall tcpdump")
+        with allure.step("Kill tcpdump instances"):
+            # `|| true` so a "no process found" exit from killall does not propagate
+            # as a command failure on engines that validate exit codes.
+            engine.run_cmd("sudo -n killall tcpdump || true")
+
+    # Matches bash job-control notifications like:
+    #   "[1]+  Done                    sudo tcpdump ..."
+    #   "[1]+  Terminated  sudo tcpdump ..."
+    # These leak into the cat output because tcpdump is backgrounded and bash flushes
+    # the notification into the SSH stream around the time of the next command.
+    _bash_job_notification_re = re.compile(r'^\s*\[\d+\][+-]?\s+(Done|Terminated|Exit\s+\d+|Killed)\b.*$')
 
     @staticmethod
     def get_lldp_frames(engine: LinuxSshEngine, interface="eth0", interval=30):
@@ -64,8 +115,16 @@ class LLDPTool:
         time.sleep(wait_sec)
         LLDPTool.finish_dump_lldp_packets(engine)
         with allure.step("Get lldp frames output"):
-            output = str(engine.run_cmd(f'cat {LLDPTool.file_path}'))
-            return output
+            # Use EngineAdapterTool so serial-engine outputs (tuple returns,
+            # echoed command, shell prompt lines, embedded \r) are normalized
+            # before regex-based LLDP parsing. Without this, parse_lldp_dump
+            # can miss TLVs on the serial path.
+            output = EngineAdapterTool.run_cmd(engine, f'cat {LLDPTool.file_path}')
+            filtered = "\n".join(
+                line for line in output.splitlines()
+                if not LLDPTool._bash_job_notification_re.match(line)
+            )
+            return filtered.strip()
 
     @staticmethod
     def parse_lldp_dump(lldp_dump):
