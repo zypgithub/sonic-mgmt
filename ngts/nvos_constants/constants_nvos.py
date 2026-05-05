@@ -2298,7 +2298,8 @@ class FastRecoveryConsts:
 
 
 class LogComponentsConsts:
-    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "syncd", "gpu_telemetry"]
+    PEER_TELEMETRY = "peer_telemetry"
+    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "syncd", PEER_TELEMETRY]
     CRITICAL = "critical"
     DEBUG = "debug"
     ERROR = "error"

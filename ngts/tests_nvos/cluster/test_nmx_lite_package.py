@@ -219,25 +219,25 @@ def test_gpu_telemetry_log_level_set(engines, test_api):
 
     TestToolkit.tested_api = test_api
     system = System()
-    gpu_telemetry = "gpu_telemetry"
+    peer_telemetry = LogComponentsConsts.PEER_TELEMETRY
 
     for log_level in LogComponentsConsts.LOG_LEVEL_LIST:
-        with allure.step(f"Validate set gpu telemetry log level command"):
-            system.log.component.component_id[gpu_telemetry].set(op_param_name=LogComponentsConsts.LEVEL,
-                                                                 op_param_value=log_level, apply=True).verify_result()
+        with allure.step("Validate set peer telemetry log level command"):
+            system.log.component.component_id[peer_telemetry].set(op_param_name=LogComponentsConsts.LEVEL,
+                                                                  op_param_value=log_level, apply=True).verify_result()
 
-        with allure.step(f"Validate GPU telemetry log level is set to {log_level} in show command"):
+        with allure.step(f"Validate peer telemetry log level is set to {log_level} in show command"):
             show_output = OutputParsingTool.parse_json_str_to_dictionary(
-                system.log.component.component_id[gpu_telemetry].show()).verify_result()
+                system.log.component.component_id[peer_telemetry].show()).verify_result()
             ValidationTool.verify_field_value_in_output(show_output, LogComponentsConsts.LEVEL, log_level).\
                 verify_result()
 
-    with allure.step(f"Validate unset gpu telemetry log level command"):
-        system.log.component.component_id[gpu_telemetry].unset(op_param=LogComponentsConsts.LEVEL, apply=True).\
+    with allure.step("Validate unset peer telemetry log level command"):
+        system.log.component.component_id[peer_telemetry].unset(op_param=LogComponentsConsts.LEVEL, apply=True).\
             verify_result()
 
-    with allure.step(f"Validate gpu telemetry log level is set to default {LogComponentsConsts.LOG_LEVEL_DEFAULT}"):
-        show_output = OutputParsingTool.parse_json_str_to_dictionary(system.log.component.component_id[gpu_telemetry].
+    with allure.step(f"Validate peer telemetry log level is set to default {LogComponentsConsts.LOG_LEVEL_DEFAULT}"):
+        show_output = OutputParsingTool.parse_json_str_to_dictionary(system.log.component.component_id[peer_telemetry].
                                                                      show()).verify_result()
         ValidationTool.verify_field_value_in_output(show_output, LogComponentsConsts.LEVEL,
                                                     LogComponentsConsts.LOG_LEVEL_DEFAULT).verify_result()
