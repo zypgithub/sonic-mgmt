@@ -43,6 +43,9 @@ BARE_METAL_MOUNTPOINTS = {
     '/auto/mswg/utils/bin/': '/auto/mswg/utils/bin/',
     '/auto/cumulus': '/auto/cumulus',
     '/.autodirect/cumulus': '/.autodirect/cumulus',
+    '/auto/sw_system_release': '/auto/sw_system_release',
+    '/auto/sw_system_release/cumulus': '/auto/sw_system_release/cumulus',
+    '/.autodirect/sw_system_release/cumulus/': '/.autodirect/sw_system_release/cumulus/',
 }
 NVOS_MOUNTPOINTS = {
     '/auto/sw_regression/system/NVOS/MARS': '/auto/sw_regression/system/NVOS/MARS',
