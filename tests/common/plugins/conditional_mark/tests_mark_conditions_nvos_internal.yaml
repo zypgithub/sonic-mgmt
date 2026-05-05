@@ -478,18 +478,6 @@ tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_phy_recovery
     conditions:
       - "'rosalind' in testbed or 'portia' in testbed"
 
-tests_nvos/platform/test_platform_asic_power_telemetry.py::test_platform_asic_power_telemetry_default_fields_values:
-  skip:
-    reason: "[NVOS - Design] Bug SW #4718752: [Telemetry][Rosalind] Missed 'nv show platform asic' command | Assignee: Or Farfara | Status: Assigned"
-    conditions:
-      - "'rosalind' in testbed"
-
-tests_nvos/platform/test_platform_asic_power_telemetry.py::test_platform_asic_power_telemetry_counters_updates:
-  skip:
-    reason: "[NVOS - Design] Bug SW #4718752: [Telemetry][Rosalind] Missed 'nv show platform asic' command | Assignee: Or Farfara | Status: Assigned"
-    conditions:
-      - "'rosalind' in testbed"
-
 tests_nvos/platform/test_platform_staged_boot.py::test_show_set_platform_boot_policy:
   skip:
     reason: "BMC IPv6 Not Available in This Setup"
