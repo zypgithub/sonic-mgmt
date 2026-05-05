@@ -136,7 +136,7 @@ class NvosConst:
     QTM3 = "Quantum3"
     QTM4 = "Quantum4"
     NVL5 = 'NVLink-5 switch'
-    NVL6 = 'NVLink-6 switch'
+    NVL6 = 'NVLink-6 Switch'
     NVL7 = 'NVLink-7 Switch'
     QTM3_AND_NEWER = [QTM3, QTM4]
     DESCRIPTION = 'description'
