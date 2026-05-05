@@ -46,7 +46,7 @@ from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from infra.tools.exceptions.setup_issue import SetupIssue
-from infra.tools.sql.connect_to_mssql import ConnectMSSQL
+from ngts.tools.mars_test_cases_results.Connect_to_MSSQL import ConnectMSSQL
 from ngts.scripts.code_coverage import test_code_coverage
 from ngts.ngts_types import EnginesT, TopologyT, DevicesT
 from ngts.tools.test_utils import allure_utils as allure
@@ -1032,58 +1032,102 @@ def coredump_check(engines: EnginesT, test_name: str, setup_name: str, dumps_fol
             pytest.fail(f"Coredump found and uploaded to {dest_file}")
 
 
+_OPERATION_TIME_COLUMNS = (
+    OperationTimeConsts.OPERATION_COL,
+    OperationTimeConsts.PARAMS_COL,
+    OperationTimeConsts.DURATION_COL,
+    OperationTimeConsts.SETUP_COL,
+    OperationTimeConsts.TYPE_COL,
+    OperationTimeConsts.VERSION_COL,
+    OperationTimeConsts.RELEASE_COL,
+    OperationTimeConsts.SESSION_ID_COL,
+    OperationTimeConsts.TEST_NAME_COL,
+    OperationTimeConsts.DATE_COL,
+)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def insert_operation_time_to_db(setup_name: str, session_id: str, platform_params: dict, topology_obj: TopologyT):
-    '''
-    @summary:   insert operation times to operation_time table DB.
-    during the tests we will add to pytest.operation_list the operations that we want to measure,
-    and at the end of the test we will insert it to the DB.
-    '''
+    """
+    Collect per-test operation durations during the session, then INSERT them into
+    the MSSQL operation_time table at session end (PowerBI feeds off this table).
+    Tests append entries to pytest.operation_list via OperationTime.save_duration().
+    """
     pytest.operation_list = []
     yield
-    if len(pytest.operation_list) > 0:
+
+    if not pytest.operation_list:
+        logger.info("operation_time: no entries collected this session; nothing to upload")
+        return
+
+    with allure.step("Upload operation_time entries to MSSQL"):
         try:
-            type = platform_params['filtered_platform']
-            version = System().version.get_nvos_image_version()
-            release_name = TestToolkit.version_to_release(version)
-            if not TestToolkit.is_special_run() and pytest.is_mars_run and release_name and not pytest.is_ci_run:
-                insert_operation_duration_to_db(setup_name, type, version, session_id, release_name)
+            machine_type = platform_params['filtered_platform']
+            with allure.step("Resolve image version and release name"):
+                version = System().version.get_nvos_image_version()
+                release_name = TestToolkit.version_to_release(version)
+                logger.info("operation_time: version=%s release=%s entries=%d",
+                            version, release_name, len(pytest.operation_list))
+
+            skip_reason = _operation_time_skip_reason(release_name)
+            if skip_reason:
+                logger.info("operation_time: skipping upload (%s)", skip_reason)
+                allure.attach("operation_time skip_reason", skip_reason)
+                return
+
+            insert_operation_duration_to_db(setup_name, machine_type, version, session_id, release_name)
         except Exception as err:
-            logger.warning("Failed to save operation duration data, because: {}".format(err))
+            logger.exception("operation_time: failed to save duration data: %s", err)
+            raise
+
+
+def _operation_time_skip_reason(release_name):
+    """Return a human-readable reason the operation_time upload should be skipped, or '' to proceed."""
+    if TestToolkit.is_special_run():
+        return "special run (sanitizer/code-coverage/debug-kernel)"
+    if not pytest.is_mars_run:
+        return "not a MARS run"
+    if pytest.is_ci_run:
+        return "CI run"
+    if not release_name:
+        return "image version is not a release"
+    return ""
 
 
 @retry.retry(Exception, tries=3, delay=3)
-def insert_operation_duration_to_db(setup_name: str, type: str, version: str, session_id: str, release_name: str):
+def insert_operation_duration_to_db(setup_name: str, machine_type: str, version: str, session_id: str, release_name: str):
+    operations = pytest.operation_list
+    today = datetime.date.today()
+    columns = f"({', '.join(_OPERATION_TIME_COLUMNS)})"
+    placeholders = "(" + ", ".join(["?"] * len(_OPERATION_TIME_COLUMNS)) + ")"
+    query = f"INSERT operation_time {columns} values {placeholders}"
+    rows = [
+        (
+            op[OperationTimeConsts.OPERATION_COL],
+            op[OperationTimeConsts.PARAMS_COL],
+            op[OperationTimeConsts.DURATION_COL],
+            setup_name,
+            machine_type,
+            version,
+            release_name,
+            session_id,
+            op[OperationTimeConsts.TEST_NAME_COL],
+            today,
+        )
+        for op in operations
+    ]
+
     connections_params = DbConstants.CREDENTIALS[CliType.NVUE]
-    mssql_connection_obj = ConnectMSSQL(connections_params['server'], connections_params['database'],
-                                        connections_params['username'], connections_params['password'])
-    mssql_connection_obj.connect_db()
-    logger.info("Insert {} operations info to operation_time DB".format(len(pytest.operation_list)))
+    with allure.step(f"Connect to MSSQL ({connections_params['database']})"):
+        mssql_connection_obj = ConnectMSSQL(**connections_params)
+        mssql_connection_obj.connect_db()
+
     try:
-        values = ""
-        for operation in pytest.operation_list:
-            value = "('{operation}', '{command}', '{duration}', '{setup_name}', '{type}', '{version}', " \
-                    "'{release}', '{session_id}', '{test_name}', '{date}')".format(
-                        operation=operation[OperationTimeConsts.OPERATION_COL],
-                        command=operation[OperationTimeConsts.PARAMS_COL],
-                        duration=operation[OperationTimeConsts.DURATION_COL], setup_name=setup_name, type=type,
-                        version=version, release=release_name, session_id=session_id,
-                        test_name=operation[OperationTimeConsts.TEST_NAME_COL], date=datetime.date.today())
-
-            values = values + ', ' + value if values else value
-
-        if values:
-            columns = "({operation_col}, {params_col}, {duration_col}, {setup_name_col}, {type_col}, {version_col}," \
-                      " {release_col}, {session_id_col}, {test_name_col}, {date_col})".format(
-                          operation_col=OperationTimeConsts.OPERATION_COL, params_col=OperationTimeConsts.PARAMS_COL,
-                          duration_col=OperationTimeConsts.DURATION_COL, setup_name_col=OperationTimeConsts.SETUP_COL,
-                          type_col=OperationTimeConsts.TYPE_COL, version_col=OperationTimeConsts.VERSION_COL,
-                          release_col=OperationTimeConsts.RELEASE_COL, session_id_col=OperationTimeConsts.SESSION_ID_COL,
-                          test_name_col=OperationTimeConsts.TEST_NAME_COL, date_col=OperationTimeConsts.DATE_COL)
-            query = "INSERT operation_time {columns} values {values};".format(columns=columns, values=values)
-
-        mssql_connection_obj.query_insert(query)
-        logger.info("--------- insert to operation time DB table successfully ---------\n")
+        with allure.step(f"INSERT {len(operations)} rows into operation_time"):
+            logger.info("operation_time: inserting %d entries (setup=%s session=%s release=%s)",
+                        len(operations), setup_name, session_id, release_name)
+            mssql_connection_obj.query_insert_many(query, rows)
+            logger.info("operation_time: insert successful")
     finally:
         mssql_connection_obj.disconnect_db()
 

@@ -52,7 +52,7 @@ class ConnectMSSQL:
                 return result_id
 
             else:
-                raise Exception("SQL query: " + get_query + " failed. error: " + str(e))
+                raise Exception("SQL query: " + get_query + " failed. error: " + str(e)) from e
 
     def query_insert(self, insert_query, get_query=None):
         try:
@@ -66,7 +66,25 @@ class ConnectMSSQL:
             else:
                 return None
         except Exception as e:
-            raise Exception("SQL insert query: " + insert_query + " failed. error: " + str(e))
+            raise Exception("SQL insert query: " + insert_query + " failed. error: " + str(e)) from e
+
+    def query_insert_many(self, insert_query, rows):
+        """
+        Execute a parameterized INSERT for many rows in one batch.
+
+        insert_query: SQL with `?` placeholders, one per column.
+        rows:         iterable of row tuples; each tuple's length must match
+                      the number of placeholders.
+
+        Use this instead of building one big literal-interpolated INSERT to
+        avoid breakage on values containing single quotes or other SQL
+        special characters, and to let pyodbc handle type conversions.
+        """
+        try:
+            self.cursor.executemany(insert_query, list(rows))
+            self.conn.commit()
+        except Exception as e:
+            raise Exception("SQL insert query: " + insert_query + " failed. error: " + str(e)) from e
 
     def query_insert_return_la_table_id(self, insert_query):
         try:
@@ -75,18 +93,14 @@ class ConnectMSSQL:
             self.conn.commit()
             return table_id
         except Exception as e:
-            raise Exception("SQL insert query: " + insert_query + " failed. error: " + str(e))
+            raise Exception("SQL insert query: " + insert_query + " failed. error: " + str(e)) from e
 
     def get_table_column_names(self, table_name):
         if not self.is_connected:
             self.connect_db()
-            cmd = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}';"
-            self.cursor.execute(cmd)
-            columns_query = self.cursor.fetchall()
-            column_names = []
-            for column in columns_query:
-                column_names.append(column[0])
-            return column_names
+        cmd = "SELECT column_name FROM information_schema.columns WHERE table_name = ?"
+        self.cursor.execute(cmd, (table_name,))
+        return [row[0] for row in self.cursor.fetchall()]
 
     def query_scalar(self, scalar_query):
         self.cursor.execute(scalar_query)
