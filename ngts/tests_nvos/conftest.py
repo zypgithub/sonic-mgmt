@@ -26,7 +26,7 @@ from devts.infra.tools.general_constants.air_constants import NvidiaAirConstants
 from devts.infra.tools.linux_tools.linux_tools import scp_file
 from ngts.helpers.object_filters import filter_objects
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from devts.infra.tools.sql.connect_to_mssql import ConnectMSSQL
+from ngts.tools.mars_test_cases_results.Connect_to_MSSQL import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
