@@ -1135,6 +1135,7 @@ class PlatformConsts:
     FW_SPECTRUM3 = "Spectrum-3"
     FW_SPECTRUM4 = "Spectrum-4"
     FW_SPECTRUM5 = "Spectrum-5"
+    FW_SPECTRUM6 = "Spectrum-6"
     FW_SLOT_STATUS_ACTIVE = 'active'
     FW_SLOT_STATUS_INACTIVE = 'inactive'
     # Basic fields present in all firmware components
