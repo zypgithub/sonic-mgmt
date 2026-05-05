@@ -1,3 +1,4 @@
+from allure_commons.types import AttachmentType
 from functools import partial
 from typing import Iterable
 import logging
@@ -16,6 +17,7 @@ from ngts.ngts_types import EnginesT, DevicesT
 from ngts.tests_nvos.constants import MINUTE
 import sys
 
+from ngts.tests_nvos.helpers import redmine_helpers  # TODO: remove after 5013850 is fixed
 from . import helpers
 
 if sys.version_info < (3, 11):
@@ -69,7 +71,7 @@ def _dedupe_ports(*ports_groups: Iterable[Port]) -> list[Port]:
     return list(deduped_ports.values())
 
 
-@retry.retry(exceptions=ExceptionGroup, tries=5, delay=5)
+@retry.retry(exceptions=ExceptionGroup, tries=10 if redmine_helpers.is_bug_active(5013850) else 5, delay=5)
 def _verify_plr_configuration(port: Port, mode: str):
     """
     Verify the PLR configuration on the port.
@@ -113,7 +115,8 @@ def _verify_plr_configuration_on_ports(ports: Iterable[Port], mode: str, step_na
     logger.info(f"{step_name}. Verification ports: {[port.name for port in verification_ports]}")
 
     with allure.step(step_name):
-        for port in verification_ports:
+        # sort the ports by the port number, since lower number ports might be up faster than higher number ports
+        for port in sorted(verification_ports, key=lambda p: int(re.search(r'\d+', p.name).group(0))):
             with allure.independent_step(f'Verify PLR configuration on port {port.name}'):
                 _verify_plr_configuration(port, mode)
 
@@ -137,16 +140,18 @@ def test_plr_cli_flow(engines: EnginesT, devices: DevicesT, access_ports: Port, 
             margin_thresholds = set(map(str, [i['margin-threshold'] for i in PLR_MODES_MAPPER.values()]))
             margin_thresholds_regex = r"\s*$|".join(margin_thresholds) + r"\s*$"
             logger.info(f"Validating margin-threshold in output against pattern: {margin_thresholds_regex}")
-            assert re.search(f'margin-threshold: ({margin_thresholds_regex})', output, flags=re.M), f"Output format is not as expected. Expected: {margin_thresholds}, Actual: {output}"
+            assert re.search(f'margin-threshold: ({margin_thresholds_regex})', output, flags=re.M), \
+                f"Output format is not as expected. Expected: {margin_thresholds}, Actual: {output}"
 
             reject_modes = set(i['reject-mode'] for i in PLR_MODES_MAPPER.values())
             reject_modes_regex = r"\s*$|".join(reject_modes) + r"\s*$"
             logger.info(f"Validating reject-mode in output against pattern: {reject_modes_regex}")
-            assert re.search(f'reject-mode: ({reject_modes_regex})', output, flags=re.M), f"Output format is not as expected. Expected: {reject_modes}, Actual: {output}"
+            assert re.search(f'reject-mode: ({reject_modes_regex})', output, flags=re.M), \
+                f"Output format is not as expected. Expected: {reject_modes}, Actual: {output}"
 
     with allure.step('Select fixed verification ports'):
         verification_ports = _dedupe_ports((port,), helpers.get_random_ports(engines.dut)[1])
-        logger.info(f"Using fixed verification ports for this test run: {[port_.name for port_ in verification_ports]}")
+        allure.attach("verification-ports.json", [p.name for p in verification_ports], attachment_type=AttachmentType.JSON)
 
     with allure.step('Select random PLR mode'):
         port_mode: str = port.interface.link.plr.parse_show()['mode']
