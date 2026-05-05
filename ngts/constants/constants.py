@@ -19,22 +19,29 @@ class RegressionType(StrEnum):
     SONIC_CI = "sonic_ci"
     SONIC_DPU_CI = "sonic_dpu_ci"
     SONIC_CI_APP_EXTENSION = "sonic_ci_app_extension"
+    SONIC_MAIN_NGCI_TEST_GZ = "sonic_main_ngci_test_gz"
+    SONIC_CI_TEST_GZ = "sonic_ci_test_gz"
     NVOS_CI = "nvos_ci"
     SONIC_MGMT_CI = "sonic_mgmt_ci"
 
     @classmethod
     def ci_types(cls):
-        """All CI project types (sonic_ci, sonic_dpu_ci, sonic_ci_app_extension, nvos_ci, sonic_mgmt_ci)."""
-        return {cls.SONIC_CI, cls.SONIC_DPU_CI, cls.SONIC_CI_APP_EXTENSION, cls.NVOS_CI, cls.SONIC_MGMT_CI}
+        """All CI project types (sonic_ci, sonic_dpu_ci, sonic_ci_app_extension,
+        sonic_main_ngci_test_gz, sonic_ci_test_gz, nvos_ci, sonic_mgmt_ci)."""
+        return {cls.SONIC_CI, cls.SONIC_DPU_CI, cls.SONIC_CI_APP_EXTENSION,
+                cls.SONIC_MAIN_NGCI_TEST_GZ, cls.SONIC_CI_TEST_GZ,
+                cls.NVOS_CI, cls.SONIC_MGMT_CI}
 
     @classmethod
     def relaxed_error_handling_types(cls):
         """CI projects where known issues (matched to bugs) pass the test.
 
         Unlike regular CI: fails on unknown errors only, passes on known (UPDATE decisions).
-        Subset of ci_types: {sonic_ci, sonic_dpu_ci, sonic_ci_app_extension} only.
+        Subset of ci_types: {sonic_ci, sonic_dpu_ci, sonic_ci_app_extension,
+        sonic_main_ngci_test_gz, sonic_ci_test_gz}.
         """
-        return {cls.SONIC_CI, cls.SONIC_DPU_CI, cls.SONIC_CI_APP_EXTENSION}
+        return {cls.SONIC_CI, cls.SONIC_DPU_CI, cls.SONIC_CI_APP_EXTENSION,
+                cls.SONIC_MAIN_NGCI_TEST_GZ, cls.SONIC_CI_TEST_GZ}
 
     @classmethod
     def mars_types(cls):
