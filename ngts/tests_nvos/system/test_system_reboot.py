@@ -41,7 +41,6 @@ def test_reboot_command(engines, devices, test_name):
     with allure.step("Check system reboot output"):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show()).get_returned_value()
         assert "reason" in output.keys(), "'reason' not in the output"
-        assert "history" in output.keys(), "'history' not in the output"
 
         with allure.independent_step("Check system reboot reason output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
@@ -49,9 +48,9 @@ def test_reboot_command(engines, devices, test_name):
 
         with allure.independent_step("Check system reboot history output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.history.show()).get_returned_value()
-            if output and len(output.keys()) > 0:
-                ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output[list(output.keys())[0]],
-                                                                                  ["gentime", "reason", "user"]).verify_result()
+            assert output, "'history' output is empty"
+            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output[list(output.keys())[0]],
+                                                                              ["gentime", "reason", "user"]).verify_result()
 
         with allure.independent_step("Check reboot cause"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
