@@ -913,3 +913,14 @@ def get_random_reload_type(duthost):
     reboot_type = random.choice(reload_types)
     logger.info(f"Selected reload type: {reboot_type}")
     return reboot_type
+
+
+def migrate_container_systemd(duthost, service, parameters):
+    # Remove --net=host in parameters because it is already existed in /usr/bin/{service}.sh
+    parts = parameters.split()
+    no_network_parts = [p for p in parts if p != "--net=host"]
+    no_network_parameters = " ".join(no_network_parts)
+
+    duthost.shell(f'sed -i "s|docker create -t |docker create -t {no_network_parameters} |" /usr/bin/{service}.sh')
+    duthost.shell(f"systemctl reset-failed {service}", module_ignore_errors=True)
+    duthost.shell(f"systemctl restart {service}", module_ignore_errors=True)
