@@ -1,4 +1,5 @@
 import os
+import time
 import allure
 import logging
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_few_traffic
@@ -112,8 +113,15 @@ class TestSRv6Leaf(TestSRv6Base):
                 run_validation(config)
             finally:
                 if is_drop_over_max:
-                    with allure.step("Remove dummy ACLs"):
-                        self.cli_object.performance.remove_dummy_acls()
+                    with allure.step("Stop traffic and reload DUT configuration to clean residual state"):
+                        stop_traffic(self.players)
+                        reload_start = time.time()
+                        logger.info(f"Config reload start: {reload_start:.3f}")
+                        self.cli_object.general.reload_configuration(force=True)
+                        self.cli_object.general.verify_dockers_are_up()
+                        reload_end = time.time()
+                        logger.info(f"Config reload + dockers verified end: {reload_end:.3f} "
+                                    f"(duration: {reload_end - reload_start:.3f}s)")
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=MRCConsts.SHAPER_VALUE_AFTER_TEST)
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)

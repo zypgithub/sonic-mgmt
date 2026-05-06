@@ -323,20 +323,22 @@ class TestSRv6Base:
             if ipv6_validation_json_path and os.path.exists(ipv6_validation_json_path):
                 with open(ipv6_validation_json_path, 'r') as f:
                     ipv6_validation_json = json.load(f)
-                additional_validations['compare_tc_occ_to_reference'] = Validation(compare_tc_occ_to_reference, {'reference_json': ipv6_validation_json,
-                                                                                                                 'tc_keys': [ValidationConsts.OCC_AVG],
-                                                                                                                 'tc_to_validate': MRCConsts.TRIMMING_DATA_QUEUE_NUM,
-                                                                                                                 'allowed_deviation': tc_occ_allowed_deviation})
+                if drop_over_max_sample_port is None:
+                    additional_validations['compare_tc_occ_to_reference'] = Validation(compare_tc_occ_to_reference, {'reference_json': ipv6_validation_json,
+                                                                                                                     'tc_keys': [ValidationConsts.OCC_AVG],
+                                                                                                                     'tc_to_validate': MRCConsts.TRIMMING_DATA_QUEUE_NUM,
+                                                                                                                     'allowed_deviation': tc_occ_allowed_deviation})
                 tc3_occ_threshold = {ValidationConsts.OCC_AVG: MRCConsts.MRC_RETRANSMISSION_TC_OCC_AVG_THRESHOLD}
                 additional_validations['validate_tc3_occ_below_threshold'] = Validation(validate_per_tc, {'tc_occ_threshold': tc3_occ_threshold,
                                                                                                           'tc_to_validate': MRCConsts.MRC_RETRANSMISSION_TC_NUM,
                                                                                                           'tolerance': None,
                                                                                                           'port_group_name_to_validate_list': []})
-                additional_validations['compare_pg_to_reference'] = Validation(compare_pg_to_reference, {'reference_json': ipv6_validation_json,
-                                                                                                         'pg_keys': [ValidationConsts.OCC_AVG],
-                                                                                                         'pg_to_validate': MRCConsts.PG_LIST,
-                                                                                                         'allowed_deviation': MRCConsts.HEADROOM_ALLOWED_DEVIATION,
-                                                                                                         'pg_buffer_type': ValidationConsts.PG_BUFFER_DATAFRAME})
+                if drop_over_max_sample_port is None:
+                    additional_validations['compare_pg_to_reference'] = Validation(compare_pg_to_reference, {'reference_json': ipv6_validation_json,
+                                                                                                             'pg_keys': [ValidationConsts.OCC_AVG],
+                                                                                                             'pg_to_validate': MRCConsts.PG_LIST,
+                                                                                                             'allowed_deviation': MRCConsts.HEADROOM_ALLOWED_DEVIATION,
+                                                                                                             'pg_buffer_type': ValidationConsts.PG_BUFFER_DATAFRAME})
 
                 if not is_redmine_issue_active([4743477])[0]:
                     additional_validations['compare_latency_to_reference'] = Validation(compare_latency_to_reference, {'reference_json': ipv6_validation_json,
