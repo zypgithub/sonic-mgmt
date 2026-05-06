@@ -332,6 +332,9 @@ class DvsPerformance(PerformanceCommon):
         unsplit_list = ["SPC5"] if is_redmine_issue_active([4985641])[0] else ["SPC5", "SPC6"]
         if chip_type in unsplit_list:
             self.unsplit_all_ports()
+        self.connected_ports = self.original_connected_ports
+        self.unconnected_ports = self.original_unconnected_ports
+        self.ports_lanes = self.original_port_lanes
 
     def clear_syslog(self):
         """
