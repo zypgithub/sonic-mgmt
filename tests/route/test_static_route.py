@@ -741,7 +741,7 @@ def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route):
     """When adding N static routes, swss.rec delta must be exactly N non-empty lines of ROUTE_TABLE|SET matching prefixes."""
     duthost = rand_selected_dut
     prefixes = ["1.1.{}.0/24".format(i) for i in range(1, 3)]
-    nexthop = get_nexthop(duthost, False)
+    nexthop = get_nexthop(duthost)
     n = len(prefixes)
     wait_time = 3
 
