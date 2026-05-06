@@ -1,3 +1,4 @@
+import os
 import random
 import string
 import threading
@@ -10,6 +11,7 @@ from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.SSDTool import SSDTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -17,6 +19,7 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine  # type: ignore
 from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from ngts.tests_nvos.system.gnmi.helpers import verify_msg_in_out_or_err
 
 
 @pytest.mark.timeout(60 * MINUTE, func_only=True)
@@ -30,39 +33,44 @@ def test_ssd_install(engines, devices, topology_obj, random_api, platform_compon
         nv action fetch platform firmware SSD <remote-url-fetch>
         nv action install platform firmware SSD files <file-name> [force|skip-reboot]
 
-    Note: Test randomly chooses between 'skip-reboot', 'with-reboot', or 'double-install' to optimize test time while covering all installation modes.
-
     Test flow:
         1. Verify device is on latest version.
-        2. Fetch and install SSD firmware using one of three modes:
-           - skip-reboot: Install previous version once WITHOUT reboot (staged)
-           - with-reboot: Install previous version WITH reboot (active immediately)
-           - double-install: Install previous version twice WITHOUT reboot (tests staged firmware consistency)
-        3. Verify:
-           For skip-reboot/double-install modes: version remains latest (firmware staged, not activated).
-           For with-reboot mode: version changed to previous.
-        4. Restore to latest version using skip_version_check if needed.
+        2. Fetch and install previous SSD firmware using skip-reboot flag.
+        3. Fetch and install previous SSD firmware using force flag if SSD package requires reboot to complete downgrade.
+        4. Verify SSD version changed to previous.
+        5. Restore to latest version using skip_version_check if needed.
     """
     TestToolkit.tested_api = random_api
 
     component_name = platform_component_with_clear.get_resource_basename().lower()
-    install_mode = None
     # Get latest version info
     latest_path, latest_filename, latest_version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
+    if latest_version_name is None:
+        pytest.skip(f"Package {latest_filename!r} does not support SSD model")
 
     try:
         # Get previous version info
         path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component_name)
 
-        # Step 1: Verify device is on latest version
+        # Verify device is on latest version
         with allure.step('Verify device is on latest SSD version'):
             BmcTool.verify_platform_component_version(platform_component_with_clear, latest_version_name)
 
-        # Randomize installation mode: skip-reboot (1x without reboot), with-reboot (1x with reboot), or double-install (2x without reboot)
-        install_mode = random.choice(['skip_reboot', 'with_reboot', 'double_install'])
+        # Get expected operation duration for SSD install without reboot
+        duration_threshold = devices.dut.expected_operation_durations['install ssd']
 
-        # Step 2: Fetches and installs SSD firmware according to installation mode
-        if install_mode == 'with_reboot':
+        # Install previous version WITHOUT reboot
+        with allure.step(f'Fetch and install SSD firmware {version_name} without reboot'):
+            result_obj = BmcTool.fetch_and_install_platform_component_without_reboot(
+                platform_component_with_clear, path, version_name, filename, test_name
+            ).verify_result(expected_duration=duration_threshold)
+
+        if SSDTool.ssd_downgrade_requires_reboot(filename):
+            with allure.step("Verify output for skip-reboot"):
+                msg = "Next reboot will load the new firmware"
+                verify_msg_in_out_or_err(msg, result_obj)
+
+            # Install previous version WITH reboot
             with allure.step(f'Fetch and install SSD firmware {version_name} with reboot'):
                 BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
                                                              name=version_name, filename=filename, topology_obj=topology_obj,
@@ -78,34 +86,52 @@ def test_ssd_install(engines, devices, topology_obj, random_api, platform_compon
                 _verify_ssd_dump_in_techsupport(engines, test_name)
 
         else:
-            # Get expected operation duration for SSD install without reboot
-            duration_threshold = devices.dut.expected_operation_durations['install ssd']
+            with allure.step("Verify output for skip-reboot"):
+                msg = "No reboot is required; firmware is now active."
+                verify_msg_in_out_or_err(msg, result_obj)
 
-            # Install previous version WITHOUT reboot (once for skip_reboot, twice for double_install)
-            num_installs = 2 if install_mode == 'double_install' else 1
-            for i in range(num_installs):
-                with allure.step(f'Fetch and install SSD firmware {version_name} without reboot (attempt {i + 1}/{num_installs})'):
-                    platform_component_with_clear.action_fetch(path).verify_result()
-                    BmcTool.install_fw_image_without_reboot(platform_component=platform_component_with_clear,
-                                                            test_name=test_name,
-                                                            filename=filename).verify_result(expected_duration=duration_threshold)
-
-        # Step 3: Verifies correct versioning for installed fw package
-        expected_version = version_name if install_mode == 'with_reboot' else latest_version_name
-        with allure.step(f'Verify SSD firmware version is {expected_version}'):
-            BmcTool.verify_platform_component_version(platform_component_with_clear, expected_version)
+        # Verify correct versioning for installed fw package
+        with allure.step(f'Verify SSD firmware version is {version_name}'):
+            BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
 
     finally:
-        # Step 4: Always restore to latest version for test isolation
-        # Use skip_version_check=True if we used skip-reboot before (device is already on latest, just not activated)
-        skip_version_check = install_mode is not None and install_mode != 'with_reboot'
+        # Always restore to latest version for test isolation
         with allure.step(f'Fetch and install SSD firmware {latest_version_name}'):
-            BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=latest_path,
-                                                         name=latest_version_name, filename=latest_filename, topology_obj=topology_obj,
-                                                         test_name=test_name, skip_version_check=skip_version_check).verify_result()
+            BmcTool.fetch_and_install_platform_component_without_reboot(
+                platform_component_with_clear, latest_path, latest_version_name, latest_filename, test_name
+            ).verify_result()
 
         with allure.step(f'Verify SSD firmware version is {latest_version_name}'):
             BmcTool.verify_platform_component_version(platform_component_with_clear, latest_version_name)
+
+
+@pytest.mark.ssd
+@pytest.mark.parametrize("platform_component_with_clear", ["ssd"], indirect=True)
+def test_unsupported_ssd_install(engines, devices, random_api, platform_component_with_clear, test_name):
+    """
+    @summary: Verify install reports that the fetched SSD package does not support the current SSD model.
+
+    Test flow:
+        1. Look up latest SSD package; skip if metadata supports this SSD.
+        2. Fetch and install that package.
+        3. Verify CLI output that the package does not support upgrade for the current SSD model.
+    """
+    TestToolkit.tested_api = random_api
+
+    component_name = platform_component_with_clear.get_resource_basename().lower()
+    # Get latest firmware file info
+    path, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
+    if version_name is not None:
+        pytest.skip(f"Package {filename!r} supports SSD model")
+
+    with allure.step(f'Fetch and install unsupported SSD firmware'):
+        result_obj = BmcTool.fetch_and_install_platform_component_without_reboot(
+            platform_component_with_clear, path, "", filename, test_name
+        ).verify_result()
+
+    with allure.step("Verify output for skip-reboot"):
+        msg = "package does not support upgrade for the current SSD model"
+        verify_msg_in_out_or_err(msg, result_obj)
 
 
 @pytest.mark.ssd
@@ -125,13 +151,15 @@ def test_ssd_firmware_rename_delete(engines, devices, random_api, platform_compo
     component_name = platform_component_with_clear.get_resource_basename().lower()
     # Get latest firmware file info
     path, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
+    if version_name is None:
+        pytest.skip(f"Package {filename!r} does not support SSD model")
 
     with allure.step(f"Fetch SSD firmware file: {filename}"):
         platform_component_with_clear.action_fetch(path).verify_result()
         fetched_file = platform_component_with_clear.files.file_name[filename]
 
-    with allure.step("Rename file to new name with .ram extension"):
-        new_name = RandomizationTool.get_random_string(15, ascii_letters=string.ascii_letters + string.digits) + '.ram'
+    with allure.step("Rename file to new name with .pkg extension"):
+        new_name = RandomizationTool.get_random_string(15, ascii_letters=string.ascii_letters + string.digits) + '.pkg'
         fetched_file.action_rename(new_name, rewrite_file_name=False).verify_result()
 
     with allure.step("Verify new file name exists and old name doesn't"):
@@ -176,6 +204,8 @@ def test_ssd_install_interruption_recovery(engines, devices, topology_obj, rando
 
     # Get latest version info
     latest_path, latest_filename, latest_version_name = FWComponentsTool.get_fw_component_version_latest(ssd_component.get_resource_basename().lower())
+    if latest_version_name is None:
+        pytest.skip(f"Package {latest_filename!r} does not support SSD model")
 
     try:
         # Step 1: Verify device is on latest version

@@ -2795,6 +2795,16 @@ class SSDConsts:
         ADVERTISED_SIZE_GB: 160.0,
         SSD_PART_NUMBER: 'VTPM24GLXI160-BM12'
     }
+    MD681GEEBC82: SSDType = {
+        SIZE_GB: 74.5,  # OS-visible size for an "80 GB" SSD
+        ADVERTISED_SIZE_GB: 80.0,
+        SSD_PART_NUMBER: 'MD681GEEBC82',
+    }
+    MD681GEFBC82: SSDType = {
+        SIZE_GB: 149.1,
+        ADVERTISED_SIZE_GB: 160.0,
+        SSD_PART_NUMBER: 'MD681GEFBC82',
+    }
 
 
 class ServiceConsts:

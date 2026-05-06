@@ -41,7 +41,6 @@ Usage:
 import functools
 import logging
 import os
-import pytest
 import random
 import re
 import time
@@ -1606,18 +1605,17 @@ def _check_ssd_firmware_auto_upgrade(
     """
     ssd_component = Platform().firmware.ssd
 
-    try:
-        _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
-    except pytest.skip.Exception as e:
-        # SSD part number not in firmware versions JSON - skip this checker gracefully
-        raise Skipped(f"SSD firmware checker skipped: {str(e)}")
+    _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+    if latest_version_name is None:
+        raise Skipped("SSD firmware checker skipped: non supported SSD model")
 
     # Step 1: Verify device is on latest SSD version
     with allure.step('Verify device is on latest SSD version'):
         BmcTool.verify_platform_component_version(ssd_component, latest_version_name)
 
     # Downgrade SSD firmware to previous version
-    SSDTool.downgrade_ssd_firmware(engines, ssd_component)
+    _, previous_filename, previous_version_name = FWComponentsTool.get_fw_component_version_previous(FW_COMPONENT_SSD)
+    SSDTool.downgrade_ssd_firmware(engines, ssd_component, previous_filename, previous_version_name)
 
     yield  # NVOS upgrade happens here (includes latest SSD firmware in bundle)
 

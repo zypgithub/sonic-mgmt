@@ -528,6 +528,7 @@ class BaseSwitch(BaseDevice):
         self.previous_bios_version_name = ""
         self.previous_bios_version_path = ""
         self.fw_versions_json_file_path = None
+        self.ssd_pkg_info_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/SSD/ssd_pkg_info.json"
         self.show_platform_output = {
             "system-mac": ExpectedString(regex=r"([\dA-F]{2}:){5}[\dA-F]{2}"),
             "manufacturer": "Nvidia",
