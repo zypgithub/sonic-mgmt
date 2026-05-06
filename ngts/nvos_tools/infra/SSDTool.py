@@ -69,13 +69,6 @@ class SSDTool:
                     overwrite_file=True
                 )
 
-            # Get SSD part number
-            with allure.step("Get SSD part number"):
-                ssd_output = OutputParsingTool.parse_json_str_to_dictionary(
-                    ssd_component.show()
-                ).get_returned_value()
-                ssd_part_number = ssd_output.get('part-number', '').strip()
-
             _pkg_info = SSDTool._get_ssd_pkg_info(pkg_file_name)
             fw_download_cmd = _pkg_info['fw_download']
             fw_commit_cmd = _pkg_info['fw_commit']
