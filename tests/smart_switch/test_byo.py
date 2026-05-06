@@ -32,7 +32,7 @@ SWITCH_DATA_PORT = {'x86_64-nvidia_sn4280-r0': 'Ethernet64'}
 ptf_port_index = 0
 
 pytestmark = [
-    pytest.mark.topology('any'),
+    pytest.mark.topology('smartswitch'),
 ]
 
 if not RESOLV_CONF_NAMESERVERS['public']:
