@@ -14,6 +14,17 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
 
 logger = logging.getLogger(__name__)
+REBOOT_OUTPUT_FIELDS = {"gentime", "reason", "reason-type", "user"}
+
+
+def _verify_exact_reboot_fields(output, output_name):
+    output_fields = set(output.keys())
+    missing_fields = REBOOT_OUTPUT_FIELDS - output_fields
+    extra_fields = output_fields - REBOOT_OUTPUT_FIELDS
+    assert output_fields == REBOOT_OUTPUT_FIELDS, (
+        f"Unexpected fields in '{output_name}' output. "
+        f"Missing fields: {missing_fields or 'none'}; extra fields: {extra_fields or 'none'}"
+    )
 
 
 @pytest.mark.usefixtures("disable_els_init_state_for_taipan")
@@ -44,13 +55,15 @@ def test_reboot_command(engines, devices, test_name):
 
         with allure.independent_step("Check system reboot reason output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
-            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, ["gentime", "reason", "user"]).verify_result()
+            _verify_exact_reboot_fields(output, "system reboot reason")
+            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, REBOOT_OUTPUT_FIELDS).verify_result()
 
         with allure.independent_step("Check system reboot history output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.history.show()).get_returned_value()
             assert output, "'history' output is empty"
-            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output[list(output.keys())[0]],
-                                                                              ["gentime", "reason", "user"]).verify_result()
+            reboot_history = output[list(output.keys())[0]]
+            _verify_exact_reboot_fields(reboot_history, "system reboot history")
+            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(reboot_history, REBOOT_OUTPUT_FIELDS).verify_result()
 
         with allure.independent_step("Check reboot cause"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
