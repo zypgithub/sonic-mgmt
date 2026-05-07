@@ -264,7 +264,7 @@ class RebootReload:
 
         """
         with allure.step("Verify all docker container is up"):
-            self.cli_object.general.verify_dockers_are_up(SonicConst.DOCKERS_LIST.append(self.app_name))
+            self.cli_object.general.verify_dockers_are_up(SonicConst.DOCKERS_LIST + [self.app_name])
         with allure.step("Verify app shutdown order: bgp-> {} -> swss".format(self.app_name)):
             bgp_shutdown_time = time_parse(
                 self.dut_engine.run_cmd("docker inspect --format='{{.State.FinishedAt}}' bgp"))
@@ -284,7 +284,7 @@ class RebootReload:
 
     def verify_app_and_container_up_after_config_reload(self, validation_type):
         with allure.step("Verify container are up"):
-            self.cli_object.general.verify_dockers_are_up(SonicConst.DOCKERS_LIST)
+            self.cli_object.general.verify_dockers_are_up(SonicConst.DOCKERS_LIST + [self.app_name])
         with allure.step("Verify app is up and repo stat is installed"):
             verify_app_container_up_and_repo_status_installed(self.cli_object, self.app_name, self.version)
 
