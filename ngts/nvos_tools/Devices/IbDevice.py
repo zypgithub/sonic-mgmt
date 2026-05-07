@@ -492,8 +492,12 @@ class IbSwitch(BaseSwitch):
             RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
             RebootConsts.PSU_OFF: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA),
             RebootConsts.REMOTE_REBOOT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA),
-            RebootConsts.INSTALL_FW: ("reboot", RebootConsts.REBOOT_USER_ADMIN)
+            RebootConsts.INSTALL_FW: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.RESET_BIT: (RebootConsts.REBOOT_REASON_RESET_BIT, RebootConsts.REBOOT_USER_NA)
         }
+        # Reset-bit reboot trigger, shared by all IB switches (Taipan, Crocodile, ...).
+        # Subclasses can override or clear it if their platform doesn't support it.
+        self.sys_rst_n_bit_command = NvosConst.SYS_RST_N_BIT_COMMAND
 
         self.category_default_disabled_dict = {
             StatsConsts.HISTORY_DURATION: StatsConsts.HISTORY_DURATION_DEFAULT,
@@ -1940,7 +1944,8 @@ class JulietSwitch(NvLinkSwitch):
             RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
             RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
             RebootConsts.REMOTE_REBOOT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_NA),
-            RebootConsts.INSTALL_FW: ("reboot", RebootConsts.REBOOT_USER_ADMIN)
+            RebootConsts.INSTALL_FW: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.RESET_BIT: (RebootConsts.REBOOT_REASON_RESET_BIT, RebootConsts.REBOOT_USER_NA)
         }
 
         self.power_cycle_type = 'juliet-power-cycle'

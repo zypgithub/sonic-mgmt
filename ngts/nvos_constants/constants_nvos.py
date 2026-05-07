@@ -3,7 +3,8 @@ import os
 import re
 from enum import Enum
 from pathlib import Path
-from typing import TypedDict
+from typing import List, TypedDict
+import re
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 
@@ -185,6 +186,8 @@ class NvosConst:
     OLD_PASS = os.getenv("NVU_SWITCH_PASSWORD")
 
     REBOOT_CMD_TO_RUN = "ipmitool -I lanplus -H {ip} -U {username} -P {password} chassis power cycle"
+
+    SYS_RST_N_BIT_COMMAND = "sudo iorw -b 0x2519 -w -l1 -v 0xfe"
 
     # [0] syslog e.g. "Jan  1 12:34:56"; [1] space-separated e.g. "2026-02-18 12:34:56"; [2] ISO with T (optional .microseconds, optional Z or +HH:MM)
     DATE_TIME_REGEX = [
@@ -1919,8 +1922,10 @@ class RebootConsts:
     KERNEL_PANIC = 'Kernel Panic'
     PSU_OFF = "psu-off"
     REBOOT_REASON_POWER_CYCLE = 'Power Cycle'
+    REBOOT_REASON_RESET_BIT = "System reset"
     REMOTE_REBOOT = "remote-reboot"
     INSTALL_FW = "install-fw"
+    RESET_BIT = "reset_bit"
 
     DEFAULT_MODES = [POWER_CYCLE, HALT, COLD, IMMEDIATE]
     REBOOT_USER_NA = "N/A"

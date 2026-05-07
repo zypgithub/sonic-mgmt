@@ -103,6 +103,7 @@ class BaseDevice(ABC):
         self.supports_tpm_testing = True
         self.unset_all_command = "nv unset acl; nv unset interface; nv unset platform; nv unset system"
         self.allow_cpld_update = False
+        self.sys_rst_n_bit_command = None
         self.reboot_reason_dict = {}
         self.wait_before_reboot_single_fw_install = 900
         self.techsupport_dump_empty_files_to_ignore = []
@@ -583,6 +584,7 @@ class BaseSwitch(BaseDevice):
             'julietscaleout_reboot': 270,
             'julietscaleout reset factory': 600,
             'reset factory': 300,
+            'reset bit': 360,
 
             # Firmware installation operations
             'install user FW': 500,
