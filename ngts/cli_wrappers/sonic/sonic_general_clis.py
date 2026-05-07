@@ -591,8 +591,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step("Modify default timezone"):
                 self.modify_init_cfg_timezone(SonicConst.TIMEZONE)
 
-        # Remove asic_table.json only for multi-asic Air platforms
-        if is_air and SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+        # Remove asic_table.json only for Air platforms
+        if is_air:
             with allure.step('Remove asic_table.json to allow regeneration'):
                 self.remove_asic_table(self.engine)
 
