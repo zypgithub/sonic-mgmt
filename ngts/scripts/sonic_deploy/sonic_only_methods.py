@@ -18,6 +18,7 @@ from ngts.scripts.sonic_deploy.community_only_methods import get_generate_minigr
     config_y_cable_simulator, add_host_for_y_cable_simulator
 from retry.api import retry_call, retry
 from ngts.helpers.run_process_on_host import run_background_process_on_host
+from ngts.helpers.interface_helpers import get_service_port
 from ngts.common.util import get_installed_dpu_info, get_specified_installed_dpus_from_noga
 
 logger = logging.getLogger()
@@ -515,6 +516,37 @@ class SonicInstallationSteps:
         platform_json_obj = json_file_helper.get_platform_json(dut_engine, cli_obj)
         del platform_json_obj['interfaces'][port_to_remove]
         SonicInstallationSteps.copy_json_to_dut(platform_json_obj, 'platform.json', platform_json_path, dut_engine)
+
+    @staticmethod
+    def configure_single_service_port_mloop(dut_engine, platform):
+        if platform not in SonicDeployConstants.SINGLE_SERVICE_PORT_PLATFORMS:
+            return
+
+        service_ports = get_service_port(platform)
+        if not service_ports:
+            raise Exception(f"Failed to resolve service ports for platform {platform}")
+
+        persistent_mloop_dir = os.path.realpath(
+            os.path.join(os.path.dirname(__file__), "../../../sonic-tool/persistent_mloop")
+        )
+        service_conf = "persistent_mloop.conf"
+        script_name = "persistent_mloop.py"
+
+        dut_engine.copy_file(source_file=os.path.join(persistent_mloop_dir, service_conf),
+                             dest_file=service_conf,
+                             file_system='/tmp',
+                             direction='put')
+        dut_engine.copy_file(source_file=os.path.join(persistent_mloop_dir, script_name),
+                             dest_file=script_name,
+                             file_system='/tmp',
+                             direction='put')
+
+        dut_engine.run_cmd(f"docker cp /tmp/{service_conf} syncd:/etc/supervisor/conf.d/{service_conf}", validate=True)
+        dut_engine.run_cmd(f"docker cp /tmp/{script_name} syncd:/usr/bin/{script_name}", validate=True)
+        dut_engine.run_cmd(f"docker exec syncd chmod +x /usr/bin/{script_name}", validate=True)
+
+        ports_arg = " ".join(service_ports)
+        dut_engine.run_cmd(f"docker exec syncd python3 /usr/bin/{script_name} --ports {ports_arg}", validate=True)
 
     @staticmethod
     def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name, platform_params,
