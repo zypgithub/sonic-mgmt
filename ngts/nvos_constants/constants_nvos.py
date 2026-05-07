@@ -930,7 +930,7 @@ class SystemConsts:
 
     NV_BRIDGE = 'nv-bridge'
     NV_BRIDGE_STATE = 'state'
-    NV_BRIDGE_HEART_BEAT = 'heart-beat'
+    NV_BRIDGE_HEARTBEAT = 'heartbeat'
     NV_BRIDGE_HEALTH = 'health'
     NV_BRIDGE_HEALTH_REASON = 'health-reason'
     NV_BRIDGE_CONNECTION = 'connections'

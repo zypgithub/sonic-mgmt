@@ -17,6 +17,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from retry import retry
 from datetime import datetime
 
@@ -62,7 +63,8 @@ def test_system_nv_bridge_default_fields_values(engines, devices, nv_command, ra
             cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER, op_param_value=engines.dut.ip, apply=True)
 
         with allure.step("Verify nv bridge output"):
-            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, heart_beat=SystemConsts.NV_BRIDGE_HEALTH_OK, connections=SystemConsts.NV_BRIDGE_NODE_IP, local_host=True, dut_engine=engines.dut)
+            eth0_ip = Port('eth0').interface.ipv4.get_primary_ip_address(dut_engine=engines.dut)
+            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, heart_beat=SystemConsts.NV_BRIDGE_HEALTH_OK, connections=eth0_ip, local_host=True, dut_engine=engines.dut)
 
             with allure.step("Check system logs"):
                 TestToolkit.tested_api = ApiType.NVUE
@@ -290,8 +292,9 @@ def test_system_nv_bridge_state_file(engines, nv_command, test_api):
                                                   apply=True, dut_engine=engines.dut)
 
         with allure.step("Wait for nv-bridge to be configured"):
+            eth0_ip = Port('eth0').interface.ipv4.get_primary_ip_address(dut_engine=engines.dut)
             _verify_nv_bridge_output(nv_command.system.nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED,
-                                     dut_engine=engines.dut, connections=SystemConsts.NV_BRIDGE_NODE_IP,
+                                     dut_engine=engines.dut, connections=eth0_ip,
                                      local_host=True)
             show_data = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.nv_bridge.show()).get_returned_value()
 
@@ -395,17 +398,18 @@ def _verify_nv_bridge_output(nv_bridge, state=None, health=None, health_reason=N
         ValidationTool.verify_field_value_in_output(output_dictionary, SystemConsts.NV_BRIDGE_HEALTH_REASON, health_reason).verify_result()
     if connections:
         if active and client_address and client_id and server_address:
-            if is_bug_active(4815502):
-                client_address = client_id = server_address = SystemConsts.LOCALHOST
             assert active in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ACTIVE], f'Connection is not {active}'
             assert client_address in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ADDRESS], f'Client-address {client_address} not in output'
             assert client_id in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ID], f'Client-id {client_id} not in server address'
             assert server_address in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Server-address {server_address} not in output'
         if local_host:
             assert connections in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ADDRESS], f'Node ip {connections} not in client address'
-            assert connections in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Node ip {connections} not in server address'
+            if connections == dut_engine.ip:
+                assert connections in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Node ip {connections} not in server address'
+            else:
+                assert dut_engine.ip in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Node ip {dut_engine.ip} in server address'
         if heart_beat:
-            ValidationTool.verify_field_value_in_output(output_dictionary['connections']['1'], SystemConsts.NV_BRIDGE_HEART_BEAT, heart_beat).verify_result()
+            ValidationTool.verify_field_value_in_output(output_dictionary['connections']['1'], SystemConsts.NV_BRIDGE_HEARTBEAT, heart_beat).verify_result()
     if no_connection:
         assert output_dictionary['connections'] == {}, 'Connections not empty'
 
