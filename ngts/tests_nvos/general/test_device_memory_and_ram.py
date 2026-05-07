@@ -159,8 +159,8 @@ def test_device_disk(engines, devices, disk_data: DiskDataT):
         with allure.step("Verify disk size"):
             disk_size_output = OutputParsingTool.parse_json_str_to_dictionary(platform.show()).get_returned_value()[PlatformConsts.DISK_SIZE]
             disk_size_output = float(disk_size_output.split()[0])
-            assert disk_size_output == disk_data[SSDConsts.SIZE_GB], (
-                f"Disk size {disk_size_output} does not match expected size {disk_data[SSDConsts.SIZE_GB]}"
+            assert disk_size_output == disk_data[SSDConsts.ADVERTISED_SIZE_GB], (
+                f"Disk size {disk_size_output} does not match expected size {disk_data[SSDConsts.ADVERTISED_SIZE_GB]}"
             )
         with allure.step("Verify mounts sizes"):
             system = System()
