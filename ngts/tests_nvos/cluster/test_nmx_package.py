@@ -15,6 +15,7 @@ from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.constants import MINUTE
 
 
 def load_nmx_versions_from_json(devices):
@@ -71,6 +72,7 @@ def install_apps_if_needed(devices):
 
 @pytest.mark.fae
 @pytest.mark.nmx
+@pytest.mark.timeout(8 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_nmx_package_good_flow(devices, engines, test_api, install_apps_if_needed):
     """
@@ -203,6 +205,7 @@ def nmx_package_flow(app, path, new_version):
 
 @pytest.mark.fae
 @pytest.mark.nmx
+@pytest.mark.timeout(2 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
     """
