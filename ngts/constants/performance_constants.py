@@ -298,6 +298,8 @@ class PerfConsts:
         'egress_hoq_stall',
         'egress_sll',
         'ingress_discard_all',
+        'egress_link_down',
+        'ingress_no_tx',
         'a_alignment_errors',
         'a_frame_check_sequence_errors',
         'a_frame_too_long_errors',
@@ -460,11 +462,11 @@ class MongoDbConsts:
     CONF_NAME = "configurationName"
     COLLECTION = ":COLLECTION:SwitchPerformanceCollection\n"
     CRITERIA = ":CRITERIA_FIELD:testType\n"
-    MONGO_DB_DICT_PATH = "/auto/sw/projects/performance/results/mongodb/"
+    MONGO_DB_DICT_PATH = "/auto/sw_system_project/switch_performance/results/mongodb/"
     MONGO_DB_UPLOADS = os.path.join(MONGO_DB_DICT_PATH, "for_upload/")
     MONGO_DB_ERRORS = os.path.join(MONGO_DB_DICT_PATH, "errors/")
     MONGO_DB_SANDBOX_TESTS = os.path.join(MONGO_DB_DICT_PATH, "Sandbox_testing/")
-    MONGO_DB_SANDBOX_TESTING_COMMAND = f"{MONGO_DB_DICT_PATH}./initiate_sandbox"
+    MONGO_DB_SANDBOX_TESTING_COMMAND = os.path.join(MONGO_DB_DICT_PATH, "initiate_sandbox")
     MONGO_DB_SANDBOX_TESTING_TIMEOUT = 300
 
 

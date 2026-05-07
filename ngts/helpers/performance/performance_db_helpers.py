@@ -166,8 +166,7 @@ def restructure_counters(validation_json):
     final_df = pd.DataFrame()
     for port_group, df_list in counters_df_dict.items():
         max_df = pd.concat(df_list).groupby(level=0).max()
-        updated_columns_names_dict = get_updated_columns_names()
-        counters_df = max_df.rename(columns=updated_columns_names_dict)
+        counters_df = max_df.rename(columns={col: change_name_to_camel_case(col) for col in max_df.columns})
         final_df = pd.concat([final_df, counters_df])
     return final_df
 
@@ -300,6 +299,7 @@ def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_
     bw_counters_data = pd.merge(counters_df, bw_df, on=ValidationConsts.PORT)
     merged_df = pd.merge(bw_counters_data, ports_group_df, on=ValidationConsts.PORT)
     if not performance_counters_df.empty:
+        performance_counters_df.rename(columns={col: change_name_to_camel_case(col) for col in performance_counters_df.columns}, inplace=True)
         merged_df = pd.merge(merged_df, performance_counters_df, on=ValidationConsts.PORT)
     if not os_ports_name_mapping_df.empty:
         merged_df = pd.merge(merged_df, os_ports_name_mapping_df, on=ValidationConsts.PORT)
