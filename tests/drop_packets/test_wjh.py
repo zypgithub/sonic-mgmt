@@ -185,16 +185,16 @@ def check_if_entry_exists(table, pkt):
 
 
 def verify_drop_on_wjh_rule_table(pkt_entry, rules_table, drop_information):
-    INGRESS_RULE = u'SIP: 20.0.0.0/255.255.255.0 ETHERTYPE: 0x800/0xffff COUNTER_ID ='
-    EGRESS_RULE = u'DIP: 192.168.144.0/255.255.255.0 ETHERTYPE: 0x800/0xffff COUNTER_ID ='
+    INGRESS_RULE_PATTERN = r'SIP: 20.0.0.0/255.255.255.0.*ETHERTYPE: 0x800/0xffff.*COUNTER_ID ='
+    EGRESS_RULE_PATTERN = r'DIP: 192.168.144.0/255.255.255.0.*ETHERTYPE: 0x800/0xffff.*COUNTER_ID ='
 
     if drop_information == "OUTDATAACL":
-        rule = EGRESS_RULE
+        rule_pattern = EGRESS_RULE_PATTERN
     else:
-        rule = INGRESS_RULE
+        rule_pattern = INGRESS_RULE_PATTERN
 
     for rule_entry in rules_table:
-        if rule_entry['Rule'].startswith(rule):
+        if re.match(rule_pattern, rule_entry['Rule']):
             if rule_entry['#'] == pkt_entry['#']:
                 return True
     return False
