@@ -132,6 +132,10 @@ def test_gnoi_system_reboot_warm(duthosts, rand_one_dut_hostname, localhost, gnm
         expected_method="WARM"
     )
 
+    # Wait until the system is down
+    wait_for_shutdown(duthost, localhost, delay=10, timeout=180, reboot_res=None)
+    logging.info("System is down after reboot")
+
     # Wait until the system is back up
     wait_for_startup(duthost, localhost, delay=20, timeout=600)
     logging.info("System is back up after reboot")
