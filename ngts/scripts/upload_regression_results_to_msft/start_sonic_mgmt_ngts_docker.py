@@ -11,8 +11,24 @@ path = os.path.abspath(__file__)
 sonic_mgmt_path = path.split('/ngts/')[0]
 
 sys.path.append(sonic_mgmt_path)
-from ngts.constants.constants import MarsConstants
 logger = logging.getLogger()
+
+DOCKER_REGISTRY = "nbu-harbor.gtm.nvidia.com"
+SONIC_MGMT_MOUNTPOINTS = {
+    '/.autodirect/mswg/projects': '/.autodirect/mswg/projects',
+    '/auto/sw_system_project': '/auto/sw_system_project',
+    '/auto/sw_system_release': '/auto/sw_system_release',
+    '/.autodirect/sw_system_release/': '/.autodirect/sw_system_release/',
+    '/auto/sw_regression/system/SONIC': '/auto/sw_regression/system/SONIC/',
+    '/.autodirect/sw_regression/system/SONIC': '/.autodirect/sw_regression/system/SONIC',
+    '/workspace': '/workspace',
+    '/.autodirect/LIT/SCRIPTS': '/.autodirect/LIT/SCRIPTS',
+    '/.autodirect/LIT/LOGS/RR/': '/.autodirect/LIT/LOGS/RR/',
+    '/.autodirect/sw/release/': '/.autodirect/sw/release/',
+    '/auto/LIT/SCRIPTS/': '/auto/LIT/SCRIPTS/',
+    '/auto/LIT/LOGS/RR/': '/auto/LIT/LOGS/RR/',
+    '/auto/mswg/utils/bin/': '/auto/mswg/utils/bin/'
+}
 
 
 def init_parser():
@@ -64,7 +80,7 @@ def create_secrets_vars_script(container_name):
 
 
 def pull_image(ngts_version):
-    image_name = "{DOCKER_REGISTRY}/sonic/docker-ngts".format(DOCKER_REGISTRY=MarsConstants.DOCKER_REGISTRY)
+    image_name = "{DOCKER_REGISTRY}/sonic/docker-ngts".format(DOCKER_REGISTRY=DOCKER_REGISTRY)
     command = "sudo docker pull {image_name}:{ngts_version}".format(image_name=image_name,
                                                                     ngts_version=ngts_version)
     os.popen(command).read()
@@ -79,7 +95,7 @@ def pull_image(ngts_version):
 
 
 def get_container_mountpoints():
-    container_mountpoints_dict = MarsConstants.SONIC_MGMT_MOUNTPOINTS.items()
+    container_mountpoints_dict = SONIC_MGMT_MOUNTPOINTS.items()
     container_mountpoints_list = []
     for key, value in container_mountpoints_dict:
         if key == "/workspace":
