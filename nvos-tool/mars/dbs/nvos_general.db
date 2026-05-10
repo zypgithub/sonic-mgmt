@@ -65,4 +65,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_general_action_commands.cases </cases>
 	</test>
+
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_general_commands_validation.cases </cases>
+	</test>
 </DBDEF>

@@ -49,10 +49,38 @@ def test_show_commands_validate(engines, random_api):
                 output = output + "\n" + show_cmd
             logger.info("{}".format(output))
 
-        with allure.step("Validate all show commands"):
+        with allure.step("Validate all show commands and check if syslog lines are added"):
+            cmd_syslog_lines_dict = {}
+            cmd_nvued_log_lines_dict = {}
             for show_cmd in show_cmd_list:
                 full_show_cmd = show_cmd + " -o json"
+                syslog_lines_before = helper_get_syslog_line_count(engines)
+                nvued_log_lines_before = helper_get_syslog_line_count(engines, logs_file="nvued.log")
                 OutputParsingTool.parse_json_str_to_dictionary(engines.dut.run_cmd(full_show_cmd)).verify_result()
+                syslog_lines_after = helper_get_syslog_line_count(engines)
+                nvued_log_lines_after = helper_get_syslog_line_count(engines, logs_file="nvued.log")
+                cmd_syslog_lines_dict[full_show_cmd] = syslog_lines_after - syslog_lines_before
+                cmd_nvued_log_lines_dict[full_show_cmd] = nvued_log_lines_after - nvued_log_lines_before
+            logger.info(f"Syslog lines added per show command: {cmd_syslog_lines_dict}")
+            logger.info(f"Nvued log lines added per show command: {cmd_nvued_log_lines_dict}")
+            with allure.independent_step("check syslog lines threshold"):
+                max_syslog_lines_per_command = 10
+                commands_over_syslog_threshold = [
+                    cmd for cmd, syslog_lines in cmd_syslog_lines_dict.items()
+                    if syslog_lines > max_syslog_lines_per_command
+                ]
+                assert len(commands_over_syslog_threshold) == 0, \
+                    f"Commands added more than {max_syslog_lines_per_command} syslog lines: " \
+                    f"{commands_over_syslog_threshold}"
+            with allure.independent_step("check nvued log lines threshold"):
+                max_nvued_log_lines_per_command = 40
+                commands_over_nvued_log_threshold = [
+                    cmd for cmd, nvued_log_lines in cmd_nvued_log_lines_dict.items()
+                    if nvued_log_lines > max_nvued_log_lines_per_command
+                ]
+                assert len(commands_over_nvued_log_threshold) == 0, \
+                    f"Commands added more than {max_nvued_log_lines_per_command} nvued log lines: " \
+                    f"{commands_over_nvued_log_threshold}"
 
     finally:
         with allure.step("Validated all show commands"):
@@ -167,6 +195,29 @@ def helper_help_str_validate(help_str):
         result = False
 
     return result, error_list
+
+
+def helper_get_syslog_line_count(engines, logs_file="syslog"):
+    assert re.match(r'^[A-Za-z0-9_.-]+$', logs_file), f"Invalid log file name: {logs_file}"
+    rotated_logs_file = helper_get_rotated_log_file(logs_file)
+    log_file_paths = f"/var/log/{logs_file} /var/log/{rotated_logs_file}"
+    log_line_count_cmd = (
+        "sudo sh -c 'total=0; "
+        f"for file in {log_file_paths}; do "
+        "if [ -f \"$file\" ]; then lines=$(wc -l < \"$file\"); total=$((total + lines)); fi; "
+        "done; echo $total'"
+    )
+    line_count_output = engines.dut.run_cmd(log_line_count_cmd).strip()
+    match = re.search(r'(\d+)$', line_count_output)
+    assert match is not None, f"Failed to get {logs_file} line count: {line_count_output}"
+    return int(match.group(1))
+
+
+def helper_get_rotated_log_file(logs_file):
+    log_file_name_parts = logs_file.rsplit('.', 1)
+    if len(log_file_name_parts) == 2:
+        return f"{log_file_name_parts[0]}.1.{log_file_name_parts[1]}"
+    return f"{logs_file}.1"
 
 
 def helper_help_str_attribute_validate(help_str, cmd, command_tree):
