@@ -1216,8 +1216,8 @@ span/test_port_mirroring.py::test_mirroring_tx:
     - "'sn6600' in platform"
 
 tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4854055 on simx platform"
+  xfail:
+    reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4854055 on simx platform"
     conditions:
     - "https://redmine.mellanox.com/issues/4854055 and 'simx' in platform"
 
