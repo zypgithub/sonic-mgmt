@@ -1507,6 +1507,32 @@ class LinkTrainingConsts:
     FEC_MEASURE_MODE_OPERATIONAL_DEFAULT = FecMeasureMode.DISABLED
     FEC_MEASURE_MODE_APPLIED_DEFAULT = FecMeasureMode.FW_DEFAULT
 
+    FEC_MEASURE_FAIL_ACTION: str = 'fec-measure-fail-action'
+
+    class FecMeasureFailAction(Enum):
+        FW_DEFAULT = 'fw-default'
+        FORCE_LINKUP = 'force-linkup'
+        GOTO_POLLING = 'goto-polling'
+        GOTO_DISABLE = 'goto-disable'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+        @classmethod
+        def operational(cls):
+            return [cls.FORCE_LINKUP.value, cls.GOTO_POLLING.value, cls.GOTO_DISABLE.value]
+
+    FEC_MEASURE_FAIL_ACTION_OPERATIONAL_DEFAULT = FecMeasureFailAction.FORCE_LINKUP
+    FEC_MEASURE_FAIL_ACTION_APPLIED_DEFAULT = FecMeasureFailAction.FW_DEFAULT
+
+    FAIL_ACTION_PRIORITY: dict[str, int] = {
+        FecMeasureFailAction.FW_DEFAULT.value: 0,
+        FecMeasureFailAction.FORCE_LINKUP.value: 1,
+        FecMeasureFailAction.GOTO_POLLING.value: 2,
+        FecMeasureFailAction.GOTO_DISABLE.value: 3,
+    }
+
 
 class ImageConsts:
     NEXT_IMG = 'next'
