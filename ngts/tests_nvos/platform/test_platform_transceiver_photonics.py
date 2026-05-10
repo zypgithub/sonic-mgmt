@@ -43,8 +43,9 @@ def _validate_against_thresholds(value: float, data: dict, name: str,
 
 
 @pytest.mark.platform
-@pytest.mark.transceiver
-def test_show_transceiver_els(engines, devices, nv_command, random_api):
+@pytest.mark.cpo
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_show_transceiver_els(engines, devices, nv_command, test_api):
     """
     Verify ELS transceiver fields, port-mapping, oe-mapping, and fault-condition.
 
@@ -52,46 +53,90 @@ def test_show_transceiver_els(engines, devices, nv_command, random_api):
     1. Verify all expected fields exist for a random ELS transceiver
     2. Verify port-mapping, oe-mapping, and fault-condition for each ELS
     """
+    TestToolkit.tested_api = test_api
 
-    els_list, _ = _get_transceiver_lists(devices.dut.transceiver_list)
-    if not els_list:
-        pytest.skip("No ELS transceivers found")
+    els_list = devices.dut.els_list
 
-    with allure.step("Get all transceiver data"):
+    transceivers_els_to_port_mapping = devices.dut.els_port_mapping
+    transceivers_els_to_oe_mapping = devices.dut.els_oe_mapping
+
+    with allure.step("Get all transceiver information with single show_detailed call"):
         all_data = Tools.OutputParsingTool.parse_json_str_to_dictionary(
             nv_command.platform.transceiver.show_detailed()).get_returned_value()
 
-    with allure.step("Verify fields for random ELS transceiver"):
-        els_rand = random.choice(els_list)
-        expected_fields = set(TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_ELS])
-        actual_fields = set(all_data[els_rand].keys())
-        ValidationTool.validate_set_equal(actual_fields, expected_fields).verify_result()
+    els_rand = random.choice(els_list)
+    els_rand_output = all_data[els_rand]
 
-    with allure.step("Verify port-mapping, oe-mapping, fault-condition for each ELS"):
+    with allure.step(f"Verify fields and sub-dict structures for {els_rand}"):
+        with allure.independent_step(f"Verify {els_rand} top-level fields"):
+            expected_fields = set(TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_ELS])
+            actual_fields = set(els_rand_output.keys())
+            ValidationTool.validate_set_equal(actual_fields, expected_fields).verify_result()
+
+        with allure.independent_step(f"Verify {els_rand} temperature sub-dict"):
+            ValidationTool.validate_subset_in_superset(
+                set(TransceiversConsts.ELS_TEMPERATURE_FIELDS), els_rand_output['temperature'].keys()
+            ).verify_result()
+
+        with allure.independent_step(f"Verify {els_rand} voltage sub-dict"):
+            ValidationTool.validate_subset_in_superset(
+                set(TransceiversConsts.ELS_VOLTAGE_FIELDS), els_rand_output['voltage'].keys()
+            ).verify_result()
+
+        with allure.independent_step(f"Verify {els_rand} els-initialization sub-dict"):
+            init_data = els_rand_output['els-initialization']
+            assert init_data, f"{els_rand}: els-initialization is empty"
+            for laser_name, laser_data in init_data.items():
+                ValidationTool.validate_subset_in_superset(
+                    set(TransceiversConsts.ELS_INIT_LASER_FIELDS), laser_data.keys()
+                ).verify_result()
+
+        for ch_name, ch_data in els_rand_output['channel'].items():
+            with allure.independent_step(f"Verify {els_rand} {ch_name} fields"):
+                ValidationTool.validate_subset_in_superset(
+                    set(TransceiversConsts.ELS_CHANNEL_FIELDS), ch_data.keys()
+                ).verify_result()
+
+    with allure.step("Verify port-mapping, oe-mapping, fault-condition, els-oper-state for each ELS"):
         for els in els_list:
             els_output = all_data[els]
 
             with allure.independent_step(f"Verify {els} mappings"):
-                # Port mapping
                 actual_ports = set(els_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys())
-                expected_ports = set(TransceiversConsts.TRANSCEIVERS_ELS_PORT_MAPPING[els])
+                expected_ports = set(transceivers_els_to_port_mapping[els])
                 ValidationTool.validate_set_equal(actual_ports, expected_ports).verify_result()
 
-                # OE mapping
                 actual_oes = set(els_output[PlatformConsts.TRANSCEIVER_OE_MAPPING].keys())
-                expected_oes = set(TransceiversConsts.TRANSCEIVERS_ELS_OE_MAPPING[els])
+                expected_oes = set(transceivers_els_to_oe_mapping[els])
                 ValidationTool.validate_set_equal(actual_oes, expected_oes).verify_result()
 
-                # Fault condition (only if inserted)
                 if els_output[PlatformConsts.TRANSCEIVER_STATUS] == PlatformConsts.INSERTED:
                     ValidationTool.verify_field_value_in_output(
                         els_output, PlatformConsts.TRANSCEIVER_FAULT_CONDITION, 'false'
                     ).verify_result()
 
+                    ValidationTool.verify_field_value_in_output(
+                        els_output, PlatformConsts.TRANSCEIVER_ELS_OPER_STATE,
+                        PlatformConsts.TRANSCEIVER_ELS_OPER_STATE_LASER_ACTIVE
+                    ).verify_result()
+
+    with allure.step("Verify ELS transceivers have unique serial numbers"):
+        els_transceivers = {name: data for name, data in all_data.items()
+                            if name.startswith(TransceiversConsts.TRANSCEIVERS_ELS)}
+        els_serial_numbers = [data[TransceiversConsts.TRANSCEIVERS_VENDOR_SN] for name, data in els_transceivers.items()
+                              if TransceiversConsts.TRANSCEIVERS_VENDOR_SN in data]
+        assert len(els_serial_numbers) == len(els_transceivers), \
+            f"Not all ELS transceivers have serial numbers: {len(els_serial_numbers)}/{len(els_transceivers)}"
+        unique_serials = set(els_serial_numbers)
+        assert len(unique_serials) == len(els_transceivers), \
+            f"ELS serial numbers are not unique: {len(unique_serials)} unique out of {len(els_transceivers)} ELS. " \
+            f"Duplicates: {[sn for sn in els_serial_numbers if els_serial_numbers.count(sn) > 1]}"
+
 
 @pytest.mark.platform
-@pytest.mark.transceiver
-def test_show_transceiver_oe(engines, devices, nv_command, random_api):
+@pytest.mark.cpo
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_show_transceiver_oe(engines, devices, nv_command, test_api):
     """
     Verify OE transceiver fields, status, port-mapping, and els-mapping.
 
@@ -99,38 +144,64 @@ def test_show_transceiver_oe(engines, devices, nv_command, random_api):
     1. Verify all expected fields exist for a random OE transceiver
     2. Verify status=Inserted, port-mapping matches ELS mapping for each OE
     """
+    TestToolkit.tested_api = test_api
 
-    _, oe_list = _get_transceiver_lists(devices.dut.transceiver_list)
-    if not oe_list:
-        pytest.skip("No OE transceivers found")
+    oe_list = [name for name in devices.dut.transceiver_list if TransceiversConsts.TRANSCEIVERS_OE in name]
 
-    with allure.step("Get all transceiver data"):
+    transceivers_els_to_port_mapping = devices.dut.els_port_mapping
+    transceivers_els_to_oe_mapping = devices.dut.els_oe_mapping
+
+    with allure.step("Get all transceiver information with single show_detailed call"):
         all_data = Tools.OutputParsingTool.parse_json_str_to_dictionary(
             nv_command.platform.transceiver.show_detailed()).get_returned_value()
 
-    with allure.step("Verify fields for random OE transceiver"):
-        oe_rand = random.choice(oe_list)
-        oe_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
-            nv_command.platform.transceiver.show(oe_rand)).get_returned_value()
+    oe_rand = random.choice(oe_list)
+    oe_rand_output = all_data[oe_rand]
 
-        expected_fields = set(TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_OE])
-        actual_fields = set(oe_output.keys())
-        ValidationTool.validate_set_equal(actual_fields, expected_fields).verify_result()
+    with allure.step(f"Verify fields and sub-dict structures for {oe_rand}"):
+        with allure.independent_step(f"Verify {oe_rand} top-level fields"):
+            expected_fields = set(TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_OE])
+            actual_fields = set(oe_rand_output.keys())
+            ValidationTool.validate_set_equal(actual_fields, expected_fields).verify_result()
+
+        with allure.independent_step(f"Verify {oe_rand} temperature sub-dict"):
+            ValidationTool.validate_subset_in_superset(
+                set(TransceiversConsts.OE_TEMPERATURE_FIELDS), oe_rand_output['temperature'].keys()
+            ).verify_result()
+
+        with allure.independent_step(f"Verify {oe_rand} voltage sub-dict"):
+            ValidationTool.validate_subset_in_superset(
+                set(TransceiversConsts.OE_VOLTAGE_FIELDS), oe_rand_output['voltage'].keys()
+            ).verify_result()
+
+        for ch_name, ch_data in oe_rand_output['channel'].items():
+            with allure.independent_step(f"Verify {oe_rand} {ch_name}"):
+                ValidationTool.validate_subset_in_superset(
+                    set(TransceiversConsts.OE_CHANNEL_FIELDS), ch_data.keys()
+                ).verify_result()
+
+                # Validate rx-power sub-dict
+                ValidationTool.validate_subset_in_superset(
+                    set(TransceiversConsts.OE_RX_POWER_FIELDS), ch_data['rx-power'].keys()
+                ).verify_result()
+
+                # Validate tx-power sub-dict
+                ValidationTool.validate_subset_in_superset(
+                    set(TransceiversConsts.OE_TX_POWER_FIELDS), ch_data['tx-power'].keys()
+                ).verify_result()
 
     with allure.step("Verify status and mappings for each OE"):
         for oe in oe_list:
             oe_output = all_data[oe]
 
             with allure.independent_step(f"Verify {oe}"):
-                # Status must be Inserted
                 ValidationTool.verify_field_value_in_output(
                     oe_output, PlatformConsts.TRANSCEIVER_STATUS, PlatformConsts.INSERTED
                 ).verify_result()
 
-                # Port mapping must match ELS mapping
                 els_mapping = oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]
                 actual_ports = set(oe_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys())
-                expected_ports = set(TransceiversConsts.TRANSCEIVERS_ELS_PORT_MAPPING[els_mapping])
+                expected_ports = set(transceivers_els_to_port_mapping[els_mapping])
                 ValidationTool.validate_set_equal(actual_ports, expected_ports).verify_result()
 
 
@@ -160,9 +231,9 @@ def test_transceiver_els_diagnostics(engines, devices, nv_command, test_api):
             platform.transceiver.show(els_name)).get_returned_value()
 
     with allure.step("Verify temperature against thresholds"):
-        temp_data = els_output.get('temperature', {})
+        temp_data = els_output['temperature']
         ValidationTool.validate_subset_in_superset(
-            {'temperature', 'high-alarm-threshold'}, temp_data.keys()
+            set(TransceiversConsts.ELS_TEMPERATURE_FIELDS), temp_data.keys()
         ).verify_result()
 
         temp_value = _parse_threshold(temp_data['temperature'])
@@ -170,9 +241,9 @@ def test_transceiver_els_diagnostics(engines, devices, nv_command, test_api):
         logger.info(f"{els_name} temperature: {temp_value}C (max: {temp_data['high-alarm-threshold']})")
 
     with allure.step("Verify voltage against thresholds"):
-        voltage_data = els_output.get('voltage', {})
+        voltage_data = els_output['voltage']
         ValidationTool.validate_subset_in_superset(
-            {'voltage', 'high-alarm-threshold', 'low-alarm-threshold'}, voltage_data.keys()
+            set(TransceiversConsts.ELS_VOLTAGE_FIELDS), voltage_data.keys()
         ).verify_result()
 
         voltage_value = _parse_threshold(voltage_data['voltage'])
@@ -180,12 +251,39 @@ def test_transceiver_els_diagnostics(engines, devices, nv_command, test_api):
         logger.info(f"{els_name} voltage: {voltage_value}V (range: {voltage_data['low-alarm-threshold']} - {voltage_data['high-alarm-threshold']})")
 
     with allure.step("Verify channel diagnostics fields"):
-        channels = els_output.get('channel', {})
+        channels = els_output['channel']
         assert channels, "No channels found"
 
-        expected_channel_fields = {'rx-cdr-lol', 'rx-los', 'tx-ad-eq-fault', 'tx-cdr-lol', 'tx-los', 'tx-fault'}
         first_channel = next(iter(channels.values()))
-        ValidationTool.validate_subset_in_superset(expected_channel_fields, first_channel.keys()).verify_result()
+        ValidationTool.validate_subset_in_superset(
+            set(TransceiversConsts.ELS_CHANNEL_FIELDS), first_channel.keys()
+        ).verify_result()
+
+    with allure.step("Verify channel laser and tec-temp values"):
+        for ch_name, ch_data in channels.items():
+            with allure.independent_step(f"Verify {els_name} {ch_name} diagnostics"):
+                laser_setpoint = ch_data.get('laser-setpoint')
+                laser_power = ch_data.get('laser-power')
+                tec_temp = ch_data.get('tec-temp')
+                assert laser_setpoint is not None, f"{els_name} {ch_name}: missing 'laser-setpoint'"
+                assert laser_power is not None, f"{els_name} {ch_name}: missing 'laser-power'"
+                assert tec_temp is not None, f"{els_name} {ch_name}: missing 'tec-temp'"
+
+                # Parse and validate power values (format: "135.83 mW / 21.33 dBm")
+                setpoint_mw = float(laser_setpoint.split()[0])
+                power_mw = float(laser_power.split()[0])
+                assert setpoint_mw > 0, f"{els_name} {ch_name}: laser-setpoint {setpoint_mw} mW should be > 0"
+                assert power_mw > 0, f"{els_name} {ch_name}: laser-power {power_mw} mW should be > 0"
+
+                # Validate tec-temp is in expected range (~40C nominal, ±2C for HW variance)
+                tec_temp_value = _parse_threshold(tec_temp)
+                if not (TransceiversConsts.ELS_TEC_TEMP_MIN <= tec_temp_value <= TransceiversConsts.ELS_TEC_TEMP_MAX):
+                    logger.warning(f"{els_name} {ch_name}: tec-temp {tec_temp_value}C outside expected "
+                                   f"range {TransceiversConsts.ELS_TEC_TEMP_MIN}-{TransceiversConsts.ELS_TEC_TEMP_MAX}C "
+                                   f"(may indicate HW issue)")
+
+                logger.info(f"{els_name} {ch_name}: laser-setpoint={laser_setpoint}, "
+                            f"laser-power={laser_power}, tec-temp={tec_temp_value}C")
 
 
 def _parse_power_dbm(power_str: str) -> float:
@@ -199,56 +297,102 @@ def _parse_power_dbm(power_str: str) -> float:
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_transceiver_oe_power_diagnostics(engines, devices, nv_command, test_api):
     """
-    Verify OE transceiver rx/tx power against dynamic thresholds for traffic channels.
+    Verify OE transceiver diagnostics: temperature, voltage, and channel power/temperature.
 
     flow:
-    1. Find ELS with traffic ports using static mapping
-    2. For each OE, find traffic channel indices from port-mapping
-    3. Validate rx/tx power against high-alarm-threshold and low-alarm-threshold from output
+    1. Always: pick a random OE and validate module temp, voltage, and all channel fields
+    2. If traffic ports configured: validate rx/tx power thresholds on traffic channels
     """
     TestToolkit.tested_api = test_api
     platform = Platform()
 
-    # Get traffic ports for this DUT
-    if not (traffic_ports := Configurations.traffic_ports.get(engines.dut.ip, [])):
-        pytest.skip(f"No traffic ports configured for DUT {engines.dut.ip}")
+    _, oe_list = _get_transceiver_lists(devices.dut.transceiver_list)
+    if not oe_list:
+        pytest.skip("No OE transceivers found")
 
-    # Find ELS with traffic ports
-    els_name, matching_ports, _ = PhotonicsTool.get_els_for_traffic_ports(traffic_ports)
+    # --- Part 1: Always validate a random OE (no traffic ports needed) ---
+    oe_name = random.choice(oe_list)
+
+    with allure.step(f"Get OE {oe_name} diagnostics"):
+        oe_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
+            platform.transceiver.show(oe_name)).get_returned_value()
+
+    with allure.step(f"Verify {oe_name} temperature against thresholds"):
+        temp_data = oe_output['temperature']
+        temp_value = _parse_threshold(temp_data['temperature'])
+        _validate_against_thresholds(temp_value, temp_data, f"{oe_name} temperature")
+        logger.info(f"{oe_name} temperature: {temp_value}C "
+                    f"(range: {temp_data.get('low-alarm-threshold', 'N/A')} - "
+                    f"{temp_data.get('high-alarm-threshold', 'N/A')})")
+
+    with allure.step(f"Verify {oe_name} voltage against thresholds"):
+        voltage_data = oe_output['voltage']
+        voltage_value = _parse_threshold(voltage_data['voltage'])
+        _validate_against_thresholds(voltage_value, voltage_data, f"{oe_name} voltage")
+        logger.info(f"{oe_name} voltage: {voltage_value}V "
+                    f"(range: {voltage_data.get('low-alarm-threshold', 'N/A')} - "
+                    f"{voltage_data.get('high-alarm-threshold', 'N/A')})")
+
+    with allure.step(f"Verify {oe_name} all channel fields"):
+        channels = oe_output['channel']
+        assert channels, f"{oe_name}: no channels found"
+
+        for ch_name, channel_data in channels.items():
+            with allure.independent_step(f"Validate {oe_name} {ch_name}"):
+                els_input_power = channel_data.get('els-input-power')
+                assert els_input_power is not None, \
+                    f"{oe_name} {ch_name}: missing 'els-input-power' field"
+
+                oe_lane_temp = channel_data.get('oe-lane-temperature')
+                assert oe_lane_temp is not None, \
+                    f"{oe_name} {ch_name}: missing 'oe-lane-temperature' field"
+                oe_lane_temp_value = _parse_threshold(oe_lane_temp)
+                _validate_against_thresholds(
+                    oe_lane_temp_value, temp_data, f"{oe_name} {ch_name} oe-lane-temperature"
+                )
+
+                logger.info(f"{oe_name} {ch_name}: els-input-power={els_input_power}, "
+                            f"oe-lane-temperature={oe_lane_temp_value}C - VALID")
+
+    # --- Part 2: Traffic-specific power threshold validation (if configured) ---
+    traffic_ports = Configurations.traffic_ports.get(engines.dut.ip, [])
+    if not traffic_ports:
+        logger.info(f"No traffic ports configured for DUT {engines.dut.ip}, skipping power threshold validation")
+        return
+
+    els_name, matching_ports, _ = PhotonicsTool.get_els_for_traffic_ports(devices.dut, traffic_ports)
     if not els_name:
-        pytest.skip(f"No ELS found for traffic ports {traffic_ports}")
+        logger.info(f"No ELS found for traffic ports {traffic_ports}, skipping power threshold validation")
+        return
 
-    oe_list = PhotonicsTool.get_oe_list_for_els(els_name)
-    logger.info(f"ELS {els_name} with traffic ports {matching_ports}, OEs: {oe_list}")
+    traffic_oe_list = PhotonicsTool.get_oe_list_for_els(devices.dut, els_name)
+    logger.info(f"ELS {els_name} with traffic ports {matching_ports}, OEs: {traffic_oe_list}")
 
-    with allure.step(f"Validate power for OEs: {oe_list}"):
-        for oe_name in oe_list:
-            with allure.independent_step(f"Check {oe_name}"):
-                oe_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
-                    platform.transceiver.show(oe_name)).get_returned_value()
+    with allure.step(f"Validate power thresholds for traffic OEs: {traffic_oe_list}"):
+        for traffic_oe_name in traffic_oe_list:
+            traffic_oe_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
+                platform.transceiver.show(traffic_oe_name)).get_returned_value()
 
-                # Find traffic channel indices from OE's port-mapping
-                port_list = list(oe_output.get('port-mapping', {}).keys())
-                channel_indices = PhotonicsTool.get_traffic_channel_indices(port_list, traffic_ports)
+            port_list = list(traffic_oe_output.get('port-mapping', {}).keys())
+            channel_indices = PhotonicsTool.get_traffic_channel_indices(port_list, traffic_ports)
 
-                if not channel_indices:
-                    logger.info(f"{oe_name}: no traffic ports in mapping, skipping")
+            if not channel_indices:
+                logger.info(f"{traffic_oe_name}: no traffic ports in mapping, skipping")
+                continue
+
+            traffic_channels = traffic_oe_output.get('channel', {})
+            for ch_idx in channel_indices:
+                if not (channel_data := traffic_channels.get(f'channel-{ch_idx}')):
                     continue
 
-                channels = oe_output.get('channel', {})
-                for ch_idx in channel_indices:
-                    if not (channel_data := channels.get(f'channel-{ch_idx}')):
-                        continue
+                with allure.independent_step(f"Validate {traffic_oe_name} channel-{ch_idx} power"):
+                    rx_data = channel_data['rx-power']
+                    tx_data = channel_data['tx-power']
 
-                    with allure.independent_step(f"Validate {oe_name} channel-{ch_idx}"):
-                        rx_data = channel_data['rx-power']
-                        tx_data = channel_data['tx-power']
+                    rx_dbm = _parse_power_dbm(rx_data['power'])
+                    tx_dbm = _parse_power_dbm(tx_data['power'])
 
-                        # Parse dBm values and validate against thresholds
-                        rx_dbm = _parse_power_dbm(rx_data['power'])
-                        tx_dbm = _parse_power_dbm(tx_data['power'])
+                    _validate_against_thresholds(rx_dbm, rx_data, f"{traffic_oe_name} ch-{ch_idx} rx-power")
+                    _validate_against_thresholds(tx_dbm, tx_data, f"{traffic_oe_name} ch-{ch_idx} tx-power")
 
-                        _validate_against_thresholds(rx_dbm, rx_data, f"{oe_name} ch-{ch_idx} rx-power")
-                        _validate_against_thresholds(tx_dbm, tx_data, f"{oe_name} ch-{ch_idx} tx-power")
-
-                        logger.info(f"{oe_name} ch-{ch_idx}: rx={rx_dbm} dBm, tx={tx_dbm} dBm - VALID")
+                    logger.info(f"{traffic_oe_name} ch-{ch_idx}: rx={rx_dbm} dBm, tx={tx_dbm} dBm - VALID")

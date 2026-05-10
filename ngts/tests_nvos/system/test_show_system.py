@@ -21,6 +21,7 @@ from ngts.tests_nvos.system.factory_reset.helpers import verify_the_setup_is_fun
 
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.system.reboot_telemetry_helpers import REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS
 
 logger = logging.getLogger()
 
@@ -195,7 +196,9 @@ def test_show_system_reboot(test_api, engines, devices, nv_command):
     TestToolkit.tested_api = test_api
 
     with allure.step('Run show system reboot command and verify that each field has a value'):
-        reboot_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.reboot.show()).get_returned_value()
+        reboot_output = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.system.reboot.show(exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS)
+        ).get_returned_value()
         assert reboot_output['reason'], "reason field is missing"
 
 

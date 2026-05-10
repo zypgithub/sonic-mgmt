@@ -7,6 +7,10 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 
 @pytest.mark.sma
@@ -38,6 +42,12 @@ def test_show_sma_firmware(engines, devices, random_api):
         with allure.independent_step("Verify smas exist in fae platform firmware"):
             sma_names_list_fae = [item for item in sma_names_list if item != PlatformConsts.FW_SMA]
             _verify_smas_firmware_fields(sma_names_list_fae, fae_output, devices)
+    with allure.step("Verify gNMI SMA firmware-version metrics"):
+        gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
+        for sma_name in sma_names_list_fae:
+            assert_gnmi_firmware_version_matches_nvue(
+                gnmi_client, sma_name, regular_output[sma_name][PlatformConsts.FW_ACTUAL]
+            )
 
 
 def _verify_smas_firmware_fields(sma_names_list, output_dict, devices):

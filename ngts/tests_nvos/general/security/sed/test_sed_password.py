@@ -103,7 +103,7 @@ def test_back_new_pass(engines, devices: DevicesT, sed_default_password, tpm_too
     _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
     with allure.step(f"Set new SED password via nv action change system security sed-password {new_sed_password}"):
-        system.security.action_change_sed_password(new_sed_password)
+        system.security.action_change_sed_password(new_sed_password).verify_result()
 
     with allure.step("Set secondary tpm bank to wrong password"):
         wrong_password = "i_am_wrong_password"

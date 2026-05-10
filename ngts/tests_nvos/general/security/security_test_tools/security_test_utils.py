@@ -152,10 +152,22 @@ def verify_auth_with_medium(medium: AuthMedium, user: UserInfo, expect_login_suc
                     medium_obj.verify_authorization(user_is_admin=user_is_admin)
 
 
-def clear_accounting_logs_on_servers(accounting_server_mngrs: list[AaaServerManager]):
+def clear_accounting_logs_on_servers(accounting_server_mngrs: list[AaaServerManager],
+                                     retries: int = 3, retry_delay: float = 2):
+    """Clear accounting log files on all servers, retrying if the TACACS daemon
+    flushes buffered writes after the truncation."""
     with allure.step('Clear accounting logs on servers'):
         for mngr in accounting_server_mngrs:
-            mngr.clear_accounting_logs()
+            for attempt in range(retries):
+                mngr.clear_accounting_logs()
+                time.sleep(retry_delay)
+                remaining = mngr.tail_accounting_logs()
+                if not remaining.logs:
+                    break
+                logger.warning(
+                    'Accounting log on %s not empty after clear (attempt %d/%d), retrying',
+                    mngr.ip, attempt + 1, retries,
+                )
 
 
 def _prepare_accounting_logs_for_medium(accounting_server_mngrs: list[AaaServerManager], medium: str) -> None:
@@ -236,6 +248,7 @@ def verify_user_auth(engines: EnginesT, topology_obj: TopologyT, user: UserInfo,
                 verify_auth_with_medium(medium, user, expect_login_success, verify_authorization, engines, topology_obj)
 
                 if should_check_accounting:
+                    time.sleep(2)  # allow TACACS daemon to flush accounting records
                     if medium == AuthMedium.OPENAPI:
                         check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs,
                                          [False for _ in expect_accounting_logs])
@@ -566,8 +579,8 @@ def set_local_users(engines: EnginesT, users: list[UserInfo], apply: bool = Fals
 def check_ldap_user_with_getent_passwd(engine: ProxySshEngine, username: str, user_should_exist: bool) -> None:
     with allure.step('Get getent passwd output'):
         output = engine.run_cmd('getent passwd | grep ldap')
-    with allure.step(f'Verify "{username}" does not exist'):
-        err_msg = f'username "{username}" unexpectedly {"does not " if not user_should_exist else ""}exist ' \
+    with allure.step(f'Verify "{username}" {"exists" if user_should_exist else "does not exist"}'):
+        err_msg = f'username "{username}" unexpectedly {"does not " if user_should_exist else ""}exist ' \
             f'in getent passwd output\ngetent passwd output: {output}\n'
         if not output:
             assert not user_should_exist, err_msg

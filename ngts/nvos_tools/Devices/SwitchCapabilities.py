@@ -4,7 +4,7 @@ Switch Capability System - SOLID Implementation
 Clean, maintainable switch capability system using SOLID principles.
 """
 
-from typing import Dict, List, Set, Protocol
+from typing import Any, Callable, Dict, List, Set, Protocol
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import logging
@@ -21,6 +21,8 @@ class CapabilityConfig:
     unsupported_commands: Set[str] = field(default_factory=set)
     excluded_inventory_keys: Set[str] = field(default_factory=set)
     excluded_health_components: Set[str] = field(default_factory=set)
+    set_attributes: Dict[str, Any] = field(default_factory=dict)
+    computed_attributes: Dict[str, Callable] = field(default_factory=dict)
 
 
 class Capability(Protocol):
@@ -79,6 +81,42 @@ class NoFanCapability(BaseCapability):
             unsupported_commands={"nv show platform environment fan"},
             excluded_inventory_keys={"fan"},
             excluded_health_components=excluded_health
+        )
+
+
+class CpoCapability(BaseCapability):
+    """Capability for CPO-capable switches.
+
+    Sets all CPO per-platform data and computes derived attributes.
+    The switch must also implement get_mst_device_for_els_index()
+    with its platform-specific MST formula.
+    """
+
+    def __init__(self, els_index_to_ga, pmaos_module_offset, number_of_lasers_per_els,
+                 els_port_mapping, els_oe_mapping):
+        self._els_index_to_ga = els_index_to_ga
+        self._pmaos_module_offset = pmaos_module_offset
+        self._number_of_lasers_per_els = number_of_lasers_per_els
+        self._els_port_mapping = els_port_mapping
+        self._els_oe_mapping = els_oe_mapping
+
+    @staticmethod
+    def _compute_els_list(switch_instance):
+        return [name for name in switch_instance.transceiver_list if name.startswith('els')]
+
+    def get_config(self) -> CapabilityConfig:
+        return CapabilityConfig(
+            name="CPO",
+            set_attributes={
+                'els_index_to_ga': self._els_index_to_ga,
+                'pmaos_module_offset': self._pmaos_module_offset,
+                'number_of_lasers_per_els': self._number_of_lasers_per_els,
+                'els_port_mapping': self._els_port_mapping,
+                'els_oe_mapping': self._els_oe_mapping,
+            },
+            computed_attributes={
+                'els_list': self._compute_els_list,
+            }
         )
 
 
@@ -218,6 +256,18 @@ class HealthComponentsConfigurator(SwitchConfigurator):
         logger.info(f"Excluded health components: {config.excluded_health_components}")
 
 
+class AttributeConfigurator(SwitchConfigurator):
+    """Handles setting static and computed attributes on the switch instance."""
+
+    def configure(self, switch_instance, config: CapabilityConfig) -> None:
+        for attr_name, value in config.set_attributes.items():
+            setattr(switch_instance, attr_name, value)
+            logger.info(f"Set attribute: {attr_name}")
+        for attr_name, compute_fn in config.computed_attributes.items():
+            setattr(switch_instance, attr_name, compute_fn(switch_instance))
+            logger.info(f"Computed attribute: {attr_name}")
+
+
 class SwitchCapabilityHandler:
     """Main handler for switch capabilities."""
 
@@ -227,7 +277,8 @@ class SwitchCapabilityHandler:
             ListConfigurator(),
             CommandConfigurator(),
             InventoryConfigurator(),
-            HealthComponentsConfigurator()
+            HealthComponentsConfigurator(),
+            AttributeConfigurator()
         ]
 
     def configure_switch_capabilities(self, switch_instance, capabilities: List[Capability]) -> None:

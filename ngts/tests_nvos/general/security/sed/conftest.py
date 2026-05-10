@@ -23,4 +23,4 @@ def sed_default_password(tpm_tool, devices: DevicesT):
     finally:
         with allure.step(f"Set default SED password {sed_password}"):
             system = System()
-            system.security.action_change_sed_password(sed_password)
+            system.security.action_change_sed_password(sed_password).verify_result()

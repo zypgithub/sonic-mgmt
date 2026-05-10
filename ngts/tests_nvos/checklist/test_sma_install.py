@@ -11,6 +11,10 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +53,7 @@ def test_sma_install(engines, devices, topology_obj, test_api, platform_componen
     component_name = platform_component_with_clear.get_resource_basename().lower()
 
     platform = Platform()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     try:
         path, filename, version_name = BmcTool.get_fw_component_version_previous(component_name)
@@ -59,6 +64,9 @@ def test_sma_install(engines, devices, topology_obj, test_api, platform_componen
         with allure.step(f"verify operation time for install sma {version_name!r} (duration: {res_obj.duration})"):
             OperationTime.verify_operation_time(res_obj.duration, 'install sma', devices).verify_result()
         validate_firmware_versions(version_name, device.sma_amount, platform)
+        for idx in range(1, device.sma_amount + 1):
+            sma_name = f"SMA{idx}"
+            assert_gnmi_firmware_version_matches_nvue(gnmi_client, sma_name, version_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
@@ -68,6 +76,9 @@ def test_sma_install(engines, devices, topology_obj, test_api, platform_componen
         with allure.step(f"verify operation time for install sma {version_name!r} (duration: {res_obj.duration})"):
             OperationTime.verify_operation_time(res_obj.duration, 'install sma', devices).verify_result()
         validate_firmware_versions(version_name, device.sma_amount, platform)
+        for idx in range(1, device.sma_amount + 1):
+            sma_name = f"SMA{idx}"
+            assert_gnmi_firmware_version_matches_nvue(gnmi_client, sma_name, version_name)
 
 
 def validate_firmware_versions(version_name, sma_amount, platform):

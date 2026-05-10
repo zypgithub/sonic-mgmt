@@ -6,9 +6,9 @@ class IbRouterConsts:
     SM_HOSTS_NICKNAMES = ['ha', 'hc', 'he', 'hg']
     CROC_SWITCHES_NICKNAMES = ['dut2', 'dut3']
     SWID_TO_PORTS_DICT = {0: ['sw1p1', 'sw1p2'],
-                          1: ['sw2p1', 'sw2p2'],
-                          2: ['sw3p1', 'sw3p2'],
-                          3: ['sw4p1', 'sw4p2']}
+                          1: ['sw44p1', 'sw44p2'],
+                          2: ['sw51p1', 'sw51p2'],
+                          3: ['sw17p1', 'sw17p2']}
     SWID_TO_SM_NICKNAME = {0: 'ha',
                            1: 'hc',
                            2: 'he',
@@ -26,7 +26,7 @@ class IbRouterConsts:
                     2: 290,
                     3: 300}
     OPERATIONAL_SWIDS = [0, 1, 2, 3]
-    ROUTER_PORTS_TO_LEAFS = ['sw1p1', 'sw1p2', 'sw2p1', 'sw2p2', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2']
+    ROUTER_PORTS_TO_LEAFS = ['sw1p1', 'sw1p2', 'sw44p1', 'sw44p2', 'sw51p1', 'sw51p2', 'sw17p1', 'sw17p2']
 
     # general consts
     FNM_SHUTDOWN_COMMANDS = ['sonic-db-cli CONFIG_DB hset "IB_PORT|Infiniband288" "admin_status" "down"',
@@ -47,3 +47,4 @@ class IbRouterConsts:
     SUBNET_PREFIX_INITITAL = '0xfec'
     IBR_DUMP_FILE = 'ib.router'
     GID = "gid"
+    SWID_COUNT = 'swid-count'

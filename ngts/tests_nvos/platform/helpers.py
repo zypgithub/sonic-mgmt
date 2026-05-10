@@ -22,7 +22,9 @@ def _pre_port_config(ports):
                 fae = Fae(port_name=port.name)
                 port.interface.set(InterfaceConsts.DESCRIPTION, "testing").verify_result()
                 fae.interface.link.delayed_recovery.set(DelayedRecovery.DELAYED_RECOVERY_STATE, "enabled").verify_result()
-                fae.interface.link.delayed_recovery.set(DelayedRecovery.DELAYED_RECOVERY_RETRY_TH, "200", apply=True, ask_for_confirmation=True).verify_result()
+                fae.interface.link.delayed_recovery.set(
+                    DelayedRecovery.DELAYED_RECOVERY_RETRY_TH, 200, apply=True, ask_for_confirmation=True
+                ).verify_result()
                 # fae.interface.link.phy_recovery.set("serdes-eq-mode", "enabled", apply=True), we need to add more configurations here - NVL and IB
             with allure.step(f"run show fae interface link for {port}"):
                 show_ports_output.append(OutputParsingTool.parse_json_str_to_dictionary(fae.interface.link.show()).get_returned_value())

@@ -22,6 +22,7 @@ class OpenApiBaseCli(BaseCli):
     def action(cls, action_str, resource_path, main_param, flags, additional_params, engine, reboot_params,
                send_user_confirmation, expected_output, device, timeout=None):
         """See documentation of BaseComponent.action()"""
+        # Note: read_timeout is not used for OpenAPI actions (HTTP requests have their own timeout handling)
         if send_user_confirmation:
             logger.warning(f'The following argument is ignored for OpenAPI commands: {send_user_confirmation=}')
         if timeout is not None:
@@ -74,6 +75,14 @@ class OpenApiBaseCli(BaseCli):
 
         return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password, OpenApiReqType.GET,
                                                    engine.ip, engine.open_api_port, resource_path, op_param)
+
+    @staticmethod
+    def filter(engine, resource_path, filter_name="", value="", check_engine_connectivity: bool = True):
+        logging.info("Running GET method (filter) on dut using openApi for {}".format(resource_path))
+        dut_engine = engine.engine if check_engine_connectivity else engine
+        params = f'?filter={filter_name}%3d{value}' if filter_name else ''
+        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password, OpenApiReqType.GET,
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def set(engine, resource_path, op_param_name="", op_param_value="", check_engine_connectivity: bool = True):

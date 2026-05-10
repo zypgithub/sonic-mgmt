@@ -11,7 +11,6 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.ONIE.constants import OnieConsts
 from ngts.nvos_tools.infra.SshCmdBuilder import ScpPassCmdBuilder
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
 
 logger = logging.getLogger()
@@ -53,6 +52,7 @@ def test_full_disk_wipe_system_recovery(engines, devices, topology_obj, serial_e
     nvue_cli_obj = NvueGeneralCli(engine=engines.dut, device=devices.dut)
     engine = engines.dut
     scp_engine = LinuxSshEngine(NvosConst.FIT70, DefaultVMCred.DEFAULT_USERNAME, DefaultVMCred.DEFAULT_PASS)
+    filename = None
     with allure.step("Get PXE menu step count based on device OPN/IPN type"):
         step_count = PxeTool.get_pxe_menu_step_count(topology_obj)
 
@@ -92,8 +92,11 @@ def test_full_disk_wipe_system_recovery(engines, devices, topology_obj, serial_e
             filename = provisioning_url.split('/')[-1]
 
         with allure.step(f"Download provisioning tarball to {NvosConst.FIT70}"):
-            output = scp_engine.run_cmd(f"wget {provisioning_url}")
-            assert "saved" in output.lower(), "couldn't download file"
+            if "No such file" in scp_engine.run_cmd(f"ls {filename} 2>&1"):
+                output = scp_engine.run_cmd(f"wget --spider {provisioning_url}")
+                assert "200" in output, f"Provisioning tarball not found at {provisioning_url}"
+                output = scp_engine.run_cmd(f"wget {provisioning_url}")
+                assert "saved" in output.lower(), "couldn't download file"
 
         with allure.step(f"Copy provisioning tarball from {NvosConst.FIT70} to switch"):
             sshpass_cmd = ScpPassCmdBuilder(user=DefaultConnectionValues.ONIE_USERNAME, password=DefaultConnectionValues.ONIE_PASSWORD, host=engine.ip,

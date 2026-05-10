@@ -40,6 +40,7 @@ from ngts.nvos_constants.constants_nvos import HealthConsts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.system.reboot_telemetry_helpers import REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.ngts_types import EnginesT, DevicesT
 
@@ -154,7 +155,9 @@ def _check_reboot_reason(result_metadata: Dict[helpers.ResultMetadata, Any], **k
     """
     with allure.step("Check reboot reason"):
         system = System()
-        output = system.reboot.reason.parse_show()
+        output = system.reboot.reason.parse_show(
+            exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS
+        )
         assert 'admin' in output["user"], f"reboot user is not 'admin' as expected (actual - {output['user']})"
 
         expected_reason = "power cycle" if result_metadata.get(helpers.ResultMetadata.HAD_FW_UPDATE) else 'platform reset'

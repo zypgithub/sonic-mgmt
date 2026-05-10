@@ -2,11 +2,13 @@ import random
 import pytest
 import logging
 import time
-import csv
 import os
 
+import pandas as pd
+
 from datetime import datetime, timedelta
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts, LogsSources
+from ngts.nvos_constants.constants_nvos import ApiType, DatabaseConst, NvosConst, LogsSources
+from ngts.tests_nvos.system.stats.constants import StatsConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -17,9 +19,16 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_constants.constants_nvos import DatabaseConst
+from retry import retry
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(autouse=True)
+def cleanup_verification_test(engines):
+    """Remove leftover verification_test file from /var/stats before each test."""
+    engines.dut.run_cmd("sudo rm -rf /var/stats/verification_test")
+    yield
 
 
 @pytest.mark.system
@@ -102,8 +111,7 @@ def test_system_stats_configuration(engines, devices, random_api):
                 verify_result()
 
         with allure.step("Update cache duration to 1 minute"):
-            DatabaseTool.sonic_db_cli_hset(engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                           db_config="STATS_CONFIG|GENERAL", param="cache_duration", value="1")
+            set_cache_duration(engine, 1)
 
         with allure.step("Update category configuration"):
             system.stats.category.categoryName[name].set(
@@ -218,17 +226,12 @@ def test_system_stats_generation(engines, devices, random_api):
                 "stats state parameter is expected to be 'enabled'"
 
         with allure.step("Update cache duration to 3 minutes"):
-            DatabaseTool.sonic_db_cli_hset(engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                           db_config="STATS_CONFIG|GENERAL", param="cache_duration", value="3")
+            set_cache_duration(engine, 3)
 
         with allure.step("Update all categories interval values to minimum and states to enable"):
-            for name in category_list:
-                system.stats.category.categoryName[name].set(
-                    op_param_name=StatsConsts.INTERVAL, op_param_value=int(StatsConsts.INTERVAL_MIN)).verify_result()
-                system.stats.category.categoryName[name].set(
-                    op_param_name=StatsConsts.STATE, op_param_value=StatsConsts.State.ENABLED.value).verify_result()
-            SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].
-                                            apply_config, TestToolkit.engines.dut, False).verify_result()
+            configure_all_categories(system, category_list,
+                                     interval=StatsConsts.INTERVAL_MIN,
+                                     state=StatsConsts.State.ENABLED.value)
 
         with allure.step("Restart process and check internal path"):
             engine.run_cmd("sudo systemctl restart stats-reportd")
@@ -378,8 +381,7 @@ def test_system_stats_performance(engines, devices, test_api):
             clear_all_internal_and_external_files(engine, system, category_list)
 
         with allure.step("Update cache duration to 1 minute"):
-            DatabaseTool.sonic_db_cli_hset(engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                           db_config="STATS_CONFIG|GENERAL", param="cache_duration", value="1")
+            set_cache_duration(engine, 1)
 
         with allure.step("Select a random category"):
             name = RandomizationTool.select_random_value(list(category_disabled_dict.keys())). \
@@ -504,20 +506,13 @@ def test_stats_reliability(engines, devices, test_api):
             system.stats.unset(apply=True).verify_result()
 
         with allure.step("Update cache duration to 1 minute"):
-            DatabaseTool.sonic_db_cli_hset(engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                           db_config="STATS_CONFIG|GENERAL", param="cache_duration", value="1")
+            set_cache_duration(engine, 1)
 
         with allure.step("Update all categories stats states"):
-            for name in category_list:
-                system.stats.category.categoryName[name].set(
-                    op_param_name=StatsConsts.STATE, op_param_value=StatsConsts.State.ENABLED.value).verify_result()
-                system.stats.category.categoryName[name].set(
-                    op_param_name=StatsConsts.INTERVAL, op_param_value=int(StatsConsts.INTERVAL_MIN)).verify_result()
-                system.stats.category.categoryName[name].set(
-                    op_param_name=StatsConsts.HISTORY_DURATION, op_param_value=int(StatsConsts.HISTORY_DURATION_MIN)).\
-                    verify_result()
-            SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].
-                                            apply_config, TestToolkit.engines.dut, False).verify_result()
+            configure_all_categories(system, category_list,
+                                     state=StatsConsts.State.ENABLED.value,
+                                     interval=StatsConsts.INTERVAL_MIN,
+                                     history_duration=StatsConsts.HISTORY_DURATION_MIN)
             SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].
                                             save_config, TestToolkit.engines.dut).verify_result()
 
@@ -804,8 +799,7 @@ def test_system_stats_big_files(engines, devices, random_api):
                 verify_result()
 
         with allure.step("Update cache duration to 1 minute"):
-            DatabaseTool.sonic_db_cli_hset(engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                           db_config="STATS_CONFIG|GENERAL", param="cache_duration", value="1")
+            set_cache_duration(engine, 1)
 
         with allure.step("Restart process..."):
             engine.run_cmd("sudo systemctl restart stats-reportd")
@@ -870,19 +864,13 @@ def test_system_stats_big_files(engines, devices, random_api):
 
         with allure.step("Replace internal file with a huge file"):
             file_name = 'temperature.csv'
-            file_path = StatsConsts.HUGE_FILE_PATH + file_name
-            player_engine.upload_file_using_scp(dest_username=devices.dut.default_username,
-                                                dest_password=devices.dut.default_password,
-                                                dest_folder=StatsConsts.INTERNAL_PATH,
-                                                dest_ip=engines.dut.ip,
-                                                local_file_path=file_path)
-            engine.run_cmd("sudo cp /tmp/{} /var/stats".format(file_name))
+            generate_huge_stats_file(engine, 'temperature')
 
         with allure.step("Restart process..."):
             engine.run_cmd("sudo systemctl restart stats-reportd")
 
-        with allure.step("Wait 40 seconds..."):
-            time.sleep(StatsConsts.SLEEP_40_SECONDS)
+        with allure.step("Wait for stats-reportd to finish cleaning up the huge file"):
+            wait_for_stats_file_cleanup(engine, 'temperature')
 
         with allure.step(f"Get Temperature header number of lines"):
             temperature_header_num_of_lines = get_header_number_of_lines(engines, 'temperature')
@@ -894,9 +882,6 @@ def test_system_stats_big_files(engines, devices, random_api):
             validate_number_of_lines_in_external_file(engines, system, 'temperature',
                                                       temperature_header_num_of_lines,
                                                       temperature_header_num_of_lines + 100)
-
-        with allure.step("Delete uploaded file"):
-            engine.run_cmd(cmd='rm -f /tmp/{}'.format(file_name))
 
     finally:
         set_system_stats_to_default(engine, system)
@@ -936,19 +921,12 @@ def test_validate_category_file_values(engines, devices, test_api):
             system.stats.unset(apply=True).verify_result()
 
         with allure.step("Set all categories history duration and interval values to minimum"):
-            for name in category_list:
-                system.stats.category.categoryName[name].set(
-                    op_param_name=StatsConsts.HISTORY_DURATION, op_param_value=int(StatsConsts.HISTORY_DURATION_MIN)).\
-                    verify_result()
-                system.stats.category.categoryName[name].set(
-                    op_param_name=StatsConsts.INTERVAL, op_param_value=int(StatsConsts.INTERVAL_MIN)).\
-                    verify_result()
-            SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].
-                                            apply_config, TestToolkit.engines.dut, False).verify_result()
+            configure_all_categories(system, category_list,
+                                     history_duration=StatsConsts.HISTORY_DURATION_MIN,
+                                     interval=StatsConsts.INTERVAL_MIN)
 
         with allure.step("Update cache duration to 1 minute"):
-            DatabaseTool.sonic_db_cli_hset(engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                           db_config="STATS_CONFIG|GENERAL", param="cache_duration", value="1")
+            set_cache_duration(engine, 1)
 
         with allure.step("Clear all system stats and delete stats files"):
             system_show = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
@@ -1008,10 +986,37 @@ def set_system_stats_to_default(engine, system):
         system.stats.unset(apply=True).verify_result()
 
     with allure.step("Update cache general configuration to default"):
-        DatabaseTool.sonic_db_cli_hset(engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                       db_config="STATS_CONFIG|GENERAL", param="cache_duration", value="10")
-        DatabaseTool.sonic_db_cli_hset(engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                       db_config="STATS_CONFIG|GENERAL", param="cache_duration", value="1")
+        set_cache_duration(engine, 10)
+        set_cache_duration(engine, 1)
+
+
+def set_cache_duration(engine, minutes):
+    """Set the stats cache duration in CONFIG_DB."""
+    DatabaseTool.sonic_db_cli_hset(
+        engine, "", db_name=DatabaseConst.CONFIG_DB_NAME,
+        db_config="STATS_CONFIG|GENERAL",
+        param="cache_duration", value=str(minutes))
+
+
+def configure_all_categories(system, category_list, interval=None,
+                             history_duration=None, state=None, apply=True):
+    """Configure all categories with the given parameters and optionally apply."""
+    for name in category_list:
+        if state is not None:
+            system.stats.category.categoryName[name].set(
+                op_param_name=StatsConsts.STATE,
+                op_param_value=state).verify_result()
+        if interval is not None:
+            system.stats.category.categoryName[name].set(
+                op_param_name=StatsConsts.INTERVAL,
+                op_param_value=int(interval)).verify_result()
+        if history_duration is not None:
+            system.stats.category.categoryName[name].set(
+                op_param_name=StatsConsts.HISTORY_DURATION,
+                op_param_value=int(history_duration)).verify_result()
+    if apply:
+        SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].
+                                        apply_config, TestToolkit.engines.dut, False).verify_result()
 
 
 def clear_all_internal_and_external_files(engine, system, category_list):
@@ -1045,7 +1050,7 @@ def check_category_internal_files_exist(engine, category_list, retries=10, inter
         assert False, "After {:.1f}s ({} retries), still missing files: {}".format(duration, retries, missing)
     extra = [file for file in output_list if file not in expected_files]
 
-    for allowed_extra_file in ("mgmt-interface.csv.old", "asic-power.csv.old"):
+    for allowed_extra_file in ("mgmt-interface.csv.old", "asic-power.csv.old", "verification_test"):
         if allowed_extra_file in extra:
             extra.remove(allowed_extra_file)
 
@@ -1075,165 +1080,156 @@ def validate_upload_stats_file(engines, system, file, delete=True):
                     player.run_cmd(cmd='rm -f {}{}'.format(dest_path, file))
 
 
+def parse_stats_csv(file_path):
+    """Parse a stats CSV file, returning header metadata and a pandas DataFrame.
+
+    Returns:
+        dict with keys:
+            'hostname'    — hostname from the file header (with -mgmt2 stripped)
+            'group'       — category/group name
+            'export_time' — the "Started sampling" timestamp
+            'column_descriptions' — list of column names from "# Column N:" lines
+            'df'          — DataFrame with all data rows (all values as strings)
+    """
+    metadata = {'column_descriptions': []}
+    with open(file_path, 'r') as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped.startswith(StatsConsts.HEADER_HOSTNAME):
+                metadata['hostname'] = stripped.replace('-mgmt2', '')
+            elif stripped.startswith(StatsConsts.HEADER_GROUP):
+                metadata['group'] = stripped.replace(StatsConsts.HEADER_GROUP, '')
+            elif stripped.startswith(StatsConsts.HEADER_TIME):
+                metadata['export_time'] = datetime.strptime(
+                    stripped.replace(StatsConsts.HEADER_TIME, ''), StatsConsts.TIMESTAMP_FORMAT)
+            elif stripped.startswith('# Column'):
+                metadata['column_descriptions'].append(stripped.split(': ')[-1])
+            elif not stripped.startswith('#') and stripped:
+                break
+
+    df = pd.read_csv(file_path, comment='#', keep_default_na=False, dtype=str)
+    metadata['df'] = df
+    return metadata
+
+
+def assert_value_in_range(col_name, value, min_val, max_val, sample_num, category, allow_na=True):
+    """Assert that a CSV cell value falls within [min_val, max_val].
+
+    Args:
+        allow_na: If True, 'N/A' values are silently accepted.
+                  If False, 'N/A' values cause an assertion failure.
+    """
+    if value == 'N/A':
+        assert allow_na, (
+            f"{category} '{col_name}' has N/A at sample #{sample_num} (not permitted)")
+        return
+    assert min_val <= float(value) <= max_val, (
+        f"{category} '{col_name}' = {value} not in [{min_val}, {max_val}] at sample #{sample_num}")
+
+
+def _validate_row_from_config(config, col_names, row_values, num_of_columns, sample_num, category):
+    """Apply validation rules from a category config dict to a single data row."""
+    if 'columns' in config:
+        for col_idx, min_val, max_val, allow_na in config['columns']:
+            if col_idx < num_of_columns:
+                assert_value_in_range(
+                    col_names[col_idx], row_values[col_idx],
+                    min_val, max_val, sample_num, category, allow_na)
+
+    if 'uniform_range' in config:
+        r = config['uniform_range']
+        start = r['start']
+        end = num_of_columns if r['end'] is None else r['end']
+        for col_idx in range(start, end):
+            assert_value_in_range(
+                col_names[col_idx], row_values[col_idx],
+                r['min'], r['max'], sample_num, category, r['allow_na'])
+
+    if 'remaining_columns' in config:
+        r = config['remaining_columns']
+        start = r['start']
+        end = num_of_columns if r['end'] is None else (num_of_columns + r['end'] if r['end'] < 0 else r['end'])
+        for col_idx in range(start, end):
+            assert_value_in_range(
+                col_names[col_idx], row_values[col_idx],
+                r['min'], r['max'], sample_num, category, r['allow_na'])
+
+    if 'tail_columns' in config:
+        t = config['tail_columns']
+        for col_idx in range(num_of_columns - t['count'], num_of_columns):
+            assert_value_in_range(
+                col_names[col_idx], row_values[col_idx],
+                t['min'], t['max'], sample_num, category, t['allow_na'])
+
+
 def validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time):
     with allure.step(f"validate external file header and data - {file_path}"):
-        with open(file_path, 'r') as csv_file:
-            reader = csv.reader(csv_file)
-            next(reader)
-            row = next(reader)
-            # Remove mgmt port number if present in hostname
-            hostname_from_file_name = row[0].replace('-mgmt2', '')
-            assert hostname_from_file_name == StatsConsts.HEADER_HOSTNAME + hostname, \
-                f"unexpected hostname in file header, {hostname_from_file_name} instead of {hostname}"
-            row = next(reader)
-            assert row[0] == StatsConsts.HEADER_GROUP + name, \
-                f"unexpected group in file header, {row[0]} instead of {name}"
-            row = next(reader)
-            assert row[0].startswith(StatsConsts.HEADER_TIME), "unexpected started time text in file header"
+        meta = parse_stats_csv(file_path)
+        df = meta['df']
+
+        with allure.step("Validate header metadata"):
+            assert meta['hostname'] == StatsConsts.HEADER_HOSTNAME + hostname, \
+                f"unexpected hostname: {meta['hostname']} vs {hostname}"
+            assert meta['group'] == name, \
+                f"unexpected group: {meta['group']} vs {name}"
 
             if start_time and end_time:
-                export_time = datetime.strptime(row[0].replace(StatsConsts.HEADER_TIME, ''), StatsConsts.TIMESTAMP_FORMAT)
-                assert start_time < export_time < end_time, \
-                    f"External file started sampling time: {export_time} should be between {start_time}-{end_time}"
+                assert start_time < meta['export_time'] < end_time, \
+                    f"Started sampling time {meta['export_time']} not between {start_time} and {end_time}"
 
-            idx = 4
-            start_data_idx = -1
-            header_list = []
-            for row in reader:
-                if row:
-                    if row[0].startswith("Timestamp"):
-                        start_data_idx = idx + 1
-                        break
-                    elif row[0].startswith("# Column"):
-                        header_list.append(row[0].split(': ')[-1])
-                idx += 1
-                if idx == StatsConsts.MAX_ROWS_TO_SCAN:
-                    break
+        with allure.step("Validate column descriptions match DataFrame columns"):
+            assert meta['column_descriptions'] == list(df.columns), \
+                "mismatch between # Column descriptions and CSV header columns"
 
-            assert header_list == row, "there is a mismatch between columns in header to columns list"
-            assert start_data_idx >= 0, "did not find data start line"
-            assert len(row) == (start_data_idx - StatsConsts.CONST_HEADER_ROWS), \
-                "there is a mismatch between columns defined number"
+        with allure.step("Validate data is not empty"):
+            assert len(df) > 0, f"No data rows in {name} stats file"
 
-            prev_sample_time = export_time - timedelta(minutes=int(StatsConsts.INTERVAL_MIN))
-            col_names = row
-            num_of_samples = 0
-            num_of_columns = len(row)
+        config = StatsConsts.CATEGORY_VALIDATION_CONFIG.get(name)
+        assert config is not None, \
+            f"Unknown stats category '{name}' — no validation config. " \
+            f"Known: {list(StatsConsts.CATEGORY_VALIDATION_CONFIG.keys())}"
 
-            if name == 'cpu':
-                for row in reader:
-                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                    num_of_samples += 1
-                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                    check_in_range_without_na(col_names[1], row[1], StatsConsts.CPU_FREE_RAM_MIN,
-                                              StatsConsts.CPU_FREE_RAM_MAX, num_of_samples, name)
-                    check_in_range_without_na(col_names[2], row[2], StatsConsts.CPU_UTIL_MIN,
-                                              StatsConsts.CPU_UTIL_MAX, num_of_samples, name)
-                    check_in_range_without_na(col_names[3], row[3], StatsConsts.CPU_REBOOT_CNT_MIN,
-                                              StatsConsts.CPU_REBOOT_CNT_MAX, num_of_samples, name)
-            elif name == 'disk':
-                for row in reader:
-                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                    num_of_samples += 1
-                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                    check_in_range(col_names[1], row[1], StatsConsts.DISK_FREE_SPACE_MIN,
-                                   StatsConsts.DISK_FREE_SPACE_MAX, num_of_samples, name)
-                    check_in_range(col_names[2], row[2], StatsConsts.DISK_RMN_LIFE_MIN,
-                                   StatsConsts.DISK_RMN_LIFE_MAX, num_of_samples, name)
-                    check_in_range(col_names[3], row[3], StatsConsts.DISK_FAIL_CNT_MIN,
-                                   StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
-                    check_in_range(col_names[4], row[4], StatsConsts.DISK_FAIL_CNT_MIN,
-                                   StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
-                    check_in_range(col_names[5], row[5], StatsConsts.DISK_FAIL_CNT_MIN,
-                                   StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
-                    check_in_range(col_names[6], row[6], StatsConsts.DISK_TOTAL_LBA_RW_MIN,
-                                   StatsConsts.DISK_TOTAL_LBA_RW_MAX, num_of_samples, name)
-                    check_in_range(col_names[7], row[7], StatsConsts.DISK_TOTAL_LBA_RW_MIN,
-                                   StatsConsts.DISK_TOTAL_LBA_RW_MAX, num_of_samples, name)
-            elif name == 'fan':
-                for row in reader:
-                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                    num_of_samples += 1
-                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                    for col in range(1, num_of_columns):
-                        check_in_range(col_names[col], row[col], StatsConsts.FAN_MIN,
-                                       StatsConsts.FAN_MAX, num_of_samples, name)
-            elif name == 'temperature':
-                for row in reader:
-                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                    num_of_samples += 1
-                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                    for col in range(1, num_of_columns):
-                        check_in_range(col_names[col], row[col], StatsConsts.TEMP_MIN,
-                                       StatsConsts.TEMP_MAX, num_of_samples, name)
-            elif name == 'mgmt-interface':
-                for row in reader:
-                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                    num_of_samples += 1
-                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                    for col in range(1, num_of_columns):
-                        check_in_range(col_names[col], row[col], StatsConsts.MGMT_INT_MIN,
-                                       StatsConsts.MGMT_INT_MAX, num_of_samples, name)
-            elif name == 'power':
-                for row in reader:
-                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                    num_of_samples += 1
-                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                    check_in_range(col_names[1], row[1], StatsConsts.PWR_PSU_VOLT_MIN,
-                                   StatsConsts.PWR_PSU_VOLT_MAX, num_of_samples, name)
-                    check_in_range_without_na(col_names[2], row[2], StatsConsts.PWR_PSU_VOLT_MIN,
-                                              StatsConsts.PWR_PSU_VOLT_MAX, num_of_samples, name)
-                    check_in_range(col_names[3], row[3], StatsConsts.PWR_PSU_CUR_MIN,
-                                   StatsConsts.PWR_PSU_CUR_MAX, num_of_samples, name)
-                    check_in_range_without_na(col_names[4], row[4], StatsConsts.PWR_PSU_CUR_MIN,
-                                              StatsConsts.PWR_PSU_CUR_MAX, num_of_samples, name)
-            elif name == 'asic-power':
-                for row in reader:
-                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                    num_of_samples += 1
-                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                    check_in_range(col_names[1], row[1], StatsConsts.ASIC_PWR_WATT_MIN,
-                                   StatsConsts.ASIC_PWR_WATT_MAX, num_of_samples, name)
-                    check_in_range_without_na(col_names[2], row[2], StatsConsts.ASIC_PWR_WATT_MIN,
-                                              StatsConsts.ASIC_PWR_WATT_MAX, num_of_samples, name)
-                    check_in_range(col_names[3], row[3], StatsConsts.ASIC_PWR_WATT_MIN,
-                                   StatsConsts.ASIC_PWR_WATT_MAX, num_of_samples, name)
-                    check_in_range_without_na(col_names[4], row[4], StatsConsts.ASIC_PWR_WATT_MIN,
-                                              StatsConsts.ASIC_PWR_WATT_MAX, num_of_samples, name)
-            elif name == 'voltage':
-                for row in reader:
-                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                    num_of_samples += 1
-                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                    for col in range(1, num_of_columns - 2):
-                        check_in_range(col_names[col], row[col], StatsConsts.VOLTAGE_GENERAL_MIN,
-                                       StatsConsts.VOLTAGE_GENERAL_MAX, num_of_samples, name)
-                    for col in range(num_of_columns - 1, num_of_columns):
-                        check_in_range(col_names[col], row[col], StatsConsts.VOLTAGE_PSU_MIN,
-                                       StatsConsts.VOLTAGE_PSU_MAX, num_of_samples, name)
+        export_time = meta['export_time']
+        prev_sample_time = export_time - timedelta(minutes=int(StatsConsts.INTERVAL_MIN))
+        col_names = list(df.columns)
+        num_of_columns = len(col_names)
+
+        with allure.step(f"Validate {name} data rows ({len(df)} samples)"):
+            for row_idx, row in df.iterrows():
+                sample_num = row_idx + 1
+                row_values = list(row)
+
+                assert len(row_values) == num_of_columns, \
+                    f"Row {sample_num} has {len(row_values)} values, expected {num_of_columns}"
+
+                prev_sample_time = check_sample_timestamp(row_values, prev_sample_time, name)
+                _validate_row_from_config(config, col_names, row_values,
+                                          num_of_columns, sample_num, name)
+
+        with allure.step("Validate minimum sample count"):
+            assert len(df) >= StatsConsts.MIN_EXPECTED_SAMPLES, \
+                f"{name}: only {len(df)} samples collected, expected >= {StatsConsts.MIN_EXPECTED_SAMPLES}"
+
+        with allure.step("Validate timestamps are strictly increasing"):
+            timestamps = df.iloc[:, 0].tolist()
+            for i in range(1, len(timestamps)):
+                t_prev = datetime.strptime(timestamps[i - 1], StatsConsts.TIMESTAMP_FORMAT)
+                t_curr = datetime.strptime(timestamps[i], StatsConsts.TIMESTAMP_FORMAT)
+                assert t_curr > t_prev, \
+                    f"{name}: timestamp at row {i + 1} ({t_curr}) is not after row {i} ({t_prev})"
 
 
 def validate_external_file_timestamps(file_name, clear_time):
     full_path = NvosConst.MARS_RESULTS_FOLDER + file_name
-    with open(full_path, 'r') as csv_file:
-        reader = csv.reader(csv_file)
-        idx = 0
-        start_data_idx = -1
-        for row in reader:
-            if row:
-                if row[0].startswith("Timestamp"):
-                    start_data_idx = idx + 1
-                    break
-            idx += 1
-            if idx == StatsConsts.MAX_ROWS_TO_SCAN:
-                break
+    meta = parse_stats_csv(full_path)
+    df = meta['df']
 
-        assert start_data_idx >= 0, "did not find data start line"
+    assert not df.empty, f"No data rows found in {file_name}"
 
-        for row in reader:
-            sample_time = datetime.strptime(row[0].replace(StatsConsts.HEADER_TIME, ''),
-                                            StatsConsts.TIMESTAMP_FORMAT)
-            assert sample_time > clear_time, "Samples time is earlier than clear time"
+    for row_idx, row in df.iterrows():
+        sample_time = datetime.strptime(row.iloc[0], StatsConsts.TIMESTAMP_FORMAT)
+        assert sample_time > clear_time, \
+            f"Sample at row {row_idx + 1} has timestamp {sample_time} earlier than clear time {clear_time}"
 
 
 def validate_number_of_lines_in_external_file(engines, system, cat_name, min_lines, max_lines):
@@ -1253,8 +1249,8 @@ def validate_number_of_lines_in_external_file(engines, system, cat_name, min_lin
 
     with allure.step("Validate number of lines in file"):
         full_path = NvosConst.MARS_RESULTS_FOLDER + file_name
-        file1 = open(full_path, 'r')
-        num_of_lines = len(file1.readlines())
+        with open(full_path, 'r') as f:
+            num_of_lines = sum(1 for _ in f)
         assert min_lines < num_of_lines < max_lines, \
             f"Number of lines: {num_of_lines} is not as expected: {min_lines}-{max_lines}"
 
@@ -1282,8 +1278,8 @@ def validate_stats_files_exist_in_techsupport(system, engine, stats_files):
 
 
 def check_sample_timestamp(row, prev_sample_time, category):
-    sample_time = datetime.strptime(row[0].replace(StatsConsts.HEADER_TIME, ''),
-                                    StatsConsts.TIMESTAMP_FORMAT)
+    timestamp_str = row[0] if isinstance(row, list) else row.iloc[0]
+    sample_time = datetime.strptime(timestamp_str, StatsConsts.TIMESTAMP_FORMAT)
     expected_time = prev_sample_time + timedelta(minutes=int(StatsConsts.INTERVAL_MIN))
     time_low_thresh = expected_time - timedelta(seconds=5)
     time_high_thresh = expected_time + timedelta(seconds=5)
@@ -1292,13 +1288,39 @@ def check_sample_timestamp(row, prev_sample_time, category):
     return sample_time
 
 
-def check_in_range(col, value, min_val, max_val, sample, category):
-    if value != 'N/A':
-        assert min_val <= float(value) <= max_val, f"{category} {col} not in range ({value} in sample #{sample}"
+def wait_for_stats_file_cleanup(engine, category, max_size_kb=1024):
+    """Wait for stats-reportd to finish cleaning up a huge internal file.
+
+    Polls the file size of /var/stats/{category}.csv until it drops below max_size_kb,
+    indicating that stats-reportd has completed the cleanup and created a new file.
+    """
+    @retry(AssertionError, tries=24, delay=5)
+    def _wait():
+        output = engine.run_cmd(f"stat --format=%s /var/stats/{category}.csv 2>/dev/null || echo 0")
+        file_size_bytes = int(output.strip())
+        file_size_kb = file_size_bytes / 1024
+        assert file_size_kb < max_size_kb, \
+            f"stats-reportd still cleaning up {category}.csv (size: {file_size_kb:.0f}KB, waiting for < {max_size_kb}KB)"
+
+    _wait()
 
 
-def check_in_range_without_na(col, value, min_val, max_val, sample, category):
-    assert min_val <= float(value) <= max_val, f"{category} {col} not in range ({value} in sample #{sample}"
+def generate_huge_stats_file(engine, category, num_lines=7000000):
+    """Generate a huge stats file (>600MB) on the device using its own header.
+
+    Uses the device's current /var/stats/{category}.csv header so the file
+    has the correct platform-specific header regardless of device type.
+    Replicates a real data line 7M times to exceed the 600MB threshold.
+    """
+    stats_file = f"/var/stats/{category}.csv"
+    engine.run_cmd(
+        f"sudo bash -c '"
+        f"grep \"^#\" {stats_file} > /tmp/{category}_huge.csv && "
+        f"grep -v \"^#\" {stats_file} | head -1 >> /tmp/{category}_huge.csv && "
+        f"DATA=$(grep -v \"^#\" {stats_file} | tail -1) && "
+        f"yes \"$DATA\" | head -n {num_lines} >> /tmp/{category}_huge.csv && "
+        f"mv /tmp/{category}_huge.csv {stats_file}'"
+    )
 
 
 def get_header_number_of_lines(engines, category):

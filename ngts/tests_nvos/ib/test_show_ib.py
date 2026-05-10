@@ -22,10 +22,10 @@ def test_show_ib_device(engines, devices):
         3. Verify all expected devices exist and have a valid value (not none).
         4. Go over all devices using "nv show ib device <device-id>" command, and verify their values
            (Supports multi-ASIC system as well):
-           - GUID numbers are in the specific XX:XX:XX:XX:XX:XX:XX:XX format
-           - lid value >= 0
-           - subnet is not empty
-           - type is as expected
+           - guid (under ib-subnet.<subnet-name>) is in the XX:XX:XX:XX:XX:XX:XX:XX format
+           - lid (under ib-subnet.<subnet-name>) value >= 0
+           - ib-subnet contains the default subnet entry
+           - type matches the expected ASIC type
         5. Verify SYSTEM and ASIC1 devices (should exist in every switch) have the same GUID number.
     """
     with allure.step("Create an IB object"):
@@ -49,12 +49,11 @@ def test_show_ib_device(engines, devices):
                     ib.device.show(device)).get_returned_value()
 
             if IbConsts.DEVICE_ASIC_PREFIX in device:
-                verify_device_fields_and_validate_guid_value(IbConsts.DEVICE_ASIC_LIST, dev_output)
-                assert dev_output['lid'] >= 0, "Invalid number of lid"
-                assert dev_output['subnet'] != '', "Subnet should not be none"
+                subnet_entry = verify_asic_device_fields_and_validate_guid_value(dev_output)
+                assert subnet_entry['lid'] >= 0, "Invalid number of lid"
                 assert dev_output['type'] == devices.dut.asic_type, "Unexpected ASIC type"
                 if device == IbConsts.DEVICE_ASIC_PREFIX + '1':
-                    asic1_guid = dev_output['guid']
+                    asic1_guid = subnet_entry['guid']
 
             elif IbConsts.DEVICE_SYSTEM in device:
                 verify_device_fields_and_validate_guid_value(IbConsts.DEVICE_SYSTEM_LIST, dev_output)
@@ -72,3 +71,25 @@ def verify_device_fields_and_validate_guid_value(device_list, device_output):
     with allure.step('Validate device GUID value'):
         if not (re.match(IbConsts.GUID_FORMAT, device_output['guid'].lower())):
             raise Exception("Invalid GUID number, must be in XX:XX:XX:XX:XX:XX:XX:XX format")
+
+
+def verify_asic_device_fields_and_validate_guid_value(device_output):
+    """
+    Validate the per-ASIC device tree (nested under ib-subnet.<subnet-name>) and return the
+    default-subnet entry (with 'guid' and 'lid') for further checks.
+    """
+    with allure.step('Verify all ASIC device top-level fields exist'):
+        ValidationTool.validate_all_values_exists_in_list(
+            IbConsts.DEVICE_ASIC_TOP_FIELDS, device_output).verify_result()
+    subnets = device_output[IbConsts.DEVICE_ASIC_SUBNET_KEY]
+    assert subnets, "ib-subnet should not be empty for an ASIC device"
+    assert IbConsts.DEVICE_ASIC_DEFAULT_SUBNET in subnets, \
+        f"Expected default subnet '{IbConsts.DEVICE_ASIC_DEFAULT_SUBNET}' under ib-subnet, got {list(subnets)}"
+    subnet_entry = subnets[IbConsts.DEVICE_ASIC_DEFAULT_SUBNET]
+    with allure.step('Verify guid/lid exist under ib-subnet.<subnet>'):
+        ValidationTool.validate_all_values_exists_in_list(
+            IbConsts.DEVICE_ASIC_SUBNET_FIELDS, subnet_entry).verify_result()
+    with allure.step('Validate ASIC GUID value'):
+        if not re.match(IbConsts.GUID_FORMAT, subnet_entry['guid'].lower()):
+            raise Exception("Invalid GUID number, must be in XX:XX:XX:XX:XX:XX:XX:XX format")
+    return subnet_entry

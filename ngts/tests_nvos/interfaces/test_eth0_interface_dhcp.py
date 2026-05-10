@@ -1,3 +1,4 @@
+import logging
 import time
 import re
 import pytest
@@ -8,6 +9,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import SystemConsts, ActionConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.HostMethods import HostMethods
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
@@ -15,8 +17,6 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import AutoNegotiateConsts
 from multiprocessing import Process
 from ngts.tools.test_utils import allure_utils as allure
-
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.constants import MINUTE
@@ -482,12 +482,9 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 mgmt_port.interface.ipv4.dhcp_client.show()).get_returned_value()
 
-            noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
-
             system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
 
-            dhcp_hostname = noga_query_data['Specific']['dhcp_hostname']
-            dhcp_hostname = dhcp_hostname if dhcp_hostname else noga_query_data['Common']['Name']
+            dhcp_hostname = HostMethods.get_dhcp_hostname(topology_obj)
             assert dhcp_hostname, "No dhcp_hostname received from noga"
 
             # Check lease information instead of has-lease (new schema)
@@ -504,7 +501,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
                                                               field_name='state',
                                                               expected_value='enabled').verify_result()
 
-            assert dhcp_hostname in system_output['hostname'], "hostname wasn't changed"
+            HostMethods.assert_system_hostname_matches_dhcp(system_output, dhcp_hostname)
 
         with allure.step('Disable dhcp and unset hostname, check port down and not reachable'):
             serial_engine.serial_engine.sendline("nv set interface {} ipv4 dhcp-client state disabled".format(mgmt_port_name))
@@ -835,7 +832,7 @@ def wait_for_mtu_changed(port_obj, mtu_to_verify):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], "hostname wasn't changed"
+        HostMethods.assert_system_hostname_matches_dhcp(system_output, dhcp_hostname)
 
 
 @retry(Exception, tries=25, delay=2)
@@ -865,7 +862,7 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
     mgmt_port = Port(mgmt_port_name)
 
     try:
-        with allure.step('Run show command on mgmt port and verify default description'):
+        with allure.step('Get current IP address'):
             ipv4_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 mgmt_port.interface.ipv4.show()).get_returned_value()
             validate_interface_ip_address(engines.dut.ip, ipv4_output, True)
@@ -909,7 +906,7 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             ipv4_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 mgmt_port.interface.ipv4.show()).get_returned_value()
-            validate_interface_ip_address(engines.dut.ip, ipv4_output, True)
+            validate_interface_ip_address(engines.dut.ip, ipv4_output, validate_in=True, run_show=True, mgmt_port=mgmt_port)
             NvueGeneralCli.save_config(engine=serial_engine)
 
 

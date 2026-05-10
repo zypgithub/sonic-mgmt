@@ -436,7 +436,7 @@ def test_rsyslog_port(engines, random_api):
     tmp_port = 500  # in the system ports range
 
     with allure.step("Configure remote syslog server {}".format(remote_server_ip)):
-        system.syslog.servers.set_server(remote_server_ip)
+        system.syslog.servers.set_server(remote_server_ip, apply=True)
         if TestToolkit.devices.dut.is_eth():
             system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
 
@@ -629,7 +629,7 @@ def test_rsyslog_filter(engines, random_api, devices):
             create_selector_configuration(selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME)
 
         with allure.step("Configure remote syslog server {} with exclude filter and validate".format(remote_server_ip)):
-            system.syslog.servers.set_server(remote_server_ip)
+            system.syslog.servers.set_server(remote_server_ip, apply=True)
             if TestToolkit.devices.dut.is_eth():
                 system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
             system.syslog.servers.servers_dict[remote_server_ip].set_selector_priority(1, SyslogConsts.DEFAULT_SELECTOR_NAME,
@@ -781,7 +781,7 @@ def test_rsyslog_format(engines, random_api):
 
     try:
         with allure.step("Configure remote syslog server {} and validate".format(remote_server_ip)):
-            system.syslog.servers.set_server(remote_server_ip)
+            system.syslog.servers.set_server(remote_server_ip, apply=True)
             if TestToolkit.devices.dut.is_eth():
                 system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
             expected_server_dictionary = create_remote_server_dictionary(remote_server_ip, vrf=TestToolkit.devices.dut.vrf_mgmt)
@@ -1886,7 +1886,7 @@ def positive_minimal_flow(remote_server_engine, remote_server):
     system = System()
 
     with allure.step("Configure remote syslog server: {}".format(remote_server)):
-        system.syslog.servers.set_server(remote_server)
+        system.syslog.servers.set_server(remote_server, apply=True)
         if TestToolkit.devices.dut.is_eth():
             system.syslog.servers.servers_dict[remote_server].set_vrf(TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
     try:

@@ -1,4 +1,3 @@
-from ngts.nvos_constants.constants_nvos import ConfState
 from .IfIndex import IfIndex
 from .IpV4 import IpV4
 from .IpV6 import IpV6
@@ -106,7 +105,7 @@ class Interface(BaseComponent):
     def wait_for_mtu_changed(self, mtu_to_verify):
         with allure.step("Waiting for '{}' port mtu changed to {}".format(self.port_obj.name, mtu_to_verify)):
             output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                self.link.show(rev=ConfState.APPLIED)).get_returned_value()
+                self.link.show()).get_returned_value()
             current_mtu = int(output_dictionary[IbInterfaceConsts.LINK_MTU])
             assert current_mtu == int(mtu_to_verify), "Current mtu {} is not as expected {}".\
                 format(current_mtu, mtu_to_verify)

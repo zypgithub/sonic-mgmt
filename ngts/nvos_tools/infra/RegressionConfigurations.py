@@ -66,7 +66,7 @@ class Configurations:
 
     non_standalone_systems = ['NVOS_juliet_10_7_148_148', 'NVOS_sws_rtf2_rosalind_198']
 
-    doca_traffic_systems = ['NVOS_taipan_10_7_145_34']
+    doca_traffic_systems = ['NVOS_taipan_10_7_145_34', 'NVOS_bm_10_220_12_132']
 
     systems_with_wrong_shunt_resistor = ['NVOS_juliet_10_7_148_128', 'NVOS_juliet_10_7_148_144']
 

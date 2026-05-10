@@ -25,14 +25,14 @@ class OnieConsts:
 
 
 class ProvisionConsts:
-    VERSION = "83.03.0009"
+    VERSION = "83.03.0014"
     VERSIONS_DICT = {
         'OPN': {
             'version': VERSION,
-            'provisioning_url': f'https://urm.nvidia.com/artifactory/sw-nbu-sws-low-level-generic-local/sedutil/SED_PBA/{VERSION}/sed_provisioning_{VERSION}.tgz',
+            'provisioning_url': f'https://urm.nvidia.com/artifactory/sw-nbu-sws-low-level-generic-local/sedutil/SED_PBA/{VERSION}/115200/sed_provisioning_{VERSION}.tgz',
         },
         'IPN': {
             'version': VERSION + "-dev",
-            'provisioning_url': f'https://urm.nvidia.com/artifactory/sw-nbu-sws-low-level-generic-local/sedutil/SED_PBA/{VERSION}_dev/sed_provisioning_{VERSION}-dev_dev.tgz',
+            'provisioning_url': f'https://urm.nvidia.com/artifactory/sw-nbu-sws-low-level-generic-local/sedutil/SED_PBA/{VERSION}_dev/115200/sed_provisioning_{VERSION}-dev_dev.tgz',
         }
     }

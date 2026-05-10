@@ -16,6 +16,17 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers import redmine_helpers
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.system.reboot_telemetry_helpers import (
+    RebootReasonCategory,
+    assert_nvue_gnmi_counters_match,
+    gnmi_client_for_dut,
+    take_reboot_telemetry_snapshot,
+    verify_reboot_telemetry_after_reboot,
+)
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+    expand_nvue_key_to_gnmi_components,
+)
 
 logger = logging.getLogger()
 
@@ -108,6 +119,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
     # Get previous FW file using helper function
     fw_file, filename, version_name = get_previous_fw_file(target_version, chip_type)
     expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.INSTALL_FW]
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     with allure.step("Check actual firmware value"):
         asic_dictionary = get_asic_dict(nv_command.platform)
@@ -134,9 +146,16 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
             with allure.step("Install firmware and verify"):
                 nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
+                with allure.step("NVUE and gNMI reboot counters must match before FW install reboot"):
+                    telemetry_before_fw_install = take_reboot_telemetry_snapshot(nv_command.system, gnmi_client)
+                    assert_nvue_gnmi_counters_match(telemetry_before_fw_install)
                 install_new_image_fw(nv_command.platform, test_name, test_image_name, devices)
             with allure.step('Verify the firmware installed successfully'):
                 verify_firmware_with_platform_cmd(nv_command.platform, version_name)
+                for gnmi_component in expand_nvue_key_to_gnmi_components(PlatformConsts.FW_ASIC, devices.dut):
+                    assert_gnmi_firmware_version_matches_nvue(
+                        gnmi_client, gnmi_component, version_name
+                    )
                 if redmine_helpers.is_bug_active(4844323):
                     ValidationTool.retry_until_valid(
                         lambda: nv_command.system.validate_health_status(HealthConsts.OK),
@@ -146,16 +165,33 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
                     nv_command.system.validate_health_status(HealthConsts.OK)
                 fw_has_changed = True
                 ValidationTool.validate_reboot_reason_and_user(nv_command.system, expected_reason, expected_user)
+                with allure.step("Verify NVUE and gNMI reboot telemetry after FW install reboot"):
+                    verify_reboot_telemetry_after_reboot(
+                        snapshot_before=telemetry_before_fw_install,
+                        system=nv_command.system,
+                        gnmi_client=gnmi_client,
+                        expected_category=RebootReasonCategory.USER_INITIATED,
+                        expected_details=expected_reason,
+                        expected_user=expected_user,
+                    )
     finally:
         with allure.step("cleanup steps"):
             with allure.step("Install original system firmware file"):
                 nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
 
+            with allure.step("NVUE and gNMI reboot counters must match before default FW reboot"):
+                telemetry_before_default_fw = take_reboot_telemetry_snapshot(nv_command.system, gnmi_client)
+                assert_nvue_gnmi_counters_match(telemetry_before_default_fw)
+
             install_default_image_fw(nv_command.system, test_name, fw_has_changed, devices)
 
         with allure.step('Verify the firmware installed successfully'):
             verify_firmware_with_platform_cmd(nv_command.platform, actual_firmware)
+            for gnmi_component in expand_nvue_key_to_gnmi_components(PlatformConsts.FW_ASIC, devices.dut):
+                assert_gnmi_firmware_version_matches_nvue(
+                    gnmi_client, gnmi_component, actual_firmware
+                )
             validate_all_asics_have_same_info(nv_command.platform)
             if redmine_helpers.is_bug_active(4844323):
                 ValidationTool.retry_until_valid(
@@ -165,6 +201,15 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
             else:
                 nv_command.system.validate_health_status(HealthConsts.OK)
             ValidationTool.validate_reboot_reason_and_user(nv_command.system, expected_reason, expected_user)
+            with allure.step("Verify NVUE and gNMI reboot telemetry after default FW reboot"):
+                verify_reboot_telemetry_after_reboot(
+                    snapshot_before=telemetry_before_default_fw,
+                    system=nv_command.system,
+                    gnmi_client=gnmi_client,
+                    expected_category=RebootReasonCategory.USER_INITIATED,
+                    expected_details=expected_reason,
+                    expected_user=expected_user,
+                )
 
 
 def get_version_and_file_name(device) -> tuple[str, str]:

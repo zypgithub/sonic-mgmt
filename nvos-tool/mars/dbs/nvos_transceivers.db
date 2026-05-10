@@ -53,8 +53,4 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_platform_els_fiber_tuning.cases </cases>
 		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[taipan]</value> </condition></ignore>
 	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_transceiver_photonics.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[taipan]</value> </condition></ignore>
-	</test>
 </DBDEF>

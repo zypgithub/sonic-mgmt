@@ -14,6 +14,13 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.system.reboot_telemetry_helpers import (
+    RebootReasonCategory,
+    assert_nvue_gnmi_counters_match,
+    gnmi_client_for_dut,
+    take_reboot_telemetry_snapshot,
+    verify_reboot_telemetry_after_reboot,
+)
 
 from ngts.tests_nvos.fae.debug_token_qtm4.helpers import (
     CRDTTokenManager,
@@ -21,6 +28,9 @@ from ngts.tests_nvos.fae.debug_token_qtm4.helpers import (
     TokenVerifier,
 )
 from ngts.tests_nvos.fae.debug_token_qtm4.token_signing import CRDTTokenSigner
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
 
 logger = logging.getLogger()
 
@@ -67,6 +77,7 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
     serial_analyzer, = serial_log_analyzers.values()
     manager = CRDTTokenManager()
     system = System()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     # Get firmware info directly from fixture (consistent bin/mfa versions)
     fw_info = ensure_debug_firmware
@@ -134,6 +145,10 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
             # Verify firmware version changed to debug version
             if expected_debug_fw_version:
                 DebugTokenFileHelper.verify_firmware_version(nv_command, expected_debug_fw_version, 'after MFA install')
+                for asic_name in getattr(devices.dut, "asic_numbers", ["ASIC1"]):
+                    assert_gnmi_firmware_version_matches_nvue(
+                        gnmi_client, asic_name, expected_debug_fw_version
+                    )
 
             retry_call(_assert_health_ok, [nv_command], exceptions=AssertionError, tries=6, delay=5)
 
@@ -163,6 +178,10 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
 
             # Verify firmware version is back to original
             DebugTokenFileHelper.verify_firmware_version(nv_command, original_firmware_version, 'after reboot with default FW')
+            for asic_name in getattr(devices.dut, "asic_numbers", ["ASIC1"]):
+                assert_gnmi_firmware_version_matches_nvue(
+                    gnmi_client, asic_name, original_firmware_version
+                )
 
         with allure.step('Verify operation time for reboot with default FW'):
             OperationTime.verify_operation_time(duration, 'reboot with default FW').verify_result()
@@ -170,6 +189,13 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
     finally:
         # Cleanup: Factory reset to ensure clean state
         with allure.step('Cleanup: Factory reset'):
+            gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
+            expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.FACTORY_RESET]
+
+            with allure.step("NVUE and gNMI reboot counters must match before factory reset"):
+                telemetry_before_reset = take_reboot_telemetry_snapshot(system, gnmi_client)
+                assert_nvue_gnmi_counters_match(telemetry_before_reset)
+
             with serial_analyzer.stage('Reset-factory'):
                 result_obj = system.factory_default.action_reset(
                     operation=devices.dut.reset_factory,
@@ -184,5 +210,14 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
             # Verify firmware version is back to original after factory reset
             DebugTokenFileHelper.verify_firmware_version(nv_command, original_firmware_version, 'after factory reset')
 
-            expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.FACTORY_RESET]
             ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
+
+            with allure.step("Verify NVUE and gNMI reboot telemetry after factory reset"):
+                verify_reboot_telemetry_after_reboot(
+                    snapshot_before=telemetry_before_reset,
+                    system=system,
+                    gnmi_client=gnmi_client,
+                    expected_category=RebootReasonCategory.USER_INITIATED,
+                    expected_details=expected_reason,
+                    expected_user=expected_user,
+                )

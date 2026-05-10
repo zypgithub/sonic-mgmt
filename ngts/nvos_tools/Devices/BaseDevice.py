@@ -156,6 +156,7 @@ class BaseDevice(ABC):
     def _init_boot_time_timeouts(self):
         self.timeout_system_is_ready = 5 * MINUTE
         self.timeout_reboot_to_grub_menu = 3 * MINUTE
+        self.cli_up_retries = 36  # 36 * 5s = 180s default
 
     def init_cli_coverage_prop(self, cli_coverage_project_name):
         self.cli_coverage_project_name = cli_coverage_project_name
@@ -532,6 +533,7 @@ class BaseSwitch(BaseDevice):
         self.previous_bios_version_name = ""
         self.previous_bios_version_path = ""
         self.fw_versions_json_file_path = None
+        self.ssd_pkg_info_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/SSD/ssd_pkg_info.json"
         self.show_platform_output = {
             "system-mac": ExpectedString(regex=r"([\dA-F]{2}:){5}[\dA-F]{2}"),
             "manufacturer": "Nvidia",

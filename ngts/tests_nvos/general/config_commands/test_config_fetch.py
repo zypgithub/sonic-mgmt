@@ -39,7 +39,10 @@ def test_show_fetch_file(engines):
     """
     system = System(None)
     files = OutputParsingTool.parse_json_str_to_dictionary(system.config.files.show()).verify_result()
-    assert 1 == len(files), "The config files list should contain only one file"
+    # Ignore image-provisioned GA config artifacts (e.g. nvos_config_ga_8000.yml) when validating
+    # the precondition - the only baseline expected here is the default IB config.
+    non_baseline_files = {k: v for k, v in files.items() if not re.match(r'^nvos_config_ga_.*\.yml$', k)}
+    assert 1 == len(non_baseline_files), "The config files list should contain only one file"
 
     with allure.step('get remote server engine'):
         yaml_file = YAML_FILES_LIST[0]

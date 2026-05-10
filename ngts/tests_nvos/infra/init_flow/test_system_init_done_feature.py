@@ -66,7 +66,8 @@ def test_system_ready_state_up(engines, devices, topology_obj, verify_no_kernel_
     ssh_connection = ConnectionTool.create_ssh_conn(engines.dut.ip, engines.dut.username, engines.dut.password).get_returned_value()
 
     with allure.step('wait until the system is ready'):
-        DutUtilsTool.wait_for_nvos_to_become_functional(ssh_connection).verify_result()
+        DutUtilsTool.wait_for_nvos_to_become_functional(
+            ssh_connection, cli_up_retries=devices.dut.cli_up_retries).verify_result()
 
     logs_to_find = ['Wait until the NOS signal we are ready to serve', 'System is ready to serve']
     System().log.verify_expected_logs(logs_to_find, logs_source=LogsSources.NVUED, engine=ssh_connection)

@@ -11,6 +11,10 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 logger = logging.getLogger()
 
@@ -47,6 +51,7 @@ def test_ssd_upgrade(engines, devices):
     with allure.step('Create System objects'):
         platform = Platform()
         fae = Fae()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     TestToolkit.tested_api = ApiType.NVUE
     with allure.step(f"With {TestToolkit.tested_api}"):
@@ -94,6 +99,9 @@ def test_ssd_upgrade(engines, devices):
                 assert current_version == expected_version, (
                     f"Expected SSD FW version {expected_version} but actual version is {current_version}. "
                     f"Initial version before action-install was {initial_version}")
+                assert_gnmi_firmware_version_matches_nvue(
+                    gnmi_client, PlatformConsts.FW_SSD, current_version
+                )
 
             with allure.step("Re-installing original firmware"):
                 result, _ = OperationTime.save_duration(
@@ -110,6 +118,9 @@ def test_ssd_upgrade(engines, devices):
                 assert current_version == initial_version, (
                     f"Expected SSD FW version to be the initial version {initial_version} but actual version is "
                     f"{current_version}")
+                assert_gnmi_firmware_version_matches_nvue(
+                    gnmi_client, PlatformConsts.FW_SSD, current_version
+                )
 
             with allure.step("Deleting image file"):
                 fae.platform.firmware.ssd.action_delete(image_filename).verify_result()

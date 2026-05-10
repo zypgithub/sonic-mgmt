@@ -16,7 +16,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, PlatformConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -24,6 +24,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.PhotonicsTool import PhotonicsTool
 from ngts.nvos_tools.system.System import System
 
 logger = logging.getLogger()
@@ -56,7 +57,10 @@ def test_ib_show_interface(engines, devices, random_api):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
                 selected_port.interface.show()).get_returned_value()
         with allure.step('validate fields values'):
-            validate_one_port_show_output(output_dictionary, devices.dut.switch_type.lower(), devices.dut.asic_type in NvosConst.QTM3_AND_NEWER)
+            validate_one_port_show_output(output_dictionary, devices.dut.switch_type.lower(),
+                                          devices.dut.asic_type in NvosConst.QTM3_AND_NEWER,
+                                          is_cpo=hasattr(devices.dut, 'els_list'),
+                                          dut=devices.dut, port_name=selected_port.name)
 
     with allure.step(f'Check interface primary ASIC for port {selected_port.name}'):
         fae = Fae(port_name=selected_port.name)
@@ -494,11 +498,41 @@ def validate_field_from_gnmi(gnmi_engine, host, port, field):
     return value
 
 
-def validate_interface_fields(output_dictionary):
+def _validate_cpo_mappings(output_dictionary, dut, port_name):
+    """Validate els-mapping and oe-mapping values against the device's known mappings."""
+    with allure.step(f'Validate CPO mappings for port {port_name}'):
+        expected_els, _, _ = PhotonicsTool.get_els_for_traffic_ports(dut, [port_name])
+        if expected_els is None:
+            logging.warning(f"Port {port_name} not found in any ELS port mapping, skipping CPO mapping validation")
+            return
+
+        # Validate els-mapping
+        ValidationTool.verify_field_value_in_output(
+            output_dictionary, PlatformConsts.TRANSCEIVER_ELS_MAPPING, expected_els
+        ).verify_result()
+
+        # Validate oe-mapping
+        expected_oes = set(PhotonicsTool.get_oe_list_for_els(dut, expected_els))
+        actual_oes = set(output_dictionary.get(PlatformConsts.TRANSCEIVER_OE_MAPPING, {}).keys())
+        ValidationTool.validate_set_equal(actual_oes, expected_oes).verify_result()
+
+        logging.info(f"Port {port_name}: els-mapping={expected_els}, oe-mapping={actual_oes}")
+
+
+def validate_interface_fields(output_dictionary, is_cpo=False, dut=None, port_name=None):
     with allure.step('Check that the following fields exist in the output: type, link'):
         logging.info('Check that the following fields exist in the output: type, link')
         field_to_check = [IbInterfaceConsts.TYPE, IbInterfaceConsts.LINK]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
+
+    if is_cpo:
+        with allure.step('Check CPO fields: els-mapping, oe-mapping'):
+            logging.info('Check that els-mapping and oe-mapping fields exist in the output')
+            cpo_fields = [PlatformConsts.TRANSCEIVER_ELS_MAPPING, PlatformConsts.TRANSCEIVER_OE_MAPPING]
+            Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, cpo_fields).verify_result()
+
+        if dut and port_name:
+            _validate_cpo_mappings(output_dictionary, dut, port_name)
 
 
 def validate_link_fields(output_dictionary, switch_type, port_up=True):
@@ -567,8 +601,9 @@ def validate_stats_fields(output_dictionary, is_qtm3_or_newer=False):
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, fields_to_check).verify_result()
 
 
-def validate_one_port_show_output(output_dictionary, switch_type, is_qtm3_or_newer=False):
-    validate_interface_fields(output_dictionary)
+def validate_one_port_show_output(output_dictionary, switch_type, is_qtm3_or_newer=False, is_cpo=False,
+                                  dut=None, port_name=None):
+    validate_interface_fields(output_dictionary, is_cpo=is_cpo, dut=dut, port_name=port_name)
 
     validate_link_fields(output_dictionary[IbInterfaceConsts.LINK], switch_type)
 

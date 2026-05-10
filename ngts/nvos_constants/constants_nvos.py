@@ -75,7 +75,7 @@ class CumulusConsts:
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "File not found: nonexist"
     NTP_SYNCHRONIZATION_MAX_TIME = 300
     NTP_LOGS_COMPONENT_ID = "nvue"
-    LOG_MSG_SET_NTP = ["nv set system ntp server 10.7.77.134 state"]
+    LOG_MSG_SET_NTP = ["nv set system ntp server 10.80.74.100 state"]
 
     DISK_MODE_FULL_DISK = 'full-disk'
     DISK_MODE_USAGE = 'usage'
@@ -541,6 +541,7 @@ class ActionConsts:
     REBOOT = 'reboot'
     RENEW = 'renew'
     ACTIVATE = 'activate'
+    ERASE = 'erase'
 
 
 class ActionParamConsts:
@@ -617,8 +618,6 @@ class SystemConsts:
     MAX_SYSTEM_DATE = MAX_SYSTEM_YEAR + "-12-31"
     MIN_SYSTEM_DATETIME = MIN_SYSTEM_DATE + " 00:00:00"
     MAX_SYSTEM_DATETIME = MAX_SYSTEM_DATE + " 23:59:59"
-    TECHSUPPORT_THRESHOLD = 150
-    TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "File not found: nonexist"
 
     NBU_NFS_SERVER = "https://nbu-mtr-nfs.nvidia.com"
 
@@ -1176,6 +1175,9 @@ class PlatformConsts:
     TRANSCEIVER_STATUS = "status"
     TRANSCEIVER_FAULT_CONDITION = "fault-condition"
     TRANSCEIVER_ERROR_STATUS = "error-status"
+    TRANSCEIVER_ELS_OPER_STATE = "els-oper-state"
+    TRANSCEIVER_ELS_OPER_STATE_LASER_ACTIVE = "Laser Active"
+    TRANSCEIVER_ELS_OPER_STATE_LASER_DOWN = "Laser Down"
     TRANSCEIVER_PORT_MAPPING = "port-mapping"
     TRANSCEIVER_ELS_MAPPING = "els-mapping"
     TRANSCEIVER_OE_MAPPING = "oe-mapping"
@@ -1424,6 +1426,7 @@ class FansConsts:
     FAN_SPEED_OUT_OF_RANGE = "speed is out of range"
     FAN_NOT_WORKING = 'not working'
     FAN_LOW_SPEED_WARNING = 'low'
+    HW_MANAGEMENT_TC_SERVICE = 'hw-management-tc.service'
 
 
 class IbConsts:
@@ -1452,7 +1455,10 @@ class IbConsts:
     IPOIB_INT0 = IPOIB_INT.format(0)
     IPOIB_INT1 = IPOIB_INT.format(1)
     DEVICE_SYSTEM = 'SYSTEM'
-    DEVICE_ASIC_LIST = ['guid', 'lid', 'subnet', 'type']
+    DEVICE_ASIC_TOP_FIELDS = ['ib-subnet', 'type']
+    DEVICE_ASIC_SUBNET_KEY = 'ib-subnet'
+    DEVICE_ASIC_DEFAULT_SUBNET = 'infiniband-default'
+    DEVICE_ASIC_SUBNET_FIELDS = ['guid', 'lid']
     DEVICE_SYSTEM_LIST = ['guid']
     GUID_FORMAT = "[0-9a-f]{2}([:])[0-9a-f]{2}(\\1[0-9a-f]{2}){6}$"
     IBDIAGNET_PATH = '/var/tmp/ibdiagnet2'
@@ -1667,10 +1673,12 @@ class NtpConsts:
     KEY_VALUE = 'v1234'
     KEY1_VALUE = 'temp_value'
     KEY2_VALUE = 'temp_value123'
-    SERVER1_IPV4 = '10.7.77.134'
-    SERVER2_IPV4 = '10.7.77.135'
-    HOSTNAME_SUFFIX = '.lab.mtl.com'
-    SERVER2_HOSTNAME = 'l-coreslave' + HOSTNAME_SUFFIX
+    # NBU lab DHCP-provided NTP servers (ib-01/ib-02.yk-il.nvidia.com), reachable across all lab networks
+    # Can be verified via: nv show interface eth1 ipv4 dhcp-client lease
+    SERVER1_IPV4 = '10.80.74.100'
+    SERVER2_IPV4 = '10.80.74.101'
+    HOSTNAME_SUFFIX = '.yk-il.nvidia.com'
+    SERVER2_HOSTNAME = 'ib-02' + HOSTNAME_SUFFIX
     SERVER3_IPV4 = '10.7.77.136'
     SERVER4_IPV4 = 'time1.google.com'
     SERVER5_IPV4 = 'google.com'
@@ -1721,11 +1729,11 @@ class NtpConsts:
 
     LOG_MSG_UNSET_NTP = "NtpCfg: Set global config: {'admin_state': 'disabled', 'authentication': 'disabled', " \
                         "'dhcp': 'disabled', 'server_role': 'disabled', 'src_intf': 'eth0', 'vrf': 'default'}"
-    LOG_MSG_SERVER_CONFIG = "servers: {'10.7.77.134': {'admin_state': 'enabled', 'association_type': 'server', " \
-                            "'iburst': 'off', 'resolve_as': '10.7.77.134', 'trusted': 'no', 'version': '4'}}"
-    LOG_MSG_SERVER_CONFIG_UPDATE = "servers: {'10.7.77.134': {'admin_state': 'disabled', " \
-                                   "'association_type': 'server', 'iburst': 'off', 'key': '6', " \
-                                   "'resolve_as': '10.7.77.134', 'trusted': 'yes', 'version': '3'}}"
+    LOG_MSG_SERVER_CONFIG = f"servers: {{'{SERVER1_IPV4}': {{'admin_state': 'enabled', 'association_type': 'server', " \
+        f"'iburst': 'off', 'resolve_as': '{SERVER1_IPV4}', 'trusted': 'no', 'version': '4'}}}}"
+    LOG_MSG_SERVER_CONFIG_UPDATE = f"servers: {{'{SERVER1_IPV4}': {{'admin_state': 'disabled', " \
+        f"'association_type': 'server', 'iburst': 'off', 'key': '6', " \
+        f"'resolve_as': '{SERVER1_IPV4}', 'trusted': 'yes', 'version': '3'}}}}"
     LOG_MSG_SERVER_CONFIG_KEY = "NtpCfg: Set keys: {'6': {'trusted': 'yes', 'type': 'SHA1'}}"
 
     LOG_MSG_LIST = [LOG_MSG_UNSET_NTP, LOG_MSG_SERVER_CONFIG, LOG_MSG_SERVER_CONFIG_UPDATE, LOG_MSG_SERVER_CONFIG_KEY]
@@ -2070,7 +2078,7 @@ class HealthConsts:
     SYSTEM_LOG_HEALTH_STATUS_REGEX = '.*text.*{}.*type-id.*{}'
 
     FATAL = "FATAL"
-    ASIC_HEALTH_ISSUE_FATAL = "Switch ASIC in fatal mode."
+    ASIC_HEALTH_ISSUE_FATAL = "Switch ASIC in fatal state."
     # more constants found at test_fatal_mode.py
 
     class Component:
@@ -2108,112 +2116,6 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
-
-
-class StatsConsts:
-    class State(Enum):
-        ENABLED = 'enabled'
-        DISABLED = 'disabled'
-
-    SLEEP_15_SECONDS = 15  # [sec]
-    SLEEP_20_SECONDS = 20  # [sec]
-    SLEEP_40_SECONDS = 40  # [sec]
-    SLEEP_1_MINUTE = 60  # [sec]
-    SLEEP_3_MINUTES = 180  # [sec]
-    SLEEP_5_MINUTES = 300  # [sec]
-    STATE = 'state'
-    STATE_DEFAULT = State.ENABLED.value
-    INTERVAL = 'interval'
-    INTERVAL_DEFAULT = '5'  # [min]
-    INTERVAL_MIN = '1'  # [min]
-    HISTORY_DURATION = 'history-duration'
-    HISTORY_DURATION_DEFAULT = '365'  # [days]
-    HISTORY_DURATION_MIN = '1'  # [days]
-    GENERATE_ALL_TIME_MAX = 2  # [sec]
-    CATEGORY_STATE_DISABLED = {STATE: State.DISABLED.value}
-    CATEGORY_MIN_DICT = {
-        STATE: STATE_DEFAULT,
-        INTERVAL: INTERVAL_MIN,
-        HISTORY_DURATION: HISTORY_DURATION_MIN
-    }
-    CATEGORY_MIN_DISABLED_DICT = {
-        STATE: State.DISABLED.value,
-        INTERVAL: INTERVAL_MIN,
-        HISTORY_DURATION: HISTORY_DURATION_MIN
-    }
-
-    LOG_MSG_UNSET_STATS = "PATCH /nvue_v1/system/stats"
-    LOG_MSG_SET_CATEGORY1 = "INFO stats-reportd: got config change "
-    LOG_MSG_SET_CATEGORY2 = ": {'enabled': 'true', 'history_duration': '365', 'interval': '1'}"
-    LOG_MSG_PATCH_CATEGORY = "PATCH /nvue_v1/system/stats/category/"
-
-    LOG_MSG_ERROR_DB = "..."  # TODO: Update message (parameter not found in redis DB)...
-
-    INVALID_CATEGORY_NAME = 'invalid_category_name'
-    ALL_CATEGORIES = 'all'
-    INVALID_STATE = 'invalid_state'
-    INVALID_INTERVAL_LOW = 0
-    INVALID_INTERVAL_HIGH = 1441
-    INVALID_HISTORY_DURATION_LOW = 0
-    INVALID_HISTORY_DURATION_HIGH = 366
-    INVALID_FILE_NAME = 'file_not_exists.csv'
-    INVALID_SHOW_CATEGORY = 'The requested item does not exist.'
-
-    TEMP_PATH = '/auto/rdmzsysgwork/shared/test_utilities/tmp/5b5931e6aac04bd39499372ef73fbf31'
-    INTERNAL_PATH = "/tmp"
-    OLD_SAMPLES_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/old_samples/"
-    BIG_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/big_file/"
-    HUGE_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/huge_file/"
-    NO_HEADER_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/no_header_file/"
-    MAX_SIZE_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/max_size/"
-    GENERATED_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/generated/"
-    RESULTS_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/results/"
-    INTERNAL_CAT_PATH = "/var/stats"
-    TEMP_FOLDER = "/auto/sw_regression/system/NVOS/MARS/results/"
-    HEADER_HOSTNAME = "# Hostname:         "
-    HEADER_GROUP = "# Statistic group:  "
-    HEADER_TIME = "# Started sampling: "
-    TIMESTAMP_FORMAT = "%b-%d %Y %H:%M:%S"
-    SYSTEM_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-    MAX_ROWS_TO_SCAN = 300
-    CONST_HEADER_ROWS = 8
-    BIG_FILE_NUM_OF_LINES = 600026
-
-    TEMP_MIN = 15  # [Celsius]
-    TEMP_MAX = 90  # [Celsius]
-    MGMT_INT_MIN = 0  # [Bytes/sec]
-    MGMT_INT_MAX = 10000  # [Bytes/sec]
-    FAN_MIN = 0  # [%]
-    FAN_MAX = 100  # [%]
-    PWR_PSU_VOLT_MIN = 0  # [V] TODO: Update
-    PWR_PSU_VOLT_MAX = 300  # [V] TODO: Update
-    PWR_PSU_CUR_MIN = 0  # [A] TODO: Update
-    PWR_PSU_CUR_MAX = 100  # [A] TODO: Update
-    ASIC_PWR_WATT_MIN = 400  # [Watt]
-    ASIC_PWR_WATT_MAX = 600  # [Watt]
-    CPU_FREE_RAM_MIN = 30  # [%]
-    CPU_FREE_RAM_MAX = 100  # [%]
-    CPU_UTIL_MIN = 0  # [%]
-    CPU_UTIL_MAX = 60  # [%]
-    CPU_REBOOT_CNT_MIN = 0
-    CPU_REBOOT_CNT_MAX = 100
-    DISK_FREE_SPACE_MIN = 30  # [%]
-    DISK_FREE_SPACE_MAX = 99  # [%]
-    DISK_RMN_LIFE_MIN = 70  # [%]
-    DISK_RMN_LIFE_MAX = 100  # [%]
-    DISK_FAIL_CNT_MIN = 0
-    DISK_FAIL_CNT_MAX = 0
-    DISK_TOTAL_LBA_RW_MIN = 10000
-    DISK_TOTAL_LBA_RW_MAX = 4294967295
-    VOLTAGE_GENERAL_MIN = 0
-    VOLTAGE_GENERAL_MAX = 100
-    VOLTAGE_PSU_MIN = 0
-    VOLTAGE_PSU_MAX = 300
-
-    GENERATE = 'generate'
-    DELETE = 'delete'
-    UPLOAD = 'upload'
-    CLEAR = 'clear'
 
 
 class LinkDetectionConsts:
@@ -2312,7 +2214,7 @@ class FastRecoveryConsts:
 
 
 class LogComponentsConsts:
-    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "syncd", "gpu_telemetry"]
+    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "symmetry-manager", "syncd"]
     CRITICAL = "critical"
     DEBUG = "debug"
     ERROR = "error"
@@ -2325,6 +2227,7 @@ class LogComponentsConsts:
     LOG_LEVEL_DEFAULT = NOTICE
     LEVEL = 'level'
     NVUE = 'nvue'
+    GPU_TELEMETRY = 'gpu_telemetry'
     NVUE_LOG = 'nvued.log'
     NVUE_CLI_LOG = 'nv-cli.log'
     FILE = 'file'
@@ -2476,9 +2379,23 @@ class AclConsts:
     HASHLIMIT_DEST_MASK = 'destination-mask'
     HASHLIMIT_SRC_MASK = 'source-mask'
     DSCP = 'dscp'
-    DEFAULT_ACLS = ["ACL_MGMT_INBOUND_CP_DEFAULT", "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6", "ACL_MGMT_INBOUND_DEFAULT",
-                    "ACL_MGMT_INBOUND_DEFAULT_IPV6", "ACL_MGMT_OUTBOUND_CP_DEFAULT",
-                    "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6"]
+    DEFAULT_ACLS = ["ACL_LOOPBACK_INBOUND_CP_DEFAULT", "ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6",
+                    "ACL_MGMT_INBOUND_CP_DEFAULT", "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6",
+                    "ACL_MGMT_INBOUND_DEFAULT", "ACL_MGMT_INBOUND_DEFAULT_IPV6",
+                    "ACL_MGMT_OUTBOUND_CP_DEFAULT", "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6"]
+    # Old -> new ACL rename / split / merge map applied during ISSU from pre-rename images.
+    # Splits (e.g. INBOUND_CP_DEFAULT) are resolved by rule "remark": rules whose remark starts with
+    # "Whitelist-" go to acl-default-whitelist[-ipv6], the rest go to acl-default-dos[-ipv6].
+    OLD_TO_NEW_ACL_RENAME_MAP = {
+        "ACL_LOOPBACK_INBOUND_CP_DEFAULT": ["acl-default-loopback"],
+        "ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6": ["acl-default-loopback-ipv6"],
+        "ACL_MGMT_INBOUND_CP_DEFAULT": ["acl-default-dos", "acl-default-whitelist"],
+        "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6": ["acl-default-dos-ipv6", "acl-default-whitelist-ipv6"],
+        "ACL_MGMT_INBOUND_DEFAULT": ["acl-default-dos"],
+        "ACL_MGMT_INBOUND_DEFAULT_IPV6": ["acl-default-dos-ipv6"],
+        "ACL_MGMT_OUTBOUND_CP_DEFAULT": ["acl-default-outbound"],
+        "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6": ["acl-default-outbound-ipv6"],
+    }
     # New default ACL structure after upgrade - replaces old DEFAULT_ACLS
     NEW_DEFAULT_ACLS = [
         'acl-default-loopback',
@@ -2491,42 +2408,46 @@ class AclConsts:
         'acl-default-outbound-ipv6'
     ]
 
-    # Expected rule counts for new ACLs after migration (based on remark field analysis)
+    # Expected rule counts for new ACLs after migration. Verified by comparing live ``nv show acl``
+    # output between an OLD-CLI DUT and a NEW-CLI DUT.
+    # The split predicate for ACL_MGMT_INBOUND_CP_DEFAULT[_IPV6] is exactly
+    # ``rule.remark.startswith("Whitelist-")``: matching rules go to acl-default-whitelist[-ipv6],
+    # everything else (including no-remark + action=permit ICMPv6 rules) goes to acl-default-dos[-ipv6].
+    # Each acl-default-whitelist[-ipv6] also has +1 auto-injected terminator rule (action=deny,
+    # match={}) appended at the end — not a migrated rule, generated by the new image.
     NEW_ACL_EXPECTED_RULE_COUNTS = {
-        'acl-default-loopback': 1,  # from ACL_LOOPBACK_INBOUND_CP_DEFAULT
-        'acl-default-loopback-ipv6': 1,  # from ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6
-        'acl-default-dos': 61,  # 60 rules without "whitelist" remark from ACL_MGMT_INBOUND_CP_DEFAULT + 1 from ACL_MGMT_INBOUND_DEFAULT
-        'acl-default-dos-ipv6': 72,  # 71 rules without "whitelist" remark from ACL_MGMT_INBOUND_CP_DEFAULT_IPV6 + 1 from ACL_MGMT_INBOUND_DEFAULT_IPV6
-        'acl-default-whitelist': 25,  # 24 rules with "whitelist" remark + 1 rule with action="permit" but no whitelist remark from ACL_MGMT_INBOUND_CP_DEFAULT
-        'acl-default-whitelist-ipv6': 24,  # 23 rules with "whitelist" remark + 1 rule with action="permit" but no whitelist remark from ACL_MGMT_INBOUND_CP_DEFAULT_IPV6
-        'acl-default-outbound': 2,  # renamed from ACL_MGMT_OUTBOUND_CP_DEFAULT
-        'acl-default-outbound-ipv6': 2  # renamed from ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6
+        'acl-default-loopback': 1,                 # renamed from ACL_LOOPBACK_INBOUND_CP_DEFAULT (1 rule)
+        'acl-default-loopback-ipv6': 1,            # renamed from ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6 (1 rule)
+        'acl-default-dos': 61,                     # 60 non-"Whitelist-" rules from ACL_MGMT_INBOUND_CP_DEFAULT + 1 from ACL_MGMT_INBOUND_DEFAULT
+        'acl-default-dos-ipv6': 72,                # 71 non-"Whitelist-" rules from ACL_MGMT_INBOUND_CP_DEFAULT_IPV6 + 1 from ACL_MGMT_INBOUND_DEFAULT_IPV6
+        'acl-default-whitelist': 25,               # 24 "Whitelist-*" rules from ACL_MGMT_INBOUND_CP_DEFAULT + 1 auto-injected deny-all terminator
+        'acl-default-whitelist-ipv6': 24,          # 23 "Whitelist-*" rules from ACL_MGMT_INBOUND_CP_DEFAULT_IPV6 + 1 auto-injected deny-all terminator
+        'acl-default-outbound': 2,                 # renamed from ACL_MGMT_OUTBOUND_CP_DEFAULT (2 rules)
+        'acl-default-outbound-ipv6': 2,            # renamed from ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6 (2 rules)
     }
 
     # ACL Migration Reference Information:
-    # The following shows how old ACLs were migrated to new ACLs during the upgrade process.
-    # This information is preserved for reference and debugging purposes.
+    # How old default ACLs map to new default ACLs during upgrade. See OLD_TO_NEW_ACL_RENAME_MAP
+    # above for the same data as a dict.
     #
-    # OLD ACL NAME                    -> NEW ACL NAME                    | MIGRATION TYPE
-    # -----------------------------------------------------------------------------------
-    # ACL_LOOPBACK_INBOUND_CP_DEFAULT  -> acl-default-loopback          | Renamed (interface-bound)
-    # ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6 -> acl-default-loopback-ipv6 | Renamed (interface-bound)
-    # ACL_MGMT_INBOUND_CP_DEFAULT      -> acl-default-dos               | Split (DOS rules)
-    # ACL_MGMT_INBOUND_CP_DEFAULT      -> acl-default-whitelist         | Split (whitelist rules)
-    # ACL_MGMT_INBOUND_CP_DEFAULT_IPV6 -> acl-default-dos-ipv6          | Split (DOS rules)
-    # ACL_MGMT_INBOUND_CP_DEFAULT_IPV6 -> acl-default-whitelist-ipv6    | Split (whitelist rules)
-    # ACL_MGMT_INBOUND_DEFAULT        -> acl-default-dos               | Merged into DOS ACL
-    # ACL_MGMT_INBOUND_DEFAULT_IPV6   -> acl-default-dos-ipv6          | Merged into DOS ACL
-    # ACL_MGMT_OUTBOUND_CP_DEFAULT    -> acl-default-outbound           | Renamed
-    # ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6 -> acl-default-outbound-ipv6   | Renamed
+    # OLD ACL NAME                          -> NEW ACL NAME              | MIGRATION TYPE
+    # ----------------------------------------------------------------------------------
+    # ACL_LOOPBACK_INBOUND_CP_DEFAULT       -> acl-default-loopback      | Renamed (interface-bound on lo)
+    # ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6  -> acl-default-loopback-ipv6 | Renamed (interface-bound on lo)
+    # ACL_MGMT_INBOUND_CP_DEFAULT           -> acl-default-dos           | Split: rules whose remark does NOT start with "Whitelist-"
+    # ACL_MGMT_INBOUND_CP_DEFAULT           -> acl-default-whitelist     | Split: rules whose remark starts with "Whitelist-"
+    # ACL_MGMT_INBOUND_CP_DEFAULT_IPV6      -> acl-default-dos-ipv6      | Split: rules whose remark does NOT start with "Whitelist-"
+    # ACL_MGMT_INBOUND_CP_DEFAULT_IPV6      -> acl-default-whitelist-ipv6| Split: rules whose remark starts with "Whitelist-"
+    # ACL_MGMT_INBOUND_DEFAULT              -> acl-default-dos           | Merged into DOS ACL
+    # ACL_MGMT_INBOUND_DEFAULT_IPV6         -> acl-default-dos-ipv6      | Merged into DOS ACL
+    # ACL_MGMT_OUTBOUND_CP_DEFAULT          -> acl-default-outbound      | Renamed
+    # ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6     -> acl-default-outbound-ipv6 | Renamed
     #
     # Migration Details:
-    # - Interface-bound ACLs: Bound to specific interfaces (lo)
-    # - System control-plane ACLs: Bound to system control-plane
-    # - DOS ACLs: Contain rules that deny traffic (DoS protection)
-    # - Whitelist ACLs: Contain rules that permit traffic (whitelist)
-    # - Split based on rule "remark" field content
-    # - Merged ACLs: Combined into existing DOS ACLs
+    # - Interface-bound ACLs: Bound to specific interfaces (lo) post-rename.
+    # - Whitelist ACLs receive a generated +1 deny-all terminator rule (action=deny, match={}) — not migrated.
+    # - DOS ACLs do NOT receive any auto-injected rules.
+    # - The split predicate is purely the remark prefix; action= is irrelevant for routing.
 
 
 class PtpConsts:
@@ -2566,7 +2487,7 @@ class IssuConsts:
     ISSU_STATUS = 'issu-status'
     ISSU = 'issu'
     ISSU_SKIP_SM = 'issu skip-sm'
-    ISSU_NO_REBOOT = 'reboot no issu'
+    ISSU_NO_REBOOT_PARAMS = {'reboot': 'no'}
     ISSU_INVALID_FLAG = 'issu invalid-flag'
     DB_REQUEST_ISSU = 'WARM_RESTART_TABLE|request-issu'
     DB_STATUS = 'status'
@@ -2591,15 +2512,14 @@ class IssuConsts:
                                   '  Configuration must be saved before performing ISSU')
     ERROR_SYSTEM_MUST_BE_REBOOTED = ('Error: Action failed with the following issue:\n'
                                      '  System must be rebooted during ISSU')
-    ERROR_OPENSM_REACH_TIMEOUT = ('Error: Action failed with the following issue:\n'
-                                  '  No permission to perform ISSU from the SM')
+    ERROR_OPENSM_REACH_TIMEOUT = 'No permission to perform ISSU from the SM'
     ERROR_DOWNGRADE_NOT_ALLOWED = ('Error: Action failed with the following issue:\n'
                                    '  ISSU does not support downgrade')
     ERROR_INVALID_PARAM = "Error: Invalid parameter: 'invalid-flag'"
     LOG_MSG_LIST = ['issue: No permission to perform ISSU from the SM',
                     'issue: System must be rebooted during ISSU',
-                    'issue: Configuration must be saved before performing ISSU',
-                    'issue: ISSU does not support downgrade']
+                    'issue: Configuration must be saved before performing ISSU']
+    LOG_MSG_DOWNGRADE_NOT_SUPPORTED = 'issue: ISSU does not support downgrade'
     SNMP_READ_ONLY_COMMUNITY = 'qwerty12'
     REDUCED_TIMEOUT = '20'  # [sec]
     # Read timeout for ISSU operations (Netmiko send_command_timing)
@@ -2694,83 +2614,6 @@ class SecureConfig:
             json.dump(cls._config, f, indent=4)
 
 
-class CpoConsts:
-    """Constants for ELS Fiber Tuning testing"""
-
-    class State(Enum):
-        ENABLED = 'enabled'
-        DISABLED = 'disabled'
-
-    class InitState(Enum):
-        COMPLETED = 'completed'
-        FAILED = 'failed'
-        NOT_REACHED = 'not-reached'
-
-    class ReadyState(Enum):
-        READY = 'ready'
-        NOT_READY = 'not-ready'
-        INITIALIZING = 'initializing'
-
-    # CPO Field Names
-    ELS_INITIALIZATION_STATE = 'els-initialization-state'
-    FIBER_CHECK_STATE = 'fiber-check-state'
-    FIBER_TUNING_STATE = 'fiber-tuning-state'
-    LASER_UP_STATE = 'laser-up-state'
-
-    # ELS Initialization Fields
-    FIBER_CHECK = 'fiber-check'
-    FIBER_TUNING = 'fiber-tuning'
-    LASER_UP = 'laser-up'
-    ERROR = 'error'
-
-    # Commands
-    ELS_INITIALIZATION = 'els-initialization'
-    ELS_INITIALIZATION_PER_LASER = 'els-initialization-per-laser'
-
-    # Default values
-    DEFAULT_STATE = State.ENABLED.value
-    TIMEOUT_AFTER_ELS_INITIALIZATION = 400  # [sec]
-
-    # Valid states lists
-    VALID_STATES = [State.ENABLED.value, State.DISABLED.value]
-    VALID_INIT_STATES = [InitState.COMPLETED.value, InitState.FAILED.value, InitState.NOT_REACHED.value]
-    VALID_READY_STATES = [ReadyState.READY.value, ReadyState.NOT_READY.value, ReadyState.INITIALIZING.value]
-
-    # Field mappings
-    CPO_FIELDS = [
-        ELS_INITIALIZATION_STATE,
-        FIBER_CHECK_STATE,
-        FIBER_TUNING_STATE,
-        LASER_UP_STATE
-    ]
-
-    ELS_INIT_DEFAULT_DICT = {
-        FIBER_CHECK: InitState.COMPLETED.value,
-        FIBER_TUNING: InitState.COMPLETED.value,
-        LASER_UP: InitState.COMPLETED.value,
-    }
-
-    ELS_INIT_PER_LASER_DEFAULT_DICT = {
-        ERROR: "",
-        FIBER_CHECK: InitState.COMPLETED.value,
-        FIBER_TUNING: InitState.COMPLETED.value,
-        LASER_UP: InitState.COMPLETED.value
-    }
-
-    # Number of lasers per ELS transceiver
-    NUMBER_OF_LASERS_PER_ELS = 8
-
-    # PMAOS module offset for ELS transceivers
-    # This offset is added to the ELS index when simulating plug/unplug events via PMAOS
-    PMAOS_MODULE_OFFSET = 71
-
-    LASER_FIELDS = [FIBER_CHECK, FIBER_TUNING, LASER_UP, ERROR]
-
-    # Error messages
-    INVALID_ELS_INDEX_ERROR = "Invalid ELS index, expected range: 1-18"
-    CANNOT_TUNE_NON_ELS_ERROR = "Can not tune non-ELS transceiver"
-
-
 class SSDConsts:
     class DiskType(Enum):
         SDA = 'sda'
@@ -2805,6 +2648,16 @@ class SSDConsts:
         SIZE_GB: 149.1,
         ADVERTISED_SIZE_GB: 160.0,
         SSD_PART_NUMBER: 'VTPM24GLXI160-BM12'
+    }
+    MD681GEEBC82: SSDType = {
+        SIZE_GB: 74.5,  # OS-visible size for an "80 GB" SSD
+        ADVERTISED_SIZE_GB: 80.0,
+        SSD_PART_NUMBER: 'MD681GEEBC82',
+    }
+    MD681GEFBC82: SSDType = {
+        SIZE_GB: 149.1,
+        ADVERTISED_SIZE_GB: 160.0,
+        SSD_PART_NUMBER: 'MD681GEFBC82',
     }
 
 

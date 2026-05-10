@@ -122,11 +122,10 @@ class OnieTool:
         """
         Return the provisioning URL based on device type (OPN/IPN).
         """
-        if OnieTool.is_opn(topology_obj):
-            dev_type = OnieTool.get_device_type(topology_obj)
-            version = ProvisionConsts.VERSIONS_DICT[dev_type]['version']
-            logger.info(f"Selected provisioning version: {version}")
-            return ProvisionConsts.VERSIONS_DICT[dev_type]['provisioning_url']
+        dev_type = OnieTool.get_device_type(topology_obj)
+        version = ProvisionConsts.VERSIONS_DICT[dev_type]['version']
+        logger.info(f"Selected provisioning version: {version}")
+        return ProvisionConsts.VERSIONS_DICT[dev_type]['provisioning_url']
 
     @staticmethod
     def run_provisioning(serial_engine, filename):

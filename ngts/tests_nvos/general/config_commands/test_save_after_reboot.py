@@ -4,7 +4,8 @@ import time
 
 import pytest
 from ngts.nvos_tools.acl.acl import Acl
-from ngts.nvos_constants.constants_nvos import FastRecoveryConsts, LinkDetectionConsts, ActionConsts, HealthConsts
+from ngts.nvos_constants.constants_nvos import FastRecoveryConsts, LinkDetectionConsts, ActionConsts, HealthConsts, \
+    FansConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType, AclConsts, IpConsts, EventConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
@@ -152,6 +153,22 @@ def test_save_reboot(engines, devices):
                 system.health.component.action(ActionConsts.CLEAR)
             with allure.step("simulate fan health error"):
                 simulated_fan_name = HWSimulator.create_health_component_error_fan(devices, engines)
+            with allure.step("Verify pre-reboot fault was registered "
+                             "(distinguishes detection failure from persistence failure)"):
+                if simulated_fan_name and FansConsts.HW_MANAGEMENT_TC_SERVICE in devices.dut.available_services:
+                    pre_health = system.health.component.parse_show()
+                    pre_fan = pre_health[HealthConsts.Component.FAN][HealthConsts.Component.INSTANCE][
+                        simulated_fan_name]
+                    assert int(pre_fan[HealthConsts.Component.UNHEALTHY_COUNT]) == 1, (
+                        f"Pre-reboot: simulator did not produce an UNHEALTHY event for {simulated_fan_name}. "
+                        f"This is a DETECTION failure (likely thermalctld set_under_speed grace-period "
+                        f"race with hw-management-tc PWM updates), not a sticky-events persistence bug. "
+                        f"See docs/bug_health_sticky_unhealthy_counters_not_persistent_after_reboot.md."
+                    )
+                    assert pre_fan[HealthConsts.Component.LAST_HEALTHY] != "", (
+                        f"Pre-reboot: last-unhealthy is empty for {simulated_fan_name} despite "
+                        f"unhealthy-count being set."
+                    )
 
         with allure.step('Save config'):
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)

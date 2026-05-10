@@ -53,12 +53,21 @@ def test_show_log(engines, devices):
     with allure.step("Rotate logs"):
         system.log.rotate_logs()
 
-    with allure.step(f"Verify {LogsSources.SYSLOG} and {LogsSources.NVUED} includes the expected logs"):
-        with allure.independent_step(f"Run show platform command to view platform firmware info {LogsSources.SYSLOG}"):
+    firmware_log_marker = (
+        devices.dut.system_log_value
+        if devices.dut.system_log_value != "system log"
+        else "part-number"
+    )
+    with allure.step(f"Verify {LogsSources.NVUED} includes the expected logs"):
+        with allure.independent_step(
+                f"Run show platform command to view platform firmware; verify in {LogsSources.NVUED}"):
             platform.firmware.show()
             with sudo_scope_if(devices.dut.is_eth()):
-                show_output = system.log.file.show_log(exit_cmd='q')
-                ValidationTool.verify_expected_output(show_output, devices.dut.system_log_value).verify_result()
+                system.log.verify_expected_logs(
+                    logs_to_find=[firmware_log_marker],
+                    logs_source=LogsSources.NVUED,
+                    engine=engines.dut,
+                    only_latest_log=True)
 
         with allure.independent_step(
                 f'Run show system image and verify "system/image" in the {LogsSources.NVUED} logs'):
@@ -96,8 +105,12 @@ def test_show_log_continues(engines):
     with allure.step("Run show command to view platform firmware"):
         platform.firmware.show()
 
-    with allure.step("Run system log file follow to view platform firmware logs"):
-        system.log.file.show_log(param='follow', expected_str='part-number', exit_cmd='\x03')
+    with allure.step(f"Verify part-number in {LogsSources.NVUED}"):
+        system.log.verify_expected_logs(
+            logs_to_find=["part-number"],
+            logs_source=LogsSources.NVUED,
+            engine=engines.dut,
+            only_latest_log=True)
 
 
 @pytest.mark.system
@@ -134,9 +147,18 @@ def test_show_log_files(engines, devices):
     with allure.step("Run show command to view platform firmware"):
         platform.firmware.show()
 
-    with allure.step("Run system log file follow to view platform firmware logs"):
+    firmware_log_marker = (
+        devices.dut.system_log_value
+        if devices.dut.system_log_value != "system log"
+        else "part-number"
+    )
+    with allure.step(f"Verify firmware marker in {LogsSources.NVUED}"):
         with sudo_scope_if(devices.dut.is_eth()):
-            system.log.file.show_log(param='follow', expected_str=devices.dut.system_log_value, exit_cmd='\x03')
+            system.log.verify_expected_logs(
+                logs_to_find=[firmware_log_marker],
+                logs_source=LogsSources.NVUED,
+                engine=engines.dut,
+                only_latest_log=True)
 
 
 @pytest.mark.system
@@ -667,9 +689,18 @@ def _delete_log_files(engines, system_log_obj, file_name):
             with allure.step("Run show command to view platform firmware"):
                 platform.firmware.show()
 
-            with allure.step("Run system log file follow to view platform firmware logs"):
+            firmware_log_marker = (
+                TestToolkit.devices.dut.system_log_value
+                if TestToolkit.devices.dut.system_log_value != "system log"
+                else "part-number"
+            )
+            with allure.step(f"Verify firmware marker in {LogsSources.NVUED}"):
                 with sudo_scope_if(TestToolkit.is_eth_dut()):
-                    system.log.file.show_log(param='follow', expected_str=TestToolkit.devices.dut.system_log_value, exit_cmd='\x03')
+                    system.log.verify_expected_logs(
+                        logs_to_find=[firmware_log_marker],
+                        logs_source=LogsSources.NVUED,
+                        engine=engines.dut,
+                        only_latest_log=True)
 
             with allure.step("Run show command to view system image"):
                 start_time = datetime.strptime(ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show()),
@@ -708,7 +739,7 @@ def test_log_idle(engines):
     # Duration to wait in idle state
     idle_duration_sec = 10 * MINUTE
     # Time to wait for interface lock release after DHCP action (in seconds)
-    interface_lock_release_time = 3
+    interface_lock_release_time = 5
     # Time to wait for DHCP configuration to stabilize (in seconds)
     dhcp_stabilization_time = 60
 

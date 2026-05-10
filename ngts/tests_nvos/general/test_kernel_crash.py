@@ -20,6 +20,14 @@ from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngi
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.system.reboot_telemetry_helpers import (
+    REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS,
+    RebootReasonCategory,
+    assert_nvue_gnmi_counters_match,
+    gnmi_client_for_dut,
+    take_reboot_telemetry_snapshot,
+    verify_reboot_telemetry_after_reboot,
+)
 
 logger = logging.getLogger()
 
@@ -40,6 +48,11 @@ def test_kernel_crash(engines, devices, topology_obj, random_api):
         7. Verify expected kdump files in tech-support
     """
     system = System()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
+
+    with allure.step("NVUE and gNMI reboot counters must match before kernel crash"):
+        telemetry_before = take_reboot_telemetry_snapshot(system, gnmi_client)
+        assert_nvue_gnmi_counters_match(telemetry_before)
 
     with allure.step("Simulate kernel crash"):
         start_time = datetime.strptime(ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show()),
@@ -52,9 +65,22 @@ def test_kernel_crash(engines, devices, topology_obj, random_api):
         DutUtilsTool.wait_on_system_reboot(engines.dut)
         time.sleep(10)
 
-    with allure.step("Check reboot reason"):
-        reboot_output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show()).get_returned_value()['reason']
-        assert RebootConsts.KERNEL_PANIC in reboot_output['reason'], f"Expected reason: '{RebootConsts.KERNEL_PANIC}'. Got:{reboot_output['reason']}"
+    with allure.step("Verify NVUE and gNMI reboot telemetry after kernel crash"):
+        reason_row = OutputParsingTool.parse_json_str_to_dictionary(
+            system.reboot.reason.show(exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS)
+        ).get_returned_value()
+        reason_val = reason_row.get("reason", "")
+        if isinstance(reason_val, dict):
+            reason_val = reason_val.get("reason", "")
+        telemetry_details = str(reason_val).strip()
+        verify_reboot_telemetry_after_reboot(
+            snapshot_before=telemetry_before,
+            system=system,
+            gnmi_client=gnmi_client,
+            expected_category=RebootReasonCategory.CRITICAL_ERROR,
+            expected_details=telemetry_details,
+            expected_user=RebootConsts.REBOOT_USER_NA,
+        )
 
     with allure.step("Verify in logs that kernel crash was detected and tech-support file will be generated"):
         log_message_list = [r"Kernel crashes detected",

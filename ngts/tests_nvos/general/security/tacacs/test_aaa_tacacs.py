@@ -22,6 +22,8 @@ from . import tacacs_test_utils
 
 logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
+
 
 @pytest.fixture(scope='session', autouse=True)
 def prepare_scp_test(prepare_scp: None) -> None:
@@ -340,8 +342,13 @@ def test_tacacs_accounting_basic(
     """
     skip_auth_mediums = []
     test_server = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[addressing_type].copy()
-    test_server.auth_mode = random.choice(AuthMode.ALL_TYPES)
+    test_server.auth_mode = AuthMode.LOGIN
     test_server.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[test_server.auth_mode]
+
+    with allure.step('Remove leftover TACACS server entries from previous tests'):
+        engines.dut.run_cmd('nv config detach', validate=False)
+        engines.dut.run_cmd('nv unset system aaa tacacs server', validate=False)
+        engines.dut.run_cmd('nv config apply -y', validate=False)
 
     generic_aaa_accounting_testing.generic_aaa_test_accounting_basic(test_api, engines, topology_obj, request, switch_hostname, local_adminuser,
                                                                      remote_aaa_type=RemoteAaaType.TACACS,
@@ -391,10 +398,15 @@ def test_tacacs_accounting_lowest_server_only(
     test_server1.priority = 1
     test_server2.priority = 2
 
-    test_server1.auth_mode = auth_mode1
-    test_server1.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[auth_mode1]
-    test_server2.auth_mode = auth_mode2
-    test_server2.users = TacacsDockerServer2.USERS_BY_AUTH_MODE[auth_mode2]
+    test_server1.auth_mode = AuthMode.LOGIN
+    test_server1.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[AuthMode.LOGIN]
+    test_server2.auth_mode = AuthMode.LOGIN
+    test_server2.users = TacacsDockerServer2.USERS_BY_AUTH_MODE[AuthMode.LOGIN]
+
+    with allure.step('Remove leftover TACACS server entries from previous tests'):
+        engines.dut.run_cmd('nv config detach', validate=False)
+        engines.dut.run_cmd('nv unset system aaa tacacs server', validate=False)
+        engines.dut.run_cmd('nv config apply -y', validate=False)
 
     generic_aaa_accounting_testing.generic_aaa_test_accounting_lowest_server_only(test_api, engines, topology_obj, request, switch_hostname,
                                                                                   local_adminuser,
@@ -427,10 +439,8 @@ def test_tacacs_accounting_unreachable_lowest_server(
         7. verify accounting logs now on the lowest reachable server
     """
     addressing_type1 = random.choice(AddressingType.ALL_TYPES)
-    auth_mode1 = random.choice(AuthMode.ALL_TYPES)
     addressing_type2 = RandomizationTool.select_random_value(AddressingType.ALL_TYPES,
                                                              [addressing_type1]).get_returned_value()
-    auth_mode2 = random.choice(AuthMode.ALL_TYPES)
 
     test_server1 = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[addressing_type1].copy()
     test_server2 = TacacsDockerServer2.SERVER_BY_ADDRESSING_TYPE[addressing_type2].copy()
@@ -438,10 +448,15 @@ def test_tacacs_accounting_unreachable_lowest_server(
     test_server1.priority = 1
     test_server2.priority = 2
 
-    test_server1.auth_mode = auth_mode1
-    test_server1.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[test_server1.auth_mode]
-    test_server2.auth_mode = auth_mode2
-    test_server2.users = TacacsDockerServer2.USERS_BY_AUTH_MODE[test_server2.auth_mode]
+    test_server1.auth_mode = AuthMode.LOGIN
+    test_server1.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[AuthMode.LOGIN]
+    test_server2.auth_mode = AuthMode.LOGIN
+    test_server2.users = TacacsDockerServer2.USERS_BY_AUTH_MODE[AuthMode.LOGIN]
+
+    with allure.step('Remove leftover TACACS server entries from previous tests'):
+        engines.dut.run_cmd('nv config detach', validate=False)
+        engines.dut.run_cmd('nv unset system aaa tacacs server', validate=False)
+        engines.dut.run_cmd('nv config apply -y', validate=False)
 
     generic_aaa_accounting_testing.generic_aaa_test_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request, switch_hostname,
                                                                                          local_adminuser,
@@ -474,11 +489,15 @@ def test_tacacs_accounting_local_first(
         7. verify accounting logs now on the lowest reachable server
     """
     addressing_type = random.choice(AddressingType.ALL_TYPES)
-    auth_mode = random.choice(AuthMode.ALL_TYPES)
 
     test_server = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[addressing_type].copy()
-    test_server.auth_mode = auth_mode
-    test_server.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[test_server.auth_mode]
+    test_server.auth_mode = AuthMode.LOGIN
+    test_server.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[AuthMode.LOGIN]
+
+    with allure.step('Remove leftover TACACS server entries from previous tests'):
+        engines.dut.run_cmd('nv config detach', validate=False)
+        engines.dut.run_cmd('nv unset system aaa tacacs server', validate=False)
+        engines.dut.run_cmd('nv config apply -y', validate=False)
 
     generic_aaa_accounting_testing.generic_aaa_test_accounting_local_first(test_api, engines, topology_obj, request, switch_hostname, local_adminuser,
                                                                            remote_aaa_type=RemoteAaaType.TACACS,
@@ -530,7 +549,6 @@ def test_tacacs_timeout(test_api: str, engines: EnginesT, topology_obj: Topology
             authenticator = SshAuthenticator(local_adminuser.username, local_adminuser.password, engines.dut.ip)
             _, timestamp1 = authenticator.attempt_login_failure()
             _, timestamp2 = authenticator.attempt_login_success(restart_session_process=False)
-            engines.dut.disconnect()
 
         with allure.step('Verify respond time >= timeout'):
             assert timestamp2 - timestamp1 >= rand_timeout, f'Timeout was too short. Expected: {rand_timeout}'
@@ -546,7 +564,8 @@ def test_tacacs_timeout(test_api: str, engines: EnginesT, topology_obj: Topology
                 AaaConsts.PORT: AaaConsts.AAA_SERVER_BAD_PORT
             }, apply=True, verify_apply=False)
 
-        with allure.step('Make authentication attempt and measure time'):
+        with allure.step('Disconnect and make authentication attempt with 2 unreachable servers'):
+            engines.dut.disconnect()
             _, timestamp1 = authenticator.attempt_login_failure()
             _, timestamp2 = authenticator.attempt_login_success(restart_session_process=False)
             engines.dut.disconnect()

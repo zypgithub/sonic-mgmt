@@ -16,6 +16,10 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.platform.test_install_platform_firmware import get_asic_dict
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 logger = logging.getLogger()
 
@@ -43,6 +47,13 @@ def test_show_platform_firmware_asic(devices):
 
     with allure.step("Validate asic fields"):
         verify_asic_fields(output_dictionary)
+    with allure.step("Verify gNMI ASIC firmware-version metrics"):
+        # test signature has only devices fixture, use toolkit engines
+        gnmi_client = gnmi_client_for_dut(TestToolkit.engines.dut, devices.dut)
+        for asic_name, asic_props in output_dictionary.items():
+            assert_gnmi_firmware_version_matches_nvue(
+                gnmi_client, asic_name, asic_props[PlatformConsts.FW_ACTUAL]
+            )
 
 
 @pytest.mark.checklist

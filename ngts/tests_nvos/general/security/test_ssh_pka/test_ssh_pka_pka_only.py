@@ -2,20 +2,20 @@ import logging
 import pytest
 import time
 
-from ..security_test_tools.tool_classes.AuthVerifier import PKAAuthVerifier, SshAuthVerifier
-from ..security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import PKAAuthVerifier, SshAuthVerifier
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import SystemConsts
-from ..security_test_tools.constants import AddressingType
-from ..ssh_hardening.constants import SshHardeningConsts
+from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
+from ngts.tests_nvos.general.security.ssh_hardening.constants import SshHardeningConsts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 
-from .helpers import _generate_new_key, keys_path
+from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path
 
 logger = logging.getLogger(__name__)
 

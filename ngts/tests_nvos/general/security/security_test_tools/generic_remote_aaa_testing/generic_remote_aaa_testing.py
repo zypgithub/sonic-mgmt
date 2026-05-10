@@ -453,7 +453,11 @@ def generic_aaa_test_priority(
 
     while True:
         with allure.step('Wait for configuration to be fully applied'):
-            time.sleep(RemoteAaaConsts.WAIT_TIME_BEFORE_AUTH)
+            wait_for_ldap_nvued_restart_workaround(
+                test_item=item,
+                engine_to_use=engines.dut,
+                username=best_server.users[0].username,
+            )
 
         with allure.step(f'Verify auth is done via top prioritized server: {best_server.hostname}'):
             verify_auth(test_flow, engines, topology_obj,
@@ -468,9 +472,18 @@ def generic_aaa_test_priority(
             worse_server_resource = remote_aaa_obj.server.server_id[worse_server.hostname]
             worse_server.priority = next_prio
             if remote_aaa_type == RemoteAaaType.LDAP:
-                remote_aaa_obj.set(LdapConsts.PORT, worse_server.port, dut_engine=item.active_remote_admin_engine).ignore_result()
-            worse_server_resource.set(AaaConsts.PRIORITY, worse_server.priority, apply=True,
-                                      dut_engine=item.active_remote_admin_engine).ignore_result()
+                # Promote ignore_result -> verify_result: if NVUE silently
+                # fails to queue the port change, the subsequent auth would
+                # fail with a confusing SSH/LDAP error several seconds later.
+                # Catch the real error at its source instead.
+                remote_aaa_obj.set(
+                    LdapConsts.PORT, worse_server.port,
+                    dut_engine=item.active_remote_admin_engine,
+                ).verify_result()
+            worse_server_resource.set(
+                AaaConsts.PRIORITY, worse_server.priority, apply=True,
+                dut_engine=item.active_remote_admin_engine,
+            ).verify_result()
             worse_server, best_server = best_server, worse_server
             RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
             if remote_aaa_type == RemoteAaaType.LDAP:
@@ -521,6 +534,20 @@ def generic_aaa_test_server_unreachable(
 
     TestToolkit.tested_api = test_api
     item = request.node
+
+    with allure.step(f'Pre-test cleanup: remove any pre-existing {remote_aaa_type} config'):
+        # Guarantees a clean slate for the priority-1 server this test is about
+        # to configure. Without this, any leftover server with priority=1 on
+        # the DUT (from a prior interrupted test session) makes the enable+apply
+        # in this test fail with "priority must be unique" before a single auth
+        # attempt is made, masking the actual scenario under test.
+        try:
+            remote_aaa_obj.unset(apply=True)
+        except Exception as ex:
+            logging.info(
+                f'Pre-test {remote_aaa_type} unset produced no-op or error '
+                f'(continuing - cleanup is best-effort): {ex}'
+            )
 
     with allure.step('Configure unreachable server'):
         server1 = server1.copy()

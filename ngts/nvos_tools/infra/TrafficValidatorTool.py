@@ -66,17 +66,25 @@ class CounterBaseline:
     port_name: str
     phy_detail_counters: Dict[str, int] = field(default_factory=dict)
 
-    def get_changed_counters(self, current_values: Dict[str, int]) -> Dict[str, tuple]:
+    def get_changed_counters(self, current_values: Dict[str, int],
+                             tolerances: Optional[Dict[str, int]] = None) -> Dict[str, tuple]:
         """
         Compare current values with baseline and return changed counters.
 
         :param current_values: Current counter values
+        :param tolerances: Optional dict mapping counter_name -> max_allowed_delta.
+            A counter is reported as changed only if (current - baseline) > tolerance.
+            Counters not in the dict use strict zero tolerance.
+            None (default) preserves strict zero-delta behavior.
         :return: Dict of counter_name -> (before, after) for counters that changed
         """
+        tolerances = tolerances or {}
         changes = {}
         for counter_name, baseline_value in self.phy_detail_counters.items():
             current_value = current_values.get(counter_name, 0)
-            if current_value != baseline_value:
+            delta = current_value - baseline_value
+            threshold = tolerances.get(counter_name, 0)
+            if delta > threshold:
                 changes[counter_name] = (baseline_value, current_value)
         return changes
 
@@ -220,7 +228,8 @@ class TrafficValidatorTool:
         return 0
 
     @staticmethod
-    def verify_no_link_errors(engine, device: 'IbSwitch') -> ResultObj:
+    def verify_no_link_errors(engine, device: 'IbSwitch',
+                              tolerances: Optional[Dict[str, int]] = None) -> ResultObj:
         """
         Verify that traffic ports have no link errors in their counters.
 
@@ -229,8 +238,19 @@ class TrafficValidatorTool:
 
         :param engine: DUT engine (engines.dut)
         :param device: Device object (devices.dut) with link_error_counters attribute
+        :param tolerances: Optional dict mapping counter_name -> max_allowed_value.
+            A counter fails only if its value strictly exceeds the tolerance.
+            Counters not present in the dict use strict zero tolerance.
+            None (default) preserves strict zero tolerance for all counters.
+
+            Use case: IPoIB tests that cycle ifconfig per direction trigger IB
+            multicast group join/leave activity; the SM re-pushes multicast
+            forwarding tables, which legitimately ticks
+            'port-rcv-switch-relay-errors' during the transient MFT update
+            window. The data plane itself remains clean.
         :return: ResultObj with result=True if no errors, result=False with error details otherwise
         """
+        tolerances = tolerances or {}
         traffic_ports = TrafficValidatorTool.get_traffic_ports(engine)
 
         if not traffic_ports:
@@ -256,10 +276,15 @@ class TrafficValidatorTool:
                                 counter_value = TrafficValidatorTool._parse_counter_value(
                                     link_counters.get(counter_name, 0)
                                 )
-                                if counter_value != 0:
-                                    error_msg = f"{port.name}: {counter_name}={counter_value}"
+                                threshold = tolerances.get(counter_name, 0)
+                                if counter_value > threshold:
+                                    error_msg = (f"{port.name}: {counter_name}={counter_value}" +
+                                                 (f" (tolerance={threshold})" if threshold else ""))
                                     errors_found.append(error_msg)
                                     logger.error(f"Link error detected - {error_msg}")
+                                elif threshold and counter_value > 0:
+                                    logger.info(f"{port.name}: {counter_name}={counter_value} "
+                                                f"within tolerance ({threshold})")
 
                         # Check top-level counters
                         if top_level_counters_to_check:
@@ -270,10 +295,15 @@ class TrafficValidatorTool:
                                 counter_value = TrafficValidatorTool._parse_counter_value(
                                     top_counters.get(counter_name, 0)
                                 )
-                                if counter_value != 0:
-                                    error_msg = f"{port.name}: {counter_name}={counter_value}"
+                                threshold = tolerances.get(counter_name, 0)
+                                if counter_value > threshold:
+                                    error_msg = (f"{port.name}: {counter_name}={counter_value}" +
+                                                 (f" (tolerance={threshold})" if threshold else ""))
                                     errors_found.append(error_msg)
                                     logger.error(f"Top-level error detected - {error_msg}")
+                                elif threshold and counter_value > 0:
+                                    logger.info(f"{port.name}: {counter_name}={counter_value} "
+                                                f"within tolerance ({threshold})")
 
                     except Exception as e:
                         error_msg = f"{port.name}: Failed to get counters - {str(e)}"
@@ -370,7 +400,8 @@ class TrafficValidatorTool:
         return baselines
 
     @staticmethod
-    def compare_with_baseline(baselines: Dict[str, CounterBaseline], engine=None) -> ResultObj:
+    def compare_with_baseline(baselines: Dict[str, CounterBaseline], engine=None,
+                              tolerances: Optional[Dict[str, int]] = None) -> ResultObj:
         """
         Compare current PHY detail counters with baseline and report changes.
 
@@ -379,8 +410,19 @@ class TrafficValidatorTool:
 
         :param baselines: Dict of port_name -> CounterBaseline from capture_baseline()
         :param engine: Optional DUT engine. If not provided, uses TestToolkit.get_engine()
+        :param tolerances: Optional dict mapping counter_name -> max_allowed_delta.
+            A counter is flagged only if (after - before) > tolerance.
+            Counters not in the dict use strict zero tolerance.
+            None (default) preserves strict zero-delta behavior.
+
+            Use case: IPoIB tests that cycle ifconfig per direction trigger
+            multicast group join/leave; the SM updates Multicast Forwarding
+            Tables on switches, during which 'port-dlid-mapping-errors' can
+            legitimately increment as transient packets hit half-updated
+            entries. The data plane itself remains clean.
         :return: ResultObj with result=True if no changes, result=False with details otherwise
         """
+        tolerances = tolerances or {}
         engine = engine or TestToolkit.get_engine()
         traffic_ports = TrafficValidatorTool.get_traffic_ports(engine)
 
@@ -412,14 +454,26 @@ class TrafficValidatorTool:
                                 phy_detail.get(counter_name, 0)
                             )
 
-                        # Compare with baseline
-                        changes = baseline.get_changed_counters(current_values)
+                        # Compare with baseline (per-counter tolerance applied here)
+                        changes = baseline.get_changed_counters(current_values, tolerances)
                         if changes:
                             for counter_name, (before, after) in changes.items():
                                 delta = after - before
-                                error_msg = f"{port.name}: {counter_name} changed from {before} to {after} (delta: +{delta})"
+                                threshold = tolerances.get(counter_name, 0)
+                                tol_note = f" (tolerance={threshold})" if threshold else ""
+                                error_msg = (f"{port.name}: {counter_name} changed from {before} "
+                                             f"to {after} (delta: +{delta}){tol_note}")
                                 errors_found.append(error_msg)
                                 logger.error(f"PHY detail counter changed - {error_msg}")
+                        # Log within-tolerance movements for visibility
+                        for counter_name, baseline_value in baseline.phy_detail_counters.items():
+                            current_value = current_values.get(counter_name, 0)
+                            delta = current_value - baseline_value
+                            threshold = tolerances.get(counter_name, 0)
+                            if 0 < delta <= threshold:
+                                logger.info(f"{port.name}: {counter_name} moved {baseline_value}"
+                                            f" -> {current_value} (delta: +{delta}) within tolerance "
+                                            f"({threshold})")
 
                     except Exception as e:
                         error_msg = f"{port.name}: Failed to compare counters - {str(e)}"

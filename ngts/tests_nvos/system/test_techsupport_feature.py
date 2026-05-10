@@ -3,7 +3,6 @@ from typing import Optional
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -148,7 +147,7 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet, ib_rout
             expected_files_dict[f'sai_sdk_dump{asic_num}'] = BaseSwitch.get_sdk_dump_files_for_asic(
                 asic_num, devices.dut.constants.sdk_dump_files_template)
 
-    if is_bug_active(4303918) and isinstance(devices.dut, CrocodileSwitch):
+    if is_bug_active(4303918) and "hdparm" in expected_files_dict["dump"]:
         expected_files_dict["dump"].remove("hdparm")
 
     # Dynamically add tech-support directories for cluster apps (if device has any)

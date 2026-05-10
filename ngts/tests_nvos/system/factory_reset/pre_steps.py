@@ -113,6 +113,12 @@ def factory_reset_keep_basic_pre_steps(engines, system):
                                                           field_name=NvosConst.DESCRIPTION,
                                                           expected_value='nvosdescription')
 
+    dns_server_id = SystemConsts.DNS_SERVER_IDS["ipv4"]
+    with allure.step('Set DNS server and save config'):
+        system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value=dns_server_id,
+                       apply=True, dut_engine=engines.dut, ask_for_confirmation=True).verify_result()
+        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
     with allure.step("Add data before reset factory"):
         username = add_verification_data(engines.dut, system)
 
@@ -120,7 +126,7 @@ def factory_reset_keep_basic_pre_steps(engines, system):
         update_timezone(system)
         current_time = get_current_time(engines)
 
-    return current_time, username, health_status, mgmt_port, output_dictionary
+    return current_time, username, health_status, mgmt_port, output_dictionary, dns_server_id
 
 
 def factory_reset_general_pre_steps(engines, devices, system):

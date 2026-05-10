@@ -167,7 +167,8 @@ class DutUtilsTool:
             serial_engine.run_cmd('', system_ready_pattern, timeout=wait_timeout, send_without_enter=True)
 
     @staticmethod
-    def wait_for_nvos_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10, /, *, throw_exception_on_unhealthy: bool = True):
+    def wait_for_nvos_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10, /, *,
+                                           throw_exception_on_unhealthy: bool = True, cli_up_retries: int = 36):
         with allure.step('wait until the system is ready - check SYSTEM_STATE table'):
             with allure.step('wait for the system table to exist'):
                 wait_for_system_table_to_exist(engine)
@@ -188,7 +189,7 @@ class DutUtilsTool:
                                      issue_type=IssueType.PossibleBug)
 
             with allure.step('wait until the CLI is up'):
-                wait_until_cli_is_up(engine)
+                wait_until_cli_is_up(engine, retries=cli_up_retries)
 
             try:
                 with allure.step('Wait until systemctl status is "running"'):
@@ -201,7 +202,10 @@ class DutUtilsTool:
             with allure.step('Validate system health status is OK'):
                 from ngts.nvos_tools.system.System import System
                 from ngts.nvos_constants.constants_nvos import HealthConsts
-                System().validate_health_status(HealthConsts.OK, dut_engine=engine, throw_exception=throw_exception_on_unhealthy)
+
+                System().validate_health_status(
+                    HealthConsts.OK, dut_engine=engine, throw_exception=throw_exception_on_unhealthy
+                )
 
             return ResultObj(result=True, info="System Is Ready", issue_type=IssueType.PossibleBug)
 
@@ -350,12 +354,14 @@ def wait_for_system_table_to_exist(engine):
     return True
 
 
-@retry(Exception, tries=36, delay=5)
-def wait_until_cli_is_up(engine):
-    logger.info('Checking the status of nvued')
-    output = DutUtilsTool.run_cmd_with_disconnect(engine, 'nv show system')
-    if 'CLI is unavailable' in output:
-        raise Exception("Waiting for NVUE to become functional")
+def wait_until_cli_is_up(engine, retries=36):
+    @retry(Exception, tries=retries, delay=5)
+    def _wait():
+        logger.info('Checking the status of nvued')
+        output = DutUtilsTool.run_cmd_with_disconnect(engine, 'nv show system')
+        if 'CLI is unavailable' in output:
+            raise Exception("Waiting for NVUE to become functional")
+    _wait()
 
 
 @retry(Exception, tries=24, delay=5)

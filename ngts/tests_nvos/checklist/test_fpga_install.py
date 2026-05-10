@@ -11,6 +11,10 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 logger = logging.getLogger()
 
@@ -43,6 +47,7 @@ def test_fpga_install(engines, devices, topology_obj, test_api, platform_compone
             pytest.skip("Device does not have BMC")
     TestToolkit.tested_api = test_api
     component_name = platform_component_with_clear.get_resource_basename().lower()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     platform = Platform()
     platform_output = OutputParsingTool.parse_show_output_to_dict(platform.show()).get_returned_value()
@@ -65,6 +70,9 @@ def test_fpga_install(engines, devices, topology_obj, test_api, platform_compone
         with allure.step(f"verify operation time for install fpga {version_name!r} (duration: {res_obj.duration})"):
             OperationTime.verify_operation_time(res_obj.duration, 'install fpga', devices).verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        assert_gnmi_firmware_version_matches_nvue(
+            gnmi_client, PlatformConsts.FW_FPGA, version_name
+        )
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
         res_obj = BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
@@ -73,3 +81,6 @@ def test_fpga_install(engines, devices, topology_obj, test_api, platform_compone
         with allure.step(f"verify operation time for install fpga {version_name!r} (duration: {res_obj.duration})"):
             OperationTime.verify_operation_time(res_obj.duration, 'install fpga', devices).verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        assert_gnmi_firmware_version_matches_nvue(
+            gnmi_client, PlatformConsts.FW_FPGA, version_name
+        )

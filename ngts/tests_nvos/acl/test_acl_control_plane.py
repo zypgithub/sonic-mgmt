@@ -77,10 +77,6 @@ def test_system_control_plane_counters(engines, test_api, topology_obj):
     """
     TestToolkit.tested_api = test_api
 
-    # Skip test for OpenAPI as it's known to fail with system control plane ACLs
-    if test_api == ApiType.OPENAPI:
-        pytest.skip("Skipping test for OpenAPI as system control plane ACL operations are not working properly")
-
     with allure.step("Config system control plane ACLs with rules"):
         acl_type = 'ipv4'
         sonic_mgmt_ip = engines.sonic_mgmt.ip
@@ -177,9 +173,6 @@ def test_show_system_control_plane_acl_commands(devices, engines, test_api, topo
     """
     TestToolkit.tested_api = test_api
 
-    # Skip test for OpenAPI as it's known to fail with system control plane ACLs
-    if test_api == ApiType.OPENAPI:
-        pytest.skip("Skipping test for OpenAPI as system control plane ACL operations are not working properly")
     system_obj = System()
 
     with allure.step("Define ACL with rules"):
@@ -721,10 +714,6 @@ def test_system_control_plane_acl_global_vs_interface_behavior(engines, test_api
        - eth1: continues using global ACL only
     """
     TestToolkit.tested_api = test_api
-
-    # Skip test for OpenAPI as it's known to fail with system control plane ACLs
-    if test_api == ApiType.OPENAPI:
-        pytest.skip("Skipping test for OpenAPI as system control plane ACL operations are not working properly")
 
     system_obj = System()
 

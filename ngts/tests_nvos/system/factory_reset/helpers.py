@@ -151,10 +151,18 @@ def add_verification_data_for_ib(engine, system):
         return username
 
 
-def verify_cleanup_done(engine, time_before_rf, system, username, param='', ib_router=False):
+def verify_cleanup_done(engine, time_before_rf, system, username, param='', ib_router=False, dns_server_id=None):
     logging.info("Verify cleanup done as expected")
     errors = ""
     device = TestToolkit.devices.dut
+    if dns_server_id and param == KEEP_BASIC:
+        with allure.step('Validate saved DNS config is retained after factory reset'):
+            dns_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
+                system.dns.show(SystemConsts.DNS_SERVER)).get_returned_value()
+            if dns_server_id not in dns_output:
+                errors += "\nThe configured DNS server {} is not retained after factory reset keep basic".format(
+                    dns_server_id)
+    assert not errors, "DNS verification failed after factory reset:{}".format(errors)
     if TestToolkit.devices.dut.is_ib():
         verify_cleanup_done_for_ib(engine, time_before_rf, device, username, param, ib_router=ib_router)
     if TestToolkit.devices.dut.is_eth():

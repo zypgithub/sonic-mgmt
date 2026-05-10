@@ -24,6 +24,8 @@ from ngts.scripts.allure_summary.llm_client import LLMGatewayClient, analyze_fai
 from ngts.scripts.allure_summary.templates import generate_html_email
 from ngts.scripts.allure_summary.email_sender import send_email
 from ngts.scripts.allure_summary.logger import setup_logger, get_logger
+from ngts.scripts.allure_summary.multi_system import fetch_and_aggregate
+from ngts.scripts.allure_summary.templates.multi_system_template import generate_multi_system_email
 
 # Path where allure_reporter.py writes the predicted URL
 VERIFICATION_FILES_DIR = "/auto/sw_system_project/NVOS_INFRA/verification_files"
@@ -153,6 +155,13 @@ Examples:
   export LLM_GATEWAY_TOKEN="your-nvauth-token"
   python -m allure_summary --setup-name NVOS_juliet_10_7_145_52 --use-llm --email user@nvidia.com
 
+  # MULTI-SYSTEM MODE: Aggregate results from multiple systems
+  python -m allure_summary --multi-system \\
+      --setup-name NVOS_juliet_10_7_145_52 \\
+      --setup-name NVOS_crocodile_10_245_21_19 \\
+      --setup-name NVOS_rosalind_eb1_10 \\
+      --email team@nvidia.com
+
 Mail Lists Available:
   CORE_TEAM     - Core verification team
   EXTENDED_TEAM - Extended team with stakeholders
@@ -166,8 +175,15 @@ Mail Lists Available:
     input_group = parser.add_argument_group("Input Options")
     input_group.add_argument("--url", help="Full Allure report URL")
     input_group.add_argument("--project", help="Allure project name")
-    input_group.add_argument("--setup-name", help="MARS setup name (auto-converts to project)")
+    input_group.add_argument("--setup-name", action="append", dest="setup_names",
+                             help="MARS setup name (can be specified multiple times for multi-system mode)")
     input_group.add_argument("--report-id", type=int, help="Specific report ID (default: latest)")
+
+    # Multi-system options
+    multi_group = parser.add_argument_group("Multi-System Options")
+    multi_group.add_argument("--multi-system", action="store_true",
+                             help="Enable multi-system mode to aggregate results from multiple setups")
+    multi_group.add_argument("--image-version", help="Override image version for multi-system summary")
 
     # Email options
     email_group = parser.add_argument_group("Email Options")
@@ -180,8 +196,8 @@ Mail Lists Available:
     llm_group = parser.add_argument_group("AI Analysis Options")
     llm_group.add_argument("--use-llm", action="store_true",
                            help="Enable AI-powered analysis via NVIDIA LLM Gateway")
-    llm_group.add_argument("--llm-model", default="gpt-4o",
-                           help="LLM model to use (default: gpt-4o)")
+    llm_group.add_argument("--llm-model", default="azure/openai/gpt-4o",
+                           help="LLM model to use (default: azure/openai/gpt-4o)")
 
     # Output options
     output_group = parser.add_argument_group("Output Options")
@@ -190,15 +206,138 @@ Mail Lists Available:
 
     args = parser.parse_args()
 
-    # Validate that we have either URL, project, or setup-name
-    if not args.url and not args.project and not args.setup_name:
-        parser.error("Either --url, --project, or --setup-name is required")
+    # Multi-system mode requires at least 2 setup names
+    if args.multi_system:
+        if not args.setup_names or len(args.setup_names) < 2:
+            parser.error("--multi-system requires at least 2 --setup-name arguments")
+    else:
+        # Single-system mode: validate that we have either URL, project, or setup-name
+        if not args.url and not args.project and not args.setup_names:
+            parser.error("Either --url, --project, or --setup-name is required")
 
     # Validate that we have either email or mail-list or output
     if not args.email and not args.mail_list and not args.output:
         parser.error("Either --email, --mail-list, or --output is required")
 
     return args
+
+
+def run_multi_system_mode(args):
+    """
+    Run in multi-system mode - aggregate results from multiple test systems.
+
+    Args:
+        args: Parsed command line arguments
+    """
+    logger = get_logger()
+    logger.info("🔄 Running in MULTI-SYSTEM mode")
+    logger.info(f"   Systems: {', '.join(args.setup_names)}")
+    logger.info("-" * 40)
+
+    # Fetch and aggregate results from all systems
+    multi_summary, all_analyses = fetch_and_aggregate(
+        setup_names=args.setup_names,
+        image_version=args.image_version
+    )
+
+    if not multi_summary.systems:
+        logger.error("No systems were successfully fetched. Exiting.")
+        sys.exit(1)
+
+    # Log summary
+    logger.info("-" * 40)
+    logger.info(f"📊 Multi-System Summary:")
+    logger.info(f"   Image: {multi_summary.image_version}")
+    logger.info(f"   Systems: {multi_summary.system_count}")
+    logger.info(f"   Overall: {multi_summary.total_passed}/{multi_summary.total_tests} "
+                f"({multi_summary.overall_pass_rate:.1f}%)")
+    logger.info(f"   New failures: {multi_summary.new_failure_count}")
+    logger.info(f"   Cross-system failures: {len(multi_summary.cross_system_failures)}")
+
+    # Per-system breakdown
+    for sys_result in multi_summary.systems:
+        s = sys_result.summary
+        new_count = len(sys_result.new_failures)
+        new_badge = f" 🆕{new_count}" if new_count > 0 else ""
+        logger.info(f"   {s.get_status_emoji()} {sys_result.short_name}: "
+                    f"{s.pass_rate:.1f}% ({s.passed}/{s.total}){new_badge}")
+
+    # LLM Analysis (if enabled)
+    llm_analysis = None
+    if args.use_llm:
+        logger.info("-" * 40)
+        logger.info("🤖 Running AI-powered multi-system analysis...")
+
+        llm_client = LLMGatewayClient(model=args.llm_model)
+        if llm_client.is_available():
+            from ngts.scripts.allure_summary.llm_client import analyze_multi_system
+            llm_analysis = analyze_multi_system(multi_summary, llm_client)
+            if llm_analysis:
+                logger.info("✅ AI multi-system analysis complete")
+            else:
+                logger.warning("AI analysis returned no results")
+        else:
+            logger.warning("LLM credentials not found!")
+            logger.info("Continuing without AI analysis...")
+
+    # Generate HTML
+    logger.info("-" * 40)
+    logger.info("Generating multi-system HTML report...")
+
+    html = generate_multi_system_email(multi_summary, all_analyses, llm_analysis)
+
+    # Save to file if requested
+    if args.output:
+        try:
+            with open(args.output, "w") as f:
+                f.write(html)
+            logger.info(f"✅ HTML saved to: {args.output}")
+        except IOError as e:
+            logger.error(f"Failed to save HTML: {e}")
+
+    # Determine recipients (same logic as single-system mode)
+    recipients = []
+    if args.email:
+        if args.email.upper() == "SKIP":
+            logger.info("📧 Email not configured - no email will be sent")
+        else:
+            recipients = [r.strip() for r in args.email.split(",") if r.strip()]
+            if recipients:
+                logger.info(f"📧 Recipients from config: {', '.join(recipients)}")
+    elif args.mail_list:
+        if args.mail_list.upper() == "SKIP":
+            logger.info("📧 Mail list set to SKIP - no email will be sent")
+        else:
+            from ngts.scripts.allure_summary.config import get_mail_list
+            recipients = get_mail_list(args.mail_list)
+            if recipients:
+                logger.info(f"Using mail list '{args.mail_list}': {recipients}")
+            else:
+                logger.warning(f"Mail list '{args.mail_list}' not found or empty")
+
+    # Send email
+    if recipients:
+        logger.info("-" * 40)
+        subject = (f"Multi-System Nightly Summary - {multi_summary.image_version} - "
+                   f"{multi_summary.overall_pass_rate:.1f}% Overall")
+
+        success = send_email(
+            recipients=recipients,
+            subject=subject,
+            html_body=html,
+            dry_run=args.dry_run
+        )
+
+        if not success and not args.dry_run:
+            logger.error("Failed to send email")
+            sys.exit(1)
+    else:
+        if not args.output:
+            logger.info("📧 No recipients configured - email not sent")
+
+    logger.info("=" * 60)
+    logger.info("Done!")
+    logger.info("=" * 60)
 
 
 def main():
@@ -211,6 +350,12 @@ def main():
     logger.info("Allure Nightly Summary Tool v1.0.0")
     logger.info("=" * 60)
 
+    # Handle multi-system mode
+    if args.multi_system:
+        run_multi_system_mode(args)
+        return
+
+    # Single-system mode
     # Determine project name and report ID
     if args.url:
         try:
@@ -219,11 +364,13 @@ def main():
         except ValueError as e:
             logger.error(str(e))
             sys.exit(1)
-    elif args.setup_name:
-        base_project_name = setup_name_to_project(args.setup_name)
+    elif args.setup_names:
+        # Single setup name in non-multi mode
+        setup_name = args.setup_names[0]
+        base_project_name = setup_name_to_project(setup_name)
         project_name = base_project_name
         report_id = args.report_id
-        logger.info(f"Converted setup '{args.setup_name}' -> base project '{base_project_name}'")
+        logger.info(f"Converted setup '{setup_name}' -> base project '{base_project_name}'")
 
         # Try to get URL from verification file (written by allure_reporter.py)
         # This ensures we get the CURRENT run's report, not the previous one
@@ -265,17 +412,165 @@ def main():
     logger.info(f"   Duration: {summary.duration_minutes:.1f} minutes")
     logger.info(f"   Failed/Broken tests: {len(summary.failed_tests)}")
 
-    # Show first 5 failures
-    for test in summary.failed_tests[:5]:
-        logger.info(f"   [{test.status.upper()}] {test.name}")
-    if len(summary.failed_tests) > 5:
-        logger.info(f"   ... and {len(summary.failed_tests) - 5} more")
+    # Identify new failures (regressions)
+    new_failures = [t for t in summary.failed_tests if t.is_new_failure]
+    if new_failures:
+        logger.info(f"   🆕 NEW FAILURES (regressions): {len(new_failures)}")
+        for test in new_failures:
+            logger.info(f"      🔴 {test.name}")
+    else:
+        logger.info(f"   ✅ No new regressions in this build")
+
+    # Show other failures
+    other_failures = [t for t in summary.failed_tests if not t.is_new_failure][:5]
+    if other_failures:
+        logger.info(f"   Other failures ({len([t for t in summary.failed_tests if not t.is_new_failure])} total):")
+        for test in other_failures:
+            logger.info(f"   [{test.status.upper()}] {test.name}")
+        remaining = len([t for t in summary.failed_tests if not t.is_new_failure]) - 5
+        if remaining > 0:
+            logger.info(f"   ... and {remaining} more")
+
+    # Enrich with known bugs from Confluence
+    logger.info("-" * 40)
+    logger.info("🔗 Checking known bugs database...")
+    try:
+        from ngts.scripts.allure_summary.known_bugs import get_known_bugs_database
+        from ngts.scripts.allure_summary.models import KnownBugInfo
+
+        bugs_db = get_known_bugs_database()
+        known_bug_count = 0
+        assigned_count = 0
+
+        for test in summary.failed_tests:
+            mapping = bugs_db.find_bug_for_test(test.name)
+            if mapping:
+                bug_info = KnownBugInfo(
+                    bug_id=mapping.bug.bug_id if mapping.bug else "",
+                    bug_url=mapping.bug.url if mapping.bug else "",
+                    description=mapping.bug.description if mapping.bug else "",
+                    assigned_to=mapping.assigned_to,
+                    status=mapping.status,
+                    notes=mapping.notes
+                )
+                test.known_bug = bug_info
+                if mapping.bug:
+                    known_bug_count += 1
+                if mapping.assigned_to:
+                    assigned_count += 1
+
+        logger.info(f"   Found {known_bug_count} tests with known bugs, {assigned_count} with assignees")
+    except Exception as e:
+        logger.debug(f"Known bugs enrichment not available: {e}")
 
     # Analyze failures
     logger.info("-" * 40)
     logger.info("Analyzing failures...")
 
     analyses = analyze_all_failures(summary.failed_tests)
+
+    # Commit correlation for new failures and new passes (using LLM if available)
+    logger.info("-" * 40)
+    logger.info("🔗 Correlating with git commits...")
+    try:
+        from ngts.scripts.allure_summary.commit_analyzer import (
+            CommitAnalyzer, find_likely_cause_commits, find_likely_fix_commits, correlate_with_llm,
+            NVOS_REPO_PATH, SONIC_MGMT_REPO_PATH
+        )
+        from ngts.scripts.allure_summary.models import CommitMatch
+        from ngts.scripts.allure_summary.llm_client import LLMGatewayClient
+
+        commit_analyzer = CommitAnalyzer()
+        nvos_commits = []
+        mgmt_commits = []
+
+        if commit_analyzer.is_available() and summary.image_version:
+            nvos_commits = commit_analyzer.get_commits_for_version(summary.image_version)
+            logger.info(f"   Found {len(nvos_commits)} NVOS commits")
+
+        mgmt_commits = commit_analyzer.get_sonic_mgmt_commits(days=14)
+        logger.info(f"   Found {len(mgmt_commits)} sonic-mgmt commits")
+
+        # Check if LLM is available for smart correlation
+        llm_client = LLMGatewayClient()
+        use_llm = llm_client.is_available()
+        summary.ai_available = use_llm
+        if use_llm:
+            logger.info("   🤖 Using AI for smart commit correlation...")
+        else:
+            logger.info("   ⚠️ AI not available, using heuristic matching...")
+
+        # Correlate NEW failures with NVOS commits
+        new_failures = [t for t in summary.failed_tests if t.is_new_failure]
+        if new_failures and nvos_commits:
+            logger.info(f"   Correlating {len(new_failures)} new failures with commits...")
+            for test in new_failures:
+                if use_llm:
+                    result = correlate_with_llm(
+                        test.name, test.error_message, nvos_commits,
+                        NVOS_REPO_PATH, llm_client, is_fix=False
+                    )
+                    if result:
+                        test.likely_cause_commits = [CommitMatch(
+                            short_hash=result.commit.short_hash,
+                            subject=result.commit.subject[:80],
+                            probability=result.probability,
+                            reasons=", ".join(result.reasons),
+                            repo="nvos"
+                        )]
+                else:
+                    causes = find_likely_cause_commits(test.name, test.error_message, nvos_commits)
+                    test.likely_cause_commits = [
+                        CommitMatch(
+                            short_hash=c.commit.short_hash,
+                            subject=c.commit.subject[:80],
+                            probability=c.probability,
+                            reasons=", ".join(c.reasons),
+                            repo=c.repo
+                        ) for c in causes
+                    ]
+
+        # Correlate newly passing tests with fix commits
+        if summary.newly_passed_tests and (nvos_commits or mgmt_commits):
+            logger.info(f"   Correlating {len(summary.newly_passed_tests)} new passes with fix commits...")
+            for test in summary.newly_passed_tests:
+                if use_llm:
+                    # Try sonic-mgmt first (test fixes), then nvos
+                    result = correlate_with_llm(
+                        test.name, "", mgmt_commits,
+                        str(SONIC_MGMT_REPO_PATH), llm_client, is_fix=True
+                    )
+                    if not result and nvos_commits:
+                        result = correlate_with_llm(
+                            test.name, "", nvos_commits,
+                            str(NVOS_REPO_PATH), llm_client, is_fix=True
+                        )
+                    if result:
+                        logger.info(f"      ✅ {test.name[:40]} -> {result.commit.short_hash} ({result.probability * 100:.0f}%)")
+                        test.likely_fix_commits = [CommitMatch(
+                            short_hash=result.commit.short_hash,
+                            subject=result.commit.subject[:80],
+                            probability=result.probability,
+                            reasons=", ".join(result.reasons),
+                            repo=result.repo
+                        )]
+                    else:
+                        logger.debug(f"      ❌ {test.name[:40]} -> No fix found")
+                else:
+                    fixes = find_likely_fix_commits(test.name, nvos_commits, mgmt_commits)
+                    test.likely_fix_commits = [
+                        CommitMatch(
+                            short_hash=c.commit.short_hash,
+                            subject=c.commit.subject[:80],
+                            probability=c.probability,
+                            reasons=", ".join(c.reasons),
+                            repo=c.repo
+                        ) for c in fixes
+                    ]
+    except Exception as e:
+        logger.debug(f"Commit correlation not available: {e}")
+        import traceback
+        logger.debug(traceback.format_exc())
 
     # LLM Analysis (if enabled)
     llm_analysis = None
@@ -285,15 +580,33 @@ def main():
 
         llm_client = LLMGatewayClient(model=args.llm_model)
         if llm_client.is_available():
-            llm_analysis = analyze_failures_with_llm(summary, llm_client)
+            # Try commit correlation analysis if git repo is available
+            commit_summary = ""
+            try:
+                from ngts.scripts.allure_summary.commit_analyzer import CommitAnalyzer
+                commit_analyzer = CommitAnalyzer()
+                if commit_analyzer.is_available() and summary.image_version:
+                    commits = commit_analyzer.get_commits_for_version(summary.image_version)
+                    if commits:
+                        commit_summary = commit_analyzer.get_commit_summary_for_llm(commits)
+            except Exception as e:
+                logger.debug(f"Commit summary not available: {e}")
+
+            # Use enhanced analysis with commits if available
+            if commit_summary:
+                from ngts.scripts.allure_summary.llm_client import analyze_with_commit_correlation
+                llm_analysis = analyze_with_commit_correlation(summary, llm_client, commit_summary)
+            else:
+                llm_analysis = analyze_failures_with_llm(summary, llm_client)
+
             if llm_analysis:
                 logger.info("✅ AI analysis complete")
             else:
                 logger.warning("AI analysis returned no results")
         else:
-            logger.warning("LLM Gateway credentials not found!")
-            logger.warning("Set LLM_GATEWAY_TOKEN env var (NV-Auth) or")
-            logger.warning("Set LLM_CLIENT_ID + LLM_CLIENT_SECRET env vars (SSA OAuth)")
+            logger.warning("LLM credentials not found!")
+            logger.warning("Set INFERENCE_HUB_API_KEY env var (recommended) or")
+            logger.warning("Set LLM_GATEWAY_TOKEN env var (legacy)")
             logger.info("Continuing without AI analysis...")
 
     # Generate HTML

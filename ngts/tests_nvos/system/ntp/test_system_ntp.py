@@ -87,10 +87,9 @@ def test_configure_ntp_server(random_api):
             system.ntp.servers.set_resource(server_name).verify_result()
             system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.ENABLED.value,
                            apply=True).verify_result()
-            time.sleep(NtpConsts.SYNCHRONIZATION_MAX_TIME)
 
         with allure.step("Validate show system ntp output"):
-            ntp_show = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
+            ntp_show = wait_for_ntp_status(system, NtpConsts.Status.SYNCHRONISED.value)
             ntp_dict[NtpConsts.SERVER] = {server_name: {}}
             ntp_dict[NtpConsts.STATE] = NtpConsts.State.ENABLED.value
             ntp_dict[NtpConsts.STATUS] = NtpConsts.Status.SYNCHRONISED.value
@@ -790,10 +789,9 @@ def test_ntp_reliability():
 
         with allure.step("Configure ntp server"):
             system.ntp.servers.set_resource(server_name, apply=True).verify_result()
-            time.sleep(NtpConsts.SYNCHRONIZATION_MAX_TIME)
 
         with allure.step("Verify system clock is synchronized"):
-            ntp_dict = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
+            ntp_dict = wait_for_ntp_status(system, NtpConsts.Status.SYNCHRONISED.value)
             assert ntp_dict[NtpConsts.STATUS] == NtpConsts.Status.SYNCHRONISED.value, \
                 "Server {server} status should be {expected}".\
                 format(server=server_name, expected=NtpConsts.Status.SYNCHRONISED.value)
@@ -802,8 +800,7 @@ def test_ntp_reliability():
             system.reboot.action_reboot(params='force').verify_result()
 
         with allure.step("Verify system clock is synchronized"):
-            time.sleep(NtpConsts.SYNCHRONIZATION_MAX_TIME)
-            ntp_dict = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
+            ntp_dict = wait_for_ntp_status(system, NtpConsts.Status.SYNCHRONISED.value)
             assert ntp_dict[NtpConsts.STATUS] == NtpConsts.Status.SYNCHRONISED.value, \
                 "Server {server} status should be {expected}".\
                 format(server=server_name, expected=NtpConsts.Status.SYNCHRONISED.value)
@@ -812,17 +809,16 @@ def test_ntp_reliability():
             GeneralCliCommon(TestToolkit.engines.dut).stop_service('ntp')
 
         with allure.step("Verify system clock is unsynchronized"):
-            ntp_dict = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
+            ntp_dict = wait_for_ntp_status(system, NtpConsts.Status.UNSYNCHRONISED.value)
             assert ntp_dict[NtpConsts.STATUS] == NtpConsts.Status.UNSYNCHRONISED.value, \
                 "Server {server} status should be {expected}".\
                 format(server=server_name, expected=NtpConsts.Status.UNSYNCHRONISED.value)
 
         with allure.step('Start ntp server'):
             GeneralCliCommon(TestToolkit.engines.dut).start_service('ntp')
-            time.sleep(NtpConsts.SYNCHRONIZATION_MAX_TIME)
 
         with allure.step("Verify system clock is synchronized"):
-            ntp_dict = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
+            ntp_dict = wait_for_ntp_status(system, NtpConsts.Status.SYNCHRONISED.value)
             assert ntp_dict[NtpConsts.STATUS] == NtpConsts.Status.SYNCHRONISED.value, \
                 "Server {server} status should be {expected}".\
                 format(server=server_name, expected=NtpConsts.Status.SYNCHRONISED.value)
@@ -930,11 +926,12 @@ def test_ntp_log(engines):
             system.ntp.unset(apply=True).verify_result()
 
 
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-def test_ntp_mgmt_port_listeners(topology_obj, nv_command, serial_engine, random_api):
+def test_ntp_mgmt_port_listeners(topology_obj, nv_command, serial_engine, test_api):
     """
     validate:
     - NTP synchronization when listening to each of the mgmt ports.
@@ -1137,6 +1134,18 @@ def test_ntp_invalid_values(random_api):
 
 
 # ---------------------------------------------
+
+def wait_for_ntp_status(system, expected_status, timeout=NtpConsts.SYNCHRONIZATION_MAX_TIME, interval=1):
+    elapsed_time = 0
+    ntp_show = {}
+    while elapsed_time < timeout:
+        ntp_show = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
+        if ntp_show.get(NtpConsts.STATUS) == expected_status:
+            return ntp_show
+        time.sleep(interval)
+        elapsed_time += interval
+    return ntp_show
+
 
 def get_hostname_from_ip(ip):
     host_name_index = 0

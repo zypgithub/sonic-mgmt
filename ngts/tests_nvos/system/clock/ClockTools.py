@@ -15,7 +15,8 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts, DateTimeConsts, SyslogConsts
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, DateTimeConsts, SyslogConsts
+from ngts.tests_nvos.system.stats.constants import StatsConsts
 from ngts.nvos_tools.infra.SudoScope import sudo_scope_if
 
 

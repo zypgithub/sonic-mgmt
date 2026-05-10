@@ -118,9 +118,20 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
     with allure.step('Send traffic through selected port'):
         Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
+    with allure.step("Get valid port numbers and local ports from device model"):
+        device = devices.dut
+        sw_port_re = re.compile(r'sw(\d+)p(\d+)$')
+        sw_matches = [sw_port_re.match(name) for name in device.interface_list]
+        all_port_numbers = sorted({int(m.group(1)) for m in sw_matches if m})
+        valid_local_ports = sorted({int(m.group(2)) for m in sw_matches if m})
+        logger.info(f"Device port numbers: {all_port_numbers[0]}-{all_port_numbers[-1]}, "
+                    f"local ports: {valid_local_ports}")
+
     with allure.step("Get 4 random numbers - to define ranges"):
-        randoms = random.sample(
-            list({x + 1 for x in range(1, 18)} - {selected_port_number}), 4)
+        other_port_numbers = [n for n in all_port_numbers if n != selected_port_number]
+        assert len(other_port_numbers) >= 4, \
+            f"Need at least 4 ports besides {selected_port_number}, got {len(other_port_numbers)}"
+        randoms = random.sample(other_port_numbers, 4)
         randoms = sorted(randoms + [selected_port_number])
         if selected_port_number in randoms[:2]:
             (first_range_first_point, first_range_last_point, random_port, second_range_first_point,
@@ -128,7 +139,7 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
         else:
             (random_port, second_range_first_point, second_range_last_point, first_range_first_point,
              first_range_last_point) = randoms
-        p_number = random.randint(1, 2)
+        p_number = random.choice(valid_local_ports)
         random_port = f'{selected_port_name}{random_port}p{p_number}'
         port_prefix = selected_port_name.replace("sw", "")
 
@@ -147,14 +158,15 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
                     check_port_counters(selected_port, False, engines.dut).verify_result()
 
         with allure.independent_step("Run clear counters using range and multiple ports and verify results"):
+            p_min, p_max = valid_local_ports[0], valid_local_ports[-1]
 
             with allure.step('Run clear counter command'):
                 interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
-                                                             interface_name=f'{selected_port_name}{first_range_first_point}-{first_range_last_point}p1-2,{random_port}').verify_result()
+                                                             interface_name=f'{selected_port_name}{first_range_first_point}-{first_range_last_point}p{p_min}-{p_max},{random_port}').verify_result()
 
             verify_files_created(ssh_connection, file_name,
-                                 get_port_range(port_prefix, first_range_first_point, first_range_last_point) + [
-                                     random_port])
+                                 get_port_range(port_prefix, first_range_first_point, first_range_last_point,
+                                                valid_local_ports) + [random_port])
 
             with allure.step('verify show command output'):
                 with allure.step('Check selected port counters'):
@@ -315,12 +327,23 @@ def create_new_user(engine):
     return file_name, user_name, ssh_connection
 
 
-def get_port_range(port_prefix: str, first: int, last: int, p1_2=0) -> List[str]:
+def get_port_range(port_prefix: str, first: int, last: int, local_ports=None) -> List[str]:
     """
-    (2, 4) --> ['sw2p1', 'sw2p2', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2']
-    (2, 4, p1_2=2) --> ['sw2p2', 'sw3p2', 'sw4p2']
+    Get list of port names for a range of switch numbers and local ports.
+    local_ports: int for single port, list for multiple, None/0 defaults to [1, 2].
+    Examples:
+        ('', 2, 4)              --> ['sw2p1', 'sw2p2', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2']
+        ('', 2, 4, 2)           --> ['sw2p2', 'sw3p2', 'sw4p2']
+        ('', 2, 4, [1])         --> ['sw2p1', 'sw3p1', 'sw4p1']
+        ('', 2, 4, [1, 2])      --> ['sw2p1', 'sw2p2', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2']
     """
-    return [f'sw{port_prefix}{x}p{p}' for x in range(first, last + 1) for p in ([p1_2] if p1_2 else [1, 2])]
+    if isinstance(local_ports, list):
+        p_list = local_ports
+    elif local_ports:
+        p_list = [local_ports]
+    else:
+        p_list = [1, 2]
+    return [f'sw{port_prefix}{x}p{p}' for x in range(first, last + 1) for p in p_list]
 
 
 def verify_files_created(ssh_connection: LinuxSshEngine, directory: str, ports: List[str]):

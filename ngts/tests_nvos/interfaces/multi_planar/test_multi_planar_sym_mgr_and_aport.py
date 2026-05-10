@@ -670,11 +670,11 @@ def test_fae_invalid_commands(engines, devices, test_api):
     Test flow:
     1. nv show fae interface <unknown interface-id>
     2. nv show fae interface <unknown interface-id> link
-    3. nv show fae interface <unknown interface-id> link counters
+    3. nv show fae interface <unknown interface-id> counters
     4. nv show fae interface <unknown interface-id> link diagnostics
     5. nv show fae interface <unknown interface-id> link state
     6. nv show fae interface <unknown interface-id> plan-ports
-    7. nv action clear fae interface <unknown interface-id> link counters
+    7. nv action clear fae interface <unknown interface-id> counters
     8. nv show interface <internal-fnm-id>
     """
 
@@ -686,8 +686,8 @@ def test_fae_invalid_commands(engines, devices, test_api):
     with allure.step("Validate show fae interface link with unknown interface-id"):
         Fae(port_name='unknown').port.interface.link.show(should_succeed=False)
 
-    with allure.step("Validate show fae interface link counters with unknown interface-id"):
-        Fae(port_name='unknown').port.interface.link.counters.show(should_succeed=False)
+    with allure.step("Validate show fae interface counters with unknown interface-id"):
+        Fae(port_name='unknown').port.interface.counters.show(should_succeed=False)
 
     with allure.step("Validate show fae interface link diagnostics with unknown interface-id"):
         Fae(port_name='unknown').port.interface.link.diagnostics.show(should_succeed=False)
@@ -698,8 +698,8 @@ def test_fae_invalid_commands(engines, devices, test_api):
     with allure.step("Validate show fae interface link plan-ports with unknown interface-id"):
         Fae(port_name='unknown').port.interface.link.plan_ports.show(should_succeed=False)
 
-    with allure.step("Validate action clear fae interface link counters command with unknown interface-id"):
-        Fae(port_name='unknown').port.interface.link.stats.clear_stats(dut_engine=engines.dut, fae_param="fae").\
+    with allure.step("Validate action clear fae interface counters command with unknown interface-id"):
+        Fae(port_name='unknown').port.interface.counters.clear_counters(dut_engine=engines.dut, fae_param="fae").\
             verify_result(should_succeed=False)
 
     with allure.step("Validate show interface with internal fnm id"):

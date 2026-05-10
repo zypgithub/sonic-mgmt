@@ -12,6 +12,10 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 logger = logging.getLogger()
 
@@ -24,6 +28,7 @@ def test_platform_firmware_bmc_component(engines, devices, random_api):
     fae = Fae()
     platform = Platform()
     dut_engine: LinuxSshEngine = TestToolkit.engines.dut
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     with allure.step("Test output of nv show platform firmware and nv show fae platform firmware"):
         firmware_output = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).get_returned_value()
@@ -56,6 +61,9 @@ def test_platform_firmware_bmc_component(engines, devices, random_api):
                                                                                        show('BMC')).get_returned_value()
         _check_version_in_regular_fae_output(bmc_component_version, firmware_component_output,
                                              fae_firmware_component_output)
+        assert_gnmi_firmware_version_matches_nvue(
+            gnmi_client, PlatformConsts.FW_BMC, firmware_component_output[PlatformConsts.FW_ACTUAL]
+        )
 
 
 def _run_redfish_command(engines, bmc_password, link, component=''):

@@ -85,6 +85,6 @@ def test_fw_dump_me(engines, devices):
             logging.info('Delete dump file in Mars directory')
             player_engine.run_cmd('rm -f {0}{1}'.format(NvosConst.MARS_RESULTS_FOLDER, sdk_dump))
     finally:
-        with allure.step('Reboot system'):
-            logging.info("Reboot system")
-            system.reboot.action_reboot(params='force').verify_result()
+        with allure.step('Recover system after FW crash'):
+            logging.info("Recover system after FW crash")
+            devices.dut.recover_after_fw_crash(engines.dut, system)

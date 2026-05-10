@@ -9,6 +9,14 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 
 logger = logging.getLogger()
 
+# NOGA stores the DUT name as an FQDN under Specific.dhcp_hostname (e.g.
+# 'croc-94.mtl.nbulabs.nvidia.com' or 'croc-94-mgmt2.mtl.nbulabs.nvidia.com').
+# The system hostname (and SNMP sysName) is the short label and may carry an
+# optional '-mgmt2' suffix when reached via the secondary mgmt port.
+# A short hostname matches the FQDN when, after stripping '-mgmt2', it is a
+# substring of the FQDN.
+MGMT2_SUFFIX = "-mgmt2"
+
 
 class HostMethods:
 
@@ -83,3 +91,32 @@ class HostMethods:
                     return
                 time.sleep(timeout)
             raise AssertionError(f'SNMP is not in {state} state')
+
+    @staticmethod
+    def get_dhcp_hostname(topology_obj):
+        noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+        dhcp_hostname = noga_query_data['Specific'].get('dhcp_hostname')
+        return dhcp_hostname if dhcp_hostname else noga_query_data['Common'].get('Name')
+
+    @staticmethod
+    def short_hostname_matches_dhcp(short_hostname, dhcp_hostname):
+        return short_hostname.replace(MGMT2_SUFFIX, "") in dhcp_hostname
+
+    @staticmethod
+    def parse_snmp_system_name(snmp_output):
+        return snmp_output.split("STRING:")[-1].strip()
+
+    @staticmethod
+    def assert_snmp_system_name_matches_dhcp(snmp_output, dhcp_hostname):
+        sys_name = HostMethods.parse_snmp_system_name(snmp_output)
+        logger.info(f"dhcp_hostname from noga: {dhcp_hostname}, sysName from snmpget: {sys_name}")
+        assert HostMethods.short_hostname_matches_dhcp(sys_name, dhcp_hostname), \
+            f"snmp sysName '{sys_name}' does not match expected hostname '{dhcp_hostname}'"
+
+    @staticmethod
+    def assert_system_hostname_matches_dhcp(system_output, dhcp_hostname):
+        host = system_output[SystemConsts.HOSTNAME]
+        logger.info(f"dhcp_hostname from noga: {dhcp_hostname}, hostname from show system: {host}")
+        assert host != "nvos", f"hostname is '{host}', not yet updated"
+        assert HostMethods.short_hostname_matches_dhcp(host, dhcp_hostname), \
+            f"hostname '{host}' wasn't changed to '{dhcp_hostname}'"

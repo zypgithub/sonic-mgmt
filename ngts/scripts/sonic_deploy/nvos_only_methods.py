@@ -75,7 +75,7 @@ class NvosInstallationSteps:
                 platform = Platform()
                 firmware_items = dut_device.constants.firmware
                 validate_firmware_keys(platform, firmware_items, dut_engine)
-                validate_firmware_components(platform, firmware_items, dut_engine)
+                validate_firmware_components(platform, firmware_items, dut_engine, check_gnmi=False)
 
         if dut_device.has_bmc:
             with allure.step('reset password of bmc root user'):

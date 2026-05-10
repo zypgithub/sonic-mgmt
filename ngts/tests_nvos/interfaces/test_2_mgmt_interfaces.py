@@ -98,10 +98,7 @@ def test_2_mgmt_snmp(engines, topology_obj):
     host_engine = engines.ha
     dut_setup_specific_attributes: Dict[str, str] = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']
     setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
-    dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']
-
-    if "-mgmt2" in dhcp_hostname:
-        dhcp_hostname = dhcp_hostname.replace("-mgmt2", "")
+    dhcp_hostname = HostMethods.get_dhcp_hostname(topology_obj)
 
     with allure.step("Enable snmp"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
@@ -116,7 +113,7 @@ def test_2_mgmt_snmp(engines, topology_obj):
     with allure.step("Check snmpget with listening on 2 mgmt interfaces ip address"):
         for ip in setup_mgmt_ips:
             host_output = HostMethods.host_snmp_get(host_engine, ip)
-            assert dhcp_hostname in host_output, 'snmp get with wrong port returned output'
+            HostMethods.assert_snmp_system_name_matches_dhcp(host_output, dhcp_hostname)
 
     with allure.step("Unset snmp"):
         system.snmp_server.unset(apply=True).verify_result()
@@ -137,7 +134,7 @@ def test_2_mgmt_dhcp_hostname(engines, topology_obj, serial_engine, devices):
     """
     mgmt_ports = devices.dut.get_mgmt_ports()
     system = System()
-    dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']
+    dhcp_hostname = HostMethods.get_dhcp_hostname(topology_obj)
     try:
         with allure.step('Disable 2 mgmt interfaces'):
             for mgmt_port in mgmt_ports:
@@ -210,21 +207,7 @@ def skip_if_engines_does_not_exist_in_setup(required_engines_list, engines):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname)):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], \
-            "hostname {0} wasn't changed to {1}".format(system_output[SystemConsts.HOSTNAME], dhcp_hostname)
-
-
-def _wait_for_snmp_is_running(system, state='yes', tries=5, timeout=2):
-    for _ in range(tries):
-        system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show()) \
-            .get_returned_value()
-        if state in system_snmp_output[SystemConsts.SNMP_IS_RUNNING]:
-            break
-        elif state not in system_snmp_output[SystemConsts.SNMP_IS_RUNNING]:
-            time.sleep(timeout)
-            continue
-        else:
-            assert 'SNMP not in {} is-running state'.format(state)
+        HostMethods.assert_system_hostname_matches_dhcp(system_output, dhcp_hostname)
 
 
 def get_rule_packets(mgmt_port, acl_id, rule_id=None, rule_direction=AclConsts.INBOUND):

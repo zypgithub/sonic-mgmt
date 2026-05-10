@@ -9,8 +9,9 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts, TcpDumpConsts
-from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
+from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, FansConsts,
                                                 DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts, SyslogConsts, ImageConsts)
+from ngts.tests_nvos.system.stats.constants import StatsConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
@@ -40,7 +41,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 from ngts.nvos_tools.infra.FilesTool import FilesTool
-from ngts.nvos_tools.Devices.SwitchCapabilities import SwitchCapabilityHandler, NoPSUCapability
+from ngts.nvos_tools.Devices.SwitchCapabilities import SwitchCapabilityHandler, NoPSUCapability, CpoCapability
 
 logger = logging.getLogger(__name__)
 
@@ -428,6 +429,7 @@ class IbSwitch(BaseSwitch):
         self.ztp_dev_json = 'uninstall.json'
         self.ztp_complex_prod_json = 'complex_prod.json'
         self.ztp_complex_dev_json = 'complex.json'
+        self.ib_host_player = 'ha'
 
         # Techsupport constants for IB devices
         self.techsupport_files_path = SystemConsts.TECHSUPPORT_FILES_PATH
@@ -599,9 +601,12 @@ class IbSwitch(BaseSwitch):
             "nv show cluster",
             "nv show sdn",
             "nv show interface swA10p1 link plr",
+            # IB (croc+mamba) uses logic-relock-*, NOT serdes-eq-* for PHY recovery
             "nv set fae interface {port} link phy-recovery serdes-eq-mode",
             "nv set fae interface {port} link phy-recovery serdes-eq-timeout",
             "nv set fae interface {port} link link-training",
+            # Rosalind-only PHY recovery commands (not supported on croc+mamba)
+            "nv set fae interface {port} link phy-role",
             "nv set fae interface {port} link constant-role",
             "nv set fae interface {port} link phy-recovery link-down-timeout",
             "nv set fae interface {port} link phy-recovery recovery-neg-type",
@@ -781,7 +786,17 @@ class IbSwitch(BaseSwitch):
         }
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
-        return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+        return DutUtilsTool.wait_for_nvos_to_become_functional(engine, cli_up_retries=self.cli_up_retries)
+
+    def recover_after_fw_crash(self, engine, system):
+        """Recover the system after a FW crash event.
+
+        On standard IB systems, docker restart handles recovery without reboot,
+        so we manually reboot to restore a clean state.
+        Subclasses (e.g., TaipanSwitch) override this for platform-specific behavior.
+        """
+        with allure.step('Reboot system after FW crash'):
+            system.reboot.action_reboot(params='force').verify_result()
 
     def reload_device(self, engine, cmd_list, validate=False, enter_config_mode=False):
         if any("action install platform firmware" in cmd for cmd in cmd_list):
@@ -863,7 +878,7 @@ class GorillaSwitch(IbSwitch):
             }
         )
         self.stats_disk_header_num_of_lines = 16
-        self.stats_cpu_header_num_of_lines = 12
+        self.stats_cpu_header_num_of_lines = 39
         self.stats_temperature_header_num_of_lines = 53
         self.valid_ports_count = 64
         self.cpld_amount = 3
@@ -977,7 +992,7 @@ class BlackMambaSwitch(IbSwitch):
                                 'PSU-4-12V-Out', 'PSU-5-12V-Out', 'PSU-6-12V-Out', 'PSU-7-12V-Out', 'PSU-8-12V-Out']
 
         self.stats_disk_header_num_of_lines = 16
-        self.stats_cpu_header_num_of_lines = 12
+        self.stats_cpu_header_num_of_lines = 39
         self.stats_temperature_header_num_of_lines = 45
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_versions.json"
         self.allow_cpld_update = True
@@ -997,6 +1012,7 @@ class BlackMambaSwitch(IbSwitch):
             'ISSU CPU max downtime': 135,
         })
         self.memory_speed = 2667  # in MT/s
+        self.ib_host_player = 'hfnm'
         self.memory_size: List[float] = [30.73]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
 
@@ -1091,14 +1107,15 @@ class BlackMambaSwitch(IbSwitch):
         """
         Converts a port name to Infiniband port name for Black Mamba switches.
 
-        For Black Mamba (BM): Infiniband number = port_number - 1
-        Example: sw1p1 -> Infiniband0, sw72p2 -> Infiniband71
+        For Black Mamba (BM): Each physical switch port has 2 subports (p1, p2),
+        so Infiniband number = (port_number - 1) * 2 + (local_port - 1)
+        Example: sw1p1 -> Infiniband0, sw1p2 -> Infiniband1, sw30p2 -> Infiniband59
 
         Args:
             port_name: Port name (e.g., "sw1p1", "sw72p2", "fnm1")
 
         Returns:
-            str: Infiniband port name (e.g., "Infiniband0", "Infiniband71")
+            str: Infiniband port name (e.g., "Infiniband0", "Infiniband59")
         """
         from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 
@@ -1111,8 +1128,8 @@ class BlackMambaSwitch(IbSwitch):
             # Use Port.parse_port_name to extract port components
             asic_letter, port_number, local_port, split_number, plane_number = Port.parse_port_name(port_name)
 
-            # For BM: Infiniband number = port_number - 1
-            ib_num = port_number - 1
+            # For BM: each switch port has 2 subports, so ib_num accounts for both
+            ib_num = (port_number - 1) * 2 + (local_port - 1)
 
             return f"Infiniband{ib_num}"
         except ValueError as e:
@@ -1196,17 +1213,88 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
 # -------------------------- Taipan Switch ----------------------------
 
 
-class TaipanSwitch(BlackMambaSwitch):
+class TaipanSwitch(IbSwitch):
 
     def __init__(self, switch_class=NvosConst.TAIPAN_SWITCH):
-        super().__init__(switch_class=switch_class)
+        super().__init__(asic_amount=4, switch_class=switch_class)
+        SwitchCapabilityHandler.apply_capability(self, CpoCapability(
+            els_index_to_ga={
+                1: 1, 2: 2, 3: 1, 4: 2, 5: 1, 6: 2, 7: 1, 8: 2,
+                9: 1, 10: 3, 11: 0, 12: 3, 13: 0, 14: 3, 15: 0, 16: 3, 17: 0, 18: 3
+            },
+            pmaos_module_offset=71,
+            number_of_lasers_per_els=8,
+            els_port_mapping={
+                'els1': ['sw137p1', 'sw138p1', 'sw139p1', 'sw140p1', 'sw141p1', 'sw142p1', 'sw143p1', 'sw144p1'],
+                'els2': ['sw129p1', 'sw130p1', 'sw131p1', 'sw132p1', 'sw133p1', 'sw134p1', 'sw135p1', 'sw136p1'],
+                'els3': ['sw121p1', 'sw122p1', 'sw123p1', 'sw124p1', 'sw125p1', 'sw126p1', 'sw127p1', 'sw128p1'],
+                'els4': ['sw113p1', 'sw114p1', 'sw115p1', 'sw116p1', 'sw117p1', 'sw118p1', 'sw119p1', 'sw120p1'],
+                'els5': ['sw105p1', 'sw106p1', 'sw107p1', 'sw108p1', 'sw109p1', 'sw110p1', 'sw111p1', 'sw112p1'],
+                'els6': ['sw97p1', 'sw98p1', 'sw99p1', 'sw100p1', 'sw101p1', 'sw102p1', 'sw103p1', 'sw104p1'],
+                'els7': ['sw89p1', 'sw90p1', 'sw91p1', 'sw92p1', 'sw93p1', 'sw94p1', 'sw95p1', 'sw96p1'],
+                'els8': ['sw81p1', 'sw82p1', 'sw83p1', 'sw84p1', 'sw85p1', 'sw86p1', 'sw87p1', 'sw88p1'],
+                'els9': ['sw73p1', 'sw74p1', 'sw75p1', 'sw76p1', 'sw77p1', 'sw78p1', 'sw79p1', 'sw80p1'],
+                'els10': ['sw65p1', 'sw66p1', 'sw67p1', 'sw68p1', 'sw69p1', 'sw70p1', 'sw71p1', 'sw72p1'],
+                'els11': ['sw57p1', 'sw58p1', 'sw59p1', 'sw60p1', 'sw61p1', 'sw62p1', 'sw63p1', 'sw64p1'],
+                'els12': ['sw49p1', 'sw50p1', 'sw51p1', 'sw52p1', 'sw53p1', 'sw54p1', 'sw55p1', 'sw56p1'],
+                'els13': ['sw41p1', 'sw42p1', 'sw43p1', 'sw44p1', 'sw45p1', 'sw46p1', 'sw47p1', 'sw48p1'],
+                'els14': ['sw33p1', 'sw34p1', 'sw35p1', 'sw36p1', 'sw37p1', 'sw38p1', 'sw39p1', 'sw40p1'],
+                'els15': ['sw25p1', 'sw26p1', 'sw27p1', 'sw28p1', 'sw29p1', 'sw30p1', 'sw31p1', 'sw32p1'],
+                'els16': ['sw17p1', 'sw18p1', 'sw19p1', 'sw20p1', 'sw21p1', 'sw22p1', 'sw23p1', 'sw24p1'],
+                'els17': ['sw9p1', 'sw10p1', 'sw11p1', 'sw12p1', 'sw13p1', 'sw14p1', 'sw15p1', 'sw16p1'],
+                'els18': ['sw1p1', 'sw2p1', 'sw3p1', 'sw4p1', 'sw5p1', 'sw6p1', 'sw7p1', 'sw8p1'],
+            },
+            els_oe_mapping={
+                'els1': ['oe10', 'oe28', 'oe45', 'oe63'], 'els2': ['oe11', 'oe29', 'oe44', 'oe62'],
+                'els3': ['oe12', 'oe30', 'oe43', 'oe61'], 'els4': ['oe13', 'oe31', 'oe42', 'oe60'],
+                'els5': ['oe14', 'oe32', 'oe41', 'oe59'], 'els6': ['oe15', 'oe33', 'oe40', 'oe58'],
+                'els7': ['oe16', 'oe34', 'oe39', 'oe57'], 'els8': ['oe17', 'oe35', 'oe38', 'oe56'],
+                'els9': ['oe18', 'oe36', 'oe37', 'oe55'], 'els10': ['oe1', 'oe19', 'oe54', 'oe72'],
+                'els11': ['oe2', 'oe20', 'oe53', 'oe71'], 'els12': ['oe3', 'oe21', 'oe52', 'oe70'],
+                'els13': ['oe4', 'oe22', 'oe51', 'oe69'], 'els14': ['oe5', 'oe23', 'oe50', 'oe68'],
+                'els15': ['oe6', 'oe24', 'oe49', 'oe67'], 'els16': ['oe7', 'oe25', 'oe48', 'oe66'],
+                'els17': ['oe8', 'oe26', 'oe47', 'oe65'], 'els18': ['oe9', 'oe27', 'oe46', 'oe64'],
+            },
+        ))
         SwitchCapabilityHandler.apply_capability(self, NoPSUCapability())
 
     def _init_constants(self):
         super()._init_constants()
+        # Multi-ASIC / QTM3 constants
+        self.supports_ssd_upgrade = True
+        self.ib_ports_num = 144
+        self.core_count = 4
+        self.asic_type = NvosConst.QTM3
+        self.multi_planar = True
+        self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_q3450_ld-r0")
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="35.2014.2012",
+            filename="fw-QTM3-rel-35_2014_2012.mfa"
+        )
+        self.allow_cpld_update = True
+        self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [2, 1, 0, 3])
+        self.valid_ports_count = 144
+        self.stats_disk_header_num_of_lines = 16
+        self.stats_cpu_header_num_of_lines = 39
+        self.stats_temperature_header_num_of_lines = 45
+        self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
+        self.expected_operation_durations.update({
+            "Install BIOS": 550,
+            'install cpld': 1000,
+            'install ssd': 20,
+            self.generate_tech_support: 105,
+            InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 14.5 * MINUTE,
+            InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 10 * MINUTE,
+            'ISSU CPU max downtime': 135,
+        })
+        self.memory_speed = 2667  # in MT/s
+        self.memory_size: List[float] = [30.73]
+        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
+        # Taipan-specific constants
         self.number_of_transceivers = 18
         self.transceivers_tables_name = "TRANSCEIVER_INFO"
         self.transceiver_list = [f'els{a + 1}' for a in range(18)] + ['fnm1'] + [f'oe{b + 1}' for b in range(72)]
+        self.ib_host_player = 'hfnm'
         self.cpld_amount = 7
         self._extend_firmware_by_cpld_amount()
         self.show_platform_output.update({
@@ -1235,6 +1323,58 @@ class TaipanSwitch(BlackMambaSwitch):
         ]
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/taipan_versions.json"
         self.unsupported_commands_list.remove("nv show platform environment leakage")
+
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.ib_ports_num = 144
+        self.mgmt_ports = ['eth0', 'eth1']
+        ib_ports = self.fnm_external_port_list + [f'sw{a + 1}p1' for a in range(self.ib_ports_num)]
+        self.interface_list = self.network_ports + ib_ports + ['eth1']
+        self.interface_fae_list = (
+            self.interface_list +
+            [f'{p}pl{pl + 1}' for p in ib_ports for pl in range(self.asic_amount)] +
+            [f'fnma{pl + 1}p{i + 1}' for i in range(3) for pl in range(self.asic_amount)])
+        self.interface_active_internal_fnm_ports = {'fnma1p1', 'fnma1p2', 'fnma2p1', 'fnma2p2',
+                                                    'fnma3p1', 'fnma3p2', 'fnma4p1', 'fnma4p2'}
+        self.fnm_link_speed = '800G'
+        self.fnm_internal_link_speed = '50G'
+
+    def get_mgmt_ports(self) -> List[str]:
+        return self.mgmt_ports
+
+    def _init_eth0_speeds(self):
+        super()._init_eth0_speeds()
+        self.supported_eth0_speeds += ['10M']
+
+    def _init_ib_speeds(self):
+        super()._init_ib_speeds()
+        self.supported_ib_speeds = ('xdr',)  # Taipan FW only supports xdr, ib-speed is not configurable
+        self.supported_fnm_ib_speeds = ('sdr', 'hdr', 'ndr', 'xdr')
+        self.supported_internal_fnm_ib_speeds = ('sdr', 'hdr')
+
+    def _init_interfaces_ib_lanes(self):
+        super()._init_interfaces_ib_lanes()
+        self.supported_fnm_lanes = '4X'
+        self.supported_internal_fnm_lanes = '1X'
+
+    def _init_interface_attributes_mapping_dict(self):
+        super()._init_interface_attributes_mapping_dict()
+        self.interface_attributes_mapping_dict.update({
+            IbInterfaceConsts.LINK_MTU: GnmiConstants.MTU,
+            IbInterfaceConsts.LINK_OPERATIONAL_VLS: GnmiConstants.OPERATIONAL_VL,
+            IbInterfaceConsts.LINK_LANES: GnmiConstants.WIDTH,
+            IbInterfaceConsts.LINK_IB_SPEED: GnmiConstants.IB_SPEED,
+            IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS: GnmiConstants.SUPPORTED_IB_SPEEDS,
+            IbInterfaceConsts.LINK_IB_SUBNET: GnmiConstants.IB_SUBNET,
+        })
+
+    def _relevant_config_filename_by_version(self, version: str) -> str:
+        return 'nvos_config_ga_7400.yml'
+
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 15 * MINUTE
+        self.cli_up_retries = 44  # 220s - Taipan NVUE takes longer after reboot
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
@@ -1265,12 +1405,57 @@ class TaipanSwitch(BlackMambaSwitch):
             "PMIC-8-Temp", "PMIC-9-Temp", "PMIC-10-Temp", "PMIC-11-Temp", "PMIC-12-Temp", "PMIC-13-Temp",
             "SODIMM-1-Temp", "SODIMM-2-Temp"]
 
+    def get_mst_device_for_els_index(self, els_index):
+        """Get MST device path for a given ELS index using platform-specific GA mapping."""
+        if els_index not in self.els_index_to_ga:
+            raise ValueError(f"Invalid ELS index: {els_index}. Valid: {sorted(self.els_index_to_ga.keys())}")
+        ga_value = self.els_index_to_ga[els_index]
+        return f"/dev/mst/mt54004_pciconf{(ga_value + 1) % 4}"
+
     @classmethod
     def _get_lane_bmap(cls, port):
         # For Taipan, lane_bmap cycles through 8 values per module based on port_number
         # Each module has 8 ports: 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
         lane_index = (port.port_number - 1) % 8
         return 2 ** lane_index
+
+    def convert_port_to_infiniband(self, port_name: str) -> str:
+        """
+        Converts a port name to Infiniband port name for Taipan switches.
+
+        For Taipan: Each switch has a single port (p1), so Infiniband number = port_number - 1
+        Example: sw1p1 -> Infiniband0, sw144p1 -> Infiniband143
+
+        Args:
+            port_name: Port name (e.g., "sw1p1", "sw144p1", "fnm1")
+
+        Returns:
+            str: Infiniband port name (e.g., "Infiniband0", "Infiniband143")
+        """
+        from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+
+        if port_name.startswith('fnm'):
+            logger.warning(f"FNM port {port_name} conversion not implemented for Taipan, returning as-is")
+            return port_name
+
+        try:
+            asic_letter, port_number, local_port, split_number, plane_number = Port.parse_port_name(port_name)
+            ib_num = port_number - 1
+            return f"Infiniband{ib_num}"
+        except ValueError as e:
+            logger.error(f"Failed to parse port name {port_name} for Taipan switch: {e}")
+            return port_name
+
+    def recover_after_fw_crash(self, engine, system):
+        """Recover after FW crash on Taipan (CPO) systems.
+
+        On CPO systems, docker restart retries are set to 0, so a FW crash
+        triggers an automatic system reboot. We follow the full reboot recovery
+        flow (no-ping → ping → NVOS functional) without issuing the reboot command.
+        """
+        with allure.step('Wait for auto-reboot to complete after FW crash'):
+            logger.info("CPO system - FW crash triggers auto-reboot, waiting for system recovery")
+            DutUtilsTool.wait_on_system_reboot(engine, device=self)
 
 
 # -------------------------- Crocodile Switch ----------------------------
@@ -1313,7 +1498,7 @@ class CrocodileSwitch(IbSwitch):
                                 'PSU-4-12V-Out']
         self.stats_disk_header_num_of_lines = 16
         self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
-        self.stats_cpu_header_num_of_lines = 12
+        self.stats_cpu_header_num_of_lines = 39
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 32
         self.cpld_amount = 4
@@ -1524,9 +1709,11 @@ class NvLinkSwitch(IbSwitch):
                                           "nv show ib device ASIC4",
                                           "nv show system profile",
                                           "nv show ib ibdiagnet",
+                                          # delayed-recovery only supported on croc+mamba
                                           "nv set fae interface {port} link delayed-recovery",
                                           "nv set fae interface {port} link phy-recovery logic-relock-mode",
                                           "nv set fae interface {port} link phy-recovery logic-relock-timeout",
+                                          # Rosalind-only PHY recovery commands (not supported on juliet)
                                           "nv set fae interface {port} link phy-role",
                                           "nv set fae interface {port} link constant-role",
                                           "nv set fae interface {port} link phy-recovery link-down-timeout",
@@ -1883,7 +2070,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         })
 
         self.stats_disk_header_num_of_lines = 16
-        self.stats_cpu_header_num_of_lines = 12
+        self.stats_cpu_header_num_of_lines = 39
         self.stats_temperature_header_num_of_lines = 25
         self.allow_cpld_update = True
 
@@ -2203,7 +2390,7 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
             "asic-model": self.asic_type,
         })
         self.stats_disk_header_num_of_lines = 16
-        self.stats_cpu_header_num_of_lines = 12
+        self.stats_cpu_header_num_of_lines = 39
         self.stats_temperature_header_num_of_lines = 17
         self.cpld_amount = 3
         self._extend_firmware_by_cpld_amount()
@@ -2657,11 +2844,14 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                                           "nv show platform environment psu",
                                           "nv show system profile",
                                           "nv show sdn transceivers",
+                                          # delayed-recovery only supported on croc+mamba
                                           "nv set fae interface {port} link delayed-recovery",
+                                          # Rosalind doesn't support serdes-eq or logic-relock PHY recovery
                                           "nv set fae interface {port} link phy-recovery logic-relock-mode",
                                           "nv set fae interface {port} link phy-recovery logic-relock-timeout",
                                           "nv set fae interface {port} link phy-recovery serdes-eq-mode",
                                           "nv set fae interface {port} link phy-recovery serdes-eq-timeout",
+                                          # link-training only supported on juliet
                                           "nv set fae interface {port} link link-training",
                                           "nv set fae interface {port} link low-power state",
                                           "nv unset fae interface {port} link low-power state"]

@@ -14,11 +14,13 @@ from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, EventConsts
+from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
+from retry import retry
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr, GnmiServerStatus
@@ -28,7 +30,13 @@ from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_i
     validate_memory_and_cpu_utilization, get_infiniband_name_from_port_name, get_port_oid_from_infiniband_port, \
     create_gnmi_infiniband_list, validate_redis_cli_and_gnmi_commands_results, create_interface_state_commands_list, \
     create_gnmi_counter_list, create_platform_general_commands_list, change_interface_description, \
-    verify_msg_not_in_out_or_err, verify_msg_in_out_or_err, parse_gnmi_status
+    verify_msg_not_in_out_or_err, verify_msg_in_out_or_err, parse_gnmi_status, \
+    run_gnmi_client_and_parse_multi_path_json_output, validate_notification_has_prefix_and_leaves
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+    expand_nvue_key_to_gnmi_components,
+)
+from ngts.nvos_constants.constants_nvos import PlatformConsts
 
 logger = logging.getLogger()
 
@@ -42,6 +50,11 @@ def _get_counter(status_dict, key, default=0):
         val = status_dict[key]
         return int(val) if val is not None else default
     return default
+
+
+@retry(AssertionError, tries=5, delay=2)
+def _validate_docker_is_up(engine, docker):
+    assert docker in engine.run_cmd("docker ps"), f"docker {docker} is not running"
 
 
 def _get_clients(status_dict):
@@ -146,6 +159,12 @@ def test_simulate_gnmi_server_failure(random_api, engines):
     validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines, engines.dut.ip)
 
     try:
+        with allure.step(f"Stop {docker_to_stop} docker auto restart"):
+            DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
+                                           db_config=gnmi_table_name,
+                                           param=NvosConst.DOCKER_AUTO_RESTART,
+                                           value=NvosConst.DOCKER_STATUS_DISABLED)
+
         with allure.step('Simulate gnmi server failure'):
             engines.dut.run_cmd(f"docker stop {docker_to_stop}")
             validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_DISABLED)
@@ -156,8 +175,18 @@ def test_simulate_gnmi_server_failure(random_api, engines):
             logger.info(f"{GnmiConsts.GNMI_DOCKER} appears in the health issues as we expect, "
                         f"after the gnmi-server failure")
     finally:
+        with allure.step(f"Ensure {docker_to_stop} docker is running"):
+            if docker_to_stop not in engines.dut.run_cmd("docker ps"):
+                engines.dut.run_cmd(f"docker start {docker_to_stop}")
+                _validate_docker_is_up(engines.dut, docker_to_stop)
+
+        with allure.step(f"Restore {docker_to_stop} docker auto restart"):
+            DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
+                                           db_config=gnmi_table_name,
+                                           param=NvosConst.DOCKER_AUTO_RESTART,
+                                           value=NvosConst.DOCKER_STATUS_ENABLED)
+
         with allure.step(f're-enable {docker_to_stop}'):
-            engines.dut.run_cmd(f"docker start {docker_to_stop}")
             gnmi_server_obj.disable_gnmi_server()
             gnmi_server_obj.enable_gnmi_server()
             logger.info("sleep 90 sec until validate stream updates")
@@ -371,6 +400,77 @@ def test_gnmi_platform_general_components(engines, devices):
         validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, allowed_range_in_bytes=20)
 
 
+@pytest.mark.system
+@pytest.mark.gnmi
+def test_gnmi_aggregates_in_and_out_octets_under_common_prefix(engines, devices):
+    """
+    Validate GNMI Agent built-in common-prefix behavior for sibling leaves in one subscription.
+    We subscribe once under:
+      interfaces/interface[name=<IF_NAME>]/state
+    with both sibling paths:
+      counters/in-octets and counters/out-octets
+    and verify both are returned under the same counters subtree in one poll response stream.
+    """
+    system = System()
+    gnmi_server_obj = system.gnmi_server
+    if_name = Tools.RandomizationTool.select_random_port(requested_ports_state=None).returned_value.name
+
+    with allure.step("Run single poll subscribe with both counter paths (json format)"):
+        validate_gnmi_enabled_and_running(gnmi_server_obj, engines)
+        prefix = f"interfaces/interface[name={if_name}]/state"
+        notifications = run_gnmi_client_and_parse_multi_path_json_output(
+            engines=engines,
+            devices=devices,
+            target_ip=engines.dut.ip,
+            target_port=GnmiConsts.GNMI_DEFAULT_PORT,
+            prefix=prefix,
+            paths=["counters/in-octets", "counters/out-octets"],
+            mode=GnmiMode.POLL,
+        )
+
+    with allure.step("Verify both leaves are in one Notification under common counters prefix"):
+        expected_prefix = f"interfaces/interface[name={if_name}]/state/counters"
+        validate_notification_has_prefix_and_leaves(
+            notifications=notifications,
+            expected_prefix=expected_prefix,
+            expected_leaves=["in-octets", "out-octets"],
+        )
+
+
+@pytest.mark.system
+@pytest.mark.gnmi
+def test_gnmi_does_not_aggregate_leaves_from_different_subtrees(engines, devices):
+    """
+    Contrast case: subscribe to two paths from different subtrees and verify that the
+    "counters in/out under one payload" validation fails.
+    """
+    system = System()
+    gnmi_server_obj = system.gnmi_server
+    if_name = Tools.RandomizationTool.select_random_port(requested_ports_state=None).returned_value.name
+
+    with allure.step("Run poll subscribe with leaves from different subtrees"):
+        validate_gnmi_enabled_and_running(gnmi_server_obj, engines)
+        prefix = f"interfaces/interface[name={if_name}]/state"
+        notifications = run_gnmi_client_and_parse_multi_path_json_output(
+            engines=engines,
+            devices=devices,
+            target_ip=engines.dut.ip,
+            target_port=GnmiConsts.GNMI_DEFAULT_PORT,
+            prefix=prefix,
+            paths=["description", "counters/in-octets"],
+            mode=GnmiMode.POLL,
+        )
+
+    with allure.step("Verify counters in/out same-payload validation fails as expected"):
+        expected_prefix = f"interfaces/interface[name={if_name}]/state/counters"
+        with pytest.raises(AssertionError):
+            validate_notification_has_prefix_and_leaves(
+                notifications=notifications,
+                expected_prefix=expected_prefix,
+                expected_leaves=["description", "in-octets"],
+            )
+
+
 # -------------- NEW -------------- #
 
 @pytest.mark.system
@@ -540,10 +640,24 @@ def test_gnmi_extend_telemetry(random_api, engines, devices):
                        firmware_show.values()), f"Value '{output['fw_version']}' not found in {firmware_show}"
 
     with allure.step("Subscribe to gnmi and compare all components with fw output"):
+        # Backward compatibility check only: these legacy platform-general paths are still validated,
+        # but are expected to be removed once all firmware telemetry users move to OpenConfig components/* paths.
         for path in devices.dut.components_gnmi_xpath:
             gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, path, engines.dut.ip)
             gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
             assert any(component.get('actual-firmware') == gnmi_stream_updates_value for component in firmware_show.values()), f"Value '{gnmi_stream_updates_value}' not found in any 'actual-firmware' field"
+
+    with allure.step("One-liner OpenConfig firmware-version checks against NVUE"):
+        client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username, devices.dut.default_password)
+        for nvue_key, entry in firmware_show.items():
+            if not isinstance(entry, dict) or PlatformConsts.FW_ACTUAL not in entry:
+                continue
+            if nvue_key in ("EROT", "transceiver") or str(nvue_key).startswith("CPLD"):
+                continue
+            for gnmi_component in expand_nvue_key_to_gnmi_components(nvue_key, devices.dut):
+                assert_gnmi_firmware_version_matches_nvue(
+                    client, gnmi_component, entry[PlatformConsts.FW_ACTUAL]
+                )
 
 
 def check_subscriber_output_in_parallel(client_no, client_proc):

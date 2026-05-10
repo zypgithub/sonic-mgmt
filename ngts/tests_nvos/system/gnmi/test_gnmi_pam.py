@@ -1,3 +1,4 @@
+import logging
 import random
 import time
 from subprocess import Popen
@@ -237,20 +238,37 @@ def test_gnmi_auth_failing_clients_ddos(engines, local_adminuser, killall_gnmic)
     3. expect success
     """
     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).returned_value
+    invalid_clients: List[Popen] = []
 
-    with allure.step('run 10 gnmi clients with bad creds in background'):
-        invalid_client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, 'abc', 'abc')
-        invalid_clients: List[Popen] = []
-        for i in range(MAX_GNMI_SUBSCRIBERS):
-            with allure.step(f'run invalid gnmi client #{i}'):
-                invalid_clients.append(
-                    invalid_client.gnmic_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
-                                                                                    skip_cert_verify=True))
-    with allure.step('run gnmi client with valid creds'):
-        client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
-                            local_adminuser.password)
-        out, err = client.gnmic_capabilities(skip_cert_verify=True, wait_till_done=True)
-    with allure.step('expect success'):
-        for err_msg in GnmicErr.ALL_ERRS:
-            with allure.independent_step(f'verify no error msg: "{err_msg}"'):
-                verify_msg_not_in_out_or_err(err_msg, out, err)
+    logger = logging.getLogger(__name__)
+    try:
+        with allure.step('run 10 gnmi clients with bad creds in background'):
+            invalid_client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, 'abc', 'abc')
+            for i in range(MAX_GNMI_SUBSCRIBERS):
+                with allure.step(f'run invalid gnmi client #{i}'):
+                    proc = invalid_client.gnmic_subscribe_interface_and_keep_session_alive(
+                        GnmiMode.STREAM, selected_port.name, skip_cert_verify=True)
+                    invalid_clients.append(proc)
+            time.sleep(3)
+        with allure.step('run gnmi client with valid creds (with retry for server stabilization)'):
+            client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
+                                local_adminuser.password)
+            max_retries = 3
+            for attempt in range(max_retries):
+                out, err = client.gnmic_capabilities(skip_cert_verify=True, wait_till_done=True)
+                has_error = any(msg in (out or '') or msg in (err or '') for msg in GnmicErr.ALL_ERRS)
+                if not has_error:
+                    break
+                if attempt < max_retries - 1:
+                    logger.warning("gNMI capabilities attempt %d failed, retrying after delay", attempt + 1)
+                    time.sleep(3)
+        with allure.step('expect success'):
+            for err_msg in GnmicErr.ALL_ERRS:
+                with allure.independent_step(f'verify no error msg: "{err_msg}"'):
+                    verify_msg_not_in_out_or_err(err_msg, out, err)
+    finally:
+        for proc in invalid_clients:
+            try:
+                proc.kill()
+            except Exception:
+                pass

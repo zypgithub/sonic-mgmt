@@ -20,8 +20,8 @@ def scp_player(engines) -> LinuxSshEngine:
 
 
 @pytest.fixture(scope='session', autouse=True)
-def verify_gnmi_client_tools_installed_on_player():
-    verify_gnmi_client_tools_installed()
+def verify_gnmi_client_tools_installed_on_player(engines):
+    verify_gnmi_client_tools_installed(engines=engines)
 
 
 @pytest.fixture(scope='module')

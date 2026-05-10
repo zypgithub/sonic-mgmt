@@ -14,6 +14,10 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OnieTool import OnieTool
 from ngts.scripts.bios_config import configure_bios
 from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 logger = logging.getLogger()
 
@@ -47,6 +51,7 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
     """
     TestToolkit.tested_api = test_api
     component_name = platform_component_with_clear.get_resource_basename().lower()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     try:
         path, filename, version_name = BmcTool.get_fw_component_version_previous(component_name)
@@ -54,6 +59,9 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
                                                                name=version_name, filename=filename, topology_obj=topology_obj,
                                                                test_name=test_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        assert_gnmi_firmware_version_matches_nvue(
+            gnmi_client, PlatformConsts.FW_BIOS, version_name
+        )
         DMIDecodeTool.verify_dmi_info(engines, devices)
         with allure.step(f"Verify background copy status is completed in 7 minutes time"):
             BmcTool.verify_background_copy_completed_if_enabled(engines.dut, nv_command.platform, erot_name=PlatformConsts.EROT_CPU_PATH_NAME)
@@ -65,6 +73,9 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
                                                      name=version_name, filename=filename, topology_obj=topology_obj,
                                                      test_name=test_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        assert_gnmi_firmware_version_matches_nvue(
+            gnmi_client, PlatformConsts.FW_BIOS, version_name
+        )
         DMIDecodeTool.verify_dmi_info(engines, devices)
 
         # On Rosalind systems, verify AutomaticBackgroundCopyEnabled based on OPN status

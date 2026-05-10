@@ -9,7 +9,7 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst
+from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, EventConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
@@ -369,6 +369,13 @@ def test_split_port_timings(engines, interfaces, start_sm, devices):
     if not devices.dut.split_ports_supported:
         pytest.skip("Split is not supported on this setup")
 
+    system = System()
+
+    with allure.step("Snapshot events table baseline (highest event id before breakout)"):
+        baseline_max_event_id = system.events.get_max_event_id()
+        logger.info(f"Pre-breakout baseline: max event id = {baseline_max_event_id}, "
+                    f"latest event = {system.events.get_last()}")
+
     with allure.step("Split port"):
         split_ports, active_ports = _get_split_ports()
         parent_port = split_ports[0]
@@ -384,6 +391,21 @@ def test_split_port_timings(engines, interfaces, start_sm, devices):
 
     with allure.step("Check if child port will go up for less that 30 sec"):
         child_ports[0].interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, timeout=30).verify_result()
+
+    with allure.step("Verify no unexpected 'Transceiver was inserted' event for child ports after breakout"):
+        child_names = {p.name for p in child_ports}
+        unexpected_insert_events = system.events.find_events(
+            lambda ev: ev.get(EventConsts.RESOURCE) in child_names and
+            "Transceiver was inserted" in ev.get(EventConsts.TEXT, ""),
+            since_event_id=baseline_max_event_id)
+        events_summary = "; ".join(
+            f"id={eid} resource={ev.get(EventConsts.RESOURCE)} "
+            f"text={ev.get(EventConsts.TEXT)!r} time={ev.get(EventConsts.TIME_CREATED, '')}"
+            for eid, ev in unexpected_insert_events)
+        assert not unexpected_insert_events, (
+            f"Unexpected 'Transceiver was inserted' event(s) recorded for child ports after breakout "
+            f"(no physical transceiver action occurred). Events: {events_summary}"
+        )
 
     with allure.step("Unset parent port"):
         parent_port.interface.link.unset(op_param='breakout', apply=True, ask_for_confirmation=True).verify_result()

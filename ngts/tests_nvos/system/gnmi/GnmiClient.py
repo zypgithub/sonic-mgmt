@@ -1,6 +1,7 @@
 import logging
 import subprocess
 import time
+from types import SimpleNamespace
 from typing import Tuple
 
 import ngts.tools.test_utils.allure_utils as allure
@@ -11,7 +12,7 @@ from ngts.tests_nvos.system.gnmi.constants import GnmiMode
 
 class GnmiClient:
     def __init__(self, server_host, server_port, username, password, cmd_time: int = 5, cacert='',
-                 verify_tools_installed: bool = False, print_outputs: bool = True):
+                 verify_tools_installed: bool = False, print_outputs: bool = True, engine=None):
         assert cmd_time >= 0, f'unsupported cmd time: {cmd_time}. must be >= 0'
 
         self.server_host = server_host
@@ -21,7 +22,14 @@ class GnmiClient:
         self.cacert = cacert
         self.cmd_time = cmd_time
 
-        self.cmd_runner = CmdRunner('GnmiClient', self.cmd_time, print_outputs)
+        if engine is None:
+            self.cmd_runner = CmdRunner('GnmiClient', self.cmd_time, print_outputs)
+        else:
+            def _run_cmd_in_process(cmd, *args, **kwargs):
+                out = engine.run_cmd(cmd, validate=False)
+                return out, '', None
+
+            self.cmd_runner = SimpleNamespace(run_cmd_in_process=_run_cmd_in_process)
 
         if verify_tools_installed:
             with allure.step('verify gnmic installed on player'):
@@ -156,6 +164,17 @@ class GnmiClient:
                                                         username, password, skip_cert_verify, cacert, debug_mode, cmd_time,
                                                         keep_session_alive, wait_till_done)
         return out, err, duration, proc
+
+    def gnmic_subscribe_ib_router(self, mode: str, username: str = '', password: str = '',
+                                  skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
+                                  cmd_time=None, keep_session_alive: bool = False, wait_till_done: bool = False, full_path: str = None
+                                  ) -> \
+            Tuple[str, str, float, subprocess.Popen]:
+        path = full_path if full_path else ''
+        out, err, duration, proc = self.gnmic_subscribe(f'ib-router', path, mode, True,
+                                                        username, password, skip_cert_verify, cacert, debug_mode, cmd_time,
+                                                        keep_session_alive, wait_till_done)
+        return out, err
 
     def _run_gnmic_subscribe_system_events(self, mode: str, username: str = '', password: str = '',
                                            skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,

@@ -300,7 +300,6 @@ def test_radius_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
             authenticator = SshAuthenticator(local_adminuser.username, local_adminuser.password, engines.dut.ip)
             _, timestamp1 = authenticator.attempt_login_failure()
             _, timestamp2 = authenticator.attempt_login_success(restart_session_process=False)
-            engines.dut.disconnect()
 
         with allure.step(f'Verify respond time >= timeout'):
             assert timestamp2 - timestamp1 >= rand_timeout, f'Timeout was too short. Expected: {rand_timeout}'
@@ -316,7 +315,8 @@ def test_radius_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
                 AaaConsts.PORT: AaaConsts.AAA_SERVER_BAD_PORT
             }, apply=True, verify_apply=False)
 
-        with allure.step('Make authentication attempt and measure time'):
+        with allure.step('Disconnect and make authentication attempt with 2 unreachable servers'):
+            engines.dut.disconnect()
             _, timestamp1 = authenticator.attempt_login_failure()
             _, timestamp2 = authenticator.attempt_login_success(restart_session_process=False)
             engines.dut.disconnect()

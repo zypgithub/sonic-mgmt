@@ -1,19 +1,30 @@
 import logging
+import random
+import re
 import time
 
 import pytest
 
 from retry import retry
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, RebootConsts
+from ngts.nvos_constants.constants_nvos import ApiType, RebootConsts, SystemConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, ping_device
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import ActionConsts
 from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.system.reboot_telemetry_helpers import (
+    REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS,
+    RebootReasonCategory,
+    assert_nvue_gnmi_counters_match,
+    gnmi_client_for_dut,
+    take_reboot_telemetry_snapshot,
+    verify_reboot_telemetry_after_reboot,
+)
 from ngts.tools.test_utils import allure_utils as allure
 from retry.api import retry_call
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -26,19 +37,25 @@ logger = logging.getLogger()
 @pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.nvos_build
-def test_reboot_command(engines, devices, test_name):
+def test_reboot_command(engines, devices, test_name, topology_obj):
     """
     Test flow:
         1. run nv action reboot system
     """
     system = System(None)
     expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.COLD]
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     with allure.step('Clear system events to remove older reboot system events'):
         system.events.action(ActionConsts.CLEAR)
 
+    with allure.step('NVUE and gNMI reboot counters must match before reboot'):
+        telemetry_before = take_reboot_telemetry_snapshot(system, gnmi_client)
+        assert_nvue_gnmi_counters_match(telemetry_before)
+
     with allure.step('Run nv action reboot system and wait for system to be ready in serial'):
-        result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot, check_system_is_functional=False)
+        result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot,
+                                                           topology_obj=topology_obj, check_system_is_functional=False)
 
     with allure.step(f"wait for system to become functional"):
         DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
@@ -51,16 +68,27 @@ def test_reboot_command(engines, devices, test_name):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
             ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, ["gentime", "reason", "user"]).verify_result()
 
-        with allure.independent_step("Check system reboot history output"):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.history.show()).get_returned_value()
-            if output and len(output.keys()) > 0:
-                ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output[list(output.keys())[0]],
-                                                                                  ["gentime", "reason", "user"]).verify_result()
+        with allure.independent_step("Verify NVUE and gNMI reboot telemetry after reboot"):
+            verify_reboot_telemetry_after_reboot(
+                snapshot_before=telemetry_before,
+                system=system,
+                gnmi_client=gnmi_client,
+                expected_category=RebootReasonCategory.USER_INITIATED,
+                expected_details=expected_reason,
+                expected_user=expected_user,
+            )
 
-        with allure.independent_step("Check reboot cause"):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
-            assert 'reboot' in output["reason"], "reboot not found in show reboot output"
-            assert 'admin' in output["user"], f"reboot user is not 'admin' as expected (actual - {output['user']})"
+        with allure.independent_step("Check system reboot history output"):
+            output = OutputParsingTool.parse_json_str_to_dictionary(
+                system.reboot.history.show(exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS)
+            ).get_returned_value()
+            if output and len(output.keys()) > 0:
+                first_entry = output[list(output.keys())[0]]
+                required_fields = {"gentime", "reason", "reason-type", "user"}
+                projected_entry = {field: first_entry.get(field) for field in required_fields}
+                ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
+                    projected_entry, required_fields
+                ).verify_result()
 
         with allure.independent_step("Validate reboot reason and user"):
             ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
@@ -71,7 +99,7 @@ def test_reboot_command(engines, devices, test_name):
 
 @pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.system
-def test_reboot_command_force(engines, devices, test_name, random_api):
+def test_reboot_command_force(engines, devices, test_name, random_api, topology_obj):
     """
     Test flow:
         1. run nv action reboot system force
@@ -79,7 +107,8 @@ def test_reboot_command_force(engines, devices, test_name, random_api):
     system = System(None)
     with allure.step('Run nv action reboot system mode force'):
         result_obj, duration = OperationTime.save_duration('reboot', '', test_name,
-                                                           system.reboot.action_reboot, params='force')
+                                                           system.reboot.action_reboot, params='force',
+                                                           topology_obj=topology_obj)
         OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices).verify_result()
 
 
@@ -130,15 +159,35 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
     if mode == RebootConsts.POWER_CYCLE and mode not in devices.dut.supported_commands:
         pytest.skip(f"{mode} not supported")
     system = System()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     try:
         with allure.step('Clear system events to remove older reboot system events'):
             system.events.action(ActionConsts.CLEAR)
 
+        with allure.step('NVUE and gNMI reboot counters must match before reboot'):
+            telemetry_before = take_reboot_telemetry_snapshot(system, gnmi_client)
+            assert_nvue_gnmi_counters_match(telemetry_before)
+
         result_obj = _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode)
         result_obj.verify_result()
 
         expected_reason, expected_user = devices.dut.reboot_reason_dict[mode]
+
+        with allure.step("Verify NVUE and gNMI reboot telemetry after reboot"):
+            telemetry_category = (
+                RebootReasonCategory.POWER_FAILURE
+                if expected_reason == SystemConsts.REBOOT_REASON_POWER_LOSS
+                else RebootReasonCategory.USER_INITIATED
+            )
+            verify_reboot_telemetry_after_reboot(
+                snapshot_before=telemetry_before,
+                system=system,
+                gnmi_client=gnmi_client,
+                expected_category=telemetry_category,
+                expected_details=expected_reason,
+                expected_user=expected_user,
+            )
 
         with allure.step("Validate reboot reason and user"):
             ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
@@ -163,19 +212,43 @@ def test_reboot_via_remote_reboot(engines, devices, topology_obj):
     """
     system = System()
     expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.REMOTE_REBOOT]
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     with allure.step('Clear system events to remove older reboot system events'):
         system.events.action(ActionConsts.CLEAR)
+
+    with allure.step('NVUE and gNMI reboot counters must match before remote reboot'):
+        telemetry_before = take_reboot_telemetry_snapshot(system, gnmi_client)
+        assert_nvue_gnmi_counters_match(telemetry_before)
 
     with allure.step("Get name from NOGA"):
         noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
         dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
 
+    with allure.step("Sync filesystem to ensure LogAnalyzer marker is persisted to disk before power cycle"):
+        engines.dut.run_cmd("sync")
+
     with allure.step("Reboot the system using remote reboot"):
         DutUtilsTool.dut_psu_control(engines, topology_obj, dhcp_hostname=dhcp_hostname)
 
-    res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
+    reboot_params = RebootParams(topology_obj=topology_obj)
+    res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, reboot_params=reboot_params, device=devices.dut, verify_final_result=False)
     assert res_obj.result, 'System reboot failed'
+
+    with allure.step("Verify NVUE and gNMI reboot telemetry after remote reboot"):
+        telemetry_category = (
+            RebootReasonCategory.POWER_FAILURE
+            if expected_reason == SystemConsts.REBOOT_REASON_POWER_LOSS
+            else RebootReasonCategory.USER_INITIATED
+        )
+        verify_reboot_telemetry_after_reboot(
+            snapshot_before=telemetry_before,
+            system=system,
+            gnmi_client=gnmi_client,
+            expected_category=telemetry_category,
+            expected_details=expected_reason,
+            expected_user=expected_user,
+        )
 
     ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
@@ -190,7 +263,7 @@ def _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode):
 
     # Run reboot
     with allure.step(f"Rebooting system with mode: {mode}"):
-        reboot_params = RebootParams()
+        reboot_params = RebootParams(topology_obj=topology_obj)
         reboot_params.should_wait_till_system_ready = mode != RebootConsts.HALT
         reboot_result_obj, _ = OperationTime.save_duration(f"reboot {mode}", '', test_name,
                                                            system.action_reboot,
@@ -283,3 +356,84 @@ def get_x_number(arr, x_number):
                 x_number = arr[i + 1]
                 x_number = x_number[:-1] if x_number.endswith(',') else x_number
                 return x_number
+
+
+@pytest.mark.system
+def test_show_system_reboot_history_filter(engines, random_api):
+    """
+    Verify `nv show system reboot history --filter <field>=<value>` (NVUE)
+    and the equivalent `?filter=<field>%3d<value>` REST query (OpenAPI).
+
+    flow:
+    1. Run show reboot history without filter - capture full output
+    2. Pick a random entry and a random non-gentime field/value
+       (gentime contains spaces, which complicates --filter quoting on NVUE)
+    3. Build expected dict (entries where field==value), run with the filter, verify match
+    4. Run with an empty filter - verify it equals the unfiltered output
+    5. Run with a valid field but a value that does not match any entry - verify {}
+    6. Run with a filter field that does not exist - verify error message
+       (NVUE: stderr "No match found for filter depth of N."; OpenAPI: HTTP 404
+       body with the same "No match found for filter depth of N." string)
+    """
+    system = System()
+
+    with allure.step('Run show reboot history without filter'):
+        output_dict = OutputParsingTool.parse_json_str_to_dictionary(
+            system.reboot.history.show(exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS)
+        ).get_returned_value()
+        if not output_dict:
+            pytest.skip("reboot history is empty - nothing to filter")
+
+    with allure.step('Select a random filter field and value (skip gentime - has spaces)'):
+        random_key = RandomizationTool.select_random_value(list(output_dict.keys())).get_returned_value()
+        filter_name = RandomizationTool.select_random_value(
+            list(output_dict[random_key].keys()), forbidden_values=['gentime']
+        ).get_returned_value()
+        value = output_dict[random_key][filter_name]
+
+    with allure.step('Build expected filtered dict from full output'):
+        filtered_expected = {
+            k: v for k, v in output_dict.items() if v.get(filter_name) == value
+        }
+
+    with allure.step('Verify filter behaviors'):
+        with allure.independent_step(f'Filter reboot history by {filter_name}={value}'):
+            filtered_raw = system.reboot.history.filter(
+                filter_name=filter_name, value=value,
+                exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS,
+            ).get_returned_value()
+            output_dict_filtered = OutputParsingTool.parse_json_str_to_dictionary(filtered_raw).get_returned_value()
+            assert len(output_dict_filtered) == len(filtered_expected), (
+                f"filter result size mismatch: filtered={len(output_dict_filtered)} "
+                f"expected={len(filtered_expected)} (filter {filter_name}={value!r})"
+            )
+            ValidationTool.compare_nested_dictionary_content(
+                output_dict_filtered, filtered_expected
+            ).verify_result()
+
+        with allure.independent_step('Empty filter must return the full output'):
+            empty_filter_raw = system.reboot.history.filter(
+                exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS,
+            ).get_returned_value()
+            output_dict_empty_filter = OutputParsingTool.parse_json_str_to_dictionary(empty_filter_raw).get_returned_value()
+            ValidationTool.compare_nested_dictionary_content(
+                output_dict_empty_filter, output_dict
+            ).verify_result()
+
+        with allure.independent_step('Existing field with non-matching value must return {}'):
+            no_match_raw = system.reboot.history.filter(
+                filter_name=filter_name, value='__no_such_value__',
+                exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS,
+            ).get_returned_value()
+            empty_output = OutputParsingTool.parse_json_str_to_dictionary(no_match_raw).get_returned_value()
+            assert empty_output == {}, (
+                f"expected empty dict for non-matching filter value, got {empty_output!r}"
+            )
+
+        with allure.independent_step('Non-existing filter field must return an error'):
+            out = system.reboot.history.filter(
+                filter_name='__no_such_field__', value='x',
+            ).verify_result(False)
+            assert re.search(r'No match found for filter depth of \d+\.', out), (
+                f"expected 'No match found for filter depth of N.' message, got {out!r}"
+            )

@@ -5,6 +5,24 @@ from ngts.nvos_tools.infra.Tools import Tools
 
 logger = logging.getLogger()
 
+# IPoIB ifconfig set/unset triggers IB multicast group join/leave; the Subnet
+# Manager then pushes new Multicast Forwarding Tables to switches. During the
+# transient MFT-update window the following counters can legitimately move:
+#   - port-rcv-switch-relay-errors (link counter, checked by verify_no_link_errors)
+#   - port-dlid-mapping-errors     (PHY counter, checked by compare_with_baseline)
+# Observed magnitudes on a bidirectional IPoIB test (~4 cycles): ~5-10 per
+# port, per counter. 20 is a tight bound that catches regressions where the
+# multicast handling degrades. Strict-zero data-plane checks are done in
+# test_ipoib_features.py (counters cleared AFTER setup churn so assertions
+# reflect data plane only).
+#
+# Same dict is passed to both checks; each ignores keys for counters it
+# doesn't evaluate.
+IPOIB_SETUP_CHURN_TOLERANCES = {
+    'port-rcv-switch-relay-errors': 20,
+    'port-dlid-mapping-errors': 20,
+}
+
 
 @pytest.mark.general
 @pytest.mark.skynet
@@ -75,7 +93,13 @@ def test_basic_ipoib_traffic(engines, devices, players, interfaces, start_sm, se
 
     with allure.step('Verify no error of any kind occurred'):
         with allure.independent_step('Verify no link errors on traffic ports'):
-            Tools.TrafficValidatorTool.verify_no_link_errors(engines.dut, devices.dut).verify_result()
+            Tools.TrafficValidatorTool.verify_no_link_errors(
+                engines.dut, devices.dut,
+                tolerances=IPOIB_SETUP_CHURN_TOLERANCES,
+            ).verify_result()
 
         with allure.independent_step('Verify no PHY detail counter changes'):
-            Tools.TrafficValidatorTool.compare_with_baseline(baselines, engines.dut).verify_result()
+            Tools.TrafficValidatorTool.compare_with_baseline(
+                baselines, engines.dut,
+                tolerances=IPOIB_SETUP_CHURN_TOLERANCES,
+            ).verify_result()

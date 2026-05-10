@@ -1,4 +1,6 @@
+import inspect
 import logging
+import time
 from typing import Dict
 
 from retry import retry
@@ -8,8 +10,49 @@ from ngts.nvos_constants.constants_nvos import ActionConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.MTLSableServerResource import MTLSableServerResource
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+
+
+def wait_for_gnmi_config_to_settle():
+    with allure.step(f'wait {GnmiConsts.CONFIG_SETTLE_TIME_SEC}s for gnmi config to settle'):
+        logger.info(f'wait {GnmiConsts.CONFIG_SETTLE_TIME_SEC}s for gnmi config to settle after set/unset')
+        time.sleep(GnmiConsts.CONFIG_SETTLE_TIME_SEC)
+
+
+def _called_with_apply_true(fn, args, kwargs) -> bool:
+    try:
+        bound = inspect.signature(fn).bind_partial(*args, **kwargs)
+        bound.apply_defaults()
+        return bool(bound.arguments.get('apply', False))
+    except (TypeError, ValueError):
+        return bool(kwargs.get('apply', False))
+
+
+class _GnmiConfigSettlingMixin:
+    """Wraps ``BaseComponent.set``/``unset`` to wait for the gNMI server to
+    settle whenever the call actually applied a config change.
+
+    Sleeps only when ``apply=True`` was passed: a non-applied ``set`` is just
+    staging and there is nothing on the server to settle.
+
+    Note: applied only to ``gnmi-server`` itself (set/unset on the resource and
+    on per-field config like ``certificate``). ``gnmi-server/mtls`` does NOT
+    use this mix in and keeps its plain :class:`BaseComponent` behaviour.
+    """
+
+    def set(self, *args, **kwargs):
+        result = super().set(*args, **kwargs)
+        if _called_with_apply_true(super().set, args, kwargs):
+            wait_for_gnmi_config_to_settle()
+        return result
+
+    def unset(self, *args, **kwargs):
+        result = super().unset(*args, **kwargs)
+        if _called_with_apply_true(super().unset, args, kwargs):
+            wait_for_gnmi_config_to_settle()
+        return result
 
 
 class Status(BaseComponent):
@@ -22,7 +65,7 @@ class Status(BaseComponent):
         return self.action(ActionConsts.CLEAR)
 
 
-class GnmiServer(MTLSableServerResource):
+class GnmiServer(_GnmiConfigSettlingMixin, MTLSableServerResource):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/gnmi-server')
         self.status = Status(self)

@@ -19,6 +19,13 @@ from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, RebootCo
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.system.reboot_telemetry_helpers import (
+    RebootReasonCategory,
+    assert_nvue_gnmi_counters_match,
+    gnmi_client_for_dut,
+    take_reboot_telemetry_snapshot,
+    verify_reboot_telemetry_after_reboot,
+)
 
 logger = logging.getLogger()
 
@@ -54,17 +61,33 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     system = System()
     cluster = Cluster()
     expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.FACTORY_RESET]
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
 
     with allure.step('pre factory reset steps'):
         apply_and_save_port, current_time, just_apply_port, health_status, machine_type, not_apply_port, \
             username, init_cluster_status = factory_reset_no_params_pre_steps(engines, platform_params, system, devices,
                                                                               has_loopbox, setup_name, standalone_system)
 
+    with allure.step("NVUE and gNMI reboot counters must match before factory reset"):
+        telemetry_before = take_reboot_telemetry_snapshot(system, gnmi_client)
+        assert_nvue_gnmi_counters_match(telemetry_before)
+
     with allure.step("Run reset factory without params"):
         with serial_analyzer.stage('Reset-factory'):
             duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time, test_name=test_name)
 
     ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
+
+    with allure.step("Verify NVUE and gNMI reboot telemetry after factory reset"):
+        verify_reboot_telemetry_after_reboot(
+            snapshot_before=telemetry_before,
+            system=system,
+            gnmi_client=gnmi_client,
+            expected_category=RebootReasonCategory.USER_INITIATED,
+            expected_details=expected_reason,
+            expected_user=expected_user,
+            reset_factory=True,
+        )
 
     with allure.step('post factory reset steps'):
         factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, health_status,
@@ -114,7 +137,7 @@ def test_reset_factory_keep_basic(engines, devices, random_api, test_name, seria
 
     with allure.step('pre factory reset steps'):
         current_time, username, health_status, mgmt_port, \
-            output_dictionary_mgmt_show = factory_reset_keep_basic_pre_steps(engines, system)
+            output_dictionary_mgmt_show, dns_server_id = factory_reset_keep_basic_pre_steps(engines, system)
 
     with allure.step("Run reset factory with keep basic param"):
         with serial_analyzer.stage('Reset-factory'):
@@ -126,7 +149,8 @@ def test_reset_factory_keep_basic(engines, devices, random_api, test_name, seria
         validate_health_status_report(system, health_status)
 
     with allure.step("Verify the cleanup done successfully"):
-        verify_cleanup_done(engines.dut, current_time, system, username, param=KEEP_BASIC, ib_router=ib_router)
+        verify_cleanup_done(engines.dut, current_time, system, username, param=KEEP_BASIC, ib_router=ib_router,
+                            dns_server_id=dns_server_id)
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary_mgmt_show,
                                                           field_name=NvosConst.DESCRIPTION,

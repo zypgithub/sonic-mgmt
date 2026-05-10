@@ -235,8 +235,8 @@ class ValidationTool:
 
             if not all(field in expected_fields for field in list(output_dictionary.keys())):
                 result_obj.result = False
-                result_obj.info += "the next fields are missing on the cmd output {missing}".format(
-                    missing=expected_fields - output_dictionary.keys())
+                result_obj.info += "the next unexpected fields found in the cmd output {extra}".format(
+                    extra=set(output_dictionary.keys()) - set(expected_fields))
 
             if check_empty_values:
                 for key, value in output_dictionary.items():

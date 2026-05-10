@@ -3,7 +3,8 @@ from datetime import datetime
 from typing import List, Union
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import SyslogConsts, StatsConsts
+from ngts.nvos_constants.constants_nvos import SyslogConsts
+from ngts.tests_nvos.system.stats.constants import StatsConsts
 from ngts.nvos_tools.infra import ExceptionTool
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tools.test_utils import allure_utils as allure

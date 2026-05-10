@@ -27,6 +27,11 @@ class OpenSmTool:
     # Set automatically by the configure_opensm_path fixture in conftest.py
     OPENSM_PATH = SM_MASTER_OPEN_SM_PATH
 
+    # Whether the DUT requires a multiplanar-capable opensm (e.g. Black Mamba, Taipan).
+    # Set automatically by the configure_opensm_multiplanar fixture from devices.dut.multi_planar.
+    # Callers that explicitly pass multiplanar=True/False to start_open_sm still override this.
+    MULTI_PLANAR = False
+
     @classmethod
     def set_opensm_path(cls, opensm_path):
         """
@@ -40,8 +45,18 @@ class OpenSmTool:
         is_doca = opensm_path == DOCA_OPEN_SM_PATH
         logging.info(f"OpenSmTool configured: OPENSM_PATH={cls.OPENSM_PATH} (doca={is_doca})")
 
+    @classmethod
+    def set_multi_planar(cls, multi_planar):
+        """
+        Set the multiplanar flag for the test session. On a multiplanar DUT (Black Mamba,
+        Taipan) the SM must run from OPEN_SM_PATH (UFM build with multi-plane support).
+        Called by the configure_opensm_multiplanar fixture in tests_nvos/conftest.py.
+        """
+        cls.MULTI_PLANAR = bool(multi_planar)
+        logging.info(f"OpenSmTool configured: MULTI_PLANAR={cls.MULTI_PLANAR}")
+
     @staticmethod
-    def start_open_sm(engines=None, multiplanar=False):
+    def start_open_sm(engines=None, multiplanar=None):
         """Start OpenSM."""
         return OpenSmTool.start_open_sm_on_server(engines, multiplanar)
 
@@ -55,15 +70,54 @@ class OpenSmTool:
         return [line for line in output.split('\n') if 'grep' not in line and line.strip()]
 
     @staticmethod
-    def start_open_sm_on_server(engines, multiplanar=False):
-        """Start OpenSM if it's not running, or restart if wrong version is detected."""
+    def _resolve_multiplanar(multiplanar):
+        """If caller didn't specify, fall back to the class-level setting (DUT-derived)."""
+        return OpenSmTool.MULTI_PLANAR if multiplanar is None else bool(multiplanar)
+
+    @staticmethod
+    def _ensure_smi2_device(engine, port_name):
+        """
+        Ensure the smi2 SMI/GSI proxy device exists on the SM host. Multiplanar opensm
+        binds to smi2, not directly to mlx5_0; the device does not survive reboots and
+        must be (re)created via `rdma dev add` before opensm can come up.
+
+        Returns True if smi2 is present (already or after creation), False on failure.
+        """
+        output = engine.run_cmd("ibdev2netdev")
+        if "smi2" in output:
+            return True
+        logging.info(f"smi2 SMI device missing on {engine.ip} (parent={port_name}), creating it")
+        engine.run_cmd(
+            f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
+        # verify
+        output = engine.run_cmd("ibdev2netdev")
+        if "smi2" not in output:
+            logging.error(f"Failed to create smi2 device on {engine.ip}")
+            return False
+        return True
+
+    @staticmethod
+    def start_open_sm_on_server(engines, multiplanar=None):
+        """
+        Start OpenSM if not running, or restart it when the wrong binary is running for
+        the current setup. On a multiplanar DUT (Black Mamba, Taipan) the only
+        acceptable binary is OPEN_SM_PATH (UFM multi-plane build); any other running
+        opensm is forcibly replaced. Also re-creates the smi2 SMI device if it is
+        missing (it does not survive reboots).
+        """
         if not hasattr(engines, "hfnm"):
             logging.warning(MISSING_HFNM_MESSAGE)
             return ResultObj(False, MISSING_HFNM_MESSAGE)
 
+        multiplanar = OpenSmTool._resolve_multiplanar(multiplanar)
         is_running, port_name = OpenSmTool.is_sm_running_on_server(engines)
 
-        # Determine desired opensm path
+        # Determine desired opensm path. DOCA wins over the multi-plane explicit-binary
+        # selection because the DOCA opensm distribution already includes multi-plane
+        # support, so on doca_traffic_systems (e.g. Taipan, which is also multi_planar)
+        # the DOCA binary handles both multi-plane and non-multi-plane modes. The
+        # explicit UFM multi-plane build (OPEN_SM_PATH) is only required on non-DOCA
+        # multi-plane DUTs such as Black Mamba.
         if OpenSmTool.OPENSM_PATH == DOCA_OPEN_SM_PATH:
             desired_path = DOCA_OPEN_SM_PATH
         elif multiplanar:
@@ -73,11 +127,17 @@ class OpenSmTool:
 
         if is_running:
             running_path = OpenSmTool.get_running_opensm_path(engines)
-            if running_path is None or running_path == desired_path:
-                logging.info(f"OpenSM already running (path: {running_path})")
+            smi2_ok = (not multiplanar) or ("smi2" in engines.hfnm.run_cmd("ibdev2netdev"))
+            if running_path == desired_path and smi2_ok:
+                logging.info(f"OpenSM already running (path: {running_path}, multiplanar={multiplanar})")
                 return ResultObj(True, "OpenSM is already running")
-            # Wrong version - restart
-            logging.warning(f"Wrong OpenSM version ({running_path}), restarting with {desired_path}")
+            if running_path != desired_path:
+                logging.warning(
+                    f"Wrong OpenSM binary running ({running_path}), restarting with {desired_path} "
+                    f"(multiplanar={multiplanar})")
+            else:
+                logging.warning(
+                    f"OpenSM running but smi2 SMI device is missing on multiplanar setup, restarting")
             OpenSmTool.stop_open_sm_on_server(engines)
             time.sleep(2)
         else:
@@ -94,12 +154,8 @@ class OpenSmTool:
                 if "No space left on device" in output:
                     return ResultObj(False, "Failed to cleanup opensm logs")
 
-            if multiplanar:
-                # CX8 needs to see the planarized interface
-                output = engines.hfnm.run_cmd("ibdev2netdev")
-                if "smi2" not in output:
-                    engines.hfnm.run_cmd(
-                        f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
+            if multiplanar and not OpenSmTool._ensure_smi2_device(engines.hfnm, port_name):
+                return ResultObj(False, "Failed to create smi2 SMI device required for multiplanar")
 
             logging.info(f"Using opensm path: {desired_path}")
 
@@ -115,10 +171,14 @@ class OpenSmTool:
 
         with allure.step("Start OpenSM"):
             engines.hfnm.run_cmd(f"{desired_path} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
-            time.sleep(5)
 
         with allure.step("Verify OpenSM is running"):
-            return ResultObj(OpenSmTool.verify_open_sm_is_running_on_server(engines), "Failed to start OpenSM")
+            deadline = time.time() + 30
+            while time.time() < deadline:
+                if OpenSmTool.verify_open_sm_is_running_on_server(engines):
+                    return ResultObj(True, "OpenSM started")
+                time.sleep(3)
+            return ResultObj(False, "Failed to start OpenSM (port did not come Up within 30s)")
 
     @staticmethod
     def stop_open_sm_on_server(engines):
@@ -148,9 +208,9 @@ class OpenSmTool:
                 host_engine = getattr(engines, host_nickname)
                 OpenSmTool.stop_open_sm_process_on_engine(host_engine)
 
-        except BaseException as ex:
+        except Exception as ex:
             logging.error(f"Failed to stop opensm with error: {ex}")
-            return False, 0
+            return ResultObj(False, f"Failed to stop opensm: {ex}")
         return ResultObj(True)
 
     @staticmethod

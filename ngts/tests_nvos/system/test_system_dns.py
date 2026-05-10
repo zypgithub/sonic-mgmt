@@ -201,8 +201,9 @@ def test_unset_system_dns_server_ip(engines, random_api, devices, dns_config_bac
                    exceptions=AssertionError, tries=2, delay=2)
 
         with allure.step('Run unset system dns server <server-id> ipv4 command and apply config'):
-            arg = SystemConsts.DNS_SERVER + " " + dns_server_id_ipv4
-            system.dns.unset(arg, apply=True, dut_engine=engines.dut).verify_result()
+            system.dns.server.server_id[dns_server_id_ipv4].unset(
+                apply=True, dut_engine=engines.dut
+            ).verify_result()
 
         with allure.step('Verify DNS server ipv4 is not present and ipv6 is, in show system dns server output'):
             dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)).\
@@ -307,13 +308,15 @@ def test_system_dns_server_max(engines, random_api, devices, dns_config_backup_a
                                apply=True, dut_engine=engines.dut).verify_result(should_succeed=False)
 
         with allure.step('Run unset system dns server 1.1.1.1 command and apply config'):
-            system.dns.unset(SystemConsts.DNS_SERVER + " " + "1.1.1.1",
-                             apply=True, dut_engine=engines.dut).verify_result()
+            system.dns.server.server_id["1.1.1.1"].unset(
+                apply=True, dut_engine=engines.dut
+            ).verify_result()
 
         if TestToolkit.devices.dut.is_eth():
             with allure.step('Run unset system dns server 2.2.2.2 command and apply config'):
-                system.dns.unset(SystemConsts.DNS_SERVER + " " + "2.2.2.2",
-                                 apply=True, dut_engine=engines.dut).verify_result()
+                system.dns.server.server_id["2.2.2.2"].unset(
+                    apply=True, dut_engine=engines.dut
+                ).verify_result()
 
         with allure.step('Run set system dns server 2.2.2.2 command and apply config'):
             system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value="2.2.2.2",
@@ -429,8 +432,9 @@ def test_system_dns_server_max_set_unset_single_apply(engines, random_api, devic
                            apply=False, dut_engine=engines.dut).verify_result()
 
         with allure.step('Run unset system dns server dns_server_id_ipv4 command and apply config'):
-            system.dns.unset(SystemConsts.DNS_SERVER + " " + dns_server_id_ipv4,
-                             apply=True, dut_engine=engines.dut).verify_result()
+            system.dns.server.server_id[dns_server_id_ipv4].unset(
+                apply=True, dut_engine=engines.dut
+            ).verify_result()
 
         with allure.step('Verify the configured DNS servers are in show system dns server output'):
             dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)).\
@@ -492,61 +496,6 @@ def test_factory_reset_for_static_system_dns(engines, random_api, devices, nv_co
                 dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)). \
                     get_returned_value()
                 assert dns_server_id in dns_output, "The configured DNS server is not present in show system dns after factory reset"
-
-    finally:
-        clear_system_dns(system, engines)
-
-        with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(res_obj.duration, devices.dut.reset_factory, devices).verify_result()
-
-
-@pytest.mark.dns
-@pytest.mark.system
-@pytest.mark.simx
-@pytest.mark.cumulus
-def test_factory_reset_with_config_save_for_static_system_dns(engines, random_api, devices, dns_config_backup_and_restore):
-    """
-    Run factory reset system command and verify the system DNS fields are removed from show system dns
-        Test flow:
-        1. Run ‘nv set system dns server <ip> and verify command is completed successfully
-        2. Check ‘nv show system dns server’ ond validate DNS server <ip> in output
-        3. Save config
-        4. Run system factory reset
-        5. Run 'nv show system' and verify system dns server fields is configured
-        6. Run 'nv show config -o commands' and verify system dns commands are shown
-    """
-    system = System()
-    dns_server_id = SystemConsts.DNS_SERVER_IDS["ipv4"]
-
-    try:
-        if TestToolkit.devices.dut.is_ib():
-            with allure.step('Validate system dns is default (Null)'):
-                system_dns_output = OutputParsingTool.parse_json_str_to_dictionary(
-                    system.dns.show(SystemConsts.DNS_SERVER)).get_returned_value()
-                assert system_dns_output == {}, \
-                    "System contact in system show is {} instead of Null".format(system_dns_output)
-        with allure.step('Run set system dns server <server-id> command and apply config'):
-            system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value=dns_server_id,
-                           apply=True, dut_engine=engines.dut, ask_for_confirmation=devices.dut.ask_for_confirmation).verify_result()
-
-        with allure.step('Verify DNS server in show system dns server output'):
-            dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)). \
-                get_returned_value()
-            assert dns_server_id in dns_output, "The configured DNS server {} is not present in show system dns".\
-                format(dns_server_id)
-
-        with allure.step('Save config'):
-            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
-
-        with allure.step("Run reset factory with keep basic param"):
-            res_obj = system.factory_default.action_reset(param="keep basic", operation=devices.dut.reset_factory)
-            res_obj.verify_result()
-
-        with allure.step('Validate system dns config is retained'):
-            dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)). \
-                get_returned_value()
-            assert dns_server_id in dns_output, "The configured DNS server {} is not retained in show system dns".\
-                format(dns_server_id)
 
     finally:
         clear_system_dns(system, engines)

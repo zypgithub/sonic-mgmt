@@ -241,7 +241,8 @@ def test_ldap_unique_priority(test_api, engines, topology_obj):
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_ldap_priority(test_flow, test_api, engines, topology_obj, request):
+@pytest.mark.parametrize('addressing_type', AddressingType.ALL_TYPES)
+def test_ldap_priority(test_flow, test_api, addressing_type, engines, topology_obj, request):
     """
     @summary: Verify that auth is done via the top prioritized server
 
@@ -250,9 +251,16 @@ def test_ldap_priority(test_flow, test_api, engines, topology_obj, request):
         2. verify auth is done via top prioritized server
         3. advance the lowest prioritized server to be most prioritized
         4. repeat steps 2-3 until reach priority 8 (max)
+
+    Parameterized on addressing_type (ipv4 / ipv6 / dn) so that the
+    secondary server's address family is deterministic per test id
+    instead of a hidden random choice. This prevents flaky runs where
+    one execution picks a reachable address and the next picks an
+    unreachable one, and makes reachability issues attributable to a
+    specific address family.
     """
     server1 = LdapServers.PHYSICAL_SERVER.copy(deep=True)
-    server2 = random.choice(list(LdapServersP3.LDAP3_SERVERS.values())).copy(deep=True)
+    server2 = LdapServersP3.LDAP3_SERVERS[addressing_type].copy(deep=True)
 
     generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type=RemoteAaaType.LDAP,
                               remote_aaa_obj=System().aaa.ldap, server1=server1, server2=server2)

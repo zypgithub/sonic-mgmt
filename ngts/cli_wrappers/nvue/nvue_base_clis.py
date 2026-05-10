@@ -123,6 +123,21 @@ class NvueBaseCli(BaseCli):
         return engine.run_cmd(cmd)
 
     @staticmethod
+    @check_output
+    def filter(engine, resource_path, filter_name="", value="", output_format=OutputFormat.json):
+        path = resource_path.replace('/', ' ')
+        param = f"{filter_name}={value}" if filter_name else "\"\""
+        cmd = f"nv show {path} --filter {param}"
+        if output_format:
+            cmd = f'{cmd} --output {output_format}'
+            if output_format == OutputFormat.json and '--color ' not in cmd:
+                cmd += ' --color off'
+        cmd = " ".join(cmd.split())
+        cmd = cmd.replace('%2F', '/')
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)
+
+    @staticmethod
     def set(engine, resource_path, op_param_name="", op_param_value="", check_engine_connectivity: bool = True):
         return NvueBaseCli.nvue_set(engine, resource_path, op_param_name, op_param_value)
 

@@ -11,6 +11,10 @@ from ngts.nvos_tools.infra.SmartctlCmdBuilder import SmartctlCmdBuilder
 from ngts.nvos_constants.constants_nvos import PlatformConsts, SSDConsts, SystemConsts
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 TYPE: str = 'type'
 NAME: str = 'name'
@@ -140,6 +144,7 @@ def test_device_disk(engines, devices, disk_data: DiskDataT):
         )
     with allure.step("Verify disk data is displayed correctly"):
         platform = Platform()
+        gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
         with allure.step("Verify disk part number"):
             ssd_part_number_sources: Dict[str, Callable[[], str]] = {
                 "platform firmware": lambda: OutputParsingTool.parse_json_str_to_dictionary(
@@ -156,6 +161,10 @@ def test_device_disk(engines, devices, disk_data: DiskDataT):
                     assert ssd_firmware_output == disk_data[SSDConsts.SSD_PART_NUMBER], (
                         f"Disk part number {ssd_firmware_output} does not match expected part number {disk_data[SSDConsts.SSD_PART_NUMBER]}"
                     )
+            ssd_fw = OutputParsingTool.parse_json_str_to_dictionary(
+                platform.firmware.show(op_param=PlatformConsts.FW_SSD)
+            ).get_returned_value()[PlatformConsts.FW_ACTUAL]
+            assert_gnmi_firmware_version_matches_nvue(gnmi_client, PlatformConsts.FW_SSD, ssd_fw)
         with allure.step("Verify disk size"):
             disk_size_output = OutputParsingTool.parse_json_str_to_dictionary(platform.show()).get_returned_value()[PlatformConsts.DISK_SIZE]
             disk_size_output = float(disk_size_output.split()[0])

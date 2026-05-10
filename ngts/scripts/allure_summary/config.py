@@ -18,7 +18,13 @@ ALLURE_BASE_URL = "https://allure.nvidia.com/allure-docker-service"
 HTTP_TIMEOUT = 60
 SSL_VERIFY = False
 
-# NVIDIA LLM Gateway Configuration
+# NVIDIA Enterprise Inference Hub Configuration
+# Documentation: https://confluence.nvidia.com/pages/viewpage.action?spaceKey=ITBU&title=Getting+Started+-+Enterprise+Inference+Hub
+# Self-service: https://inference.nvidia.com (generate API key under Profile > Key Management)
+INFERENCE_HUB_URL = "https://inference-api.nvidia.com/v1"
+INFERENCE_HUB_DEFAULT_MODEL = "azure/openai/gpt-4o"
+
+# Legacy LLM Gateway Configuration (requires onboarding via service request)
 # Documentation: https://confluence.nvidia.com/display/LLMSVC/NVIDIA+LLM+Gateway
 LLM_GATEWAY_URL = "https://prod.api.nvidia.com/llm/v1/azure"
 LLM_OAUTH_TOKEN_URL = "https://prod.api.nvidia.com/oauth/api/v1/ssa/default/token"
@@ -157,42 +163,78 @@ TEST_ISSUE_PATTERNS = [
     {
         "pattern": r"netmikotimeout|ssh.*timeout|connection.*refused",
         "likelihood": 15,
-        "reason": "SSH/Connection timeout - likely device or network issue"
+        "reason": "SSH/Connection timeout - likely device or network issue",
+        "issue_type": "connection"
     },
     {
         "pattern": r"setup.*failed|fixture.*error|prerequisite",
         "likelihood": 20,
-        "reason": "Test setup failed before test could run"
+        "reason": "Test setup failed before test could run",
+        "issue_type": "setup"
     },
     {
         "pattern": r"cleanup.*failed|teardown.*error",
         "likelihood": 10,
-        "reason": "Cleanup/teardown issue - not a product bug"
+        "reason": "Cleanup/teardown issue - not a product bug",
+        "issue_type": "teardown"
     },
     {
         "pattern": r"file not found|no such file|filenotfounderror",
         "likelihood": 25,
-        "reason": "Missing file - test environment issue"
+        "reason": "Missing file - test environment issue",
+        "issue_type": "environment"
     },
     {
         "pattern": r"permission denied|access denied",
         "likelihood": 20,
-        "reason": "Permission issue - infrastructure problem"
+        "reason": "Permission issue - infrastructure problem",
+        "issue_type": "environment"
     },
     {
         "pattern": r"out of memory|memory error|oom",
         "likelihood": 30,
-        "reason": "Memory issue - may be product or environment"
+        "reason": "Memory issue - may be product or environment",
+        "issue_type": "environment"
     },
     {
         "pattern": r"timeout.*waiting|wait.*timeout|timed out waiting",
         "likelihood": 40,
-        "reason": "Timeout waiting for condition - could be either"
+        "reason": "Timeout waiting for condition - could be either",
+        "issue_type": "timeout"
     },
     {
         "pattern": r"device.*unreachable|cannot connect|connection.*lost",
         "likelihood": 10,
-        "reason": "Device connectivity lost"
+        "reason": "Device connectivity lost",
+        "issue_type": "connection"
+    },
+    # Specific pattern for pytest timeout - very specific test issue
+    {
+        "pattern": r"^failed:\s*timeout\s*>\s*\d+",
+        "likelihood": 20,
+        "reason": "⏱️ Test exceeded timeout limit - likely test duration issue or slow environment",
+        "issue_type": "timeout"
+    },
+    # Generic timeout pattern
+    {
+        "pattern": r"timeout.*>\d+.*s|failed.*timeout",
+        "likelihood": 25,
+        "reason": "Test timed out - may need investigation",
+        "issue_type": "timeout"
+    },
+    # Specific pattern for "Error: Invalid parameter" - test using wrong CLI syntax
+    {
+        "pattern": r"error:\s*invalid\s*parameter",
+        "likelihood": 10,
+        "reason": "⚠️ Invalid parameter error - test likely using incorrect CLI command syntax",
+        "issue_type": "invalid_param"
+    },
+    # Generic invalid parameter/command pattern
+    {
+        "pattern": r"invalid parameter|invalid.*command|unknown command",
+        "likelihood": 15,
+        "reason": "Invalid parameter/command - likely test issue with CLI syntax",
+        "issue_type": "invalid_param"
     },
 ]
 

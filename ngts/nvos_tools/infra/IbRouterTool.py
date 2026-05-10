@@ -17,6 +17,7 @@ logger = logging.getLogger()
 
 PORT_CONFIG_APPLY_TIME = 20
 TEMP_FOLDER = "/tmp/"
+GID_UPDATE_TIME = 80
 
 
 class IbRouterTool:
@@ -44,6 +45,8 @@ class IbRouterTool:
                 params = {SystemConsts.PROFILE_IB_ROUTING: SystemConsts.PROFILE_STATE_ENABLED,
                           SystemConsts.PROFILE_NUMBER_OF_SWIDS: IbRouterConsts.SWID_NUM}
                 system.profile.action_profile_change(params_dict=params)
+                logger.info(f"sleeping a {GID_UPDATE_TIME} seconds as WA for ticket https://nvbugs/6048600 and to let GID update in the show commands")
+                time.sleep(GID_UPDATE_TIME)
             else:
                 logger.info("Setup already in correct config, will not change anything")
 
@@ -155,6 +158,12 @@ class IbRouterTool:
         """
         move openSM related file to SM_HOSTS_NICKNAMES and start openSM
         """
+        with allure.step(f"enabling SMI interface"):
+            for host_nickname in IbRouterConsts.ALL_HOSTS_NICKNAMES:
+                host_engine = engines[host_nickname]
+                smi_interface_up_cmd = '/opt/mellanox/iproute2/sbin/rdma dev add smi0 type SMI parent mlx5_0'
+                host_engine.run_cmd(smi_interface_up_cmd)
+
         if not skip_copy_files:
             with allure.step(f"copying SM config files to SM hosts"):
                 for sm_host_nickname in IbRouterConsts.SM_HOSTS_NICKNAMES:
@@ -171,7 +180,7 @@ class IbRouterTool:
             for sm_host_nickname in IbRouterConsts.SM_HOSTS_NICKNAMES:
                 sm_conf_file_path = TEMP_FOLDER + IbRouterConsts.OPENSM_CONF_FILE_NAME.format(sm_host_nickname)
                 sm_engine = engines[sm_host_nickname]
-                sm_command = f"{IbRouterConsts.OPENSM_BIN_PATH} -F {sm_conf_file_path} -B"
+                sm_command = f"opensm -F {sm_conf_file_path} -B"
                 logger.info(f"running the command {sm_command} on host {sm_host_nickname} - {sm_engine.ip}")
                 sm_engine.run_cmd(sm_command)
                 time.sleep(10)

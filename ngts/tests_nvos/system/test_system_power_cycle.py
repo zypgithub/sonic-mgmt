@@ -8,7 +8,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, SystemConsts
+from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, RebootConsts, SystemConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -18,6 +18,14 @@ from ngts.nvos_tools.infra.RandomizationTool import random_api
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
+from ngts.tests_nvos.system.reboot_telemetry_helpers import (
+    REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS,
+    RebootReasonCategory,
+    assert_nvue_gnmi_counters_match,
+    gnmi_client_for_dut,
+    take_reboot_telemetry_snapshot,
+    verify_reboot_telemetry_after_reboot,
+)
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -51,7 +59,12 @@ def _test_command_supported(engines, devices, topology_obj, test_name, test_api,
     - Verify the config-change from stage 1 was not saved
     """
     system = System()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
     start_time = datetime.now()
+
+    with allure.step("NVUE and gNMI reboot counters must match before power-cycle"):
+        telemetry_before = take_reboot_telemetry_snapshot(system, gnmi_client)
+        assert_nvue_gnmi_counters_match(telemetry_before)
 
     with allure.step("Run power-cycle command and measure duration"):
         system_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
@@ -65,14 +78,25 @@ def _test_command_supported(engines, devices, topology_obj, test_name, test_api,
         assert bmc_uptime < (datetime.now() - start_time).total_seconds(), \
             f"Power-cycle did not actually happen: {bmc_uptime=}"
 
-    with allure.step("Check reboot cause"):
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show(SystemConsts.REBOOT_REASON)
-                                                                ).get_returned_value()
+    with allure.step("Check reboot gentime vs power-cycle command time"):
+        output = OutputParsingTool.parse_json_str_to_dictionary(
+            system.reboot.show(
+                SystemConsts.REBOOT_REASON, exempted_err_msgs=REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS
+            )
+        ).get_returned_value()
         reboot_time = ClockTools.parse_datetime(output["gentime"])
         assert reboot_time >= system_time, \
             f"power-cycle command sent at {system_time.strftime('%H:%M:%S')} but 'show system reboot' shows {output}"
-        assert output["reason"] == 'Power Cycle'
-        assert output["user"] == 'admin'
+
+    with allure.step("Verify NVUE and gNMI reboot telemetry after power-cycle"):
+        verify_reboot_telemetry_after_reboot(
+            snapshot_before=telemetry_before,
+            system=system,
+            gnmi_client=gnmi_client,
+            expected_category=RebootReasonCategory.USER_INITIATED,
+            expected_details='Power Cycle',
+            expected_user=RebootConsts.REBOOT_USER_ADMIN,
+        )
 
     with allure.step("Assert power-cycle duration was not too long"):
         OperationTime.verify_operation_time(duration, devices.dut.power_cycle_type, devices).verify_result()

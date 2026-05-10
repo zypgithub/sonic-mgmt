@@ -562,11 +562,6 @@ tests_nvos/cluster/nmx_simulator_tests/test_sdn_maintenance_state.py:
       - "'juliet-1221' not in testbed"
       - "'juliet-52' not in testbed"
 
-tests_nvos/ib_router/test_ib_router_functional.py::test_port_migration:
-  skip:
-    reason: "[XDR ib router] SAI error when changing SWID mapping for active ports"
-    conditions:
-      - https://redmine.mellanox.com/issues/4886106
 
 tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_recovery_trunk_ports:
   skip:

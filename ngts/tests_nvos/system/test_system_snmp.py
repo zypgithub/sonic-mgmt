@@ -221,7 +221,7 @@ def test_system_snmp_functional(engines, topology_obj):
     host_engine = engines.ha
     noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
     ip_address = noga_query_data['Specific']['ip_address']
-    dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
+    dhcp_hostname = HostMethods.get_dhcp_hostname(topology_obj)
     with allure.step("Enable snmp server"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address=ip_address)
@@ -229,7 +229,7 @@ def test_system_snmp_functional(engines, topology_obj):
 
         with allure.step("Check snmpget with listening eth0 ip address"):
             host_output = HostMethods.host_snmp_get(host_engine, ip_address)
-            assert dhcp_hostname in host_output, 'snmp get with wrong port returned output'
+            HostMethods.assert_snmp_system_name_matches_dhcp(host_output, dhcp_hostname)
 
     with allure.step("Enable snmp"):
         with allure.step('Get ipv6 address'):
@@ -240,13 +240,13 @@ def test_system_snmp_functional(engines, topology_obj):
 
         with allure.step("Check snmpget with listening eth0 ip_v6 address"):
             host_output = HostMethods.host_snmp_get(host_engine, ipv6_address)
-            assert dhcp_hostname in host_output, 'snmp get with wrong port returned output'
+            HostMethods.assert_snmp_system_name_matches_dhcp(host_output, dhcp_hostname)
 
         with allure.step("Configure listening address ipv6 all and do snmpget"):
             system.snmp_server.listening_address.unset(ipv6_address)
             system.snmp_server.set('listening-address', 'all-v6', apply=True).verify_result()
             host_output = HostMethods.host_snmp_get(host_engine, ipv6_address)
-            assert dhcp_hostname in host_output, 'snmp get with wrong port returned output'
+            HostMethods.assert_snmp_system_name_matches_dhcp(host_output, dhcp_hostname)
 
     with allure.step("Configure auto-refresh interval and do snmpget"):
         system.snmp_server.set('auto-refresh-interval', '8', apply=True).verify_result()
@@ -297,9 +297,9 @@ def test_system_snmp_redis_crash(engines, topology_obj):
         with allure.step("Snmpget after rewrite type of community"):
             noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
             ip_address = noga_query_data['Specific']['ip_address']
-            dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
+            dhcp_hostname = HostMethods.get_dhcp_hostname(topology_obj)
             host_output = HostMethods.host_snmp_get(host_engine, ip_address)
-            assert dhcp_hostname in host_output, 'snmp get with wrong port returned output'
+            HostMethods.assert_snmp_system_name_matches_dhcp(host_output, dhcp_hostname)
 
     with allure.step("SNMP unset"):
         system.snmp_server.unset(apply=True).verify_result()
@@ -340,7 +340,7 @@ def test_system_snmp_load_test(engines, topology_obj):
 
 
 @pytest.mark.system
-def test_system_snmp_mismtach_system_image(engines):
+def test_system_snmp_mismatch_system_image(engines):
     """
     Test flow:
         1. Enable snmp

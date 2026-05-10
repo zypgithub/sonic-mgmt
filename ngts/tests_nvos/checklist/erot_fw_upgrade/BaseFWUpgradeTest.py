@@ -15,11 +15,15 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ErotComponent import ErotComponent
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+    gnmi_client_from_dut_node,
+)
 
 logger = logging.getLogger()
 
 
-def verify_installation(erot_names, expected_version):
+def verify_installation(erot_names, expected_version, gnmi_client=None):
     platform = Platform()
     fae = Fae()
     fw_fields_to_check = [PlatformConsts.FW_ACTUAL, PlatformConsts.FW_BACKGROUND_COPY_STATUS,
@@ -38,6 +42,10 @@ def verify_installation(erot_names, expected_version):
                     with allure.independent_step(f"Assert {fw_field_name} is not N/A for {erot_name}"):
                         field_state = firmware_shown[fw_field_name]
                         assert field_state != NvosConst.NOT_AVAILABLE, f"The {fw_field_name} should not be N/A"
+            if gnmi_client is not None:
+                assert_gnmi_firmware_version_matches_nvue(
+                    gnmi_client, erot_name, expected_version
+                )
 
 
 def get_active_inactive_slots(erot_name):
@@ -89,6 +97,7 @@ class BaseFWUpgradeTest:
         prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous(FW_COMPONENT_EROT)
         curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest(FW_COMPONENT_EROT)
         fw_components_names = switch.constants.erots[:]
+        gnmi_client = gnmi_client_from_dut_node(engines, switch)
         component_name = random.choice(fw_components_names)
         try:
             active_slot, inactive_slot = get_active_inactive_slots(component_name)
@@ -101,7 +110,7 @@ class BaseFWUpgradeTest:
             with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
                 time.sleep(MINUTE)
             with allure.step(f"Verifying installation was successful for each erot component"):
-                verify_installation(fw_components_names, prev_version)
+                verify_installation(fw_components_names, prev_version, gnmi_client=gnmi_client)
                 # Has bug opened
                 # verify_active_inactive_slots(component_name, active_slot, inactive_slot)
         finally:
@@ -111,7 +120,7 @@ class BaseFWUpgradeTest:
                                                     threshold=switch.expected_operation_durations.get('install erot')).verify_result()
 
             with allure.step(f"Verifying installation was successful for each erot component"):
-                verify_installation(fw_components_names, curr_version)
+                verify_installation(fw_components_names, curr_version, gnmi_client=gnmi_client)
             with allure.step('delete fetched firmware image files'):
                 fw_component.files.delete_all_existing_files()
 
@@ -122,19 +131,20 @@ class BaseFWUpgradeTest:
         fw_component = self._firmware_component
         erot_names = switch.constants.erots[:]
         component_name = fw_component.get_resource_basename()
+        gnmi_client = gnmi_client_from_dut_node(engines, switch)
 
         try:
             fetch_and_install_erot_image(fw_component, prev_path, prev_version, prev_filename)
             with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
                 time.sleep(MINUTE)
             with allure.step(f"Verifying installation was successful only for {component_name}"):
-                verify_installation([component_name], prev_version)
+                verify_installation([component_name], prev_version, gnmi_client=gnmi_client)
             with allure.step(f"Verifying installation was not performed for other erot components"):
                 other_erot_names = [erot_name for erot_name in erot_names if erot_name != component_name]
-                verify_installation(other_erot_names, curr_version)
+                verify_installation(other_erot_names, curr_version, gnmi_client=gnmi_client)
         finally:
             fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename)
             with allure.step(f"Verifying installation was successful for {component_name}"):
-                verify_installation([component_name], curr_version)
+                verify_installation([component_name], curr_version, gnmi_client=gnmi_client)
             with allure.step('delete fetched firmware image files'):
                 fw_component.files.delete_all_existing_files()

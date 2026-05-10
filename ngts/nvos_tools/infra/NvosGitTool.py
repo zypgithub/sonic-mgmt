@@ -127,10 +127,32 @@ class NvosGitTool:
         """
         Fetch latest tags from remote.
 
+        Logs a WARNING if the fetch fails so callers know the local tag set may be
+        stale — otherwise downstream lookups (e.g. find_previous_fw_version) silently
+        operate on an outdated view and can pick wrong "previous" versions.
+
         Example:
             >>> git_tool.fetch_tags()
         """
-        self._run_git_cmd(["fetch", "--tags"])
+        result = self._run_git_cmd(["fetch", "--tags"])
+        if result.returncode != 0:
+            logger.warning(
+                "git fetch --tags failed for %s (rc=%d): %s. "
+                "Local tag set may be stale; FW lookups may be inaccurate.",
+                self.repo_path, result.returncode,
+                (result.stderr or "").strip()[:200]
+            )
+
+    @classmethod
+    def _version_tuple(cls, version: str) -> tuple[int, ...]:
+        """
+        Convert an NVOS version string to a tuple of ints for ordered comparison.
+
+        Splits on '.' and '-' and keeps numeric components only, so:
+            '25.02.7932-002'  -> (25, 2, 7932, 2)
+            '25.02.7930'      -> (25, 2, 7930)
+        """
+        return tuple(int(p) for p in re.split(r'[.\-]', version) if p.isdigit())
 
     def list_tags(self, pattern: str | None = None, sort_by_version: bool = True) -> list[str]:
         """
@@ -379,17 +401,37 @@ class NvosGitTool:
         # Get target FW version
         target_tag = f"{branch_prefix}_{version}"
         target_fw = self.get_fw_version_from_tag(target_tag, asic_type)
-        if not target_fw:
-            target_fw = self.get_fw_version_from_tag(tags[0], asic_type)
-        if not target_fw:
-            raise ValueError(f"Could not determine target FW version for {asic_type} at tag {target_tag}")
-
-        logger.info(f"Target FW: {target_fw}")
 
         # Check if target version exists in tags
         tag_versions = [self.VERSION_TAG_PATTERN.search(t).group(1) for t in tags
                         if self.VERSION_TAG_PATTERN.search(t)]
         target_exists_in_tags = version in tag_versions
+
+        if not target_fw:
+            # Target tag missing - fall back to the closest predecessor tag (highest tag
+            # whose version <= target). Tags are sorted descending, so the first tag
+            # with version <= target is the closest predecessor. This avoids picking a
+            # tag NEWER than target when target is mid-sequence (and protects against
+            # stale-repo cases where tags[0] was taken on faith before).
+            target_tuple = self._version_tuple(version)
+            proxy_tag = next(
+                (t for t in tags
+                 if (m := self.VERSION_TAG_PATTERN.search(t)) and
+                 self._version_tuple(m.group(1)) <= target_tuple),
+                None,
+            )
+            if proxy_tag:
+                target_fw = self.get_fw_version_from_tag(proxy_tag, asic_type)
+                logger.warning(
+                    "Target version %s is not tagged; using FW from closest predecessor "
+                    "tag %s as proxy. If shared repo is stale, refresh with "
+                    "'git -C %s fetch --tags' to improve accuracy.",
+                    version, proxy_tag, self.repo_path,
+                )
+        if not target_fw:
+            raise ValueError(f"Could not determine target FW version for {asic_type} at tag {target_tag}")
+
+        logger.info(f"Target FW: {target_fw}")
 
         if not target_exists_in_tags:
             logger.info(f"Target version {version} not found in tags, assuming it's newer than latest tag")
@@ -415,7 +457,8 @@ class NvosGitTool:
         Yields:
             Tuples of (tag_version, tag_fw, base_version) for each candidate.
         """
-        found_target = not ctx.target_exists_in_tags  # Start immediately if target not in tags
+        found_target = ctx.target_exists_in_tags is False  # Start immediately if target not in tags
+        target_tuple = self._version_tuple(ctx.version) if not ctx.target_exists_in_tags else None
 
         for tag in ctx.tags:
             if not (tag_match := self.VERSION_TAG_PATTERN.search(tag)):
@@ -424,14 +467,19 @@ class NvosGitTool:
             tag_version = tag_match.group(1)
             base_ver = tag_version.split('-')[0] if '-' in tag_version else tag_version
 
-            # Skip until we find the target version (tags are sorted descending)
-            if tag_version == ctx.version:
-                found_target = True
-                continue
-
-            # Only consider versions after we've passed the target
-            if not found_target:
-                continue
+            if ctx.target_exists_in_tags:
+                # Skip until we find the target version (tags are sorted descending)
+                if tag_version == ctx.version:
+                    found_target = True
+                    continue
+                # Only consider versions after we've passed the target
+                if not found_target:
+                    continue
+            else:
+                # Target is untagged - skip tags newer than target so we never return
+                # a "previous" version that is actually NEWER than the target.
+                if self._version_tuple(tag_version) > target_tuple:
+                    continue
 
             tag_fw = self.get_fw_version_from_tag(tag, asic_type)
             if tag_fw and tag_fw != ctx.target_fw:

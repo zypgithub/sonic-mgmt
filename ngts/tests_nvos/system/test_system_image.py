@@ -1,6 +1,7 @@
 import urllib.parse
 import logging
 import base64
+import os
 import random
 import string
 import pytest
@@ -26,12 +27,24 @@ from ngts.tests_nvos.system import helpers as system_helpers
 from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
 from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
 from ngts.tests_nvos.checklist import test_checklist_ipv6  # TODO: we shouldn't import stuff from other test files directly
-from ngts.tools.test_utils import allure_utils as allure
+from ngts.tools.test_utils import allure_utils as allure, nvos_general_utils
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.tools.test_utils import nvos_general_utils
 from ngts.nvos_tools.actions.Actions import Action
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
+from ngts.tests_nvos.system.gnmi.mapping.helpers import parse_gnmic_flat_output, run_gnmic_once_flat
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
+from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
+from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
+from ngts.tests_nvos.general.security.centralized_tests.upgrade.test_upgrade import fetch_install_img
+from ngts.tests_nvos.checklist.test_checklist_ipv6 import send_open_api_request
+from ngts.tests_nvos.system.helpers import (
+    extract_acl_rules,
+    extract_control_plane_acl_bindings,
+    verify_acl_rules_preserved,
+    verify_control_plane_acl_bindings,
+)
 
 from ngts.tests_nvos.constants import MINUTE
 
@@ -80,7 +93,7 @@ def clear_system_image_files():
 @pytest.mark.system
 @pytest.mark.nvos_build
 @pytest.mark.cumulus
-def test_show_system_image(original_version):
+def test_show_system_image(original_version, engines, devices):
     """
     Show system image test
 
@@ -115,6 +128,8 @@ def test_show_system_image(original_version):
                 f"Partition1 image is invalid. Expected {original_version}"
             assert output_dictionary[ImageConsts.NEXT_IMG] == output_dictionary[ImageConsts.CURRENT_IMG], \
                 "Next image is not the current as expected in default settings."
+
+        verify_system_image_gnmi_matches_nvue(engines, devices, system)
 
     with allure.step("Run show command to view system image files"):
         output_dictionary = system.image.files.get_files()
@@ -183,9 +198,11 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
                                      partition_id=partition_id_for_new_image,
                                      original_images=original_images, system=system, release_name=release_name,
                                      test_name='test_downgrade_upgrade')
+            verify_system_image_gnmi_matches_nvue(engines, devices, system)
 
             with allure.step('uninstall orig version'):
                 system.image.action_uninstall('force')
+            verify_system_image_gnmi_matches_nvue(engines, devices, system)
 
             with allure.step('run curl via ipv6, customer bug #4318552'):
                 test_checklist_ipv6.send_open_api_request(dut_ipv6_addr, engines.dut)
@@ -199,7 +216,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         TestToolkit.tested_api = ApiType.NVUE
         mtu_info, _ = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
             config_filename, config_file_path, engines, devices, system, scp_host_creds, engines.dut,
-            include_mtu_testing=has_active_ports, verify_result=True)
+            include_mtu_testing=has_active_ports and not ib_router, verify_result=True)
 
         # ACL + control-plane baseline after config is applied on downgraded image (before upgrade to target)
         with allure.step("Add ACL/control-plane configs for persistence checks (before baseline capture)"):
@@ -243,7 +260,8 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
 
             if json_acl_rules is not None:
                 with allure.independent_step('Verify default ACL JSON preserved after upgrade (nv show acl)'):
-                    system_helpers.verify_acl_rules_preserved(json_acl_rules, dut_engine=engines.dut)
+                    system_helpers.verify_acl_rules_preserved(
+                        json_acl_rules, mangle_state=acl_persist_mangle_state, dut_engine=engines.dut)
             if cp_acl_bindings is not None:
                 with allure.independent_step(
                     'Verify control-plane ACL bindings + loopback defaults on interface lo after upgrade'
@@ -431,7 +449,7 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
 @pytest.mark.checklist
 @pytest.mark.image
 @pytest.mark.system
-def test_install_multiple_images(release_name, test_name, random_api, original_version, devices):
+def test_install_multiple_images(release_name, test_name, random_api, original_version, devices, engines):
     """
     Install system image test
 
@@ -480,6 +498,7 @@ def test_install_multiple_images(release_name, test_name, random_api, original_v
             orig_engine: LinuxSshEngine = TestToolkit.engines.dut
             install_image_and_verify(orig_engine, BASE_IMAGE_VERSION_TO_INSTALL, partition_id_for_new_image,
                                      original_images, system, test_name)
+            verify_system_image_gnmi_matches_nvue(engines, devices, system)
         with allure.step("Test partitions available capacity"):
             nvos_general_utils.check_partitions_capacity(allowed_limit=60)
 
@@ -651,7 +670,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.cumulus
-def test_fetch_image_via_https(test_api):
+def test_fetch_image_via_https(test_api, target_version):
     """
     Install system image test
 
@@ -663,9 +682,12 @@ def test_fetch_image_via_https(test_api):
     """
     system = System()
     image_fetched = False
-    # Use device-specific methods consistently
-    image_file = TestToolkit.devices.dut.get_base_image()
-    image_to_fetch = TestToolkit.devices.dut.get_base_image_path(image_file)
+    if target_version:
+        image_to_fetch = os.path.realpath(target_version)
+    else:
+        image_file = TestToolkit.devices.dut.get_base_image()
+        image_to_fetch = TestToolkit.devices.dut.get_base_image_path(image_file)
+    image_file = os.path.basename(image_to_fetch)
 
     try:
         with allure.step("Fetch an image {}".format(image_to_fetch)):
@@ -766,6 +788,119 @@ def helper_fetch_image_with_weird_password(engines, system, test_api, weird_pass
         if new_user:
             with allure.step("Delete the newly created user"):
                 system.aaa.user.user_id[new_user].unset(apply=True).verify_result()
+
+
+# Minimum NVOS for system/image gNMI parity checks (25.02.8000 in BaseDevice._version_to_global_build pre-25.03 scale).
+_MIN_GLOBAL_BUILD_SYSTEM_IMAGE_GNMI = 8000
+
+
+def _dut_product_release_version(devices, engines, system) -> str:
+    getter = getattr(devices.dut, '_get_system_version', None)
+    if callable(getter):
+        v = getter(engines.dut)
+        if v:
+            return str(v).strip()
+    ver_out = OutputParsingTool.parse_json_str_to_dictionary(
+        system.version.show(dut_engine=engines.dut)
+    ).get_returned_value()
+    return str((ver_out or {}).get(SystemConsts.VERSION_PRODUCT_RELEASE, '') or '').strip()
+
+
+def _system_image_gnmi_leaf(client, path: str) -> str:
+    path = path.lstrip('/')
+    result = run_gnmic_once_flat(path, client=client)
+    out = result[0] if isinstance(result, tuple) else result
+    val = parse_gnmic_flat_output(out)
+    assert val is not None, f"gNMI returned no value for {path}. raw output: {out!r}"
+    return val
+
+
+def _nvue_gnmi_values_equal(nvue_val, gnmi_val) -> bool:
+    if nvue_val is None or nvue_val == '':
+        return gnmi_val is None or str(gnmi_val).strip() == ''
+    return str(nvue_val).strip() == str(gnmi_val).strip()
+
+
+def _partition_slot_has_image(partition_data) -> bool:
+    if isinstance(partition_data, dict):
+        return bool(partition_data.get(ImageConsts.BUILD_ID))
+    if isinstance(partition_data, str):
+        return bool(partition_data.strip())
+    return False
+
+
+def verify_system_image_gnmi_matches_nvue(engines, devices, system=None):
+    """Assert gNMI leaves under system/image/partitions match `nv show system image`.
+
+    Skipped on NVOS older than 25.02.8000 (see ``BaseDevice._version_to_global_build``).
+    """
+    with allure.step("Verify system image gNMI matches NVUE"):
+        with allure.independent_step("Compare gNMI system/image leaves to NVUE"):
+            system = system or System()
+            release = _dut_product_release_version(devices, engines, system)
+            global_build = BaseDevice._version_to_global_build(release)
+            if global_build < _MIN_GLOBAL_BUILD_SYSTEM_IMAGE_GNMI:
+                logger.info(
+                    "Skipping gNMI vs NVUE system image check: product-release %r global_build=%s "
+                    "(need >= %s, i.e. 25.02.8000+ on pre-25.03 numbering).",
+                    release,
+                    global_build,
+                    _MIN_GLOBAL_BUILD_SYSTEM_IMAGE_GNMI,
+                )
+                return
+
+            nvue = OutputParsingTool.parse_json_str_to_dictionary(system.image.show()).get_returned_value()
+            client = gnmi_client_for_dut(engines.dut, devices.dut)
+
+            for rel_path, nvue_key in (
+                ('system/image/partitions/state/current', ImageConsts.CURRENT_IMG),
+                ('system/image/partitions/state/next', ImageConsts.NEXT_IMG),
+            ):
+                gnmi_v = _system_image_gnmi_leaf(client, rel_path)
+                nvue_v = nvue.get(nvue_key)
+                assert _nvue_gnmi_values_equal(nvue_v, gnmi_v), (
+                    f"gNMI {rel_path}={gnmi_v!r} does not match NVUE {nvue_key}={nvue_v!r}"
+                )
+
+            part_to_id = (
+                (ImageConsts.PARTITION1_IMG, '1'),
+                (ImageConsts.PARTITION2_IMG, '2'),
+            )
+            state_leaves = (
+                ('build-id', ImageConsts.BUILD_ID),
+                ('description', NvosConst.DESCRIPTION),
+                ('disk', SystemConsts.DISK),
+                ('release', 'release'),
+            )
+            for part_key, pid in part_to_id:
+                if part_key not in nvue:
+                    continue
+                pdata = nvue[part_key]
+                if not _partition_slot_has_image(pdata):
+                    continue
+
+                id_path = f'system/image/partitions/partition[id={pid}]/id'
+                gnmi_id = _system_image_gnmi_leaf(client, id_path)
+                assert _nvue_gnmi_values_equal(pid, gnmi_id), (
+                    f"gNMI {id_path}={gnmi_id!r} does not match expected partition id {pid!r}"
+                )
+
+                if isinstance(pdata, dict):
+                    for leaf, nkey in state_leaves:
+                        if nkey not in pdata:
+                            continue
+                        spath = f'system/image/partitions/partition[id={pid}]/state/{leaf}'
+                        gnmi_v = _system_image_gnmi_leaf(client, spath)
+                        nvue_v = pdata[nkey]
+                        assert _nvue_gnmi_values_equal(nvue_v, gnmi_v), (
+                            f"gNMI {spath}={gnmi_v!r} does not match NVUE {part_key}.{nkey}={nvue_v!r}"
+                        )
+                elif isinstance(pdata, str):
+                    bid_path = f'system/image/partitions/partition[id={pid}]/state/build-id'
+                    gnmi_bid = _system_image_gnmi_leaf(client, bid_path)
+                    assert _nvue_gnmi_values_equal(pdata, gnmi_bid), (
+                        f"gNMI {bid_path}={gnmi_bid!r} does not match NVUE {part_key}={pdata!r}"
+                    )
 
 
 def normalize_image_name(image_name):

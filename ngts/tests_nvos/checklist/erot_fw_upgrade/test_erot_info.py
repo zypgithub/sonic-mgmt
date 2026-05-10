@@ -8,6 +8,10 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 
 @pytest.mark.erot
@@ -34,6 +38,12 @@ def test_show_erot_firmware(engines, devices, random_api):
             _verify_erots_firmware_fields(erots_names_list, regular_output)
         with allure.independent_step("Verify erots exist in fae platform firmware"):
             _verify_erots_firmware_fields(erots_names_list, fae_output)
+    with allure.step("Verify gNMI EROT firmware-version metrics"):
+        gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
+        for erot_name in erots_names_list:
+            assert_gnmi_firmware_version_matches_nvue(
+                gnmi_client, erot_name, regular_output[erot_name][PlatformConsts.FW_ACTUAL]
+            )
 
 
 def _verify_erots_firmware_fields(erots_names_list, output_dict):

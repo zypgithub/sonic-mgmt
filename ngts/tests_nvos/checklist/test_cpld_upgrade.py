@@ -1,16 +1,13 @@
 import logging
 import os.path
-import time
 from typing import Dict
 
 import pytest
 import requests
-
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
@@ -111,13 +108,9 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
 
                 except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
                     logger.info(f"GET request failed as expected because of switch reboot")
-                    with allure.step("Waiting for reboot to finish"):
-                        logger.info(f"Waiting 30 seconds to make sure reboot has started")
-                        time.sleep(30)
-                        engine = TestToolkit.engines.dut
-                        engine.disconnect()
-                        check_port_status_till_alive(True, engine.ip, engine.ssh_port)
-                        DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+                    reboot_params = RebootParams(topology_obj=topology_obj)
+                    DutUtilsTool.wait_on_system_reboot(
+                        engines.dut, reboot_params=reboot_params, device=devices.dut)
             else:
                 recover_dut_with_remote_reboot(topology_obj, engines)
 

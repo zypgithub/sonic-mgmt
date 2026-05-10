@@ -1,5 +1,6 @@
 import concurrent.futures
 import logging
+import os
 import pytest
 import random
 import shlex
@@ -27,18 +28,37 @@ from ngts.nvos_tools.infra.RegressionConfigurations import Configurations, Regre
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
+from ngts.nvos_tools.infra.NvosGitTool import NvosGitTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system import helpers as system_helpers
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from retry import retry
+from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
+    assert_gnmi_firmware_version_matches_nvue,
+)
+from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
 logger = logging.getLogger()
+
+
+def _nvos_version_key(version_path: str) -> tuple:
+    """Convert an NVOS image path (or version string) to a comparable tuple.
+
+    e.g. '25.02.7002-003' -> (25, 2, 7002, 3); '25.02.5035' -> (25, 2, 5035, 0).
+    """
+    if version_path.endswith('.bin') or '/' in version_path:
+        version_str, _ = NvosGitTool.parse_version_from_path(version_path)
+    else:
+        version_str = version_path
+    main, _, suffix = version_str.partition('-')
+    parts = [int(p) for p in main.split('.')]
+    parts.append(int(suffix) if suffix else 0)
+    return tuple(parts)
 
 
 @pytest.mark.system
@@ -60,89 +80,92 @@ def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_
     dut_device = devices.dut
     player = engines.sonic_mgmt
     system = System()
+    gnmi_client = gnmi_client_for_dut(engines.dut, devices.dut)
     acl_persist_mangle_state = None
     # In case of manual run add the following lines with the relevant paths
     # issu_version = '/auto/sw_system_release/nos/nvos/25.02.4014/amd64/prod/nvos-amd64-25.02.4014.bin'
     # target_version = '/auto/sw_system_release/nos/nvos/25.02.5014/amd64/prod/nvos-amd64-25.02.5014.bin'
 
-    try:
-        target_version = player.run_cmd(f'ls {target_version}')
-        target_version_num = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
+    target_version = player.run_cmd(f'ls {target_version}')
+    target_version_num = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
-        with (allure.step('Verify image versions')):
-            system_version = OutputParsingTool.parse_json_str_to_dictionary(
-                system.version.show()).get_returned_value()['image']
-            if ImageConsts.BUILD_ID in system_version:
-                system_version = system_version[ImageConsts.BUILD_ID]
-            if system_version == target_version_num:
-                target_fw = OutputParsingTool.parse_json_str_to_dictionary(
-                    Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
-            else:
-                target_fw = ''
+    with (allure.step('Verify image versions')):
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
+        if ImageConsts.BUILD_ID in system_version:
+            system_version = system_version[ImageConsts.BUILD_ID]
+        if system_version == target_version_num:
+            target_fw = OutputParsingTool.parse_json_str_to_dictionary(
+                Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
+        else:
+            target_fw = ''
 
-        with allure.step("Downgrade system image to issu"):
-            install_system_image_and_start_opensm(engines, dut_device, system, issu_version, False)
+    with allure.step("Downgrade system image to issu"):
+        install_system_image_and_start_opensm(engines, dut_device, system, issu_version, False)
 
-        with allure.step("Prepare system target image for install"):
-            target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
-                player, dut_engine, dut_device, target_version)
+    with allure.step("Prepare system target image for install"):
+        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, target_version)
 
-        with allure.step("Add ACL/control-plane configs for persistence checks (before baseline capture)"):
-            acl_persist_mangle_state = system_helpers.add_acl_new_configs_for_persistence_checks(
-                dut_engine=dut_engine)
+    with allure.step("Add ACL/control-plane configs for persistence checks (before baseline capture)"):
+        acl_persist_mangle_state = system_helpers.add_acl_new_configs_for_persistence_checks(
+            dut_engine=dut_engine)
 
-        with allure.step("Save default ACL rules baseline (before ISSU)"):
-            json_acl_rules = system_helpers.extract_acl_rules(dut_engine=dut_engine)
-            logger.info("ACL baseline captured for %d default ACL object(s)", len(json_acl_rules))
+    with allure.step("Save default ACL rules baseline (before ISSU)"):
+        json_acl_rules = system_helpers.extract_acl_rules(dut_engine=dut_engine)
+        logger.info("ACL baseline captured for %d default ACL object(s)", len(json_acl_rules))
 
-        with allure.step("Save control-plane ACL bindings baseline (nv show system control-plane acl)"):
-            cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(dut_engine=dut_engine)
-            logger.info("Control-plane ACL bindings captured: %s", cp_acl_bindings)
+    with allure.step("Save control-plane ACL bindings baseline (nv show system control-plane acl)"):
+        cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(dut_engine=dut_engine)
+        logger.info("Control-plane ACL bindings captured: %s", cp_acl_bindings)
 
-        issu_start = time.time()
-        logger.info(f"ISSU start time: {issu_start}")
+    issu_start = time.time()
+    logger.info(f"ISSU start time: {issu_start}")
 
-        with allure.step("Perform install image with ISSU skip-sm flag"):
-            system.image.files.file_name[target_filename].action(
-                ActionConsts.INSTALL, flags=IssuConsts.ISSU_SKIP_SM, send_user_confirmation='y', reboot_params=True,
-                timeout=IssuConsts.ISSU_READ_TIMEOUT). \
-                verify_result(should_succeed=True)
+    with allure.step("Perform install image with ISSU skip-sm flag"):
+        system.image.files.file_name[target_filename].action(
+            ActionConsts.INSTALL, flags=IssuConsts.ISSU_SKIP_SM, send_user_confirmation='y', reboot_params=True,
+            timeout=IssuConsts.ISSU_READ_TIMEOUT). \
+            verify_result(should_succeed=True)
 
-        issu_end = time.time()
-        logger.info(f"ISSU end time: {issu_end}")
-        issu_diff = issu_end - issu_start
-        logger.info(f"ISSU diff time: {issu_diff}")
+    issu_end = time.time()
+    logger.info(f"ISSU end time: {issu_end}")
+    issu_diff = issu_end - issu_start
+    logger.info(f"ISSU diff time: {issu_diff}")
 
-        with allure.step('Verify show ISSU status'):
-            issu_status = OutputParsingTool.parse_json_str_to_dictionary(
-                system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
-            assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
-                f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
+    with allure.step('Verify show ISSU status'):
+        issu_status = OutputParsingTool.parse_json_str_to_dictionary(
+            system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
+        assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
+            f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
-        with (allure.step('Verify image version')):
-            system_version = OutputParsingTool.parse_json_str_to_dictionary(
-                system.version.show()).get_returned_value()['image']
-            if ImageConsts.BUILD_ID in system_version:
-                system_version = system_version[ImageConsts.BUILD_ID]
-            assert system_version == target_version_num, (f'system image is: {system_version}, '
-                                                          f'instead of {target_version_num}')
+    with (allure.step('Verify image version')):
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
+        if ImageConsts.BUILD_ID in system_version:
+            system_version = system_version[ImageConsts.BUILD_ID]
+        assert system_version == target_version_num, (f'system image is: {system_version}, '
+                                                      f'instead of {target_version_num}')
 
-        if target_fw:
-            with (allure.step('Verify fw versions')):
-                fw_version = OutputParsingTool.parse_json_str_to_dictionary(
-                    Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
-                assert fw_version == target_fw, f'FW version is: {fw_version}, instead of {target_fw}'
+    if target_fw:
+        with (allure.step('Verify fw versions')):
+            fw_version = OutputParsingTool.parse_json_str_to_dictionary(
+                Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
+            assert fw_version == target_fw, f'FW version is: {fw_version}, instead of {target_fw}'
+            for asic_name in getattr(dut_device, "asic_numbers", ["ASIC1"]):
+                assert_gnmi_firmware_version_matches_nvue(gnmi_client, asic_name, target_fw)
 
-        with allure.step('Verify default ACL and control-plane ACL preserved after ISSU'):
-            with allure.independent_step('Verify default ACL JSON preserved after ISSU (nv show acl)'):
-                system_helpers.verify_acl_rules_preserved(json_acl_rules, dut_engine=dut_engine)
-            with allure.independent_step(
-                'Verify control-plane ACL bindings + loopback defaults on interface lo after ISSU'
-            ):
-                system_helpers.verify_control_plane_acl_bindings(cp_acl_bindings, dut_engine=dut_engine)
-    finally:
-        with allure.step('Clear ACL persistence mangle state (if any)'):
-            system_helpers.clear_acl_configs(acl_persist_mangle_state, dut_engine=dut_engine)
+    with allure.step('Verify default ACL and control-plane ACL preserved after ISSU'):
+        with allure.independent_step('Verify default ACL JSON preserved after ISSU (nv show acl)'):
+            system_helpers.verify_acl_rules_preserved(
+                json_acl_rules, mangle_state=acl_persist_mangle_state, dut_engine=dut_engine)
+        with allure.independent_step(
+            'Verify control-plane ACL bindings + loopback defaults on interface lo after ISSU'
+        ):
+            system_helpers.verify_control_plane_acl_bindings(cp_acl_bindings, dut_engine=dut_engine)
+
+    with allure.step('Clear ACL persistence mangle state (if any)'):
+        system_helpers.clear_acl_configs(acl_persist_mangle_state, dut_engine=dut_engine)
 
 
 @pytest.mark.system
@@ -201,9 +224,9 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
             player, dut_engine, dut_device, target_version)
 
     with allure.step('Pre issu installation steps'):
-        (traffic_start_time, interface_dict, ip_list, mtu_info, ssd_should_auto_update,
+        (traffic_start_time, interface_dict, ip_list, mtu_info,
          json_acl_rules, cp_acl_bindings, acl_persist_mangle_state) = pre_issu_installation_steps(
-            engines, devices, target_version, scp_host_creds)
+            engines, devices, target_version, scp_host_creds, issu_base_version=issu_base_version)
 
     issu_start = time.time()
     logger.info(f"ISSU start time: {issu_start}")
@@ -222,7 +245,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
     with allure.step('Post issu installation steps'):
         post_issu_installation_steps(engines, devices, target_version, fw_version,
                                      interface_dict, traffic_start_time, ip_list, test_name,
-                                     mtu_info=mtu_info, ssd_should_auto_update=ssd_should_auto_update,
+                                     mtu_info=mtu_info,
                                      json_acl_rules=json_acl_rules, cp_acl_bindings=cp_acl_bindings,
                                      acl_persist_mangle_state=acl_persist_mangle_state)
 
@@ -356,22 +379,24 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
     - No response to upgrade request from SM (reaching timeout)
     - ISSU cannot be started with reboot no flag, and block the ISSU
     - Unsaved configuration blocks the ISSU
-    - Downgrading the image blocks the ISSU
     - Perform ISSU with no SM in the cluster using the no-sm flag succeeds
     - Reason for failed ISSU is written to the logs (no permission from SM, no response from SM, FW is not ISSU-able,
         fail to install new FW, etc.)
     - Events table
 
+    Note: the "downgrade blocks ISSU" sub-case lives in test_system_issu_downgrade_prevention
+    so that it can be skipped at the pytest level when the configured downgrade_version is
+    not strictly lower than issu_version.
+
     Test flow:
     1. Simulate no permission from the SM by changing DB value
     2. Close the SM, change TO value to 1 min and run ISSU
-    3. Perform ISSU with “no reboot” flag
+    3. Perform ISSU with "no reboot" flag
     4. Change configuration without saving and run ISSU
-    5. Downgrade image with ISSU
-    6. Perform ISSU with an invalid flag
-    7. Validate system log
-    8. Validate event table
-    9. Perform ISSU with no-sm flag
+    5. Perform ISSU with an invalid flag
+    6. Validate system log
+    7. Validate event table
+    8. Perform ISSU with no-sm flag
     """
     dut_engine = engines.dut
     dut_device = devices.dut
@@ -451,7 +476,9 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
     with allure.step("Perform ISSU with “no reboot” flag"):
         with allure.step("Perform install image with ISSU with 'reboot no' flag"):
             output = system.image.files.file_name[target_filename].action(
-                ActionConsts.INSTALL, flags=IssuConsts.ISSU_NO_REBOOT, send_user_confirmation='y',
+                ActionConsts.INSTALL, flags=IssuConsts.ISSU,
+                additional_params=IssuConsts.ISSU_NO_REBOOT_PARAMS,
+                send_user_confirmation='y',
                 timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
@@ -475,20 +502,6 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
         with allure.step('Unset system message, apply and save config'):
             system.message.unset(op_param="", apply=True, dut_engine=engines.dut).verify_result()
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
-
-    with allure.step("Downgrade image with ISSU"):
-        with allure.step("Prepare system base image for install"):
-            base_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
-                player, dut_engine, dut_device, downgrade_version)
-
-        with allure.step("Perform install image with ISSU"):
-            output = system.image.files.file_name[base_filename].action(
-                ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y',
-                timeout=IssuConsts.ISSU_READ_TIMEOUT).\
-                verify_result(should_succeed=False)
-
-        assert IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED in output, \
-            f'error message: {IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED} is missing in output: {output}'
 
     with allure.step("Perform ISSU with an invalid flag"):
         output = system.image.files.file_name[target_filename].action(
@@ -777,7 +790,77 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
 # -------------------------------------------------------
 
 
-def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds):
+@pytest.mark.system
+@pytest.mark.issu
+def test_system_issu_downgrade_prevention(engines, devices, downgrade_version, target_version, original_version, random_api):
+    """
+    Validate that ISSU into an image strictly older than the running image is blocked
+    with ERROR_DOWNGRADE_NOT_ALLOWED.
+
+    Precondition: the DUT is already running target_version. In the regression matrix
+    this test is scheduled right after test_system_issu_positive_flow_with_traffic,
+    which leaves the DUT at target_version after a successful upgrade. The test does
+    not install any image on its own.
+
+    Skipped when:
+    - the configured downgrade_version is not strictly lower than target_version
+      (the downgrade guard cannot be exercised in that case), or
+    - the DUT is not actually running target_version (the upstream positive flow
+      did not run, did not finish, or the orchestration order was changed).
+
+    Test flow:
+    1. Skip-gate: pytest.skip if downgrade_version >= target_version.
+    2. Verify the DUT is currently running target_version; pytest.skip otherwise.
+    3. Prepare the (older) downgrade image for install.
+    4. Attempt ISSU into the downgrade image; expect failure.
+    5. Assert ERROR_DOWNGRADE_NOT_ALLOWED in the output.
+    """
+    if _nvos_version_key(downgrade_version) >= _nvos_version_key(target_version):
+        pytest.skip(
+            f"downgrade_version ({downgrade_version}) is not lower than "
+            f"target_version ({target_version}); cannot exercise downgrade guard"
+        )
+
+    dut_engine = engines.dut
+    dut_device = devices.dut
+    player = engines.sonic_mgmt
+    system = System()
+
+    with allure.step("Verify DUT is running target_version (precondition)"):
+        target_version_num = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
+        if original_version != target_version_num:
+            pytest.skip(
+                f"DUT is running {original_version}, expected {target_version_num} "
+                f"(precondition: test_system_issu_positive_flow_with_traffic should "
+                f"run first to leave the DUT at target_version)"
+            )
+
+    with allure.step("Prepare downgrade image for install"):
+        base_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, downgrade_version)
+
+    with allure.step('Clear system log (rotate)'):
+        system.log.rotate_logs()
+
+    with allure.step("Attempt ISSU into downgrade image (expect rejection)"):
+        output = system.image.files.file_name[base_filename].action(
+            ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y',
+            timeout=IssuConsts.ISSU_READ_TIMEOUT).\
+            verify_result(should_succeed=False)
+
+    with allure.step("Verify ERROR_DOWNGRADE_NOT_ALLOWED in output"):
+        assert IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED in output, \
+            f'error message: {IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED} is missing in output: {output}'
+
+    with allure.step("Validate downgrade-not-supported log in syslog"):
+        system.log.verify_expected_logs([IssuConsts.LOG_MSG_DOWNGRADE_NOT_SUPPORTED],
+                                        engine=dut_engine, only_latest_log=True)
+
+
+# -------------------------------------------------------
+
+
+def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds, issu_base_version=None):
     """
     - Change and apply configuration for several resources
     - Run management services
@@ -792,8 +875,11 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
     :param devices:
     :param target_version:
     :param scp_host_creds:
+    :param issu_base_version: image currently on the DUT pre-ISSU. Used to pick the config file
+        that matches the running image's NVUE schema. Falls back to ``target_version`` only when
+        the caller did not supply it (legacy callers).
     :return: ``traffic_start_time``, ``interface_output``, ``ip_list``, ``mtu_info``,
-        ``ssd_should_auto_update``, ``json_acl_rules``, ``cp_acl_bindings``, ``acl_persist_mangle_state``.
+        ``json_acl_rules``, ``cp_acl_bindings``, ``acl_persist_mangle_state``.
     """
     system = System()
     interface = Interface(parent_obj=None)
@@ -808,11 +894,12 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
         assert health_output[HealthConsts.STATUS] == HealthConsts.OK, \
             f"System health status is {health_output[HealthConsts.STATUS]}, instead of: {HealthConsts.OK}"
 
-    with allure.step('Get config file and path for target version'):
-        config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
+    config_lookup_version = issu_base_version if issu_base_version else target_version
+    with allure.step(f'Get config file matching running image ({config_lookup_version})'):
+        config_file_path, config_filename = dut_device.get_test_config_file_by_version(config_lookup_version)
 
     # In case of manual run add the following line with updated user/password
-    # scp_host_creds = '{username}:{password}@fit74'
+    # scp_host_creds = '{username}:{password}@fit70'
 
     with allure.step('Apply and save pre-defined configuration'):
         NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
@@ -845,22 +932,18 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
         assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
             f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
-    ssd_should_auto_update = False
     with allure.step('Downgrade SSD firmware to test auto-upgrade during ISSU'):
-        if is_bug_active(4929749):
-            logger.info("Bug 4929749 is active - skipping SSD firmware testing during ISSU (https://redmine.mellanox.com/issues/4929749)")
-        else:
-            try:
-                ssd_component = Platform().firmware.ssd
-                # Get latest version and verify currently on latest
-                _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
-                FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
+        _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+        if latest_version_name is not None:
+            ssd_component = Platform().firmware.ssd
+            # Get latest version and verify currently on latest
+            FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
 
-                # Downgrade SSD firmware to previous version
-                SSDTool.downgrade_ssd_firmware(engines, ssd_component)
-                ssd_should_auto_update = True
-            except pytest.skip.Exception as e:
-                logger.info(f"SSD downgrade skipped: {e}")
+            # Downgrade SSD firmware to previous version
+            _, previous_filename, previous_version_name = FWComponentsTool.get_fw_component_version_previous(FW_COMPONENT_SSD)
+            SSDTool.downgrade_ssd_firmware(engines, ssd_component, previous_filename, previous_version_name)
+        else:
+            logger.info('SSD downgrade skipped: non supported SSD model')
 
     with allure.step('Start pinging system mgmt ports'):
         ip_list = []
@@ -894,13 +977,13 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
         cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(dut_engine=dut_engine)
         logger.info("Control-plane ACL bindings captured: %s", cp_acl_bindings)
 
-    return (traffic_start_time, interface_output, ip_list, mtu_info, ssd_should_auto_update,
+    return (traffic_start_time, interface_output, ip_list, mtu_info,
             json_acl_rules, cp_acl_bindings, acl_persist_mangle_state)
 
 
 def post_issu_installation_steps(engines, devices, target_version, fw_expected,
                                  interface_dict, traffic_start_time, ip_list, test_name='',
-                                 mtu_info=None, ssd_should_auto_update=False,
+                                 mtu_info=None,
                                  json_acl_rules=None, cp_acl_bindings=None,
                                  acl_persist_mangle_state=None):
     """
@@ -979,14 +1062,12 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected,
                         Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
                     assert fw_version == fw_expected, f'FW version is: {fw_version}, instead of {fw_expected}'
 
-            if ssd_should_auto_update:
+            _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+            if latest_version_name is not None:
                 with allure.independent_step('Verify SSD was auto-upgraded to latest during ISSU'):
-                    ssd_component = Platform().firmware.ssd
-                    # Get latest version
-                    _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
-
-                    # Verify SSD was upgraded to latest version
-                    FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
+                    FWComponentsTool.verify_platform_component_version(Platform().firmware.ssd, latest_version_name)
+            else:
+                logger.info('SSD auto-upgrade verification skipped: non supported SSD model')
 
             # with allure.step('Validate ports counters'):
             #     for port in Configurations.ndr_ports[dut_engine.ip]:
@@ -1015,7 +1096,8 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected,
 
             if json_acl_rules is not None:
                 with allure.independent_step('Verify default ACL JSON preserved after ISSU (nv show acl)'):
-                    system_helpers.verify_acl_rules_preserved(json_acl_rules, dut_engine=dut_engine)
+                    system_helpers.verify_acl_rules_preserved(
+                        json_acl_rules, mangle_state=acl_persist_mangle_state, dut_engine=dut_engine)
             if cp_acl_bindings is not None:
                 with allure.independent_step(
                     'Verify control-plane ACL bindings + loopback defaults on interface lo after ISSU'

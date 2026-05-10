@@ -6,7 +6,7 @@ import time
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.tests_nvos.ib_router.constants import IbRouterConsts
@@ -32,7 +32,8 @@ def test_port_migration(engines, devices, verify_sm_running_on_all_hosts, random
             for port in IbRouterConsts.SWID_TO_PORTS_DICT[0]:
                 with allure.step(f"mapping port {port} to SWID{swid_idx} - {swid_name}"):
                     port_obj = Port(port)
-                    port_obj.interface.link.ib_subnet.set(op_param_name=swid_name, apply=True).verify_result()
+                    port_obj.interface.link.set(op_param_name=IbInterfaceConsts.LINK_IB_SUBNET, op_param_value=swid_name, apply=False).verify_result()
+                    TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config(TestToolkit.engines.dut, True)
 
                 with allure.step(f"verifying port mapping"):
                     time.sleep(PORT_UP_TIME)
@@ -56,7 +57,7 @@ def test_sm_configuration_change(engines, devices, verify_sm_running_on_all_host
     original_prefix = '0xfec000000000000{}'.format(chosen_swid + 1)
     new_dec_value = random.randint(0, 0xFFFF)
     new_hex_value = format(new_dec_value, '04X')
-    new_prefix = '0xfec000000000{}'.format(new_hex_value)
+    new_prefix = '0xfec000000000{}'.format(new_hex_value).lower()
     try:
         with allure.step(f"setting prefix {new_prefix} to SWID{chosen_swid} on SM host {chosen_sm_nickname} - {engines[chosen_sm_nickname].ip}"):
             IbRouterTool.stop_sm_on_hosts(engines)

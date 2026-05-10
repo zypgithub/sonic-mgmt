@@ -6,6 +6,7 @@ import string
 import subprocess
 import threading
 import time
+import json
 from typing import Optional, Tuple, List
 
 from retry import retry
@@ -219,6 +220,145 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
         return gnmi_updates_dict
 
 
+def _extract_json_objects_from_gnmic_output(gnmi_output):
+    """
+    Extract JSON objects from gnmic output that may include prompt/log lines.
+    """
+    decoder = json.JSONDecoder()
+    parsed_objects = []
+    idx = 0
+    while idx < len(gnmi_output):
+        start = gnmi_output.find("{", idx)
+        if start == -1:
+            break
+        try:
+            obj, end = decoder.raw_decode(gnmi_output[start:])
+            if isinstance(obj, dict):
+                parsed_objects.append(obj)
+            idx = start + end
+        except ValueError:
+            idx = start + 1
+    return parsed_objects
+
+
+def run_gnmi_client_and_parse_multi_path_json_output(
+        engines, devices, target_ip, prefix, paths, target_port=GnmiConsts.GNMI_DEFAULT_PORT,
+        mode=GnmiMode.POLL, username='', password=''):
+    """
+    Run gnmic subscribe with multiple --path entries and parse --format json output.
+    Returns a list of parsed JSON objects from mixed gnmic output.
+    """
+    assert paths, "paths list cannot be empty"
+
+    username = username or devices.dut.default_username
+    password = password or devices.dut.default_password
+
+    with allure.step("run gnmi-client (multi-path json) and parse output"):
+        sonic_mgmt_engine = engines.sonic_mgmt
+        mode_flag = f"--mode {mode}" if mode else ''
+        path_flags = " ".join([f"--path '{path}'" for path in paths])
+        cmd = (
+            f"gnmic -a {target_ip} --port {target_port} --skip-verify subscribe "
+            f"--prefix '{prefix}' {path_flags} --target nvos -u {username} -p {password} "
+            f"{mode_flag} --format json"
+        )
+        cmd = "timeout -s INT 8s " + cmd
+        logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
+
+        if mode == GnmiMode.POLL:
+            gnmi_client_output = sonic_mgmt_engine.run_cmd_set(
+                [cmd, '\n', '\n', '\x03', '\x03'],
+                patterns_list=[
+                    "select target to poll:",
+                    "select subscription to poll:",
+                    "failed selecting target to poll:",
+                ],
+            )
+        else:
+            gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
+
+        verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, gnmi_client_output)
+
+        return _extract_json_objects_from_gnmic_output(gnmi_client_output)
+
+
+def _extract_leaves_from_update(update):
+    """
+    Return the set of leaf names contributed by a single gnmic `updates[]` entry.
+
+    gnmic's JSON shape is not perfectly stable across versions, so we read leaves from
+    every place a name can appear and let the caller union them:
+      - "Path"  : capital-P; what current gnmic (--format json) emits, e.g. "in-octets"
+                  or "counters/in-octets" depending on subscription prefix.
+      - "path"  : lowercase variant emitted by some forks / older gnmic builds.
+      - "values": dict whose keys are paths-relative-to-prefix; this is the form the
+                  rest of the repo already consumes (see test_cpu_memory_monitoring.py).
+    Final `rsplit("/", 1)[-1]` reduces "counters/in-octets" -> "in-octets" so the
+    matcher works regardless of how deep the path was reported.
+    """
+    if not isinstance(update, dict):
+        return set()
+
+    candidates = {update.get("Path", ""), update.get("path", "")}
+    values = update.get("values")
+    if isinstance(values, dict):
+        candidates.update(values.keys())
+
+    leaves = {str(c).rsplit("/", 1)[-1] for c in candidates if c}
+    leaves.discard("")
+    return leaves
+
+
+def validate_notification_has_prefix_and_leaves(notifications, expected_prefix, expected_leaves):
+    """
+    Assert that a single gNMI Notification carries the expected prefix and contains all
+    expected leaves in its `updates` array.
+
+    Why this is enough to prove "same payload / same timestamp":
+        In gNMI, `timestamp` and `prefix` are per-Notification fields, and all entries in
+        `updates` share that timestamp/prefix by definition. Iterating one Notification at
+        a time and only matching when ALL expected leaves appear in that single `updates`
+        list guarantees the leaves were emitted together under one common prefix.
+
+    Args:
+        notifications:    list of parsed gnmic JSON Notification objects.
+        expected_prefix:  prefix to match (matched via endswith to tolerate a leading "/").
+        expected_leaves:  iterable of leaf names that must all appear in the same Notification.
+
+    Raises:
+        AssertionError: if no single Notification satisfies both the prefix and leaf set.
+                        The message includes up to 5 near-misses (right prefix, wrong leaves)
+                        to make debugging easy without spamming on unrelated notifications.
+    """
+    expected_leaves = set(expected_leaves)
+    near_misses = []
+
+    for obj in notifications:
+        # Skip control frames (sync-response) and any malformed notification missing a timestamp.
+        if obj.get("sync-response") or obj.get("timestamp") is None:
+            continue
+
+        prefix = obj.get("prefix", "")
+        # endswith tolerates an optional leading "/" that some gnmic versions emit.
+        if not prefix.strip().lstrip("/").endswith(expected_prefix):
+            continue
+
+        leaves = set()
+        for update in obj.get("updates", []):
+            leaves |= _extract_leaves_from_update(update)
+
+        if expected_leaves.issubset(leaves):
+            return
+
+        near_misses.append(f"prefix={prefix}, leaves={sorted(leaves)}")
+
+    raise AssertionError(
+        f"Expected one Notification with prefix '{expected_prefix}' containing leaves "
+        f"{sorted(expected_leaves)} in the same updates payload, but did not find it. "
+        f"near_misses={near_misses[:5]}"
+    )
+
+
 def change_port_description_and_validate_gnmi_updates(engines, port_description, target_ip, mode='', username='',
                                                       password=''):
     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).returned_value
@@ -241,13 +381,16 @@ def change_port_description_and_validate_gnmi_updates(engines, port_description,
 
 @retry(Exception, tries=3, delay=3)
 def validate_gnmi_server_in_health_issues(system, expected_gnmi_health_issue):
-    health_issues = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()[
-        HealthConsts.ISSUES]
-    error_msg = "gnmi-server is {} in the health issues".format("not" if expected_gnmi_health_issue else "")
-    if expected_gnmi_health_issue:
-        assert GnmiConsts.GNMI_DOCKER in list(health_issues.keys()), error_msg
-    else:
-        assert GnmiConsts.GNMI_DOCKER not in list(health_issues.keys()), error_msg
+    health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+    health_issues = health_output.get(HealthConsts.ISSUES, {})
+    issue_name = GnmiConsts.GNMI_DOCKER
+    actual_present = issue_name in health_issues
+
+    assert actual_present == expected_gnmi_health_issue, (
+        f"Health issue presence mismatch for '{issue_name}': "
+        f"expected={expected_gnmi_health_issue}, actual={actual_present}, "
+        f"available_issues={list(health_issues.keys())}"
+    )
 
 
 def create_gnmi_and_redis_cmd_dict(redis_cmd_db_num, redis_cmd_table, redis_cmd_key, xpath_gnmi_cmd,
@@ -595,12 +738,22 @@ def get_scp_player(engines) -> LinuxSshEngine:
     # return LinuxSshEngine(ip='10.237.38.139', username='root', password='12345')
 
 
-def verify_gnmi_client_tools_installed():
-    player = GnmiClient('', '', '', '', 10)
-    with allure.step('verify gnmic installation on test player'):
-        player.verify_gnmic_installation()
-    with allure.step('verify grpcurl  installation on test player'):
-        player.verify_grpcurl_installation()
+def verify_gnmi_client_tools_installed(engines=None, verify_player=True):
+    if verify_player:
+        player = GnmiClient('', '', '', '', 10)
+        with allure.step('verify gnmic installation on test player'):
+            player.verify_gnmic_installation()
+        with allure.step('verify grpcurl  installation on test player'):
+            player.verify_grpcurl_installation()
+
+    engines = engines or TestToolkit.engines
+    if engines is not None and hasattr(engines, 'sonic_mgmt'):
+        sonic_mgmt = engines.sonic_mgmt
+        sonic_mgmt_client = GnmiClient('', '', '', '', 10, engine=sonic_mgmt)
+        with allure.step(f'verify gnmic installation on sonic-mgmt engine {sonic_mgmt.ip}'):
+            sonic_mgmt_client.verify_gnmic_installation()
+        with allure.step(f'verify grpcurl installation on sonic-mgmt engine {sonic_mgmt.ip}'):
+            sonic_mgmt_client.verify_grpcurl_installation()
 
 
 def setup_gnmi_cert_checker(engines=None):

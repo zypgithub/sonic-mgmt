@@ -35,12 +35,14 @@ def analyze_single_failure(test: FailedTest) -> FailureAnalysis:
         if re.search(pattern_info["pattern"], error, re.IGNORECASE):
             likelihood = pattern_info["likelihood"]
             reason = pattern_info["reason"]
+            issue_type = pattern_info.get("issue_type", "")
             logger.debug(f"  Matched BUG pattern: {pattern_info['pattern'][:30]}... -> {likelihood}%")
             return FailureAnalysis(
                 test=test,
                 bug_likelihood=likelihood,
                 classification="bug" if likelihood >= BugLikelihood.HIGH else "uncertain",
-                reason=reason
+                reason=reason,
+                issue_type=issue_type
             )
 
     # Check for test issue patterns (low likelihood)
@@ -48,12 +50,14 @@ def analyze_single_failure(test: FailedTest) -> FailureAnalysis:
         if re.search(pattern_info["pattern"], error, re.IGNORECASE):
             likelihood = pattern_info["likelihood"]
             reason = pattern_info["reason"]
+            issue_type = pattern_info.get("issue_type", "")
             logger.debug(f"  Matched TEST_ISSUE pattern: {pattern_info['pattern'][:30]}... -> {likelihood}%")
             return FailureAnalysis(
                 test=test,
                 bug_likelihood=likelihood,
                 classification="test_issue" if likelihood <= BugLikelihood.LOW else "uncertain",
-                reason=reason
+                reason=reason,
+                issue_type=issue_type
             )
 
     # Default analysis based on status
