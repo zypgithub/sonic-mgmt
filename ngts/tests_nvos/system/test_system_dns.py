@@ -201,8 +201,7 @@ def test_unset_system_dns_server_ip(engines, random_api, devices, dns_config_bac
                    exceptions=AssertionError, tries=2, delay=2)
 
         with allure.step('Run unset system dns server <server-id> ipv4 command and apply config'):
-            arg = SystemConsts.DNS_SERVER + " " + dns_server_id_ipv4
-            system.dns.unset(arg, apply=True, dut_engine=engines.dut).verify_result()
+            system.dns.server.server_id[dns_server_id_ipv4].unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify DNS server ipv4 is not present and ipv6 is, in show system dns server output'):
             dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)).\
@@ -307,13 +306,11 @@ def test_system_dns_server_max(engines, random_api, devices, dns_config_backup_a
                                apply=True, dut_engine=engines.dut).verify_result(should_succeed=False)
 
         with allure.step('Run unset system dns server 1.1.1.1 command and apply config'):
-            system.dns.unset(SystemConsts.DNS_SERVER + " " + "1.1.1.1",
-                             apply=True, dut_engine=engines.dut).verify_result()
+            system.dns.server.server_id["1.1.1.1"].unset(apply=True, dut_engine=engines.dut).verify_result()
 
         if TestToolkit.devices.dut.is_eth():
             with allure.step('Run unset system dns server 2.2.2.2 command and apply config'):
-                system.dns.unset(SystemConsts.DNS_SERVER + " " + "2.2.2.2",
-                                 apply=True, dut_engine=engines.dut).verify_result()
+                system.dns.server.server_id["2.2.2.2"].unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Run set system dns server 2.2.2.2 command and apply config'):
             system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value="2.2.2.2",
@@ -429,8 +426,7 @@ def test_system_dns_server_max_set_unset_single_apply(engines, random_api, devic
                            apply=False, dut_engine=engines.dut).verify_result()
 
         with allure.step('Run unset system dns server dns_server_id_ipv4 command and apply config'):
-            system.dns.unset(SystemConsts.DNS_SERVER + " " + dns_server_id_ipv4,
-                             apply=True, dut_engine=engines.dut).verify_result()
+            system.dns.server.server_id[dns_server_id_ipv4].unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify the configured DNS servers are in show system dns server output'):
             dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)).\
