@@ -9,7 +9,7 @@
     </Test>
     <Case>
       <tags> performance </tags>
-      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/perf_mars_pytest_runner.py </wrapper>
       <tout> 43200 </tout>
       <tags>ALL</tags>
     </Case>
