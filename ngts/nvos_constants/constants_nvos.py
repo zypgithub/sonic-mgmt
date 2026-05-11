@@ -2215,7 +2215,9 @@ class FastRecoveryConsts:
 
 
 class LogComponentsConsts:
-    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "symmetry-manager", "syncd"]
+    NVUE = 'nvue'
+    SYMMETRY_MANAGER = 'symmetry-manager'
+    COMPONENTS_LIST = [NVUE, "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", SYMMETRY_MANAGER, "syncd"]
     CRITICAL = "critical"
     DEBUG = "debug"
     ERROR = "error"
@@ -2227,7 +2229,6 @@ class LogComponentsConsts:
     LOG_LEVEL_LIST = [CRITICAL, DEBUG, ERROR, INFO, NOTICE, WARN]
     LOG_LEVEL_DEFAULT = NOTICE
     LEVEL = 'level'
-    NVUE = 'nvue'
     GPU_TELEMETRY = 'gpu_telemetry'
     NVUE_LOG = 'nvued.log'
     NVUE_CLI_LOG = 'nv-cli.log'
