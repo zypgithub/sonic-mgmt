@@ -501,14 +501,43 @@ class DeployMultiNosHelper:
 
     @staticmethod
     def multi_nos_pre_installation_steps(duts, target_cli_type, chip_type, deploy_sequential=False):
+        """Run per-DUT multi-NOS pre-install steps and surface any failures.
+
+        Without awaiting per-future results, any exception raised inside
+        ``do_multi_nos_pre_install`` (e.g. uninstall-mode setup failing on the
+        switch) is silently swallowed by the executor and the deploy proceeds
+        as if pre-installation succeeded, which causes confusing downstream
+        failures (e.g. ``OnieInstallationError``). Collect futures and call
+        ``result()`` so the first exception propagates to the caller.
+
+        Args:
+            duts: Iterable of DUT info dicts as built by ``DeploymentContext``;
+                each entry must contain at least ``dut_ip``.
+            target_cli_type: Target CLI/NOS being installed (e.g. ``"DVS"``,
+                ``"NVUE"``, ``"SONIC"``).
+            chip_type: ASIC family string used to look up timeouts in
+                ``PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE`` (e.g. ``"SPC5"``).
+            deploy_sequential: If ``True``, run per-DUT pre-install steps
+                inline; otherwise run them in a thread pool and join.
+
+        Raises:
+            Exception: The first exception raised by any per-DUT
+                ``do_multi_nos_pre_install`` invocation. In parallel mode all
+                submitted tasks are still allowed to finish (the executor
+                joins on context exit) before the exception is re-raised.
+        """
         logger.info("Multi NOS pre installation steps")
         if deploy_sequential:
             for dut in duts:
                 DeployMultiNosHelper.do_multi_nos_pre_install(dut, target_cli_type, chip_type)
-        else:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                for dut in duts:
-                    executor.submit(DeployMultiNosHelper.do_multi_nos_pre_install, dut, target_cli_type, chip_type)
+            return
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(DeployMultiNosHelper.do_multi_nos_pre_install,
+                                       dut, target_cli_type, chip_type)
+                       for dut in duts]
+        for future in futures:
+            future.result()
 
     @staticmethod
     def do_multi_nos_pre_install(dut, target_cli_type, chip_type):

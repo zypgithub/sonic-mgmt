@@ -28,13 +28,15 @@ class DvsGeneralCli(GeneralCliCommon):
         super().__init__(engine, dut_alias)
 
     def deploy_image(self, image_path, topology_obj, dut_alias):
-        self.prepare_for_installation(topology_obj, dut_alias)
-        try:
-            self.install_image_onie(self.engine, image_path)
-        except OnieInstallationError:
-            logger.error('Caught exception OnieInstallationError during install. Perform reboot and trying again')
-            self.engine.disconnect()
-            self.remote_reboot(topology_obj, boot_into_onie=True, dut_alias=dut_alias)
+        logger.info(f"DvsGeneralCli.deploy_image: starting for dut_alias={dut_alias} ip={self.engine.ip} "
+                    f"image_path={image_path}")
+        if not self.prepare_for_installation(topology_obj, dut_alias):
+            raise OnieInstallationError(
+                f"Failed to move DUT {self.engine.ip} into ONIE install mode before DVS image installation"
+            )
+        logger.info(f"DvsGeneralCli.deploy_image: ip={self.engine.ip} prepare_for_installation done, "
+                    f"starting install_image_onie")
+        self.install_image_onie(self.engine, image_path)
 
     def _install_sdk_and_fw(self, sdk_version, fw_version, debian_enabled):
         """
