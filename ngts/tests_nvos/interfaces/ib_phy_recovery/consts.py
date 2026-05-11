@@ -90,11 +90,11 @@ class IbPhyRecoveryConfig:
     TIMEOUT_MIN = 0
     TIMEOUT_MAX = 126
 
-    # Default values
+    # Default values (most IB platforms factory defaults)
     DEFAULT_MODE = DISABLED
     DEFAULT_TIMEOUT = 0
 
-    # Default configuration dictionary for validation
+    # Fallback when devices fixture unavailable (matches IbSwitch.default_phy_recovery_dict)
     # Note: TIMEOUT stored as string to match API response format
     DEFAULT_CONFIG = {
         MODE: DISABLED,

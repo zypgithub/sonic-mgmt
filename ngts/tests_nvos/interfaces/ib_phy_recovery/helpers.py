@@ -675,30 +675,17 @@ def validate_ib_mode_set(selected_port, mode: str, timeout: Optional[int] = None
 
 
 def validate_ib_default_config(selected_port):
-    """
-    Validate IB PHY recovery configuration has default values.
-
-    For IB: logic-relock-mode=disabled, logic-relock-timeout=0
-
-    Args:
-        selected_port: Fae port object
-
-    Raises:
-        AssertionError: If validation fails
-    """
+    """Assert ``nv show`` phy-recovery matches ``devices.dut.default_phy_recovery_dict`` or ``DEFAULT_CONFIG``."""
     with allure.step("Check IB default config (logic-relock)"):
-        output_fae_port = OutputParsingTool.parse_json_str_to_dictionary(
+        dut = TestToolkit.devices and TestToolkit.get_device()
+        expected = (
+            getattr(dut, "default_phy_recovery_dict", IbPhyRecoveryConfig.DEFAULT_CONFIG)
+            if dut else IbPhyRecoveryConfig.DEFAULT_CONFIG
+        )
+        out = OutputParsingTool.parse_json_str_to_dictionary(
             selected_port.port.interface.link.phy_recovery.show()
         ).get_returned_value()
-
-        filtered_out = {
-            key: value for key, value in output_fae_port.items()
-            if key in IbPhyRecoveryConfig.DEFAULT_CONFIG
-        }
-        ValidationTool.compare_dictionaries(
-            filtered_out,
-            IbPhyRecoveryConfig.DEFAULT_CONFIG
-        ).verify_result()
+        ValidationTool.compare_dictionaries({k: out[k] for k in expected if k in out}, expected).verify_result()
 
 
 # =============================================================================

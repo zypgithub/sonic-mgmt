@@ -512,6 +512,12 @@ class IbSwitch(BaseSwitch):
             self.category_list[6]: self.category_default_dict
         }
 
+        # NVUE logic-relock defaults (override per switch class, e.g. BlackMamba)
+        self.default_phy_recovery_dict = {
+            PhyRecoveryConsts.LogicRelock.MODE: PhyRecoveryConsts.DISABLED,
+            PhyRecoveryConsts.LogicRelock.TIMEOUT: str(0),
+        }
+
         self.asic0 = 'asic0'
         self.asic1 = 'asic1'
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
@@ -955,6 +961,11 @@ class BlackMambaSwitch(IbSwitch):
         self.asic_amount = 4
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         super()._init_constants()
+        # BM Factory defaults
+        self.default_phy_recovery_dict = {
+            PhyRecoveryConsts.LogicRelock.MODE: PhyRecoveryConsts.ENABLED,
+            PhyRecoveryConsts.LogicRelock.TIMEOUT: str(100),
+        }
         self.use_ga_default_config = True
         self.supports_ssd_upgrade = True
         self.ib_ports_num = 2 * 72
