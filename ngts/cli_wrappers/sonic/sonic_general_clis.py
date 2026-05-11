@@ -54,6 +54,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 logger = logging.getLogger()
 DUMMY_COMMAND = 'echo dummy_command'
 NOT_SUPPORTED_DPB_SKU_LIST = ['Mellanox-SN5810_LD-O128A2', 'ACS-SN6810_LD']
+PLATFORMS_TO_NOT_UPDATE_PLATFORM_PARAMS = ['sn6600_ld', 'sn4280']
 
 
 class SonicGeneralCli:
@@ -1018,7 +1019,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                            logger=logger)
 
     def update_platform_params(self, platform_params, setup_name):
-        if "4280" in platform_params["platform"]:
+        if platform_params.filtered_platform in PLATFORMS_TO_NOT_UPDATE_PLATFORM_PARAMS:
             return
         if hasattr(self, 'cli_obj'):  # SONiC only
             current_platform_summary = self.cli_obj.chassis.parse_platform_summary()
