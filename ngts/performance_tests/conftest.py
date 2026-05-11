@@ -237,9 +237,9 @@ def fix_tg_cli_objects_alias_keys(cli_objects, topology_obj):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def unsplit_all_ports_on_spc5(players):
+def unsplit_all_ports_on_spc5_6(players):
     """
-    Unsplits all ports on the SPC5.
+    Unsplits all ports on the SPC5/6.
     """
-    unsplit_all_ports(players, step="unsplit_all_ports_on_spc5 - unsplit_all_ports")
+    unsplit_all_ports(players, step="unsplit_all_ports_on_spc5_6 - unsplit_all_ports")
     return
