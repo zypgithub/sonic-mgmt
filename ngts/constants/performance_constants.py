@@ -336,7 +336,8 @@ class PerfConsts:
     TIMEOUT_FOR_UNINSTALL_MODE = {
         "SPC3": 900,
         "SPC4": 900,
-        "SPC5": 480
+        "SPC5": 480,
+        "SPC6": 480
     }
     TIMEOUT_FOR_INSTALL_MODE = 120
     MAX_CELLS_RANGE_FOR_BINARY_SEARCH = 100
