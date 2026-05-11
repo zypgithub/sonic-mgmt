@@ -1093,6 +1093,12 @@ process_monitoring/test_critical_process_monitoring.py:
     conditions:
     - "https://redmine.mellanox.com/issues/3464488 and 'nvda_bf-9009' in platform"
 
+process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5008193 and sn6600_ld platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5008193 and 'sn6600_ld' in platform"
+
 sub_port_interfaces/:
   skip:
     reason: "Sub port interfaces is not supported on 202411 and greater releases"
