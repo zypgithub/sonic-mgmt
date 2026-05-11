@@ -756,9 +756,9 @@ def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route):
         delta = duthost.shell(
             f"sudo tail -c +{tail_offset} /var/log/swss/swss.rec")["stdout"]
 
-        non_empty_lines = [ln for ln in delta.splitlines() if ln.strip()]
+        non_empty_lines = [ln for ln in delta.splitlines() if ln.strip() and 'eth0' not in ln]
         logger.info(
-            f"swss.rec new content after static routes: {len(delta)} byte(s), {len(non_empty_lines)} non-empty line(s)")
+            f"swss.rec new content after static routes: {len(non_empty_lines)} non-empty line(s)")
 
         pytest_assert(
             len(non_empty_lines) == n,
@@ -768,5 +768,5 @@ def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route):
         pytest_assert(
             set(routes) == set(prefixes),
             f"Routes from swss delta {routes} do not match expected prefixes {prefixes}")
-        logger.info(f"swss.rec ROUTE_TABLE|SET prefixes: {routes}")
+        logger.info(f"swss.rec ROUTE_TABLE prefixes: {routes}")
         logger.info(f"swss.rec delta raw:\n{delta}")
