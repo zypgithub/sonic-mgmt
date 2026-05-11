@@ -1330,6 +1330,10 @@ dhcp_relay/test_dhcp_relay_stress.py::test_dhcp_relay_restart_with_stress:
     conditions:
       - "asic_type in ['vs'] and https://github.com/sonic-net/sonic-mgmt/issues/16450"
       - "'-v6-' in topo_name"
+  xfail:
+    reason: "Testcase ignored due to github issue"
+    conditions:
+    - "https://github.com/sonic-net/sonic-mgmt/issues/23601"
 
 dhcp_relay/test_dhcp_relay_stress.py::test_dhcp_relay_stress:
   skip:
@@ -1341,6 +1345,10 @@ dhcp_relay/test_dhcp_relay_stress.py::test_dhcp_relay_stress:
       - "platform in ['armhf-nokia_ixs7215_52x-r0']"
       - "asic_type in ['vs']"
       - "'-v6-' in topo_name"
+  xfail:
+    reason: "Testcase ignored due to github issue"
+    conditions:
+    - "https://github.com/sonic-net/sonic-mgmt/issues/23601"
 
 dhcp_relay/test_dhcp_relay_stress.py::test_dhcp_relay_stress[discover:
   skip:
