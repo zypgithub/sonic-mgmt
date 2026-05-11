@@ -148,7 +148,7 @@ class HWSimulator:
             try:
                 max_temp = int(max_temp_str)
             except ValueError:
-                logger.warning(f"Could not read max temp from {max_temp_path}, using default 80000")
+                logger.warning(f"Could not read max temp from {max_temp_path}, using default 70000")
                 max_temp = 70000
             fault_temp = max_temp + 10000
             logger.info(f"PSU {psu_id} max temp: {max_temp}, injecting fault temp: {fault_temp}")
@@ -269,6 +269,7 @@ class HWSimulator:
         def normalize(name: str) -> str:
             for token in ('+VinDC', '+Volt', '+Vol'):
                 name = name.replace(token, '')
+            name = re.sub(r'\+Temp\+\d+', '+Temp', name)
             return re.sub(r'[^a-z0-9]', '', name.lower())
 
         target = normalize(sensor_name)

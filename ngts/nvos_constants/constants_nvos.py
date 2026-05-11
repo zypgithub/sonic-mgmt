@@ -1185,6 +1185,7 @@ class PlatformConsts:
     ENV_TEMP_MIN = 15  # [Celsius]
     ENV_TEMP_MAX = 90  # [Celsius]
     VOLTAGE_FILES_PATH = '/var/run/hw-management/ui/voltage'
+    TEMPERATURE_FILES_PATH = '/var/run/hw-management/ui/temperature'
     HEALTH_STATUS_NOT_OK_EVENT = 'Health status is not ok'
     LEAKAGE_STATUS_OK = 'ok'
     LEAKAGE_STATUS_LEAK = 'leak'
