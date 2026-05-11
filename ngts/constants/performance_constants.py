@@ -697,6 +697,15 @@ class PowerConsts:
             r"VCORE MAIN \(VDD_M\)": 310,
             "TOTAL": 811,
             "HVDD_TILES_TH": 444
+        },  # TODO: Add SPC6 power thresholds
+        "SPC6": {
+            r"VCORE TILES \d & \d \(VDD_Tx\)": 28.5,
+            r"DVDD TILES \d & \d \(DVDD_Tx\)": 30.75,
+            r"HVDD TILES \(HVDD_T\d+\)": 222,
+            r"VDDSCC": 48,
+            r"VCORE MAIN \(VDD_M\)": 310,
+            "TOTAL": 811,
+            "HVDD_TILES_TH": 444
         }
     }
     CONTROLLER_REGEX = r'\w*\d*-i2c-\d*-\d*\w*'
@@ -734,6 +743,19 @@ class SPCControllers:
             "0x6e": "VDDSCC",
         },
         "SPC5": {
+            "0x62": "VCORE MAIN (VDD_M)",
+            "0x63": "VCORE TILES 0 & 1 (VDD_Tx)",
+            "0x64": "VCORE TILES 2 & 3 (VDD_Tx)",
+            "0x65": "VCORE TILES 4 & 5 (VDD_Tx)",
+            "0x66": "VCORE TILES 6 & 7 (VDD_Tx)",
+            "0x67": "DVDD TILES 0 & 1 (DVDD_Tx)",
+            "0x68": "DVDD TILES 2 & 3 (DVDD_Tx)",
+            "0x69": "DVDD TILES 4 & 5 (DVDD_Tx)",
+            "0x6a": "DVDD TILES 6 & 7 (DVDD_Tx)",
+            "0x6c": "HVDD TILES (HVDD_T03)",
+            "0x6e": "VDDSCC",
+        },
+        "SPC6": {  # TODO: Add SPC6 controllers dictionary
             "0x62": "VCORE MAIN (VDD_M)",
             "0x63": "VCORE TILES 0 & 1 (VDD_Tx)",
             "0x64": "VCORE TILES 2 & 3 (VDD_Tx)",
