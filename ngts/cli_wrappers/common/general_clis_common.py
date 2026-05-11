@@ -521,10 +521,8 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
         try:
             engine = LinuxSshEngine(self.engine.ip, username=SSHConsts.DVS_CREDS['username'],
                                     password=SSHConsts.DVS_CREDS['password'])
-            output = engine.run_cmd("cat /etc/motd")
-            if PerfConsts.DVS_WELCOME_MESSAGE in output:
-                return True
-            return False
+            dvs_marker = engine.run_cmd("command -v dvs_start.sh")
+            return bool(dvs_marker.strip()) and "dvs_start.sh" in dvs_marker
         except Exception:
             return False
 
