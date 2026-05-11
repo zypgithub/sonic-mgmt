@@ -437,6 +437,7 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
             logging.info(f"[{player_alias}] Validations to run: {list(validations_to_run.keys())}\n")
 
             for name, validation in validations_to_run.items():
+                logger.info(f"Running validation: {name}")
                 validation.func(traffic_json, **(validation.extra_args or {}), violations_list=player_violations)
 
             if player_violations:
@@ -444,6 +445,13 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
                 all_violations.append(player_header)
                 all_violations.extend([f"  - {violation}" for violation in player_violations])
                 all_violations.append("")
+
+        if attach_to_allure:
+            with allure.step("Adding SDK dump to allure report"):
+                sdk_dump_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
+                                             "sdk_dumps", config.scenario, "sdk_dump")
+                sdk_dump = create_sdk_dump(config.players, sdk_dump_path)
+                allure.attach(sdk_dump, "SDK dump", attachment_type=allure.attachment_type.TEXT)
 
         if all_violations and not ignore_violations:
             raise TestIssue("\n".join(all_violations))
