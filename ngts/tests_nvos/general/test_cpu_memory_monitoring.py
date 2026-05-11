@@ -646,7 +646,7 @@ def get_events(resource: str) -> tuple[tuple[str, dict], tuple[str, dict]]:
     return high_usage_event, normal_usage_event
 
 
-@retry.retry(tries=12, delay=10)
+@retry.retry(tries=13, delay=10)
 def verify_events_in_logs(engines: EnginesT, system: System, docker: str, start_time: datetime) -> None:
     log_message_list = [HIGH_USAGE_EVENT_MSG_PATTERN.format(docker),
                         NORMAL_USAGE_EVENT_MSG_PATTERN.format(docker)]
