@@ -136,4 +136,10 @@
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/fips.cases </cases>
     </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/reboot_blocking_mode.cases </cases>
+    </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/config_setup_boot.cases </cases>
+    </test>
 </DBDEF>
