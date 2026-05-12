@@ -196,8 +196,8 @@ Mail Lists Available:
     llm_group = parser.add_argument_group("AI Analysis Options")
     llm_group.add_argument("--use-llm", action="store_true",
                            help="Enable AI-powered analysis via NVIDIA LLM Gateway")
-    llm_group.add_argument("--llm-model", default="azure/openai/gpt-4o",
-                           help="LLM model to use (default: azure/openai/gpt-4o)")
+    llm_group.add_argument("--llm-model", default="azure/openai/gpt-5.4-mini",
+                           help="LLM model to use (default: azure/openai/gpt-5.4-mini)")
 
     # Output options
     output_group = parser.add_argument_group("Output Options")
