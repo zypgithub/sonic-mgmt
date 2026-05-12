@@ -173,3 +173,37 @@ class GnmiConstants:
                    "raw-ber-ch-6",
                    "raw-ber-ch-7",
                    "raw-ber-ch-8"]
+
+    # Expected paths under gnmic
+    # `components/component[name=<id>]/transceiver/physical-channels/channel[index=1]/`,
+    # relative to that prefix, for an Inserted module. Removed modules expose no
+    # physical-channel leaves (the subtree is structurally absent).
+    EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS = {
+        "channel-diag/state/rx-cdr-lol",
+        "channel-diag/state/rx-los",
+        "channel-diag/state/rx-power-hi-al",
+        "channel-diag/state/rx-power-hi-war",
+        "channel-diag/state/rx-power-lo-al",
+        "channel-diag/state/rx-power-lo-war",
+        "channel-diag/state/tx-ad-eq-fault",
+        "channel-diag/state/tx-bias-hi-al",
+        "channel-diag/state/tx-bias-hi-war",
+        "channel-diag/state/tx-bias-lo-al",
+        "channel-diag/state/tx-bias-lo-war",
+        "channel-diag/state/tx-cdr-lol",
+        "channel-diag/state/tx-fault",
+        "channel-diag/state/tx-los",
+        "channel-diag/state/tx-power-hi-al",
+        "channel-diag/state/tx-power-hi-war",
+        "channel-diag/state/tx-power-lo-al",
+        "channel-diag/state/tx-power-lo-war",
+        "index",
+        "state/index",
+        "state/input-power/instant",
+        "state/laser-bias-current/instant",
+        "state/output-power/instant",
+        "state/rx-cdr-lol",
+        "state/rx-los",
+        "state/tx-ad-eq-fault",
+        "state/tx-failure",
+    }

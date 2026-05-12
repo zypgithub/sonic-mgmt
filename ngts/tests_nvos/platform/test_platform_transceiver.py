@@ -4,6 +4,7 @@ import time
 
 import pytest
 
+from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -17,9 +18,23 @@ from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.platform.constants import TransceiversConsts
 from ngts.tests_nvos.interfaces.test_ib_interface_configuration import wait_for_port_to_become_active
 from ngts.tests_nvos.platform.helpers import _pre_port_config, _post_port_config
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmiConstants, GnmicErr
+from ngts.tests_nvos.system.gnmi.helpers import is_gnmi_failure, verify_msg_not_in_out_or_err
+from ngts.tests_nvos.system.gnmi.mapping.helpers import parse_gnmic_flat_path
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+
+
+def _is_gnmi_unavailable(err: str) -> bool:
+    e = (err or "").lower()
+    return (
+        "connection refused" in e or
+        "transport: error while dialing" in e or
+        ("rpc error" in e and "unavailable" in e)
+    )
+
 
 MODULE_STATUS_DICT = {"Inserted": {"N/A", "Power budget exceeded", "Long range for non - Mellanox cable or module",
                                    "Bit I2C stuck", "Unsupported cable", "High temperature", "Enforce part number list",
@@ -37,6 +52,7 @@ def test_transceiver_status(engines, random_api):
     flow:
     1. Check module and error_status for plugged module
     2. Check module and error_status for unplugged module
+    3. Validate gNMI physical-channels field-set for both module types
     """
 
     with allure.step("Create platform object"):
@@ -52,6 +68,18 @@ def test_transceiver_status(engines, random_api):
 
     _verify_transceiver_status(platform, transceiver_id=unplugged_module, expected_module_status=PlatformConsts.REMOVED)
     _verify_link_state_down(down_ports)
+
+    with allure.step('gNMI validation - physical-channels telemetry field-set'):
+        gnmi_client = GnmiClient(
+            engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT,
+            engines.dut.username, engines.dut.password,
+            cmd_time=60, verify_tools_installed=True,
+        )
+        _, err = gnmi_client.gnmic_capabilities(skip_cert_verify=True)
+        if _is_gnmi_unavailable(err):
+            pytest.skip(f"gNMI server is unavailable on {engines.dut.ip}:{GnmiConsts.GNMI_DEFAULT_PORT}: {err.strip()}")
+        validate_gnmi_transceiver_physical_channel_fields(gnmi_client, plugged_module, PlatformConsts.INSERTED)
+        validate_gnmi_transceiver_physical_channel_fields(gnmi_client, unplugged_module, PlatformConsts.REMOVED)
 
 
 @pytest.mark.check_log_size
@@ -151,12 +179,12 @@ def test_transceivers_and_ports(engines, devices, nv_command, random_api):
 
     transceivers_list = devices.dut.transceiver_list
 
-    with allure.step(f"Verify all connected transceivers and ports"):
+    with allure.step("Verify all connected transceivers and ports"):
         connected_transceivers_output = OutputParsingTool.parse_json_str_to_dictionary(
             nv_command.platform.transceiver.show()).get_returned_value()
         nv_connected_transceivers = set(connected_transceivers_output.keys())
 
-        with allure.independent_step(f"Verify all expected transceiver modules are detected"):
+        with allure.independent_step("Verify all expected transceiver modules are detected"):
             transceivers_output = [name for name, transceiver in OutputParsingTool.parse_json_str_to_dictionary(
                 nv_command.platform.transceiver.show('detail')).get_returned_value().items()]
             for transceiver in transceivers_list:
@@ -177,35 +205,6 @@ def test_transceivers_and_ports(engines, devices, nv_command, random_api):
             ports = [port.name for port in selected_up_ports]
 
             find_missing_ports(nv_connected_transceivers, ports)
-
-
-def find_missing_ports(connected_transceivers, ports):
-    """
-    Behavior:
-        - A transceiver is included in the result ONLY if BOTH "swp1" and "swp2" are down.
-        - transceivers with at least one of the ports (p1 or p2) is up.
-        - We do not validate FNM ports (transceivers whose ID starts with "fnm" are ignored).
-
-    :param connected_transceivers:
-    :param ports:
-    :return:
-    """
-    missing = {}
-    for dev in connected_transceivers:
-        if "fnm" in dev:
-            continue
-
-        expected_p1 = f"{dev}p1"
-        expected_p2 = f"{dev}p2"
-
-        has_p1 = expected_p1 in ports
-        has_p2 = expected_p2 in ports
-
-        # report only if both are missing
-        if not has_p1 and not has_p2:
-            missing[dev] = ["p1", "p2"]
-
-    assert not missing, f"Missing per device: {missing}"
 
 
 def find_missing_ports(connected_transceivers, ports):
@@ -290,6 +289,49 @@ def _verify_transceiver_fields(platform, transceiver_id, expected_module_status=
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=transceiver_output,
                                                               field_name=PlatformConsts.TRANSCEIVER_ERROR_STATUS,
                                                               expected_value=expected_error_status).verify_result()
+
+
+def validate_gnmi_transceiver_physical_channel_fields(client, transceiver_id, module_status):
+    """Assert gnmic returns exactly the expected field-set under
+    `components/component[name=<id>]/transceiver/physical-channels/channel[index=1]/`
+    (no more, no fewer); names only, values are not checked.
+
+    Inserted modules must return the full leaf-set; Removed modules must return nothing.
+    """
+    expected = (GnmiConstants.EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS
+                if module_status == PlatformConsts.INSERTED else set())
+    with allure.independent_step(f'Validate gNMI physical-channels field-set for {transceiver_id} ({module_status})'):
+        container_path = (
+            f'components/component[name={transceiver_id}]/transceiver/physical-channels/channel[index=1]'
+        ).strip('/')
+        out, err, _, _ = client.gnmic_subscribe(
+            prefix='',
+            path=container_path,
+            mode=GnmiMode.ONCE,
+            flat=True,
+            skip_cert_verify=True,
+            cmd_time=30,
+            wait_till_done=False,
+        )
+        verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, out, err)
+        assert not is_gnmi_failure(err), (
+            f"gnmic subscribe failed for transceiver {transceiver_id} ({module_status}):\n"
+            f"  stderr: {err}\n"
+            f"  stdout: {out}"
+        )
+        match_prefix = container_path + '/'
+        actual = set()
+        for line in out.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            full_path = parse_gnmic_flat_path(line)
+            if not full_path:
+                continue
+            full_path = full_path.lstrip('/')
+            if full_path.startswith(match_prefix):
+                actual.add(full_path[len(match_prefix):])
+        Tools.ValidationTool.validate_set_equal(actual=actual, expected=expected).verify_result()
 
 
 def _verify_link_state_up(up_ports):
