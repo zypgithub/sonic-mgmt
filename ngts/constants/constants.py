@@ -1439,6 +1439,73 @@ class SonicDeployConstants:
     SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't0-isolated-d2u510s2', 't1-isolated-d510u2', 't1-isolated-v6-d56u1-lag']
 
 
+class BmcDeployConstants:
+    """
+    Constants used for BMC SONiC image installation.
+
+    Reference: https://nvidia.atlassian.net/wiki/spaces/SW/pages/3239673921/BMC+SONiC#2.-Image-installation
+    """
+    # TFTP + HTTP server
+    BMC_TFTP_SERVER_IP = "10.228.227.54"
+    BMC_HTTP_SERVER_URL = f"http://{BMC_TFTP_SERVER_IP}:8080"
+
+    # File parameters
+    BMC_FIT_FILE_NAME = "sonic_tftp_install.fit"
+    BMC_EMMC_IMG_FILE_NAME = "sonic-aspeed-arm64-emmc.img.gz"
+
+    # U-Boot parameters
+    UBOOT_PROMPT = "=> "
+    UBOOT_AUTOBOOT_HINT = "Hit any key to stop autoboot"
+    UBOOT_LOAD_ADDR = "0x432000000"
+    UBOOT_BOOTCONF_DEFAULT = "sonic-ast2700-nvidia-spc6-a1-bmc"
+    UBOOT_BOOTARGS_TAILS = (
+        'console=ttyS12,115200n8 earlycon=uart8250,mmio32,0x14c33b00 ',
+        'root=/dev/ram0 rw ',
+        'sonic_install.tftp_server=${{serverip}} ',
+        'sonic_install.bmc_image={http_server}/{emmc_img} ',
+    )
+
+    # Marker parameter
+    EMMC_WRITE_DONE_MARKER = "U-Boot environment updated"
+    INSTALLER_SHELL_PROMPT = "/tmp #"
+    INSTALLER_REBOOT_CMD = "reboot -f"
+    BMC_LOGIN_PROMPT = "login:"
+    BMC_POST_INSTALL_HANG_MARKER = "hw-management-bmc-ready"
+
+    # Post-install SSH credentials (verify login + chrony clock sync).
+    BMC_SONIC_OS_USERNAME = os.getenv("SONIC_SWITCH_USER")
+    BMC_SONIC_OS_PASSWORD = os.getenv("SONIC_SWITCH_PASSWORD")
+
+    # BMC DEVICE_METADATA
+    BMC_DEVICE_METADATA_TYPE = "NetworkBmc"
+
+    # AST HW types allowed to run a SONiC BMC image. AST2600 is
+    # OpenBMC-only. AST2700-A1 is here temporarily; drop it once
+    # AST2700-A1 is moved to OpenBMC-only.
+    SONIC_BMC_SUPPORTED_HW_TYPES = ('AST2700-A1', 'AST2700-A2')
+
+    # Workaround: after the post-install boot the BMC SONiC image starts
+    # cleanly but its eth0 has no DHCP lease
+    BMC_SHELL_PROMPT = r":~\$"
+    BMC_PASSWORD_PROMPT = "[Pp]assword:"
+    BMC_DHCLIENT_CMD = "sudo dhclient -v eth0"
+    BMC_DHCLIENT_SUCCESS_MARKER = "bound to"
+
+    # Timeouts (seconds).
+    UBOOT_PROMPT_TIMEOUT = 120         # time to interrupt autoboot and reach U-Boot prompt
+    DHCP_TIMEOUT = 60                  # one DHCP attempt timeout
+    DHCP_RETRY_LIMIT = 3               # number of DHCP retries when the first attempt fails
+    TFTP_DOWNLOAD_TIMEOUT = 900        # time to download the FIT image via TFTP
+    TFTP_DOWNLOAD_RETRY_LIMIT = 3      # retries when TFTP fails (e.g. ARP retry exceeded)
+    EMMC_WRITE_TIMEOUT = 1800          # time for the eMMC write to finish
+    INSTALLER_SHELL_TIMEOUT = 120      # time to reach the busybox shell after install
+    BMC_BOOT_TIMEOUT = 600             # time for the BMC to come up and present login prompt
+    BMC_POST_INSTALL_HANG_TIMEOUT = 600  # time to see hw-management-bmc-ready before triggering the workaround power cycle
+    BMC_SERIAL_LOGIN_TIMEOUT = 60      # time for each step of the serial login dialogue (user / password / shell)
+    BMC_DHCLIENT_TIMEOUT = 120         # time for 'dhclient' to obtain a DHCP lease via serial
+    BMC_CHRONY_SETTLE_SECONDS = 5      # wait after starting chrony before forcing 'chronyc -a makestep'
+
+
 class RebootTestConstants:
     DATAPLANE_TRAFFIC_RESULTS_FILE = '/tmp/reboot_dataplane_result.json'
     CONTROLPLANE_TRAFFIC_RESULTS_FILE = '/tmp/reboot_controlplane_result.json'

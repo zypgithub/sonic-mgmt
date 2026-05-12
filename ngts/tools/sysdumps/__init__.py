@@ -14,7 +14,7 @@ import pytest
 
 from ngts.conftest import update_topology_with_cli_class
 from ngts.constants.constants import SETUPS_WITH_NON_DEFAULT_PTF, PytestConst
-from ngts.helpers.general_helper import get_dut_cli_objs_from_topo_obj
+from ngts.helpers.general_helper import get_dut_cli_objs_from_topo_obj, is_bmc_testbed
 from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
 from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, \
     clean_stored_cmds_with_fixture_scope_list
@@ -180,9 +180,11 @@ def generate_and_copy_dump(item, dumps_folder, topology_obj, duration):
     dut_engine = topology_obj.players['dut']['engine']
     collect_stored_cmds_then_attach_to_allure_report(topology_obj)
     generate_dump_method[switch_type](topology_obj, dut_engine, dumps_folder, duration, item)
-    if switch_type == TopologyConsts.SONIC:
+    testbed = item.config.option.testbed
+    # BMC testbeds run on the BMC host directly; their topology has no 'hypervisor' player
+    # and PTF/dualtor log collection does not apply.
+    if switch_type == TopologyConsts.SONIC and not is_bmc_testbed(testbed):
         hypervisor_engine = topology_obj.players['hypervisor']['engine']
-        testbed = item.config.option.testbed
         setup_name = item.config.option.setup_name
         if 'ptf-any' not in testbed:
             collect_ptf_logs(hypervisor_engine, dumps_folder, setup_name)
@@ -449,7 +451,15 @@ def generate_and_copy_sonic_dump(topology_obj, dut_engine, dumps_folder, duratio
     item_clean_name = item.name.replace('/', '_').replace('[', '_').replace(']', '_')
     with allure.step('Generate Techsupport of last {} seconds'.format(duration)):
         logger.debug(f"item.location: {item.location}, item.name: {item.name}, item.originalname: {item.originalname}")
-        if item.originalname == "test_check_errors_in_log_during_deploy_sonic_image":
+        if is_bmc_testbed(item.config.option.testbed):
+            # Test runs against the BMC; the switch DUT engine from noga points to the switch IP
+            # which is not the right target. Use the BMC engine attached by conftest._attach_bmc_player.
+            bmc_engine = topology_obj.players.get('bmc', {}).get('engine')
+            if bmc_engine is None:
+                logger.warning("BMC testbed detected but no 'bmc' player attached in topology; skipping sysdump")
+                return
+            duts_to_dump = {"dut": bmc_engine}
+        elif item.originalname == "test_check_errors_in_log_during_deploy_sonic_image":
             # log analyzer is special since it runs on specific DUT parameter "switch" or "dpu"
             # this is to avoid the duplicate dumps of the DPU and SWITCH
             duts_to_dump = {"dut": item.funcargs['dut_host']}

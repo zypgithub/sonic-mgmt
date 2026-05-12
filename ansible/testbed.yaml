@@ -14791,6 +14791,22 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: r-salamandra-01-bmc-dual-mgmt
+  group-name: bmc-dual-mgmt
+  topo: bmc-dual-mgmt
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r_salamandra-1
+  ptf_ip: 10.213.86.101/16
+  ptf_ipv6:
+  server: server_54
+  vm_base:
+  dut:
+    - r-salamandra-01-bmc
+  bmc_host: r-salamandra-01
+  inv_name: lab
+  auto_recover: 'False'
+  comment: BMC dual-mgmt testbed for r-salamandra-01
+
 - conf-name: salamandra-chipless-109-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -14804,6 +14820,22 @@
     - salamandra-chipless-109
   inv_name: lab
   comment: Mellanox MTL testbed
+
+- conf-name: slm-chipless-2700a1-146-bmc-dual-mgmt
+  group-name: bmc-dual-mgmt
+  topo: bmc-dual-mgmt
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-chipless-2700a1-146
+  ptf_ip: 10.213.86.101/16
+  ptf_ipv6:
+  server: server_54
+  vm_base:
+  dut:
+    - slm-chipless-2700a1-146-bmc
+  bmc_host: slm-chipless-2700a1-146
+  inv_name: lab
+  auto_recover: 'False'
+  comment: BMC dual-mgmt testbed for slm-chipless-2700a1-146
 
 - conf-name: leopard-dgx-208-ptf-any
   group-name: vm-t1

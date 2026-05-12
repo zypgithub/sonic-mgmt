@@ -94,3 +94,12 @@ def get_pytest_test_name(request):
 def is_smartswitch_platform(topology_obj):
     dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
     return 'bobcat' in dut_name
+
+
+def is_bmc_testbed(testbed):
+    """Detect BMC test flow by the testbed name.
+
+    BMC testbeds are named `<dut>-bmc-dual-mgmt` in ansible/testbed.yaml
+    """
+    testbed = testbed or ''
+    return testbed.endswith('-bmc-dual-mgmt')

@@ -620,6 +620,10 @@ def update_topology_with_cli_class(topology, request=None, is_performance=False)
     # TODO: determine player type by topology attribute, rather than alias
     nvos_setup = False
     for player_key, player_info in topology.players.items():
+        if player_key == 'bmc':
+            # BMC is a synthetic player attached by add_bmc_player; it has no noga_query_data
+            # and its cli is already set at attach time.
+            continue
         cli_type = player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
         if player_key == 'dut' or player_key == PerfConsts.LEFT_TG_ALIAS or player_key == PerfConsts.RIGHT_TG_ALIAS:
             if cli_type in NvosCliTypes.NvueCliTypes:

@@ -1,5 +1,7 @@
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from devts.infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name, create_player_entry
-from ngts.constants.constants import PlayersAliases
+from ngts.cli_wrappers.linux.linux_cli import LinuxCli
+from ngts.constants.constants import PlayersAliases, BmcDeployConstants
 import logging
 from ngts.common.util import get_specified_installed_dpu_indexes
 
@@ -34,7 +36,33 @@ def get_topology_by_setup_name_and_aliases(
             add_dpu_player(
                 topology, slow_cli, override_type, dut_alias, dut_name
             )
+    add_bmc_player(topology)
     return topology
+
+
+def add_bmc_player(topology):
+    """Attach a synthetic 'bmc' player when Noga exposes a BMC IP on the DUT.
+
+    The BMC IP comes from Noga's "BMC IP" field on the switch resource
+    (`players['dut'].attributes.noga_query_data['attributes']['Specific']['bmc_ip']`).
+    The BMC is not a Noga player on its own; we attach a player with `engine` and `cli` only
+    (no `attributes`/`noga_query_data`). `update_topology_with_cli_class` must skip 'bmc'.
+    """
+    try:
+        bmc_ip = topology.players['dut']['attributes'].noga_query_data['attributes']['Specific'].get('bmc_ip')
+    except Exception as err:
+        logger.warning(f"Failed to read bmc_ip from Noga, skip BMC player attach: {err}")
+        return
+    if not bmc_ip:
+        return
+    bmc_engine = LinuxSshEngine(bmc_ip,
+                                BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+                                BmcDeployConstants.BMC_SONIC_OS_PASSWORD)
+    topology.players['bmc'] = {
+        'engine': bmc_engine,
+        'cli': LinuxCli(bmc_engine),
+    }
+    logger.info(f"Attached BMC player at {bmc_ip}")
 
 
 def update_dut_alias(topology):

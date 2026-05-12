@@ -63,6 +63,10 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                               help="Decide the pytest marker we want to use in the CI test")
         self.add_cmd_argument("--run_test_on_dpu_only", required=False, default=False, dest="run_test_on_dpu_only",
                               help="run tests only on smartswitch dpu")
+        self.add_cmd_argument("--run_test_on_bmc_only", required=False, default="False",
+                              dest="run_test_on_bmc_only",
+                              help="run tests on BMC host instead of the switch. When 'True', override "
+                                   "--host-pattern to '{dut}-bmc' and --testbed to '{dut}-bmc-dual-mgmt'")
 
     def _parse_junit_xml(self, content):
 
@@ -279,6 +283,46 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             self.Logger.info(f"session_id :{self.session_id}")
             self.dut_name = random.choice(dpu_duts)
             self.Logger.info(f"the dpu dut is  :{self.dut_name}")
+
+        if self.run_test_on_bmc_only == "True":
+            # Run tests against the BMC host instead of the switch.
+            #
+            # By default the upstream logic above sets:
+            #     testbed       = f'{dut_name}-{sonic_topo}'      (or setup_name based for HA/dualtor)
+            #     --host-pattern = dut_name (used later when formatting the pytest cmd)
+            #
+            # For BMC tests we want both values to point to the BMC entry in ansible/testbed.yaml,
+            # regardless of which sonic_topo MARS deployed with. The overrides below collapse
+            # the two deploy flows (Canonical / Community) into the same target.
+            #
+            # Example 1 - Canonical setup (deploy uses --sonic-topo=ptf-any):
+            #   Before:
+            #     sonic_topo  = ptf-any
+            #     dut_name    = r-salamandra-01
+            #     testbed     = r-salamandra-01-ptf-any           (built from dut_name + sonic_topo)
+            #   After:
+            #     testbed     = r-salamandra-01-bmc-dual-mgmt     (matches conf-name in testbed.yaml)
+            #     dut_name    = r-salamandra-01-bmc               (matches dut: entry in testbed.yaml
+            #                                                      and host entry in ansible/inventory)
+            #
+            # Example 2 - Community setup (deploy uses --sonic-topo=bmc-dual-mgmt):
+            #   Before:
+            #     sonic_topo  = bmc-dual-mgmt
+            #     dut_name    = r-salamandra-01
+            #     testbed     = r-salamandra-01-bmc-dual-mgmt     (already correct by accident)
+            #   After:
+            #     testbed     = r-salamandra-01-bmc-dual-mgmt     (re-computed, same value)
+            #     dut_name    = r-salamandra-01-bmc               (still needs the -bmc suffix)
+            #
+            # The overridden values are consumed below when formatting the pytest command:
+            #   - `testbed`        -> --testbed {TESTBED}        (pytest selects the bmc testbed
+            #                                                     entry from ansible/testbed.yaml)
+            #   - `self.dut_name`  -> --host-pattern {DUT_NAME}  (pytest-ansible resolves it to
+            #                                                     the BMC host in ansible/inventory)
+            self.Logger.info(f"BMC mode: original testbed={testbed}, dut_name={self.dut_name}")
+            testbed = f'{self.dut_name}-bmc-dual-mgmt'
+            self.dut_name = f'{self.dut_name}-bmc'
+            self.Logger.info(f"BMC mode: overridden testbed={testbed}, dut_name={self.dut_name}")
 
         # The test script file must come first, see explaination on https://github.com/Azure/sonic-mgmt/pull/2131
         cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
