@@ -53,17 +53,22 @@
 			"3-4": "[BUFFER_PROFILE_TABLE:egress_lossless_zero_profile]",
 			"5-6": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
 			"7-11": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]"},
-		"x86_64-nvidia_sn6810_ld_simx-r0":
-			{"0-2": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
-			"3-4": "[BUFFER_PROFILE_TABLE:egress_lossless_zero_profile]",
-			"5-6": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
-			"7-11": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]"},
-		"x86_64-nvidia_sn6810_ld-r0":
+		"x86_64-nvidia_sn6600_ld_simx-r0":
 			{"0-2": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
 			"3-4": "[BUFFER_PROFILE_TABLE:egress_lossless_zero_profile]",
 			"5-6": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
 			"7-11": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]"},
 		"x86_64-nvidia_sn6600_ld-r0":
+			{"0-2": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
+			"3-4": "[BUFFER_PROFILE_TABLE:egress_lossless_zero_profile]",
+			"5-6": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
+			"7-11": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]"},
+			"x86_64-nvidia_sn6810_ld_simx-r0":
+			{"0-2": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
+			"3-4": "[BUFFER_PROFILE_TABLE:egress_lossless_zero_profile]",
+			"5-6": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
+			"7-11": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]"},
+		"x86_64-nvidia_sn6810_ld-r0":
 			{"0-2": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",
 			"3-4": "[BUFFER_PROFILE_TABLE:egress_lossless_zero_profile]",
 			"5-6": "[BUFFER_PROFILE_TABLE:egress_lossy_zero_profile]",

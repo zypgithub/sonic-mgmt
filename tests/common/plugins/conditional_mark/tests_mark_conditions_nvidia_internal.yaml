@@ -48,10 +48,11 @@ tests/nightly/runtime/test_runtime.py:
 
 tests/nightly/auto_negotition:
   skip:
-    reason: "Testcase not supported on simx"
+    reason: "Testcase not supported on simx or on sn6600_ld platform due to RM 4978794"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "https://redmine.mellanox.com/issues/4978794 and 'sn6600_ld' in platform"
 
 tests/nightly/copp/test_copp.py::test_copp_policer[LLDP_Reboot]:
   skip:
@@ -132,6 +133,10 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sd
     - "https://redmine.mellanox.com/issues/4967073"
 
 tests/nightly/show_techsupport/test_health_event.py::test_health_event_collect:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5002125"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5002125 and 'sn6600_ld' in platform"
   xfail:
     reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4967073"
     conditions:
@@ -250,7 +255,7 @@ tests/nightly/sensors/test_psu.py:
     conditions_logical_operator: or
     conditions:
     - "'_ld' in platform"
-    - "'sn6600' and 'simx' in platform"
+    - "'sn6600' in platform and 'simx' in platform"
 
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
@@ -312,6 +317,12 @@ tests/push_build_tests/general/wjh/test_wjh.py::TestBuffer::test_buffer:
     - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4815589"
 
+tests/push_build_tests/general/wjh/test_wjh.py::TestBuffer::test_buffer[buffer_latency]:
+  skip:
+    reason: "Testcase is not supported on spc6 asic generation"
+    conditions:
+    - "asic_gen == 'spc6'"
+
 tests/push_build_tests/general/doroce/test_doroce.py:
   skip:
     reason: "DoRoCE is not supported on 202411 and greater releases"
@@ -365,6 +376,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_psu_status_check:
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
     - "'sn6600' in platform and 'simx' in platform"
+    - "'sn6600_ld' in platform"
 
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_more_then_2_fan_status_wrong_check:
@@ -379,6 +391,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_more_then_2_fan_status
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
     - "'sn6600' in platform and 'simx' in platform"
+    - "'sn6600_ld' in platform"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
   skip:
@@ -392,7 +405,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
     - "'sn6600' in platform and 'simx' in platform"
-
+    - "'sn6600_ld' in platform"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_component_version_check:
   skip:
@@ -1138,7 +1151,6 @@ tacacs/test_authorization.py::test_send_remote_address:
 
 ########################## Community IGNORE END ##########################
 
-########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE START ############################
 drop_packets/test_drop_counters.py::test_no_egress_drop_on_down_link:
   skip:
     reason: "Test is skipped - simx dut port not affected by the shutdown of fanout port"
@@ -1158,6 +1170,11 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
     conditions:
     - "'simx' in platform"
 
+platform_tests/api/test_sfp.py::TestSfpApi::test_reset:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4999830"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4999830 and 'sn6600_ld' in platform"
 
 platform_tests/api/test_thermal.py:
   skip:
@@ -1195,13 +1212,13 @@ qos/test_buffer.py::test_shared_headroom_pool_configure:
   xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4997273 and ('6810_ld_simx' in platform or 'sn6600_ld' in platform)"
 
 qos/test_buffer.py::test_port_admin_down:
   xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4997273 and ('6810_ld_simx' in platform or 'sn6600_ld' in platform)"
 
 span/test_port_mirroring.py::test_mirroring_both:
   skip:
@@ -1232,3 +1249,27 @@ telemetry/test_events.py::test_events:
     reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4978323"
     conditions:
     - "https://redmine.mellanox.com/issues/4978323"
+
+tests/push_build_tests/new_hw_thermal_control:
+  skip:
+    reason: "Skipped on liquid cooled platforms - no TC control in LD system"
+    conditions:
+    - "'_ld' in platform"
+
+tests/nightly/new_hw_thermal_control:
+  skip:
+    reason: "Skipped on liquid cooled platforms - no TC control in LD system"
+    conditions:
+    - "'_ld' in platform"
+
+tests/nightly/lag/test_lag.py::test_lags_scale:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5007451 on sn6600_LD platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5007451 and 'sn6600_ld' in platform"
+
+platform_tests/test_reboot.py::test_warm_reboot:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/5008193 on sn6600_LD platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5008193 and 'sn6600_ld' in platform"

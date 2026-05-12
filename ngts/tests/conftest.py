@@ -16,7 +16,7 @@ import allure
 from dotted_dict import DottedDict
 from deepdiff import DeepDiff
 from enum import Enum
-
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import PytestConst
@@ -384,10 +384,10 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
     Check if the running config (from redis db) is modified after the test case running.
     If so, we will reload the running config after test case running.
     """
+    not_fail_config_check = False
     if request.node.get_closest_marker('skip_config_check'):
-        logger.info("****************************Skipping config_check for module: %s****************************", request.node.name)
-        yield None
-        return
+        not_fail_config_check = True
+        logger.info("**************************** Config check will run but will not fail for module: %s****************************", request.node.name)
 
     is_skynet = request.config.getoption("skynet")
     if is_skynet:
@@ -437,7 +437,7 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
         # In the test_push_gate_reboot_policer with max ports test, the config check is executed before uninstall
         # cpu-report app extension, the cpu-report config still exist in /etc/sonic/init_cfg.json,
         # so ignore cpu-report config check here.
-        if request.config.option.ports_number == "max":
+        if request.config.option.ports_number == "max" or is_redmine_issue_active([4993723])[0]:
             ignore_keys.add("FEATURE.cpu-report")
             ignore_keys.add("AUTO_TECHSUPPORT_FEATURE.cpu-report")
 
@@ -526,6 +526,9 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
                     f"{config_check_error_message}"
                 )
                 return
+            if not_fail_config_check:
+                logger.info(f"Config check failed for {module_name}, but skipping config check due to skip_config_check mark")
+                return
             raise Exception(config_check_error_message)
         else:
             logger.info("Config check passed for {}".format(module_name))
@@ -563,10 +566,12 @@ def compare_running_config(pre_running_config, cur_running_config,
         if isinstance(pre_running_config, dict):
             pre_keys = set(pre_running_config.keys())
             cur_keys = set(cur_running_config.keys())
-            if pre_keys != cur_keys:
-                for key in pre_keys ^ cur_keys:
-                    if not any(key_path_pattern_match(pattern, ".".join(current_key + [key])) for pattern in ignore_keys):
-                        return False
+            for key in pre_keys ^ cur_keys:
+                if not any(key_path_pattern_match(pattern, ".".join(current_key + [key])) for pattern in ignore_keys):
+                    return False
+                else:
+                    logger.info(f"Key {key} is ignored")
+                    pre_running_config.pop(key)
 
             for key in pre_running_config.keys():
                 # Recursively compare, appending the current key to the path

@@ -1059,7 +1059,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         else:
             if not self.is_performance_setup(setup_name):
                 with allure.step("Apply qos and dynamic buffer config"):
-                    no_dynamic = platform_params["hwsku"].upper().startswith("MELLANOX-SN5640")
+                    no_dynamic = platform_params["hwsku"].upper().startswith(SonicConst.NO_DYNAMIC_BUFFER_HWSKU_PREFIXES)
                     self.cli_obj.qos.reload_qos(no_dynamic=no_dynamic, platform_params=platform_params)
                     self.verify_dockers_are_up(dockers_list=['swss'], platform_params=platform_params)
                     self.cli_obj.qos.stop_buffermgrd(platform_params=platform_params)

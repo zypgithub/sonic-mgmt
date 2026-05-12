@@ -8,6 +8,8 @@ from ngts.helpers.arp_helper import INTERFACE_TYPE_LIST, \
 from ngts.config_templates.interfaces_config_template import InterfaceConfigTemplate
 from ngts.config_templates.route_config_template import RouteConfigTemplate
 
+PLATFORM_200G_SUPPORT_LIST = ["sn6600", "sn6600_ld", "sn6810_ld"]
+
 
 @pytest.fixture(scope='module', autouse=True)
 def pre_configure_for_arp(engines, topology_obj, interfaces):
@@ -19,9 +21,10 @@ def pre_configure_for_arp(engines, topology_obj, interfaces):
     """
     cli_obj = topology_obj.players['dut']['cli']
     dut_original_interfaces_speeds = cli_obj.interface.get_interfaces_speed([interfaces.dut_hb_2])
+    new_speed_hb = '10G' if platform_params.filtered_platform not in PLATFORM_200G_SUPPORT_LIST else '200G'
     interfaces_config_dict = {
-        'dut': [{'iface': interfaces.dut_hb_2, 'speed': '10G',
-                 'original_speed': dut_original_interfaces_speeds.get(interfaces.dut_hb_2, '10G')}
+        'dut': [{'iface': interfaces.dut_hb_2, 'speed': new_speed_hb,
+                 'original_speed': dut_original_interfaces_speeds.get(interfaces.dut_hb_2, new_speed_hb)}
                 ]
     }
     # LAG/LACP config which will be used in test

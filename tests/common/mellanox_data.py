@@ -21,7 +21,7 @@ SPC3_HWSKUS = ["ACS-MSN4700", "Mellanox-SN4700-O28", "ACS-MSN4600C", "ACS-MSN441
 SPC4_HWSKUS = ["ACS-SN5600", "Mellanox-SN5600-V256", "Mellanox-SN5600-C256S1", "Mellanox-SN5600-C224O8",
                'Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8']
 SPC5_HWSKUS = ["Mellanox-SN5640-C512S2", "Mellanox-SN5640-C448O16", "Mellanox-SN5810_LD-O128A2"]
-SPC6_HWSKUS = ["ACS-SN6600", "ACS-SN6600_LD", "Mellanox-SN6600_LD-V512C2", "Mellanox-SN6600_LD-V448P16C2", "ACS-SN6600_LD-SPIL-8", "ACS-SN6810_LD"]
+SPC6_HWSKUS = ["ACS-SN6600", "ACS-SN6600_LD", "Mellanox-SN6600_LD-V512C2", "Mellanox-SN6600_LD-V448P16C2", "ACS-SN6600_LD-SPIL-8", "ACS-SN6810_LD", "Mellanox-SN6600_LD-P128C2", "Mellanox-SN6600_LD-P64O128C2"]
 
 SWITCH_HWSKUS = SPC1_HWSKUS + SPC2_HWSKUS + SPC3_HWSKUS + SPC4_HWSKUS + SPC5_HWSKUS + SPC6_HWSKUS
 
@@ -506,6 +506,71 @@ SWITCH_MODELS = {
             "sodimm": {
                 "start": 1,
                 "number": 2
+            }
+        }
+    },
+    "x86_64-nvidia_sn6600_ld-r0": {
+        "chip_type": "spectrum6",
+        "reboot": {
+            "cold_reboot": True,
+            "fast_reboot": True,
+            "warm_reboot": True
+        },
+        "fans": {
+            "number": 0,
+            "hot_swappable": True
+        },
+        "psus": {
+            "number": 0,
+            "hot_swappable": True,
+            "capabilities": PSU_CAPABILITIES[1]
+        },
+        "cpu_pack": {
+            "number": 0
+        },
+        "cpu_cores": {
+            "number": 0
+        },
+        "leak_sensors": {
+            "number": 2
+        },
+        "ports": {
+            "number": 512
+        },
+        "thermals": {
+            "cpu_core": {
+                "start": 0,
+                "number": 1
+            },
+            "module": {
+                "start": 1,
+                "number": 65
+            },
+            "cpu_pack": {
+                "number": 1
+            },
+            "cpu_ambient": {
+                "number": 0
+            },
+            "asic_ambient": {
+                "number": 1
+            },
+            "port_ambient": {
+                "number": 0
+            },
+            "fan_ambient": {
+                "number": 0
+            },
+            "pch": {
+                "number": 0
+            },
+            "sodimm": {
+                "start": 1,
+                "number": 2
+            },
+            "pmic":{
+                "start": 1,
+                "number": 22
             }
         }
     },

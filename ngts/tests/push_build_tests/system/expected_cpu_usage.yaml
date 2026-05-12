@@ -100,11 +100,15 @@ master:
     <<: *platform_defaults
     sx_sdk: 5
     syncd: 2
+  SN5810_LD: # Chameleon
+    <<: *platform_defaults
+    sx_sdk: 5
+    syncd: 2
   SN6600: # Salamandra
     <<: *platform_defaults
     sx_sdk: 5
     syncd: 2
-  SN5810_LD: # Chameleon
+  SN6600_LD: # Salamandra SPC6
     <<: *platform_defaults
     sx_sdk: 5
     syncd: 2

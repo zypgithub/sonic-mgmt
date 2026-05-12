@@ -597,7 +597,8 @@ class SonicInstallationSteps:
             need_gen_mingraph = True
         if "air-6600" in setup_name:
             hwskus = ['Mellanox-SN6600-C512S4', 'ACS-SN6600', 'Mellanox-SN6600-V448P16S2']
-            need_gen_mingraph = True
+            if is_community(sonic_topo):
+                need_gen_mingraph = True
 
         for hwsku in hwskus:
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{hwsku}'):

@@ -111,6 +111,12 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_status_led:
 #######################################
 #####   api/test_chassis_fans.py  #####
 #######################################
+platform_tests/api/test_chassis_fans.py:
+  skip:
+    reason: "Test is skipped on Mellanox LD platform for it doesn't have Chassis Fans."
+    conditions:
+      - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
+
 platform_tests/api/test_chassis_fans.py::TestChassisFans::test_get_direction:
   xfail:
     reason: "Testcase consistently fails, raised issue to track"
@@ -291,6 +297,12 @@ platform_tests/api/test_component.py::TestComponentApi::test_update_firmware:
 #######################################
 #####   api/test_fan_drawer.py    #####
 #######################################
+platform_tests/api/test_fan_drawer.py:
+  skip:
+      reason: "Test is skipped on Mellanox LD platform for it doesn't have Fan Drawer."
+      conditions:
+        - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
+
 platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_get_maximum_consumed_power:
   skip:
     reason: "Unsupported platform API"
@@ -341,6 +353,12 @@ platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_set_fan_drawers_le
 #######################################
 ##### api/test_fan_drawer_fans.py #####
 #######################################
+platform_tests/api/test_fan_drawer_fans.py:
+  skip:
+    reason: "Test is skipped on Mellanox LD platform for it doesn't have Fan Drawer Fans."
+    conditions_logical_operator: or
+    conditions:
+      - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
 
 platform_tests/api/test_fan_drawer_fans.py::TestFanDrawerFans::test_get_model:
   skip:
@@ -430,6 +448,18 @@ platform_tests/api/test_module.py::TestModuleApi::test_reboot:
 #######################################
 #####        api/test_psu.py      #####
 #######################################
+platform_tests/api/test_psu.py:
+  skip:
+    reason: "Test is skipped on Mellanox LD platform for it doesn't have PSUs."
+    conditions:
+      - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
+
+platform_tests/api/test_psu_fans.py:
+  skip:
+    reason: "Test is skipped on Mellanox LD platform for it doesn't have PSU Fans."
+    conditions:
+      - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
+
 platform_tests/api/test_psu.py::TestPsuApi::test_fans:
   skip:
     reason: "Unsupported platform API"
@@ -999,9 +1029,11 @@ platform_tests/cli/test_show_chassis_module.py::test_show_chassis_module_status:
 #######################################
 platform_tests/cli/test_show_platform.py::test_show_platform_fan:
   skip:
-    reason: "Unsupported platform API"
+    reason: "Unsupported platform API or sn6600_ld platform for it doesn't have Fans."
+    conditions_logical_operator: or
     conditions:
       - "is_multi_asic==True and release in ['201911']"
+      - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
 
 platform_tests/cli/test_show_platform.py::test_show_platform_firmware_status:
   skip:
@@ -1016,9 +1048,10 @@ platform_tests/cli/test_show_platform.py::test_show_platform_psustatus:
       - "hwsku in ['Celestica-DX010-C32']"
       - https://github.com/sonic-net/sonic-mgmt/issues/6518
   skip:
-    reason: "Test should be skipped on DPU for it doesn't have PSUs."
+    reason: "Test should be skipped on DPU or sn6600_ld for it doesn't have PSUs."
     conditions_logical_operator: or
     conditions:
+      - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
       - "'nvda_bf' in platform"
       - "platform in ['arm64-elba-asic-flash128-r0']"
 
@@ -1029,11 +1062,12 @@ platform_tests/cli/test_show_platform.py::test_show_platform_psustatus_json:
       - "hwsku in ['Celestica-DX010-C32']"
       - https://github.com/sonic-net/sonic-mgmt/issues/6518
   skip:
-    reason: "Test should be skipped on DPU for it doesn't have PSUs."
+    reason: "Test should be skipped on DPU or sn6600_ld for it doesn't have PSUs."
     conditions_logical_operator: or
     conditions:
       - "'nvda_bf' in platform"
       - "platform in ['arm64-elba-asic-flash128-r0']"
+      - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
 
 platform_tests/cli/test_show_platform.py::test_show_platform_syseeprom:
   xfail:
@@ -1187,6 +1221,14 @@ platform_tests/mgmt/test_mgmt_flap.py::test_mgmt_interface_stress_flap_console:
       - "asic_type not in ['cisco-8000']"
       - "topo_type not in ['t2']"
       - "eth_mgmt_ctrl_available==False"
+
+platform_tests/mellanox/test_psu_power_threshold.py:
+  skip:
+    reason: "Test is skipped on Mellanox LD platform for it doesn't have PSU Power Threshold."
+    conditions_logical_operator: or
+    conditions:
+      - "asic_type in ['mellanox'] and 'sn6600_ld' in platform"
+
 
 #######################################
 #####            sfp              #####

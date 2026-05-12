@@ -14651,8 +14651,8 @@
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-salamandra-1
-  ptf_ip: 10.215.13.189/16
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
   ptf_ipv6:
   server: server_54
   vm_base: VM0000
@@ -14687,3 +14687,17 @@
   dut:
      - leopard-dgx-208
   comment: NvidiaAir testbed
+
+- conf-name: slm-60-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-60
+  ptf_ip: 10.215.13.190/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - slm-60
+  inv_name: lab
+  comment: Mellanox MTL testbed
