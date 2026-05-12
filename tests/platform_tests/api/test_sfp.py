@@ -321,10 +321,17 @@ class TestSfpApi(PlatformApiTestBase):
     #
     def is_xcvr_optical(self, xcvr_info_dict):
         """Returns True if transceiver is optical, False if copper (DAC)"""
-        # For QSFP-DD specification compliance will return type as passive or active
-        if xcvr_info_dict["type_abbrv_name"] in ["QSFP-DD", "OSFP-8X", "QSFP+C", "BP", "SFP"]:
-            if xcvr_info_dict["specification_compliance"] == "Passive Copper Cable" or \
-                    xcvr_info_dict["specification_compliance"] == "passive_copper_media_interface":
+        type_name = xcvr_info_dict["type_abbrv_name"]
+        spec = xcvr_info_dict["specification_compliance"]
+
+        # QSFP-DD/OSFP-8X/QSFP+C/BP report specification_compliance as a plain string.
+        if type_name in ["QSFP-DD", "OSFP-8X", "QSFP+C", "BP"]:
+            return spec not in ("Passive Copper Cable", "passive_copper_media_interface")
+
+        # SFP may report specification_compliance either as a plain string
+        # (e.g. Cisco-console SFP) or as a dict-formatted string (standard SFP/SFP+ DAC).
+        if type_name == "SFP":
+            if spec in ("Passive Copper Cable", "passive_copper_media_interface"):
                 return False
         elif xcvr_info_dict["type"] == "CPO":
             return True
