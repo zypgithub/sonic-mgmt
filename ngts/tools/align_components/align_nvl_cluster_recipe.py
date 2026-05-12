@@ -65,7 +65,8 @@ def test_align_cluster_recipe(setup_name, fw_versions_json_file, ansible_invento
                     ansible_inventory_file,
                     ansible_machine,
                     username,
-                    password
+                    password,
+                    setup_name=setup_name,
                 )
 
                 logger.info(f"Playbook '{playbook_key}' completed successfully\n")
@@ -82,7 +83,8 @@ def test_align_cluster_recipe(setup_name, fw_versions_json_file, ansible_invento
     logger.info("=" * 80 + "\n")
 
 
-def fetch_and_install(playbook_key, json_dict, inventory_file, ansible_machine, username, password):
+def fetch_and_install(playbook_key, json_dict, inventory_file, ansible_machine, username, password,
+                      setup_name=None):
     """
     NEW IMPLEMENTATION: Download components and run playbook.
 
@@ -96,6 +98,7 @@ def fetch_and_install(playbook_key, json_dict, inventory_file, ansible_machine, 
         ansible_machine: Ansible server hostname/IP
         username: SSH username
         password: SSH password
+        setup_name: Optional lab/setup id (selects per-setup playbook variants when configured)
     """
     downloaded_files = []
     component_paths = {}
@@ -212,7 +215,8 @@ fi
                 component_paths,
                 ansible_machine=ansible_machine,
                 username=username,
-                password=password
+                password=password,
+                setup_name=setup_name,
             )
 
             assert status, f"Playbook '{playbook_key}' failed - Check logs"
