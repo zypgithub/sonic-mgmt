@@ -469,6 +469,7 @@ mlx-2700a1-45      ansible_host=10.188.52.154 ansible_hostv6="fe80::e42:a1ff:fe4
 mlx-2700a1-46      ansible_host=10.188.52.201 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mlx-2201m-01      ansible_host=10.112.171.216 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 leopard-dgx-208      ansible_host=10.220.12.208 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-SN4700D" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
+slm-30      ansible_host=10.220.13.30 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-SN6600_LD-SPIL-8" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 
 [sonic_sn2700_40]
 str-msn2700-01    ansible_host=10.251.0.188 serial="MT1234X56789" base_mac="24:8a:07:12:34:56" syseeprom_info="{'0xFE': '0xFBA1E964', '0x28': 'x86_64-mlnx_x86-r0', '0x29': '2016.11-5.1.0008-9600', '0x22': 'MSN2700-CS2FO', '0x23': 'MT1234X56789', '0x21': 'MSN2700', '0x26': '0', '0x24': '24:8a:07:12:34:56', '0x25': '12/07/2016', '0x2B': 'Mellanox', '0x2A': '128'}"

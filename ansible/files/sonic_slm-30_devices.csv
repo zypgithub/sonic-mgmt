@@ -1,0 +1,2 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+slm-30,10.220.13.30/22,ACS-SN6600_LD-SPIL-8,DevSonic,,sonic
