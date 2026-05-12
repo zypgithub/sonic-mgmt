@@ -1,14 +1,17 @@
-from dotted_dict import DottedDict
-from typing import Optional
+from __future__ import annotations
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from dotted_dict import DottedDict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 
 class EnginesT(DottedDict):
     dut: LinuxSshEngine
-    ha: Optional[object]
-    ha_attr: Optional[object]
-    hb: Optional[object]
-    hb_attr: Optional[object]
-    server: Optional[object]
-    sonic_mgmt: Optional[LinuxSshEngine]
+    ha: object | None
+    ha_attr: object | None
+    hb: object | None
+    hb_attr: object | None
+    server: object | None
+    sonic_mgmt: LinuxSshEngine | None

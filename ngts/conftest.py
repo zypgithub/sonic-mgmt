@@ -8,7 +8,6 @@ NOTE: Add here only fixtures and methods that can be used for canonical and comm
 if your methods only apply for canonical setups please add them in ngts/tests/conftest.py
 
 """
-from typing import Callable, List
 import json
 import logging
 import os
@@ -42,8 +41,9 @@ from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.scripts.sonic_deploy.sonic_only_methods import detect_asic_count, SonicInstallationSteps
 
-logger = logging.getLogger()
-CleanUpT = Callable[[Callable[[], None]], None]
+from ngts.ngts_types import CleanUpT
+
+logger = logging.getLogger(__name__)
 
 
 def _disable_logging_root_handlers():
@@ -51,7 +51,7 @@ def _disable_logging_root_handlers():
     Disable logging root handlers if pytest is running in live mode (-s / --capture=no).
     """
     root, has_live_hdlr = logging.getLogger(), False
-    stream_hdlrs: List[logging.StreamHandler] = []
+    stream_hdlrs: list[logging.StreamHandler] = []
 
     from _pytest.logging import _LiveLoggingStreamHandler
 
@@ -536,7 +536,8 @@ def initial_topology_obj(setup_name, request, is_performance, is_ipv6):
 
     with allure.step('Cleaning-up the topology object'):
         for player_name, player_attributes in topology.players.items():
-            player_attributes['engine'].disconnect()
+            if disconnect := getattr(player_attributes['engine'], 'disconnect', None):
+                disconnect()
 
 
 @pytest.fixture(scope='session')
@@ -1027,7 +1028,7 @@ def register_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
 
 
 @pytest.fixture
-def unregister_cleanup(request: pytest.FixtureRequest):
+def unregister_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
     """
     Fixture for removing a finalizer from the request
     :param request: pytest builtin
@@ -1052,48 +1053,6 @@ def unregister_cleanup(request: pytest.FixtureRequest):
         except ValueError:  # the function pointer is not registered in the stack
             pass
     return _unregister_cleanup
-
-
-@pytest.fixture
-def register_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
-    """
-    Fixture for registering cleanup functions
-    :param request: pytest builtin
-    :return: function for registering cleanup
-
-    Usage:
-    ```python
-    def my_cleanup():
-        print("cleanup")
-
-    def test_my_test():
-        # do something
-        register_cleanup(my_cleanup)
-        # do something
-    ```
-    for more advanced usage, consider using the `partial` function
-
-    Example:
-    ```python
-    from functools import partial
-
-    def my_cleanup(engines):
-        print("cleanup")
-
-    def test_my_test():
-        # do something
-        register_cleanup(partial(my_cleanup, engines))
-        # do something
-    ```
-    """
-    def _register(fn):
-        # Wrap the cleanup function with an allure step
-        def wrapped_fn():
-            with allure.step("Cleanup stage"):
-                fn()
-
-        request.addfinalizer(wrapped_fn)
-    return _register
 
 
 @pytest.fixture(scope='session')
@@ -1113,31 +1072,3 @@ def is_ib_router(request, engines):
     :return: True or False, if run is ib_router type
     """
     return request.config.getoption('--ib_router')
-
-
-@pytest.fixture
-def unregister_cleanup(request: pytest.FixtureRequest):
-    """
-    Fixture for removing a finalizer from the request
-    :param request: pytest builtin
-    :return: function for removing a finalizer
-
-    Usage:
-    ```python
-    def my_cleanup():
-        ...
-
-    def test_my_test(register_cleanup, unregister_cleanup):
-        # do something
-        register_cleanup(my_cleanup)
-        # do something
-        unregister_cleanup(my_cleanup)
-        # do something
-    ```
-    """
-    def _unregister_cleanup(cleanup_func):
-        try:
-            request.session._setupstate.stack[request.node][0].remove(cleanup_func)
-        except ValueError:  # the function pointer is not registered in the stack
-            pass
-    return _unregister_cleanup

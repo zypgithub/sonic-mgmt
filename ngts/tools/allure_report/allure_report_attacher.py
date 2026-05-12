@@ -11,6 +11,25 @@ FUNCTION_SCOPE = "function scope"
 FIXTURE_NAME_SCOPE_FORMAT = "{} {} scope"
 LINE_BREAK = '\n'
 
+logger = logging.getLogger(__name__)
+
+# TODO: temporary workaround. Replace with a proper mixin that adds the
+# allure command-tracking interface to every engine type (PexpectSerialEngine,
+# AirWebSocketSerialEngine, ...) instead of guarding at every call site.
+_ALLURE_TRACKING_PROBE_ATTR = 'get_allure_attached_cmds'
+
+
+def _supports_allure_tracking(player_info):
+    """
+    Return True if the player's engine implements the allure command-tracking
+    interface (currently provided by ProxySshEngine). Engines like
+    PexpectSerialEngine do not yet implement it and must be skipped to avoid
+    AttributeError during pytest teardown hooks.
+    """
+    cli = player_info.get('cli') if hasattr(player_info, 'get') else player_info['cli']
+    engine = getattr(cli, 'engine', None)
+    return engine is not None and hasattr(engine, _ALLURE_TRACKING_PROBE_ATTR)
+
 
 def allure_attach(player_alias, cmds):
     """
@@ -27,6 +46,8 @@ def collect_stored_cmds_then_attach_to_allure_report(topology_obj):
     :param topology_obj: topology_obj fixture
     """
     for player, player_info in topology_obj.players.items():
+        if not _supports_allure_tracking(player_info):
+            continue
         player_info['cli'].engine.remove_null_cmd_fixtures(FIXTURE_IDENTIFIER)
         if player_info['cli'].engine.get_allure_attached_cmds():
             allure_attach(player, LINE_BREAK.join(player_info['cli'].engine.get_allure_attached_cmds()))
@@ -38,7 +59,7 @@ def enable_record_cmds(topology_obj):
     :param topology_obj: topology_obj fixture
     """
     for _, player_info in topology_obj.players.items():
-        if 'cli' in player_info.keys():
+        if 'cli' in player_info.keys() and _supports_allure_tracking(player_info):
             player_info['cli'].engine.record_cmd = True
 
 
@@ -52,6 +73,8 @@ def add_fixture_name(topology_obj, fixture_name, fixture_scope):
     """
     fixture_name_format = FIXTURE_NAME_FORMAT.format(fixture_name, fixture_scope)
     for _, player_info in topology_obj.players.items():
+        if not _supports_allure_tracking(player_info):
+            continue
         player_info['cli'].engine.update_allure_commands(fixture_name_format)
 
 
@@ -61,6 +84,8 @@ def add_fixture_end_tag(topology_obj):
     :param topology_obj: topology_obj fixture
     """
     for _, player_info in topology_obj.players.items():
+        if not _supports_allure_tracking(player_info):
+            continue
         if FIXTURE_IDENTIFIER in LINE_BREAK.join(player_info['cli'].engine.get_allure_attached_cmds()):
             player_info['cli'].engine.update_allure_commands(FIXTURE_END)
 
@@ -73,6 +98,8 @@ def clean_stored_cmds_with_fixture_scope(topology_obj, fixture_name, fixture_sco
     :param fixture_scope: fixture scope value, such as 'function'
     """
     for player, player_info in topology_obj.players.items():
+        if not _supports_allure_tracking(player_info):
+            continue
         if FIXTURE_NAME_SCOPE_FORMAT.format(fixture_name, fixture_scope) in LINE_BREAK.join(player_info['cli'].engine.get_allure_attached_cmds()):
             player_info['cli'].engine.clean_allure_attached_cmds(FIXTURE_IDENTIFIER, FIXTURE_NAME_SCOPE_FORMAT.format(fixture_name, fixture_scope), FIXTURE_END)
 
@@ -83,6 +110,8 @@ def clean_stored_cmds_with_fixture_scope_list(topology_obj):
     :param topology_obj: topology_obj fixture
     """
     for _, player_info in topology_obj.players.items():
+        if not _supports_allure_tracking(player_info):
+            continue
         fixture_name_scope_list = player_info['cli'].engine.get_allure_fixture_name_scope_list()
         if fixture_name_scope_list:
             for fixture_name_scope in fixture_name_scope_list:
@@ -103,5 +132,7 @@ def update_fixture_scope_list(topology_obj, fixture_name, fixture_scope):
     :param fixture_scope: fixture scope value
     """
     for _, player_info in topology_obj.players.items():
+        if not _supports_allure_tracking(player_info):
+            continue
         if fixture_scope not in player_info['cli'].engine.get_allure_fixture_name_scope_list():
             player_info['cli'].engine.update_allure_fixture_name_scope_list(FIXTURE_NAME_SCOPE_FORMAT.format(fixture_name, fixture_scope))
