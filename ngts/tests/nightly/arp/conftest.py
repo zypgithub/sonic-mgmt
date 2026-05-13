@@ -12,12 +12,13 @@ PLATFORM_200G_SUPPORT_LIST = ["sn6600", "sn6600_ld", "sn6810_ld"]
 
 
 @pytest.fixture(scope='module', autouse=True)
-def pre_configure_for_arp(engines, topology_obj, interfaces):
+def pre_configure_for_arp(engines, topology_obj, interfaces, platform_params):
     """
     Pytest fixture which are doing configuration for test case based for arp test
     :param engines: engines object fixture
     :param topology_obj: topology object fixture
     :param interfaces: topology object fixture
+    :param platform_params: platform_params object fixture
     """
     cli_obj = topology_obj.players['dut']['cli']
     dut_original_interfaces_speeds = cli_obj.interface.get_interfaces_speed([interfaces.dut_hb_2])
