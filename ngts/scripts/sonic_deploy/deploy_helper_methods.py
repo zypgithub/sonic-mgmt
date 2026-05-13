@@ -816,6 +816,13 @@ class DeployOrchestrator:
 
         # Phase 5: DPU installation
         if self.context.deploy_dpu:
+            # TODO: WA for RM#4946685, power cycle duts
+            with allure.step("Power cycle r-bobcat-01/r-bobcat-03"):
+                for dut in self.context.setup_info["duts"]:
+                    if dut["dut_name"] == "r-bobcat-01" or dut["dut_name"] == "r-bobcat-03":
+                        dut["cli_obj"].remote_reboot(
+                            self.context.topology_obj,
+                            dut_alias=dut["dut_alias"])
             # install DPUs
             self.execute_dpu_image_installation()
             self.execute_dpu_post_installation_steps()
