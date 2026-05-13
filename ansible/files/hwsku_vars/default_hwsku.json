@@ -253,5 +253,13 @@
     "r-bison-22_setup": {
         "default_hwsku": "Mellanox-SN5640-C512S2",
         "support_hwsku": ["Mellanox-SN5640-C448O16", "Mellanox-SN5640-C512S2"]
+    },
+    "slm-180_setup": {
+        "default_hwsku": "Mellanox-SN6600_LD-P128C2",
+        "support_hwsku": ["Mellanox-SN6600_LD-P128C2"]
+    },
+    "slm-16_setup": {
+        "default_hwsku": "Mellanox-SN6600_LD-P128C2",
+        "support_hwsku": ["Mellanox-SN6600_LD-P128C2"]
     }
 }
