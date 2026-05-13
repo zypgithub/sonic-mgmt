@@ -13,6 +13,18 @@ scripts/test_verify_secure_boot_enabled.py:
     - "'sn4' in platform"
     - "'simx' in platform"
 
+scripts/sonic_deploy/test_deploy_and_upgrade.py::test_fan_status_check:
+  skip:
+    reason: "Testcase skipped on liquid cooling platforms"
+    conditions:
+    - "'sn6600_ld' in platform"
+
+scripts/sonic_deploy/test_deploy_and_upgrade.py::test_more_then_2_fan_status_wrong_check:
+  skip:
+    reason: "Testcase skipped on liquid cooling platforms"
+    conditions:
+    - "'sn6600_ld' in platform"
+
 tests/nightly/cpld/test_cpld.py:
   skip:
     reason: "Testcase skipped on simx platforms"
