@@ -714,6 +714,13 @@ platform_tests/api/test_pdb.py::TestPdbApi::test_temperature:
     conditions:
     - "'sn6810_ld_simx' in platform"
 
+platform_tests/api/test_pdb.py::TestPdbApi::test_get_name:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5028840 on sn6600_ld platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5028840 and 'sn6600_ld' in platform"
+
+
 platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
   skip:
     reason: "The test is not supported on the bluefield DPU."
@@ -749,6 +756,13 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_sfps:
     reason: "sfp test should be updated according to the CPO software control design implementation on sn5810_ld platform"
     conditions:
     - "'sn5810_ld' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_pdbs:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5028840 on sn6600_ld platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5028840 and 'sn6600_ld' in platform"
+
 
 platform_tests/api/test_chassis_fans.py:
   skip:
