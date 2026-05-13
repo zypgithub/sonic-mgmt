@@ -6,115 +6,115 @@ topology:
       vm_offset: 0
     ARISTA09T0:
       vlans:
-        - 8
+        - 4
       vm_offset: 1
     ARISTA17T0:
       vlans:
-        - 16
+        - 8
       vm_offset: 2
     ARISTA25T0:
       vlans:
-        - 24
+        - 12
       vm_offset: 3
     ARISTA33T0:
       vlans:
-        - 32
+        - 16
       vm_offset: 4
     ARISTA41T0:
       vlans:
-        - 40
+        - 20
       vm_offset: 5
     ARISTA01T2:
       vlans:
-        - 48
+        - 24
       vm_offset: 6
     ARISTA49T0:
       vlans:
-        - 50
+        - 25
       vm_offset: 7
     ARISTA57T0:
       vlans:
-        - 60
+        - 30
       vm_offset: 8
     ARISTA65T0:
       vlans:
-        - 68
+        - 34
       vm_offset: 9
     ARISTA73T0:
       vlans:
-        - 76
+        - 38
       vm_offset: 10
     ARISTA81T0:
       vlans:
-        - 84
+        - 42
       vm_offset: 11
     ARISTA89T0:
       vlans:
-        - 92
+        - 46
       vm_offset: 12
     ARISTA97T0:
       vlans:
-        - 100
+        - 50
       vm_offset: 13
     ARISTA105T0:
       vlans:
-        - 108
+        - 54
       vm_offset: 14
     ARISTA113T0:
       vlans:
-        - 116
+        - 58
       vm_offset: 15
     ARISTA121T0:
       vlans:
-        - 124
+        - 62
       vm_offset: 16
     ARISTA129T0:
       vlans:
-        - 132
+        - 66
       vm_offset: 17
     ARISTA137T0:
       vlans:
-        - 140
+        - 70
       vm_offset: 18
     ARISTA145T0:
       vlans:
-        - 148
+        - 78
       vm_offset: 19
     ARISTA153T0:
       vlans:
-        - 156
+        - 82
       vm_offset: 20
     ARISTA161T0:
       vlans:
-        - 166
+        - 87
       vm_offset: 21
     ARISTA169T0:
       vlans:
-        - 176
+        - 92
       vm_offset: 22
     ARISTA177T0:
       vlans:
-        - 184
+        - 96
       vm_offset: 23
     ARISTA185T0:
       vlans:
-        - 192
+        - 100
       vm_offset: 24
     ARISTA193T0:
       vlans:
-        - 200
+        - 104
       vm_offset: 25
     ARISTA201T0:
       vlans:
-        - 208
+        - 108
       vm_offset: 26
     ARISTA209T0:
       vlans:
-        - 216
+        - 112
       vm_offset: 27
     ARISTA217T0:
       vlans:
-        - 224
+        - 116
       vm_offset: 28
 
 configuration_properties:
@@ -742,3 +742,4 @@ configuration:
     bp_interface:
       ipv4: 10.10.246.226/22
       ipv6: fc0a::e2/64
+
