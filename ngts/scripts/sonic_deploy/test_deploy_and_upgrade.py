@@ -108,7 +108,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
 
 if 'base-version=/auto/sw_system_release/sonic' in ' '.join(sys.argv) and 'target_cli_type' not in ' '.join(sys.argv):
     from ngts.tests.nightly.sanity_checker.test_sanity_checker import (
-        platform_json_data, is_in_deploy_image_flow,
+        platform_json_data, is_in_deploy_image_flow, skip_for_liquid_cooling_platform,
         clear_file_inlcude_failed_sanity_check_case, test_device_asic_check,
         test_cable_connection_for_canonical_check, test_more_then_2_fan_status_wrong_check,
         test_psu_status_check, test_fan_status_check, test_cpld_version_check,

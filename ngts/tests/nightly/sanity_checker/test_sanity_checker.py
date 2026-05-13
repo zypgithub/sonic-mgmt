@@ -84,6 +84,12 @@ def platform_json_data(topology_obj):
 
 
 @pytest.fixture(scope='function')
+def skip_for_liquid_cooling_platform(platform_params):
+    if '_ld' in platform_params.platform:
+        pytest.skip("Skip the testcases on liquid cooling platforms")
+
+
+@pytest.fixture(scope='function')
 def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
     """
     Pytest fixture which is enabling lldp on fanout and disable it when teardown
@@ -320,7 +326,7 @@ def test_cable_connection_for_canonical_check(topology_obj, sonic_topo):
 @pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_fan_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow):
+def test_fan_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow, skip_for_liquid_cooling_platform):
     """
     This test is verify that the fan status is ok.
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
@@ -352,7 +358,7 @@ def test_fan_status_check(platform_params, topology_obj, platform_json_data, req
 @pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_more_then_2_fan_status_wrong_check(topology_obj):
+def test_more_then_2_fan_status_wrong_check(topology_obj, skip_for_liquid_cooling_platform):
     """
     This test is verify more than 2 fan status are not ok
     If case fail, the consequent regression steps will be stopped by mars
