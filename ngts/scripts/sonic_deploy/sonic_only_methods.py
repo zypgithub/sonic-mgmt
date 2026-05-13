@@ -7,6 +7,7 @@ import allure
 import pytest
 import sys
 import time
+import yaml
 from pathlib import Path
 
 from ngts.helpers import json_file_helper
@@ -427,6 +428,8 @@ class SonicInstallationSteps:
               "ptf_imagetag={PTF_TAG} -vvvvv".format(SWITCH=dut_name,
                                                      TOPO=sonic_topo, PTF_TAG=ptf_tag, NEIGHBOR_TYPE=neighbor_type,
                                                      HWSKU=hwsku)
+        if SonicInstallationSteps._is_use_converged_peers(setup_name, dut_name, sonic_topo):
+            cmd += " -e max_fp_num=127"
         if parallel:
             cmd += " --parallel"
         return cmd
@@ -1071,6 +1074,15 @@ class SonicInstallationSteps:
             assert version >= lowest_valid_version, \
                 'Current hw-management version {} is lower than the required version {}.'.format(
                     version, lowest_valid_version)
+
+    @staticmethod
+    def _is_use_converged_peers(setup_name, dut_name, sonic_topo):
+        conf_name = setup_name if (is_dualtor_topo(sonic_topo) or setup_name.endswith("-ha")) else f"{dut_name}-{sonic_topo}"
+        testbed_yaml = os.path.join(os.path.dirname(__file__), "../../../ansible/testbed.yaml")
+        with open(testbed_yaml, "r") as f:
+            tb = yaml.safe_load(f) or []
+        entry = next((x for x in tb if x.get("conf-name") == conf_name), None)
+        return bool(entry and entry.get("use_converged_peers", False))
 
 
 def is_community(sonic_topo):

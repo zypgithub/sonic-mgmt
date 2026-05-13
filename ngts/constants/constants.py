@@ -1442,7 +1442,9 @@ class SonicDeployConstants:
     ADD_TOPO_TIMEOUT_SCALE = 14400
     REMOVE_TOPO_TIMEOUT = 600
     REMOVE_TOPO_TIMEOUT_SCALE = 3600
-    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't1-isolated-d448u15-lag', 't0-isolated-d2u510s2', 't1-isolated-d510u2', 't1-isolated-v6-d56u1-lag']
+    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't1-isolated-d448u15-lag',
+                             't0-isolated-d2u510s2', 't1-isolated-d510u2', 't1-isolated-v6-d56u1-lag',
+                             't0-isolated-d256u256s2', 't1-isolated-d508u1s2', 't2-isolated-d128s2']
     # 'slm-' DUTs are excluded from gen-mg in start_community_background_threads by default.
     # BMC setups (e.g. bmc-dual-mgmt) still need their minigraph generated, so list the
     # 'slm-' DUT names that must run gen-mg here. Value is the DUT name used to build the

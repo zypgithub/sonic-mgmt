@@ -3678,6 +3678,7 @@
     - r-bison-06
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-06-t1
   group-name: vm-t1
@@ -3874,6 +3875,7 @@
     - r-bison-08
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-08-t1
   group-name: vm-t1
@@ -4056,6 +4058,7 @@
     - r-bison-16
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-16-t1-isolated-d28u1
   group-name: vm-t1
@@ -4196,6 +4199,7 @@
     - r-bison-18
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-18-t0-isolated-d2u510s2
   group-name: vm-t1
@@ -4392,6 +4396,7 @@
   - r-bison-20
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-20-t0-isolated-d2u510s2
   group-name: vm-t1
