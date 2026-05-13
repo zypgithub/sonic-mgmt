@@ -119,5 +119,6 @@
       include_tasks:
         sonic/fanout_sonic_202511.yml
       when: dry_run is not defined and incremental is not defined
-  when: '202511' in fanout_sonic_version['build_version']  and
+  when: >
+    '202511' in fanout_sonic_version['build_version']  and
     not is_cisco_env
