@@ -429,7 +429,11 @@ class BasePacketTrimming:
                 # Send packets that get trimmed and verify they are dropped at the blocked trim queue
                 counter_kwargs = self.get_verify_trimmed_counter_packet_kwargs(duthost, ptfadapter,
                                                                                {**trim_counter_params})
-                counter_kwargs.update({'expect_packets': False})
+                # TH5 cannot completely block egress queues, so trimmed packets will leak out of the trim queues.
+                if duthost.get_asic_name() == "th5":
+                    counter_kwargs.update({'expect_packets': "skip"})
+                else:
+                    counter_kwargs.update({'expect_packets': False})
                 verify_trimmed_packet(**counter_kwargs)
 
                 # Get the TrimDrop counters on port level
