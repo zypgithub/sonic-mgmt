@@ -10,5 +10,5 @@ if [ -z "${NGTS_VERSION}" ]; then
     exit 1
 fi
 
-pip3 install --ignore-installed "devts[full]@git+https://svc_sonic_ver_bot:${GERRIT_API_KEY}@git-nbu-sw.nvidia.com/r/a/devts@${NGTS_VERSION}"
-python3 -m scripts.air_simulation_bringup "$@"
+pip3 install --ignore-installed "devts[air-start-sim]@git+https://svc_sonic_ver_bot:${GERRIT_API_KEY}@git-nbu-sw.nvidia.com/r/a/devts@${NGTS_VERSION}"
+python3 -m devts.scripts.air_simulation_bringup "$@"
