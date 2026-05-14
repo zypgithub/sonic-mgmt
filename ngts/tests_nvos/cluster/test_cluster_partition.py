@@ -49,13 +49,15 @@ def test_cluster_partition(engines, dut_engines, devices, random_api, has_loopbo
                                                              standalone_system=standalone_system, engine=engines.dut)
 
         with allure.step("Show All Partitions - at the beginning its just the default partition"):
-            for _ in range(3):
-                initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
-                                                                                       output_format=output_format).get_returned_value()
-                if initial_partition_output:
-                    break
-                logger.info("Trying after 2 seconds...")
-                time.sleep(2)
+            time.sleep(2)
+            if is_bug_active(4998867):
+                for _ in range(3):
+                    initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                           output_format=output_format).get_returned_value()
+                    if initial_partition_output:
+                        break
+                    logger.info("Trying after 2 seconds...")
+                    time.sleep(3)
 
             partition_ids = list(initial_partition_output.keys())
             default_partition_id = partition_ids[0]
@@ -157,8 +159,16 @@ def test_cluster_partition_bad_flow(engines, dut_engines, devices, random_api, h
                                                              standalone_system=standalone_system, engine=engines.dut)
 
         with allure.step("Show All Partitions - at the beginning its just the default partition"):
-            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
-                                                                                   output_format=output_format).get_returned_value()
+            time.sleep(2)
+            if is_bug_active(4998867):
+                for _ in range(3):
+                    initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                           output_format=output_format).get_returned_value()
+                    if initial_partition_output:
+                        break
+                    logger.info("Trying after 2 seconds...")
+                    time.sleep(3)
+
             partition_ids = list(initial_partition_output.keys())
             default_partition_id = partition_ids[0]
             default_partition_type = initial_partition_output[default_partition_id]['partition-type']
@@ -243,7 +253,7 @@ def test_cluster_partition_bad_flow(engines, dut_engines, devices, random_api, h
                 logger.info("Wait for 2 seconds until partitions are updated")
                 time.sleep(2)
 
-                if is_bug_active(4497969) and random_api == 'NVUE':
+                if is_bug_active(4497969):
                     err_msg = "Error: Invalid Command"
                     assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 else:
@@ -271,7 +281,7 @@ def test_cluster_partition_bad_flow(engines, dut_engines, devices, random_api, h
                 logger.info("Wait for 2 seconds until partitions are updated")
                 time.sleep(2)
 
-                err_msg = "Valid range for mcast-limit is 0 - 1024" if random_api == 'NVUE' else "1025 is greater than the maximum of 1024"
+                err_msg = "Valid range for mcast-limit is 0 - 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format, standalone_system, has_loopbox, is_simx)

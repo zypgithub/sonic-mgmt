@@ -76,9 +76,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
 
         config_files_paths = get_current_config_files_paths(sdn, devices)
         with allure.step("Wait for chassis_mapping to be populated by nmx-c before baseline snapshot"):
-            _wait_until_chassis_mapping_file_has_content(
-                engines, config_files_paths[ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING]
-            )
+            config_files_paths[ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING] = _wait_until_chassis_mapping_file_has_content(engines, sdn)
 
         for file_type, file_path in config_files_paths.items():
             initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
@@ -163,12 +161,18 @@ def get_current_config_files_paths(sdn, devices):
     return files_dict
 
 
-def _wait_until_chassis_mapping_file_has_content(engines, file_path):
+def _wait_until_chassis_mapping_file_has_content(engines, sdn):
     """Wait until chassis_mapping file is updated"""
     for _ in range(20):
-        content = engines.dut.run_cmd("sudo cat {}".format(file_path))
+        generate_output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING].action_generate_sdn()
+        installed_file = ClusterTools.get_generated_file_name(generate_output.returned_value, 'config')
+        output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING].files.show(output_format=OutputFormat.json),
+                                                             output_format=OutputFormat.json).get_returned_value()
+        current_installed_config_path = output[installed_file]['path']
+        content = engines.dut.run_cmd(f"sudo cat {current_installed_config_path}")
         lines = [line.strip() for line in content.strip().split("\n") if line.strip()]
         if lines:
-            return
+            return current_installed_config_path
         logger.info("Sleeping for 5 seconds")
         time.sleep(5)
+    return ''

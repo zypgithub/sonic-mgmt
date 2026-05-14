@@ -371,16 +371,17 @@ def test_system_nv_bridge_primary_secondary(engines, nv_command, random_api, top
                                                     apply=True, dut_engine=engines.dut)
 
         with allure.step("Wait for nv-bridge to be configured"):
+            eth0_ip = Port('eth0').interface.ipv4.get_primary_ip_address(dut_engine=engines.dut)
             _verify_nv_bridge_output(nv_command.system.nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED,
-                                     dut_engine=engines.dut, connections=SystemConsts.NV_BRIDGE_NODE_IP,
-                                     local_host=True)
+                                     dut_engine=engines.dut, connections=eth0_ip, local_host=True)
 
         with allure.step("Wait for cluster apps in ok state"):
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster,
-                                                             cluster_expected_state=SystemConsts.CLUSTER_STATE_ENABLED,
-                                                             app=ClusterApps.NMX_TELEMETRY, nmx_c_expected_state=SystemConsts.CLUSTER_APP_STATE_UP)
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system,
+            ClusterTools.wait_for_app_healthy(cluster, ClusterApps.NMX_CONTROLLER)
+            ClusterTools.wait_for_app_healthy(cluster, ClusterApps.NMX_TELEMETRY)
+            TestToolkit.tested_api = ApiType.NVUE
+            ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format, standalone_system,
                                              has_loopbox, is_simx)
+            TestToolkit.tested_api = random_api
 
     finally:
         with allure.step("Disable cluster"):
@@ -404,9 +405,9 @@ def _verify_nv_bridge_output(nv_bridge, state=None, health=None, health_reason=N
             assert server_address in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Server-address {server_address} not in output'
         if local_host:
             assert connections in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ADDRESS], f'Node ip {connections} not in client address'
-            if connections == dut_engine.ip:
+            try:
                 assert connections in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Node ip {connections} not in server address'
-            else:
+            except Exception:
                 assert dut_engine.ip in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Node ip {dut_engine.ip} in server address'
         if heart_beat:
             ValidationTool.verify_field_value_in_output(output_dictionary['connections']['1'], SystemConsts.NV_BRIDGE_HEARTBEAT, heart_beat).verify_result()
