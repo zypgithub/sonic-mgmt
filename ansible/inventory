@@ -1848,6 +1848,10 @@ slm-30-ptf-any ansible_host=slm-30  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD-
 slm-30 ansible_host=slm-30  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD-SPIL-8             serial_console="ssh -l rcon:7014 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A8:9F:02" serial="MT2617606EYA" model="920-9N62F-00LI-GC0" syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606EYA', '0x24': u'F4:20:4D:A8:9F:02', '0x25': u'04/28/2026 14:05:59', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x34336659'}"
 slm-30      ansible_host=10.220.13.30 ansible_hostv6="" sonic_version=v2 hwsku="ACS-SN6600_LD-SPIL-8" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
 
+slm-32-ptf-any ansible_host=slm-32  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7017 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A9:1C:D8" serial="MT2617606F03" model="920-9N62F-00LI-GC0" syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606F03', '0x24': u'F4:20:4D:A9:1C:D8', '0x25': u'04/28/2026 12:59:23', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0xAEDAA6B0'}"
+slm-32 ansible_host=slm-32  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7017 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A9:1C:D8" serial="MT2617606F03" model="920-9N62F-00LI-GC0" syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606F03', '0x24': u'F4:20:4D:A9:1C:D8', '0x25': u'04/28/2026 12:59:23', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0xAEDAA6B0'}"
+slm-32      ansible_host=10.220.13.32 ansible_hostv6="" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+
 [sonic:children]
 sonic_latest
 
@@ -3250,6 +3254,9 @@ leopard-dgx-208
 
 slm-30-ptf-any
 slm-30
+
+slm-32-ptf-any
+slm-32
 
 [leaf_topo_1:vars]
 podset_number=200
