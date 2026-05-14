@@ -3013,6 +3013,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         }
         self.memory_size: List[float] = [30.77, 31.21]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VTPM24GLXI160_BM11, SSDConsts.VTPM24GLXI160_BM12]
+        self.access_port_speed = '328G'
 
         self.techsupport_etc_empty_files_to_ignore += ['gpu_telemetry_enable']
 
