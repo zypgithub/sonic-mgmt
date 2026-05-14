@@ -25,6 +25,7 @@ COMMON_MOUNTPOINTS = {
     '/auto/sw_regression/system/SONIC/MARS': '/auto/sw_regression/system/SONIC/MARS',
     '/auto/sw_tools/Internal/BugHandling/RELEASES': '/auto/sw_tools/Internal/BugHandling/RELEASES',
     '/auto/sw_system_release': '/auto/sw_system_release',
+    '/auto/sw_system_project': '/auto/sw_system_project',
 }
 BARE_METAL_MOUNTPOINTS = {
     '/.autodirect/mswg/projects': '/.autodirect/mswg/projects',
@@ -51,7 +52,6 @@ NVOS_MOUNTPOINTS = {
     '/auto/sw_regression/system/NVOS/MARS': '/auto/sw_regression/system/NVOS/MARS',
     '/.autodirect/sw_regression/system/NVOS/MARS': '/.autodirect/sw_regression/system/NVOS/MARS',
     '/.autodirect/sysgwork/G/MARS_conf/stm_nvos/': '/.autodirect/sysgwork/G/MARS_conf/stm_nvos/',
-    '/auto/sw_system_project': '/auto/sw_system_project',
 }
 SONIC_MOUNTPOINTS = {}
 
