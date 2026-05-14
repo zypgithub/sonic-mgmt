@@ -14743,6 +14743,19 @@
      - slm-30
   comment: Mellanox MEC testbed
 
+- conf-name: slm-32-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-32
+  comment: Mellanox MEC testbed
+
 - conf-name: slm-16-t1-isolated-d28u1
   group-name: vm-t1
   topo: t1-isolated-d28u1
@@ -14757,17 +14770,18 @@
   inv_name: lab
   comment: Mellanox MEC testbed
 
-- conf-name: slm-32-ptf-any
+- conf-name: slm-18-t1-isolated-d28u1
   group-name: vm-t1
-  topo: ptf-any
+  topo: t1-isolated-d28u1
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
+  ptf: ptf-slm-18
+  ptf_ip: 10.220.184.12/23
   ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
+  server: server_21
+  vm_base: VM2601
   dut:
-     - slm-32
+    - slm-18
+  inv_name: lab
   comment: Mellanox MEC testbed
 
 - conf-name: slm-110-ptf-any
