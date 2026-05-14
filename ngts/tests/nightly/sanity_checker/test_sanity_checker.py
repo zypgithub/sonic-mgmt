@@ -377,7 +377,7 @@ def test_more_then_2_fan_status_wrong_check(topology_obj, skip_for_liquid_coolin
 @pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_psu_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow):
+def test_psu_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow, skip_for_liquid_cooling_platform):
     """
     This test is verify the psu status is ok or not
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
