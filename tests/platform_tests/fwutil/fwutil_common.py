@@ -45,10 +45,23 @@ def get_hw_revision(duthost):
     rev_line = out["stdout"].splitlines()[6]
     return rev_line.split(": ")[1]
 
+def power_cycle_with_bmc(duthost, pdu_ctrl):
+    if "remote_reboot_cmd" in pdu_ctrl:
+        from ngts.helpers.run_process_on_host import run_process_on_host
+        logger.info(f"Triggering remote reboot via noga cmd: {pdu_ctrl['remote_reboot_cmd']}")
+        _, _, rc = run_process_on_host(pdu_ctrl["remote_reboot_cmd"])
+        if rc != 0:
+            pytest.fail(f"Noga remote_reboot cmd failed with rc={rc}")
+    else:
+        pytest.fail("pdu_ctrl is not ready, fail test")
+    return
 
 def power_cycle(duthost=None, pdu_ctrl=None, delay_time=60):
     assert pdu_ctrl, "pdu_ctrl is not ready, fail test"
-
+    if isinstance(pdu_ctrl, dict):
+        power_cycle_with_bmc(duthost, pdu_ctrl)
+        return
+    
     all_outlets = pdu_ctrl.get_outlet_status()
 
     logger.info("Powering off the PDU outlets.")
