@@ -1307,14 +1307,23 @@ def test_caclmgrd_syslog(duthosts, enum_rand_one_per_hwsku_hostname,):
     wait_until(30, 5, 0, lambda: "active (running)" in duthost.command("sudo systemctl status caclmgrd")["stdout"])
 
     # Check the syslog for the presence of "iptables"
-    syslog_output = duthost.command("sudo grep 'Issuing the following iptables commands:' /var/log/syslog")["stdout"]
-
-    pytest_assert("Issuing the following iptables commands:" in syslog_output,
+    def check_syslog_for_iptables():
+        result = duthost.shell(
+            "sudo grep 'Issuing the following iptables commands:' "
+            "/var/log/syslog | grep -v 'ansible'",
+            module_ignore_errors=True)
+        return result["rc"] == 0 and "Issuing the following iptables commands:" in result.get("stdout", "")
+    pytest_assert(wait_until(10, 2, 0, check_syslog_for_iptables),
                   "Syslog does not contain 'Issuing the following iptables commands' after restarting caclmgrd")
-    syslog_output = duthost.command("sudo grep 'iptables -P INPUT ACCEPT' /var/log/syslog")["stdout"]
-
-    pytest_assert("iptables -P INPUT ACCEPT" in syslog_output,
+    def check_syslog_for_iptables_accept():
+        result = duthost.shell(
+            "sudo grep 'iptables -P INPUT ACCEPT' "
+            "/var/log/syslog | grep -v 'ansible'",
+            module_ignore_errors=True)
+        return result["rc"] == 0 and "iptables -P INPUT ACCEPT" in result.get("stdout", "")
+    pytest_assert(wait_until(10, 2, 0, check_syslog_for_iptables_accept),
                   "Syslog does not contain 'iptables -P INPUT ACCEPT' after restarting caclmgrd")
+
     systemctl_output = duthost.command("sudo systemctl status caclmgrd")["stdout"]
     match = re.search(r'(caclmgrd.*?iptables)', systemctl_output)
     mux_match = re.search(r'(caclmgrd.*?mux)', systemctl_output)
