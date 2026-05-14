@@ -18,7 +18,7 @@ logger = logging.getLogger()
 @pytest.mark.nvos_chipsim_ci
 @pytest.mark.nvos_ci
 @pytest.mark.air
-def test_show_platform(engines, random_api, devices, nv_command):
+def test_platform_basic(engines, random_api, devices, nv_command):
     """
     Validates the output of nv show platform.
     The OpenAPI test checks the JSON output while the NVUE test checks the auto output.
