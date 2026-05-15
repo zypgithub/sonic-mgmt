@@ -187,6 +187,10 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         'ha': [{'type': 'lacp', 'name': 'bond0', 'members': [interfaces.ha_dut_1]}],
         'hb': [{'type': 'lacp', 'name': 'bond0', 'members': [interfaces.hb_dut_2]}]
     }
+    dut_portchannel_status_list = [
+        ('PortChannel0001', [(interfaces.dut_ha_1, 'S')]),
+        ('PortChannel0002', [(interfaces.dut_hb_2, 'S')])
+    ]
 
     # VLAN config which will be used in test
     vlan_config_dict = {
@@ -335,6 +339,12 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                 ports_list=ports_list,
                 reload_force=True
             )
+
+        with allure.step('Check that PortChannels are ready'):
+            for portchannel_name, expected_members_status_list in dut_portchannel_status_list:
+                retry_call(cli_objects.dut.lag.verify_port_channel_status,
+                           fargs=[portchannel_name, 'Up', expected_members_status_list],
+                           tries=10, delay=10, logger=logger)
 
         logger.info('PushGate Common configuration completed')
 
