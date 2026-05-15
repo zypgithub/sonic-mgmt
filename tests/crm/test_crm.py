@@ -135,11 +135,11 @@ def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
     acl_tbl_key = {"value": None}
 
     def _acl_config_applied():
-        try:
-            acl_tbl_key["value"] = get_acl_tbl_key(asichost)
+        result = get_acl_tbl_key(asichost)
+        if result:
+            acl_tbl_key["value"] = result
             return True
-        except Exception:
-            return False
+        return False
 
     pytest_assert(wait_until(CONFIG_UPDATE_TIME * 3, CRM_POLLING_INTERVAL, 0, _acl_config_applied),
                   "ACL configuration did not propagate within timeout")
@@ -240,7 +240,7 @@ def get_acl_tbl_key(asichost):
             key = item
             break
     else:
-        pytest.fail("Ether type was not found in SAI ACL Entry table")
+        return None
 
     # Get ACL table key
     cmd = "{db_cli} ASIC_DB HGET {key} \"SAI_ACL_ENTRY_ATTR_TABLE_ID\""
