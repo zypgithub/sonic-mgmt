@@ -126,6 +126,12 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
         logger.info(f"disable lldp on {engine.ip}")
         cmd_disable_lldp = "sudo config feature state lldp disabled" if engine.device_type == "linux" else "no lldp"
         engine.run_cmd(cmd_disable_lldp)
+        if engine.device_type == "linux":
+            # When disable lldp, we need to stop and remove the lldp container
+            # because if lldp container is not removed, run 'docker container stop lldp' still return success
+            # so it might affect the later case such as qos sai case
+            engine.run_cmd("docker container stop lldp")
+            engine.run_cmd("docker container rm lldp")
 
     fanout_skipped = should_skip_fanout(topology_obj, engines.fanout)
     fanout_b_skipped = False
