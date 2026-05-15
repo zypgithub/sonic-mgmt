@@ -813,12 +813,24 @@ configlet/test_add_rack.py:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/20672 and is_smartswitch==True and topo_name.startswith('t1-')"
 
+#######################################
+#####            console          #####
+#######################################
 console/:
   skip:
     reason: 'Console tests under tests/console/ are designed for c0 topology, not compatible with BMC'
     conditions:
       - "'bmc' in topo_type"
 
+console/test_console_availability.py:
+  skip:
+    reason: "This test is applicable to virtual setup only."
+    conditions:
+      - "asic_type in ['vpp'] and platform.startswith('arm64-c8220tg_48a_o')"
+
+#######################################
+#####    container_hardening      #####
+#######################################
 container_hardening/test_container_hardening.py::test_container_privileged:
   skip:
     reason: "Not supported on 202305 and older releases"
