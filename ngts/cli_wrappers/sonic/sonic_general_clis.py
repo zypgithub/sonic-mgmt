@@ -189,10 +189,25 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def load_configuration(self, config_file):
         self.engine.run_cmd('sudo config load -y {}'.format(config_file), validate=True)
 
+    def is_switch_ready_to_reload(self):
+        # TERM=dumb avoids TTY control sequences in stdout over SSH
+        out = self.engine.run_cmd(
+            'TERM=dumb systemctl show swss.service --property=ActiveEnterTimestampMonotonic --value',
+            validate=True)
+        swss_up_time = float(out.strip()) / 1000000
+        now_out = self.engine.run_cmd("python3 -c 'import time; print(time.monotonic())'", validate=True)
+        now_time = float(now_out.strip())
+        active_sec = now_time - swss_up_time
+        logger.info("SWSS has been active for {:.2f} seconds".format(active_sec))
+        if active_sec < 120:
+            raise Exception("SWSS has been active for less than 120s; not ready for reload")
+
     def reload_configuration(self, force=False):
         cmd = 'sudo config reload -y'
         if force:
             cmd += ' -f'
+        else:
+            retry_call(self.is_switch_ready_to_reload, tries=12, delay=10)
         self.engine.run_cmd(cmd, validate=True)
 
     def save_configuration(self):
