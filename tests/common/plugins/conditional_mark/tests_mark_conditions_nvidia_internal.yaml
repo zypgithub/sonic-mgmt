@@ -269,6 +269,12 @@ tests/nightly/sensors/test_psu.py:
     - "'_ld' in platform"
     - "'sn6600' in platform and 'simx' in platform"
 
+tests/nightly/sensors/test_psu.py::test_psu_sensor_key_prefix:
+  skip:
+    reason: "Testcase skipped on simx platforms"
+    conditions:
+    - "'simx' in platform"
+
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
     reason: "sflow still isn't supported on Simx "
