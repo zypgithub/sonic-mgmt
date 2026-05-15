@@ -108,11 +108,11 @@ class SonicSecureBootHelper(SecureBootHelper):
                                                            "Debian GNU/Linux.*",
                                                            "Please press Enter to activate this console",
                                                            DefaultConnectionValues.LOGIN_REGEX,
-                                                           DefaultConnectionValues.DEFAULT_PROMPTS[0],
+                                                           rf"{DefaultConnectionValues.DEFAULT_USER}@[^\r\n]*:.*[$#]",
                                                            "Malformed binary after Attribute Certificate Table",
                                                            "GNU GRUB  version"],
                                                     timeout=SonicSecureBootConsts.ONIE_TIMEOUT)
-            if respond <= 2:
+            if respond in [0, 1, 2, 5]:
                 logger.info("SONIC mode")
                 return True
             else:
@@ -257,9 +257,10 @@ class SonicSecureBootHelper(SecureBootHelper):
                                    DefaultConnectionValues.DEFAULT_PROMPTS)
 
     def ensure_onie_mode(self):
-        _, respond = self.serial_engine.run_cmd('\r', ["ONIE:"],
-                                                timeout=3)
-        assert respond == 0, "Switch is not in ONIE mode"
+        output, respond = self.serial_engine.run_cmd('\r', ["ONIE:"],
+                                                     timeout=3)
+        if respond != 0:
+            raise RuntimeError(f"Switch is not in ONIE mode. Output: {output}")
 
     def login_into_onie_mode(self):
         """
@@ -296,6 +297,7 @@ class SonicSecureBootHelper(SecureBootHelper):
                                        DefaultConnectionValues.DEFAULT_PROMPTS)
             self.serial_engine.run_cmd(DefaultConnectionValues.ONIE_PASSWORD, DefaultConnectionValues.DEFAULT_PROMPTS)
         self.serial_engine.run_cmd('\r', DefaultConnectionValues.DEFAULT_PROMPTS)
+        self.ensure_onie_mode()
 
         self.serial_engine.run_cmd_and_get_output('onie-stop')
 
@@ -616,6 +618,7 @@ class SonicSecureBootHelper(SecureBootHelper):
         """
         This function will remove the staged onie pkg after onie update failure
         """
+        self.ensure_onie_mode()
         _, respond = self.serial_engine.run_cmd('onie-fwpkg purge', ["Removing all pending firmware updates (y/N)?"])
         if respond == 0:
             self.serial_engine.run_cmd('y')
