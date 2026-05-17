@@ -52,9 +52,9 @@ def test_asic_error_injection(engines):
 
         with allure.step("Run PTER register access command"):
             output = RegisterTool.get_mst_register_value(engines.dut, mst_path + mst_devices[0], "PTER",
-                                                         '--indexes "plane_ind=0,lp_msb=0,local_port=5,pnat=0,error_page=0"', 'local_port')
-            assert not re.search(r'local_port',
-                                 output), f"Expected to not find 'local_port' in output. Got: {output}"
+                                                         '--indexes "plane_ind=0,lp_msb=0,local_port=5,pnat=0,error_page=0"', 'local_port', validate=False)
+            assert re.search(r'Failed to send access register: Register not supported',
+                             output), f"Expected to get error message from mlxreg when feature is disabled. Got: {output}"
 
 
 def _wait_until_error_injection_status(fae, status='', tries=8, delay=2):

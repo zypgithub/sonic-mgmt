@@ -10,9 +10,9 @@ logger = logging.getLogger()
 class RegisterTool:
 
     @staticmethod
-    def _run_cmd(engine, cmd):
+    def _run_cmd(engine, cmd, validate=True):
         """Run command on engine, handling both SSH and serial engines."""
-        return EngineAdapterTool.run_cmd(engine, cmd, validate=True)
+        return EngineAdapterTool.run_cmd(engine, cmd, validate=validate)
 
     @staticmethod
     def get_mst_status(engine):
@@ -20,10 +20,10 @@ class RegisterTool:
         return RegisterTool._run_cmd(engine, 'sudo mst status')
 
     @staticmethod
-    def get_mst_register_value(engine, mst_dev_name, reg_name, additional_params="", grep_pattern='""'):
+    def get_mst_register_value(engine, mst_dev_name, reg_name, additional_params="", grep_pattern='""', validate=True):
         logging.info(f'Get {reg_name} value {additional_params}')
         cmd = f'sudo mlxreg -d {mst_dev_name} -g --reg_name {reg_name} {additional_params} | grep {grep_pattern}'
-        return RegisterTool._run_cmd(engine, cmd)
+        return RegisterTool._run_cmd(engine, cmd, validate)
 
     @staticmethod
     def set_mst_register_value(engine, mst_dev_name, reg_name, set_params, additional_params=""):
