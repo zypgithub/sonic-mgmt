@@ -161,7 +161,7 @@ tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.p
       - "'rosalind-eb1-10' in testbed"
       - "'rosalind-eb2-164' in testbed"
       - "'rosalind-eb2-2102' in testbed"
-      - "'rosalind-nvos-2164' in testbed"
+      - "'rosalind-nvos-2182' in testbed"
 
 tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_main_flow:
   skip:
@@ -171,7 +171,7 @@ tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.p
       - "'rosalind-eb1-10' in testbed"
       - "'rosalind-eb2-164' in testbed"
       - "'rosalind-eb2-2102' in testbed"
-      - "'rosalind-nvos-2164' in testbed"
+      - "'rosalind-nvos-2182' in testbed"
 
 tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_list_supported_components:
   skip:
