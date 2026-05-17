@@ -3,28 +3,29 @@ Comprehensive tests for config patch and replace operations
 Tests both CLI and REST API methods with positive and negative scenarios
 """
 
-from urllib3.exceptions import InsecureRequestWarning
-import textwrap
-import tempfile
-import requests
-import logging
-import urllib3
-import pytest
 import json
-import time
+import logging
 import os
+import tempfile
+import textwrap
+import time
+
+import pytest
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
 
 from infra.tools.linux_tools import linux_tools
-
-from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.FilesTool import TempFileOnEngine
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.system.System import System
+from ngts.nvos_constants.constants_nvos import OutputFormat, SystemConsts
+from ngts.nvos_tools.Devices.EthDevice import EthSwitch
 from ngts.nvos_tools.acl.acl import Acl
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.infra.FilesTool import TempFileOnEngine
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.vrf.vrf import Vrf
+from ngts.tools.test_utils import allure_utils as allure
 
 # Suppress insecure request warnings
 urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -244,7 +245,8 @@ def test_replace_removes_existing_config(engines, random_api):
         with allure.step('Create ACL, VRF, system message and set hostname'):
             Acl().acl_id['test_replace_acl'].set('type', 'ipv4', apply=False)
             Acl().acl_id['test_replace_acl'].rule.rule_id[10].action.set('permit', apply=False)
-            engines.dut.run_cmd('nv set vrf test_replace_vrf')
+            if isinstance(TestToolkit.get_device(), EthSwitch):
+                Vrf().set('test_replace_vrf').verify_result()
             System().message.set(SystemConsts.PRE_LOGIN_MESSAGE, '"Test Replace Message"', apply=False)
             system.set(SystemConsts.HOSTNAME, hostname, apply=True, ask_for_confirmation=True)
             time.sleep(2)
@@ -268,11 +270,12 @@ def test_replace_removes_existing_config(engines, random_api):
                 assert 'test_replace_acl' not in acl_data, \
                     "ACL should have been removed by replace operation"
 
-            with allure.step('Verify VRF removed'):
-                vrf_output = engines.dut.run_cmd('nv show vrf -o json')
-                vrf_data = json.loads(vrf_output)
-                assert 'test_replace_vrf' not in vrf_data, \
-                    "VRF should have been removed by replace operation"
+            if isinstance(TestToolkit.get_device(), EthSwitch):
+                with allure.step('Verify VRF removed'):
+                    vrf_output = engines.dut.run_cmd('nv show vrf -o json')
+                    vrf_data = json.loads(vrf_output)
+                    assert 'test_replace_vrf' not in vrf_data, \
+                        "VRF should have been removed by replace operation"
 
             with allure.step('Verify system message removed'):
                 system_obj = System()
@@ -286,7 +289,8 @@ def test_replace_removes_existing_config(engines, random_api):
 
     finally:
         Acl().acl_id['test_replace_acl'].unset(apply=False)
-        engines.dut.run_cmd('nv unset vrf test_replace_vrf')
+        if isinstance(TestToolkit.get_device(), EthSwitch):
+            engines.dut.run_cmd('nv unset vrf test_replace_vrf')
         System().message.unset(op_param=SystemConsts.PRE_LOGIN_MESSAGE, apply=False)
         cleanup_pending_config(engines)
 
