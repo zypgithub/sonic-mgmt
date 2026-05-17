@@ -1,6 +1,6 @@
-Hostname,ManagementIp,HwSku,Type,Protocol,Os,PortConfigIni
-slm-16,10.220.13.16/22,Mellanox-SN6600_LD-P128C2,DevSonic,,sonic,files/hwsku_vars/slm-16_setup/Mellanox-SN6600_LD-P128C2/port_config.ini
-slm-17,10.220.13.17/22,Mellanox-SN6600_LD-P128C2,FanoutLeaf,,sonic,
-slm-238,10.220.12.238/22,Mellanox-SN6600_LD-P128C2,FanoutLeaf,,sonic,
-fit-sonic-vrt-mec-184,10.220.184.160,TestServ,Server,,,
-rcon,10.220.12.161,,ConsoleServer,ssh,sonic,
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+slm-16,10.220.13.16/22,Mellanox-SN6600_LD-P128C2,DevSonic,,sonic
+slm-17,10.220.13.17/22,Mellanox-SN6600_LD-P128C2,FanoutLeaf,,sonic
+slm-238,10.220.12.238/22,Mellanox-SN6600_LD-P128C2,FanoutLeaf,,sonic
+fit-sonic-vrt-mec-184,10.220.184.160,TestServ,Server,,
+rcon,10.220.12.161,,ConsoleServer,ssh,sonic

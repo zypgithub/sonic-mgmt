@@ -178,7 +178,8 @@ class SonicInstallationSteps:
         if (not is_dualtor_topo(sonic_topo) and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
-                "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and not setup_name.endswith('-ha')):
+                "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and
+                not dut_name.startswith('slm-') and not setup_name.endswith('-ha')):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
                                            exec_path=ansible_path, deploy_sequential=deploy_sequential)
