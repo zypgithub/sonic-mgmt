@@ -1,0 +1,2 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+slm-109,10.220.13.109/22,Mellanox-SN6600_LD-P64O128C2,DevSonic,,sonic
