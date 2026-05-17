@@ -101,7 +101,7 @@ def verify_link_diagnostic(ports: list[str]) -> None:
     output_dict = Interface.Interface(parent_obj=None).parse_show(op_param='--view link-diagnostics')
     for port_name in ports:
         port_diagnostics = output_dict[port_name]['link']['diagnostics']
-        assert port_diagnostics == EXPECTED_LINK_DIAGNOSTIC_STATUS, f"Port {port_name} diagnostics status is not 0"
+        assert port_diagnostics == EXPECTED_LINK_DIAGNOSTIC_STATUS, f"Port {port_name} diagnostics status is: {port_diagnostics} expected: {EXPECTED_LINK_DIAGNOSTIC_STATUS}"
 
 
 def get_linked_ports_pair(devices: DevicesT, engines: EnginesT) -> tuple[str, str]:
