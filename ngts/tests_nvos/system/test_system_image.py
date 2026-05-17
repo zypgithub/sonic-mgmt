@@ -659,7 +659,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 @pytest.mark.checklist
 @pytest.mark.image
 @pytest.mark.system
-def test_fetch_image_via_https(test_api):
+def test_fetch_image_via_https(test_api, target_version):
     """
     Install system image test
 
@@ -671,10 +671,12 @@ def test_fetch_image_via_https(test_api):
     """
     system = System()
     image_fetched = False
-    # Selecting a random release to attempt image fetching
-    release_name = ImageConsts.NVOS_RELEASE_25_02_1000
-    image_file = BASE_IMAGE_VERSION_TO_INSTALL.format(pre_release_name=release_name)
-    image_to_fetch = BASE_IMAGE_VERSION_TO_INSTALL_PATH.format(pre_release_name=release_name, base_image=image_file)
+    if target_version:
+        image_to_fetch = os.path.realpath(target_version)
+    else:
+        image_file = TestToolkit.devices.dut.get_base_image()
+        image_to_fetch = TestToolkit.devices.dut.get_base_image_path(image_file)
+    image_file = os.path.basename(image_to_fetch)
 
     try:
         with allure.step("Fetch an image {}".format(SystemConsts.NBU_NFS_SERVER + image_to_fetch)):
