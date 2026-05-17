@@ -78,7 +78,7 @@ def set_sonic_bin(topic_map, project) {
     def sonic_bin_path = "${env.VERSION_DIRECTORY}/${sonic_version_name}/dev/Mellanox/sonic-mellanox.bin"
     env.README_PATH = "${env.VERSION_DIRECTORY}/${sonic_version_name}/dev"
     if (! new File(sonic_bin_path).exists()) {
-        print "SONiC bin file not found: ${sonic_bin_path}\nWill try the old conventsion (without 'dev' folder)"
+        print "SONiC bin file not found: ${sonic_bin_path}\nWill try the old convention (without 'dev' folder)"
         sonic_bin_path = sonic_bin_path.replace("/dev/","/")
         env.README_PATH = "${env.VERSION_DIRECTORY}/${sonic_version_name}"
         if (! new File(sonic_bin_path).exists()) {
@@ -90,7 +90,21 @@ def set_sonic_bin(topic_map, project) {
     print "SONIC_BIN = ${env.SONIC_BIN}"
 }
 
+def get_vault_connection() {
+    def configuration = [:]
+    configuration.put("vaultUrl",         "https://prod.vault.nvidia.com")
+    configuration.put("vaultNamespace",   "nbu-system-sw-sonic")
+    configuration.put("vaultCredentialId", "vault-sonic-approle-prod")
+    configuration.put("engineVersion", 1)
 
+    def vaultSecrets = [[
+        path: "nvidia/nbu/mars/sonic/kv/air_ngc_sonic",
+        secretValues: [
+            [envVar: "AIR_TOKEN", vaultKey: "service_key"],
+        ]
+    ]]
+    return [configuration: configuration, vaultSecrets: vaultSecrets]
+}
 
 /**
  * Validates the existence of an AIR image ID in the AIR system
@@ -118,21 +132,8 @@ def handleAirUpload(String readme_path) {
     if(air_image_id == null) {
         error "AIR_IMAGE_ID not found in readme file"
     }
-    // First connect to sonic vault to get the air token
-    def vault_connection = [:]
-    vault_connection.put("vaultUrl",         "https://prod.vault.nvidia.com")
-    vault_connection.put("vaultNamespace",   "nbu-system-sw-sonic")
-    vault_connection.put("vaultCredentialId", "vault-sonic-approle-prod")
-    vault_connection.put("engineVersion", 1)
-
-    def vault_secrets = [[
-        path: "nvidia/nbu/mars/sonic/kv/air_ngc_sonic",
-        secretValues: [
-            [envVar: "AIR_TOKEN", vaultKey: "service_key"],
-        ]
-    ]]
-
-    withVault([configuration: vault_connection, vaultSecrets:  vault_secrets]) {
+    def vault_connection = get_vault_connection()
+    withVault([configuration: vault_connection.configuration, vaultSecrets:  vault_connection.vaultSecrets]) {
         def image_info = devopsAir.getImageById([id: air_image_id])
         echo "image_info: ${image_info}"
         if(image_info) {
@@ -165,16 +166,19 @@ def handleAirUpload(String readme_path) {
             includes_air_agent: true,
             file_to_upload: new_local_file_path
         ]
-        def upload_result = devopsAir.uploadAirImage(imageConfig)
-        sh "rm ${new_local_file_path}"
-        if(!upload_result) {
-            error "ERROR: Failed to upload AIR image"
-        }
-        echo "AIR image uploaded successfully ${upload_result.id}"
 
-        update_readme_file(readmeFullPath, [AIR_IMAGE_ID: upload_result.id])
-        echo "updated readme file: ${readmeFullPath}"
-        sh "cat ${readmeFullPath}"
+        withVault([configuration: vault_connection.configuration, vaultSecrets:  vault_connection.vaultSecrets]) {
+            def upload_result = devopsAir.uploadAirImage(imageConfig)
+   
+            sh "rm ${new_local_file_path}"
+            if(!upload_result) {
+                error "ERROR: Failed to upload AIR image"
+            }
+            echo "AIR image uploaded successfully ${upload_result.id}"
+            update_readme_file(readmeFullPath, [AIR_IMAGE_ID: upload_result.id])
+            echo "updated readme file: ${readmeFullPath}"
+            sh "cat ${readmeFullPath}"
+        }
     }
 }
 
@@ -208,7 +212,7 @@ def set_nvos_bin(topic_map, project){
 
     def nvos_bin_path = "${env.NVOS_VERSION_DIRECTORY}/${nvos_version_name}/amd64/dev/nvos-amd64-${nvos_version_name}.bin"
     if (! new File(nvos_bin_path).exists()) {
-        print "NVOS bin file not found: ${nvos_bin_path}\nWill try the old conventsion (without 'dev' folder)"
+        print "NVOS bin file not found: ${nvos_bin_path}\nWill try the old convention (without 'dev' folder)"
         nvos_bin_path = nvos_bin_path.replace("/dev/","/")
         if (! new File(nvos_bin_path).exists()) {
             error "ERROR: NVOS bin file not found: ${nvos_bin_path}"
@@ -293,7 +297,7 @@ def run_step(name) {
         }
 
         if (topic.contains("SKIP_BEAUTIFIER")){
-            print "SKIP_BEAUTIFIER is activated, spell check will not run"
+            print "SKIP_BEAUTIFIER is activated, beautifier will not run"
             env.SKIP_BEAUTIFIER = true
         }
 

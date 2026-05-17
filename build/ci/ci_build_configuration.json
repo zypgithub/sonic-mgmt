@@ -139,7 +139,7 @@
           "out_of_mail": false
         },
         {
-          "name": "Check SIMX compatibility",
+          "name": "Check BAT compatibility",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/common/bat_compatibility.groovy",
           "category": "Pre BAT",
           "node": "SONIC_LITE",
