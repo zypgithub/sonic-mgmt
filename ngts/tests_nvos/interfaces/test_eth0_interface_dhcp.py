@@ -6,7 +6,7 @@ import pytest
 from retry.api import retry_call
 from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import SystemConsts, ActionConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, ActionConsts, NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.HostMethods import HostMethods
@@ -339,46 +339,39 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
             assert not res.result or "is not a" in res.returned_value, \
                 "The operation succeeded while it is expected to fail"
 
-        with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
-            res = mgmt_port.interface.ipv4.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
-            res.ignore_result()
-            assert not res.result or "is not a" in res.returned_value, \
-                "The operation succeeded while it is expected to fail"
-
         with allure.step(f'Delete ipv4 address for {mgmt_port_name} using 0.0.0.0/0 and expect failure'):
             mgmt_port.interface.ipv4.address.set(op_param_name='0.0.0.0/0', apply=True).verify_result(False, "is not a valid interface IP address")
             NvueGeneralCli.detach_config(engines.dut)
 
         with allure.step('Disable dhcp, check mgmt port unreachable'):
-            serial_engine.serial_engine.sendline("nv set interface {} ipv4 dhcp-client state disabled".format(mgmt_port_name))
-            serial_engine.serial_engine.sendline("nv config apply")
-            serial_engine.serial_engine.expect("Are you sure?", timeout=120)
-            serial_engine.serial_engine.sendline("y")
-            serial_engine.serial_engine.expect("applied", timeout=120)
+            mgmt_port.interface.ipv4.dhcp_client.set(SystemConsts.STATE, NvosConst.DISABLED, apply=True,
+                                                     ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
             logger.info('Check port status, should be down')
             check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+            verify_mgmt_port_stays_unreachable(engines.dut.ip, engines.dut.ssh_port)
+
+        with allure.step('Verify dhcp state is disabled'):
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ipv4.show(dut_engine=serial_engine)).get_returned_value()
+            assert output_dictionary['dhcp-client']['state'] == 'disabled', "DHCP state is not disabled"
+            logger.info('DHCP state is disabled')
 
         with allure.step('Select random ipv4 and set it'):
             ip_address = Tools.IpTool.select_random_ipv4_address().verify_result()
-            serial_engine.serial_engine.sendline("nv set interface {0} ipv4 address {1}".format(mgmt_port_name, ip_address))
-            serial_engine.serial_engine.sendline("nv config apply")
-            serial_engine.serial_engine.expect("Are you sure?", timeout=120)
-            serial_engine.serial_engine.sendline("y")
-            serial_engine.serial_engine.expect("applied", timeout=120)
+            mgmt_port.interface.ipv4.address.set(op_param_name=ip_address, apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
             logger.info('Check port status, should be down')
-            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
-            serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
-            serial_engine.serial_engine.expect(ip_address, timeout=120)
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=5, delay=2)
+            validate_interface_ip_address(ip_address.split('/')[0], output_dictionary={}, validate_in=True,
+                                          run_show=True, mgmt_port=mgmt_port, dut_engine=serial_engine)
+
     except Exception as e:
-        logger.info("Received Exception during test_ztp_json_complex: {}".format(e))
+        logger.info("Received Exception during test_interface_eth0_ip_address: {}".format(e))
         raise e
     finally:
         with allure.step('Unset ipv4 and dhcp and check port reachable'):
-            serial_engine.serial_engine.sendline("nv unset interface {0}".format(mgmt_port_name))
-            serial_engine.serial_engine.sendline("nv config apply")
-            serial_engine.serial_engine.expect("Are you sure?", timeout=120)
-            serial_engine.serial_engine.sendline("y")
-            serial_engine.serial_engine.expect("applied", timeout=120)
+            mgmt_port.interface.ipv4.address.unset(apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
+            mgmt_port.interface.ipv4.dhcp_client.set(SystemConsts.STATE, NvosConst.ENABLED, apply=True,
+                                                     ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
 
             logger.info('Check port status, should be up')
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
@@ -833,6 +826,28 @@ def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
         HostMethods.assert_system_hostname_matches_dhcp(system_output, dhcp_hostname)
+
+
+def verify_mgmt_port_stays_unreachable(dut_ip, dut_ssh_port, tries=5, delay=2):
+    """
+    Assert mgmt port stays unreachable for a short window (~35s).
+
+    After disabling the mgmt-interface DHCP client, the port should stop being reachable
+    and stay down. If `check_port_status_till_alive(True, ...)` ever returns within the
+    window, the port came back up (DHCP client never actually stopped, or ZTP re-leased
+    the same IP), that is the bug we want to catch.
+
+    Per-iteration cost is ~7s (5s socket timeout when port is CLOSED + `delay`).
+    """
+    with allure.step(f"Verify mgmt port {dut_ip}:{dut_ssh_port} stays unreachable (~{tries * (5 + delay)}s)"):
+        try:
+            check_port_status_till_alive(True, dut_ip, dut_ssh_port, tries=tries, delay=delay)
+        except Exception:
+            return  # stayed CLOSED the whole window, DHCP truly disabled
+        raise AssertionError(
+            f"Mgmt port {dut_ip}:{dut_ssh_port} became reachable again after disabling DHCP. "
+            "Applied state says 'disabled' but the DHCP client is still running"
+        )
 
 
 @retry(Exception, tries=25, delay=2)
