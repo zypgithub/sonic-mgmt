@@ -2619,7 +2619,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                                                        'verification_test.gz', 'system.profile']
 
         self.nvl_trunk_port_speed = '400G'
-        self.access_port_speed = '328G'  # Updated default for Rosalind systems
+        self.access_port_speed = '200G'  # Updated default for Rosalind systems
         self.fnm_link_speed = '200G'
         self.fnm_fae_link_speed = '200G'
         self.nvl_port_type = 'nvl'

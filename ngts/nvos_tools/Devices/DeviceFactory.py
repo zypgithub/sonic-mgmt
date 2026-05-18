@@ -74,11 +74,9 @@ class DeviceFactory:
         }
 
     @staticmethod
-    def create_device(device_name, switch_name):
+    def create_device(device_name):
         try:
-            if "rtf" in switch_name:
-                device_name = 'N6100_LD - RTF'
-            elif device_name not in DeviceFactory.device_type_dict.keys():
+            if device_name not in DeviceFactory.device_type_dict.keys():
                 if "5600" in device_name:
                     device_name = 'Mellanox SN5600'
                 elif "5640" in device_name:
@@ -111,6 +109,5 @@ class DeviceFactory:
         device_objects = DottedDict()
         for player_name, player in filter_objects(topology_obj.players, host_type="dut", engine_type="ssh").items():
             dev_name = player['attributes'].noga_query_data['attributes']['Specific']['switch_type']
-            switch_name = player['attributes'].noga_query_data['attributes']['Common']['Name']
-            device_objects[player_name] = DeviceFactory.create_device(dev_name, switch_name)
+            device_objects[player_name] = DeviceFactory.create_device(dev_name)
         return device_objects
