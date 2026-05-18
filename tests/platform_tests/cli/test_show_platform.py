@@ -353,7 +353,7 @@ def test_show_platform_psustatus(duthosts, rand_one_dut_hostname, is_support_psu
 
     if is_support_psu:
         pytest_assert(num_psu_ok > 0, f"No PSUs are displayed with OK status on '{duthost.hostname}'")
-    if is_support_pdb:
+    if is_support_pdb and 'simx' not in duthost.facts.get('platform', ''):
         pytest_assert(num_pdb_ok > 0, f"No PDBs are displayed with OK status on '{duthost.hostname}'")
 
 
@@ -403,7 +403,7 @@ def test_show_platform_psustatus_json(duthosts, rand_one_dut_hostname, is_suppor
         pytest_assert(psu_info["led_status"] in led_status_list, "Unexpected PSU led_status value: '{}'".
                       format(psu_info["led_status"]))
 
-    if is_support_pdb:
+    if is_support_pdb and 'simx' not in duthost.facts.get('platform', ''):
         pytest_assert(pdb_entries,
                       f"Expected PDB entries in '{cmd}' JSON output on '{duthost.hostname}'")
         pdb_led_values = {e["led_status"] for e in pdb_entries}
@@ -592,7 +592,7 @@ def test_show_platform_temperature(duthosts, enum_rand_one_per_hwsku_hostname):
     temperature_output_lines = duthost.command(cmd)["stdout_lines"]
     verify_show_platform_temperature_output(temperature_output_lines, duthost.hostname)
 
-    if check_pdb_support(duthost):
+    if check_pdb_support(duthost) and 'simx' not in duthost.facts.get('platform', ''):
         pdb_temp_pattern = re.compile(r"PDB[\s-]*\d+\s+Temp", re.IGNORECASE)
         pdb_thermal_rows = [line for line in temperature_output_lines
                             if pdb_temp_pattern.search(line)]

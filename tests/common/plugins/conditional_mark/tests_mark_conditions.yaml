@@ -4265,6 +4265,24 @@ pfcwd/test_pfcwd_warm_reboot.py::TestPfcwdWb::test_pfcwd_wb[IPv6-async_storm:
 #####     platform_tests          #####
 #######################################
 
+platform_tests/api/test_pdb.py:
+  skip:
+    reason: "PDB tests are not supported on SIMX platforms"
+    conditions:
+      - "'simx' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_pdbs:
+  skip:
+    reason: "PDB tests are not supported on SIMX platforms"
+    conditions:
+      - "'simx' in platform"
+
+platform_tests/test_platform_info.py::test_pdb_error_status_and_log:
+  skip:
+    reason: "PDB tests are not supported on SIMX platforms"
+    conditions:
+      - "'simx' in platform"
+
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_info:
   xfail:
     reason: "Testcase ignored on nvidia sn4700 and sn4280 due to github issue: https://github.com/sonic-net/sonic-buildimage/issues/23426"
@@ -5566,6 +5584,12 @@ system_health/test_system_health.py:
     reason: "There is no table SYSTEM_HEALTH_INFO in STATE_DB on kvm testbed, skip in PR testing"
     conditions:
       - "asic_type in ['vs']"
+
+system_health/test_system_health.py::test_pdb_device_checker:
+  skip:
+    reason: "PDB tests are not supported on SIMX platforms"
+    conditions:
+      - "'simx' in platform"
 
 system_health/test_system_health.py::test_service_checker_with_process_exit:
   xfail:

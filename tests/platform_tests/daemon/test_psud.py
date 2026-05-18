@@ -201,6 +201,10 @@ def test_pmon_psud_running_status(duthosts, enum_supervisor_dut_hostname, data_b
 
     pdb_num = get_pdb_num(duthost)
     if pdb_num > 0:
+        if 'simx' in duthost.facts.get('platform', ''):
+            logger.info("Skipping PDB STATE_DB checks on SIMX platform")
+            return
+
         pdb_keys = _get_pdb_keys(data_before_restart)
         pytest_assert(len(pdb_keys) > 0,
                       "PDB platform detected but no PSU_INFO|PDB * keys found in STATE_DB")
