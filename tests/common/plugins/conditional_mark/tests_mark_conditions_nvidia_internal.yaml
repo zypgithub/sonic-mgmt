@@ -1194,30 +1194,6 @@ high_frequency_telemetry/test_high_frequency_telemetry.py:
     - "https://redmine.mellanox.com/issues/4924461"
     - "'sn6600_ld_simx' in platform"
 
-high_frequency_telemetry/test_high_frequency_telemetry.py::test_hft_port_counters:
-  skip:
-    reason: "SN6600 platform does not support HFT new counter in Epic 4817987"
-    conditions:
-    - "'master_SPC6_ES' in build_version"
-
-high_frequency_telemetry/test_high_frequency_telemetry.py::test_hft_full_queue_counters:
-  skip:
-    reason: "SN6600 platform does not support HFT new counter in Epic 4817987"
-    conditions:
-    - "'master_SPC6_ES' in build_version"
-
-high_frequency_telemetry/test_high_frequency_telemetry.py::test_hft_full_ingress_priority_group_counters:
-  skip:
-    reason: "SN6600 platform does not support HFT new counter in Epic 4817987"
-    conditions:
-    - "'master_SPC6_ES' in build_version"
-
-high_frequency_telemetry/test_high_frequency_telemetry.py::test_hft_full_buffer_pool_counters:
-  skip:
-    reason: "SN6600 platform does not support HFT new counter in Epic 4817987"
-    conditions:
-    - "'master_SPC6_ES' in build_version"
-
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
   skip:
     reason: "Test is skipped - watchdog not supported on simx platforms"
