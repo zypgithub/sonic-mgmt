@@ -1,5 +1,6 @@
 import logging
 import pytest
+import time
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.constants.constants import GnmiConsts
@@ -11,6 +12,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.helpers import run_gnmi_client_and_parse_output
 from ngts.nvos_tools.infra.NvCommand import NvCommand
+from ngts.nvos_constants.constants_nvos import PowerCappingConsts
 
 logger = logging.getLogger()
 
@@ -40,8 +42,9 @@ def test_platform_asic_power_telemetry_default_fields_values(random_api, devices
 
         with allure.step("Check only positive integers inside"):
             for asic, values in asic_output.items():
+                power_values = values.get(PowerCappingConsts.POWER, {})
                 for key in PlatformConsts.POWER_TELEMETRY_ASIC_OUTPUT_FIELDS:
-                    value = values.get(key)
+                    value = power_values.get(key)
                     assert isinstance(value, str), f"Error: {key} in {asic} is not a string"
                     assert value.isdigit(), f"Error: {key} in {asic} is not a numeric string"
                     assert int(value) > 0, f"Error: {key} in {asic} is not a positive integer"
