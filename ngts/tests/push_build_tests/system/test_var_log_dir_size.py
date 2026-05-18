@@ -23,8 +23,11 @@ def _expected_var_log_dir_size(chip_type):
     SPC6 and above: 8 GiB; SPC5 and below: 4 GiB.
     return expected size in MB.
     """
-    m = re.match(r"^SPC(\d+)$", str(chip_type).strip(), re.IGNORECASE)
-    n = int(m.group(1))
+    if chip_type == "SPC":
+        n = 1
+    else:
+        m = re.match(r"^SPC(\d+)$", str(chip_type).strip(), re.IGNORECASE)
+        n = int(m.group(1))
 
     return 8 * 1024 if n >= 6 else 4 * 1024
 
@@ -44,7 +47,10 @@ def _query_var_log_dir_size(dut_engine):
 
 class TestVarLogDirSize:
 
-    def test_var_log_dir_size(self, engines, chip_type):
+    def test_var_log_dir_size(self, engines, chip_type, is_simx):
+        if is_simx:
+            pytest.skip("test_var_log_dir_size only runs on physical testbed")
+
         dut_engine = engines.dut
 
         expected_size = _expected_var_log_dir_size(chip_type)
