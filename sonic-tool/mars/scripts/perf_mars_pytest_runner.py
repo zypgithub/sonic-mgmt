@@ -35,11 +35,15 @@ class RunPerfPytest(RunPytest):
         return rc
 
     def run_post_commands(self):
-        # RunPytest.run_post_commands does not chain to super(), which
-        # skips the SDK base post-commands where the mini case summary
-        # is finalized retroactively from the case log. Call the SDK
-        # base first (so the summary is written even if the allure
-        # upload below raises), then RunPytest's allure upload.
+        """Run SDK base post-commands then ``RunPytest`` post-commands.
+
+        :meth:`RunPytest.run_post_commands` does not chain to ``super()``,
+        which skips the SDK base post-commands where the mini case
+        summary is finalized retroactively from the case log. The SDK
+        base is invoked first so the summary is written even if the
+        allure upload performed by ``RunPytest.run_post_commands`` later
+        raises, and ``RunPytest``'s allure upload is invoked second.
+        """
         StandaloneWrapper.run_post_commands(self)
         super(RunPerfPytest, self).run_post_commands()
 
