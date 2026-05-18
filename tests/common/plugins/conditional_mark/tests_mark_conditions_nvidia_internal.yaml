@@ -761,9 +761,11 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_psus:
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_sfps:
   xfail:
-    reason: "sfp test should be updated according to the CPO software control design implementation on sn5810_ld platform"
+    reason: "sfp test should be updated according to the CPO software control design implementation on sn5810_ld and sn6810_ld platforms"
+    conditions_logical_operator: or
     conditions:
     - "'sn5810_ld' in platform"
+    - "https://redmine.mellanox.com/issues/5034956 and 'sn6810_ld' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_pdbs:
   skip:
