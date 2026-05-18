@@ -241,6 +241,20 @@ class NvuePerformanceCli(PerformanceCommon):
         variables += " ".join(env_variables)
         return variables + ' ' + Cl_Consts.CL_PYTHON_PATH + ' ' + cmd
 
+    def run_customer_examples_on_sdk(self, example_name):
+        """
+        This function runs a SDK example script on switch.
+        This function overrides the base class run_customer_examples_on_sdk function,
+        because on Cumulus, SDK example scripts (``sx_api_*.py``) must run with sudo twice  .
+        First sudo to resolve the script from PATH, and second sudo to run the script.
+        Args:
+            example_name (str): The name of the example script to run (e.g., "sx_api_ports_dump.py").
+
+        Returns:
+            The result of executing the command via execute_cmd().
+        """
+        return self.execute_cmd(f"sudo {example_name}")
+
     def logrotate(self, daemon):
         logging.info(f"Rotating log for {daemon}")
         try:

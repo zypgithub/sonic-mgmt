@@ -634,6 +634,7 @@ class PerformanceCommon:
             )
 
         os.environ[PerfConsts.SDK_DUMP_FILE_SYSTEM] = sonic_mgmt_path
+        os.makedirs(os.path.dirname(sonic_mgmt_path), exist_ok=True)
         self.engine.copy_file(source_file=remote_name, file_system=sdk_dump_file_system,
                               dest_file=sonic_mgmt_path,
                               overwrite_file=True, verify_file=False, direction='get')

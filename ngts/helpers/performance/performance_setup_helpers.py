@@ -4,6 +4,7 @@ import allure
 import os
 import json
 import pytest
+import shutil
 from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
@@ -447,11 +448,20 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
                 all_violations.append("")
 
         if attach_to_allure:
-            with allure.step("Adding SDK dump to allure report"):
+            with allure.step("Adding SDK dump reference to allure report"):
                 sdk_dump_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
                                              "sdk_dumps", config.scenario, "sdk_dump")
-                sdk_dump = create_sdk_dump(config.players, sdk_dump_path)
-                allure.attach(sdk_dump, "SDK dump", attachment_type=allure.attachment_type.TEXT)
+                create_sdk_dump(config.players, sdk_dump_path)
+                shared_dump_path = copy_sdk_dump_to_shared_storage(sdk_dump_path, config.players,
+                                                                   config.test_name, config.scenario)
+                if shared_dump_path:
+                    dump_reference = (f"SDK dump file: {os.path.basename(shared_dump_path)}\n"
+                                      f"Full path: {shared_dump_path}")
+                    allure.attach(dump_reference, "SDK dump location",
+                                  attachment_type=allure.attachment_type.TEXT)
+                else:
+                    logger.warning("SDK dump was not copied to shared storage; "
+                                   "no reference attached to allure report.")
 
         if all_violations and not ignore_violations:
             raise TestIssue("\n".join(all_violations))
@@ -596,6 +606,62 @@ def create_sdk_dump(players, full_path):
         str: SDK dump file contents.
     """
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_sdk_dump(full_path)
+
+
+def _is_gzip_file(path):
+    """Return True if ``path`` starts with the gzip magic header bytes."""
+    try:
+        with open(path, 'rb') as fh:
+            return fh.read(len(PerfConsts.GZIP_MAGIC_BYTES)) == PerfConsts.GZIP_MAGIC_BYTES
+    except OSError:
+        return False
+
+
+def copy_sdk_dump_to_shared_storage(local_dump_path, players, test_name, scenario):
+    """Copy a locally fetched SDK dump to the shared performance dumps directory.
+
+    The local ``create_sdk_dump`` artifact is overwritten on every test run, so we mirror
+    it to ``PerfConsts.SHARED_SDK_DUMPS_DIR`` under a unique name built from timestamp,
+    DUT hostname, scenario and test_name. A ``.gz`` suffix is added when the source file
+    is still gzipped, so the destination matches the actual byte stream.
+
+    Failures to fetch the hostname or to copy the file are logged and swallowed so a
+    storage hiccup never fails the test.
+
+    Args:
+        local_dump_path (str): Path to the dump file produced by ``create_sdk_dump``.
+        players: Test players dict (DUT entry used to fetch hostname).
+        test_name (str): Test identifier, e.g. ``ValidationConfig.test_name``.
+        scenario (str): Test scenario identifier, e.g. ``ValidationConfig.scenario``.
+
+    Returns:
+        Optional[str]: Destination path on success, ``None`` if the copy was skipped or
+        failed.
+    """
+    if not os.path.exists(local_dump_path):
+        logger.warning(f"SDK dump not found at {local_dump_path}; skipping shared copy.")
+        return None
+
+    try:
+        hostname = players[PerfConsts.DUT_ALIAS]['cli'].chassis.get_hostname()
+    except Exception as exc:
+        logger.warning(f"Could not fetch DUT hostname for shared SDK dump filename: {exc}")
+        hostname = "unknown-host"
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    extension = ".gz" if _is_gzip_file(local_dump_path) else ""
+    file_name = f"{timestamp}_{hostname}_{scenario}_{test_name}_sdk_dump{extension}"
+    dest_path = os.path.join(PerfConsts.SHARED_SDK_DUMPS_DIR, file_name)
+
+    try:
+        os.makedirs(PerfConsts.SHARED_SDK_DUMPS_DIR, exist_ok=True)
+        shutil.copy2(local_dump_path, dest_path)
+    except OSError as exc:
+        logger.warning(f"Failed to copy SDK dump to shared storage {dest_path}: {exc}")
+        return None
+
+    logger.info(f"SDK dump copied to shared storage: {dest_path}")
+    return dest_path
 
 
 def configure_incremental_dips_on_tg(players, step="basic_test_configuration - configure_incremental_dips_on_tg"):
