@@ -169,7 +169,7 @@ def set_storm_params(dut, fanout_info, fanout, peer_params):
     return storm_handle
 
 
-def save_test_results_to_file(test_func_name, test_data, topo_name):
+def save_test_results_to_file(test_func_name, test_data):
     """
     Save test results to JSON file.
 
@@ -184,7 +184,7 @@ def save_test_results_to_file(test_func_name, test_data, topo_name):
                 formatted_data[key] = round(value, 2)
             else:
                 formatted_data[key] = value
-        report_filename = f'/tmp/test_pfcwd_timer_accuracy_{test_func_name}_{topo_name}.json'
+        report_filename = f'/tmp/test_pfcwd_timer_accuracy_{test_func_name}.json'
         with open(report_filename, 'w') as f:
             json.dump(formatted_data, f, indent=2)
         logger.info("Saved test results to: %s", report_filename)
@@ -318,6 +318,20 @@ class TestPfcwdAllTimer(object):
                     detect_count, ITERATION_NUM, detect_failures,
                     restore_count, ITERATION_NUM, restore_failures,
                     required_samples))
+
+        if self.save_timer_results:
+            data = {
+                'detect_time_min': self.all_detect_time[0],
+                'detect_time_max': self.all_detect_time[-1],
+                'detect_time_check': self.all_detect_time[check_point],
+                'restore_time_min': self.all_restore_time[0],
+                'restore_time_max': self.all_restore_time[-1],
+                'restore_time_check': self.all_restore_time[check_point],
+            }
+            logger.info("Saving timer results to file")
+            save_test_results_to_file('test_pfcwd_timer_accuracy', data)
+        else:
+            logger.info("Timer results will not be saved to file due to --save-timer-results not set")
 
         err_msg = ("Real detection time is greater than configured: Real detect time: {} "
                    "Expected: {} (wd_detect_time + wd_poll_time)".format(self.all_detect_time[check_point],
@@ -495,7 +509,7 @@ class TestPfcwdAllTimer(object):
             duthost.command("pfcwd start_default")
 
     def test_pfcwd_timer_accuracy(self, duthosts, ptfhost, enum_rand_one_per_hwsku_frontend_hostname,
-                                  pfcwd_timer_setup_restore, fanouthosts, set_pfc_time_cisco_8000, tbinfo):
+                                  pfcwd_timer_setup_restore, fanouthosts, set_pfc_time_cisco_8000, save_timer_results):
         """
         Tests PFCwd timer accuracy
 
@@ -510,6 +524,7 @@ class TestPfcwdAllTimer(object):
         self.dut = duthost
         self.ptf = ptfhost
         self.fanout = fanouthosts
+        self.save_timer_results = save_timer_results
         self.all_detect_time = list()
         self.all_restore_time = list()
         self.all_dut_detect_restore_time = list()
@@ -547,17 +562,5 @@ class TestPfcwdAllTimer(object):
             pytest.fail(str(e))
 
         finally:
-            dt, rt = sorted(self.all_detect_time), sorted(self.all_restore_time)
-            n = len(dt)
-            topo_name = tbinfo['topo']['name']
-            data = {
-                'detect_time_min': dt[0], 'detect_time_max': dt[-1],
-                'detect_time_median': (dt[n // 2] + dt[n // 2 - 1]) / 2 if n % 2 == 0 else dt[n // 2],
-                'restore_time_min': rt[0], 'restore_time_max': rt[-1],
-                'restore_time_median': (rt[n // 2] + rt[n // 2 - 1]) / 2 if n % 2 == 0 else rt[n // 2],
-                'sample_count': n
-            }
-            save_test_results_to_file('test_pfcwd_timer_accuracy', data, topo_name)
-
             if self.storm_handle:
                 self.storm_handle.stop_storm()
