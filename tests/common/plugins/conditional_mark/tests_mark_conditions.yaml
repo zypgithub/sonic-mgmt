@@ -740,9 +740,9 @@ bgp/test_bgp_vnet.py:
 
 bmp/:
   skip:
-    reason: 'BMP tests require BGP routing, not available on BMC'
+    reason: "https://github.com/sonic-net/sonic-buildimage/issues/23777"
     conditions:
-      - "'bmc' in topo_type"
+      - "release in ['master']"
 
 #######################################
 #####            cacl             #####
