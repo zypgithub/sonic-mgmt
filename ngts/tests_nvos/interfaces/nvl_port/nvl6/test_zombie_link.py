@@ -74,9 +74,10 @@ def test_tx_bw_loss_monitor_configuration(engines, devices, random_api):
     Steps:
     - Show default: state operational=disabled applied=fw-default, monitor-status=N/A
     - Set disabled -> apply -> verify
-    - Set enabled -> apply -> verify
     - Set fw-default -> apply -> verify (back to default)
+    - Set enabled -> apply -> verify
     - Set invalid value -> verify rejection
+    - Cleanup: unset -> verify state returns to fw-default
     """
     with allure.step("Select a random port in up state"):
         port_result = RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP)
@@ -101,12 +102,6 @@ def test_tx_bw_loss_monitor_configuration(engines, devices, random_api):
             _validate_state_with_retry(selected_port, ZLState.DISABLED.value,
                                        ZLState.DISABLED.value, ZLMonitor.NA.value)
 
-        with allure.step("Set state to enabled and verify"):
-            monitor.set(TxBwLossMonitorConsts.STATE, ZLState.ENABLED.value,
-                        apply=True, ask_for_confirmation=True).verify_result()
-            _validate_state_with_retry(selected_port, ZLState.ENABLED.value,
-                                       ZLState.ENABLED.value, ZLMonitor.NORMAL.value)
-
         with allure.step("Set state to fw-default and verify"):
             monitor.set(TxBwLossMonitorConsts.STATE, ZLState.FW_DEFAULT.value,
                         apply=True, ask_for_confirmation=True).verify_result()
@@ -115,14 +110,24 @@ def test_tx_bw_loss_monitor_configuration(engines, devices, random_api):
                                        TxBwLossMonitorConsts.DEFAULT_APPLIED_STATE,
                                        TxBwLossMonitorConsts.DEFAULT_MONITOR_STATUS)
 
+        with allure.step("Set state to enabled and verify"):
+            monitor.set(TxBwLossMonitorConsts.STATE, ZLState.ENABLED.value,
+                        apply=True, ask_for_confirmation=True).verify_result()
+            _validate_state_with_retry(selected_port, ZLState.ENABLED.value,
+                                       ZLState.ENABLED.value, ZLMonitor.NORMAL.value)
+
         with allure.step("Set invalid state and verify rejection"):
             monitor.set(TxBwLossMonitorConsts.STATE, 'invalid-state',
                         expected_str=TxBwLossMonitorConsts.ERR_MSG_INVALID_STATE).verify_result()
 
     finally:
-        with allure.step("Cleanup: unset to restore defaults"):
+        with allure.step("Cleanup: unset and verify defaults restored"):
             monitor.unset(op_param=TxBwLossMonitorConsts.STATE, apply=True,
                           ask_for_confirmation=True).verify_result()
+            _validate_state_with_retry(selected_port,
+                                       TxBwLossMonitorConsts.DEFAULT_OPER_STATE,
+                                       TxBwLossMonitorConsts.DEFAULT_APPLIED_STATE,
+                                       TxBwLossMonitorConsts.DEFAULT_MONITOR_STATUS)
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +178,7 @@ def test_tx_bw_loss_monitor_link_state_down(engines, devices, random_api):
                                        ZLState.ENABLED.value, ZLMonitor.NORMAL.value)
 
     finally:
-        with allure.step("Cleanup: bring port up and unset monitor state"):
+        with allure.step("Cleanup: bring port up, unset monitor state, and verify defaults restored"):
             port.interface.link.state.set(
                 op_param_name=NvosConsts.LINK_STATE_UP, apply=True,
                 ask_for_confirmation=True).verify_result()
@@ -181,6 +186,10 @@ def test_tx_bw_loss_monitor_link_state_down(engines, devices, random_api):
                 NvosConsts.LINK_STATE_UP).verify_result()
             monitor.unset(op_param=TxBwLossMonitorConsts.STATE, apply=True,
                           ask_for_confirmation=True).verify_result()
+            _validate_state_with_retry(selected_port,
+                                       TxBwLossMonitorConsts.DEFAULT_OPER_STATE,
+                                       TxBwLossMonitorConsts.DEFAULT_APPLIED_STATE,
+                                       TxBwLossMonitorConsts.DEFAULT_MONITOR_STATUS)
 
 
 # ---------------------------------------------------------------------------
@@ -231,6 +240,81 @@ def test_tx_bw_loss_monitor_range(engines, devices, random_api, standalone_syste
             range_monitor.unset(op_param=TxBwLossMonitorConsts.STATE, apply=True,
                                 ask_for_confirmation=True).verify_result()
             _validate_state_with_retry(verify_port,
+                                       TxBwLossMonitorConsts.DEFAULT_OPER_STATE,
+                                       TxBwLossMonitorConsts.DEFAULT_APPLIED_STATE,
+                                       TxBwLossMonitorConsts.DEFAULT_MONITOR_STATUS)
+
+
+# ---------------------------------------------------------------------------
+# Test 4 — Internal FNM ports
+# ---------------------------------------------------------------------------
+
+@pytest.mark.interface
+@pytest.mark.multiplanar
+def test_tx_bw_loss_monitor_internal_fnm_port(engines, devices, random_api):
+    """
+    Verify tx-bandwidth-loss-monitor is configurable on internal FNM ports.
+
+    Internal FNM ports (fnmaXpY) connect ASICs together and are LinkUp by default,
+    so the tx-bandwidth-loss-monitor feature must be exposed and behave the same
+    as on access/trunk ports.
+
+    Steps (mirrors test_tx_bw_loss_monitor_configuration, but on an internal FNM port):
+    - Show default: state operational=disabled applied=fw-default, monitor-status=N/A
+    - Set disabled -> apply -> verify
+    - Set fw-default -> apply -> verify (back to default)
+    - Set enabled -> apply -> verify (monitor-status=normal since port is link-up)
+    - Set invalid value -> verify rejection
+    - Cleanup: unset -> verify state returns to fw-default
+    """
+    if not getattr(devices.dut, 'nvl_internal_fnm_ports', None):
+        pytest.skip("No nvl_internal_fnm_ports defined for this device")
+
+    with allure.step("Select a random internal FNM port"):
+        fnm_port_name = RandomizationTool.select_random_value(
+            devices.dut.nvl_internal_fnm_ports).get_returned_value()
+        selected_port = Fae(port_name=fnm_port_name)
+
+    monitor = _get_monitor(selected_port)
+
+    try:
+        with allure.step(f"Verify default state on {fnm_port_name}"):
+            _validate_state(
+                selected_port,
+                TxBwLossMonitorConsts.DEFAULT_OPER_STATE,
+                TxBwLossMonitorConsts.DEFAULT_APPLIED_STATE,
+                TxBwLossMonitorConsts.DEFAULT_MONITOR_STATUS,
+            )
+
+        with allure.step("Set state to disabled and verify"):
+            monitor.set(TxBwLossMonitorConsts.STATE, ZLState.DISABLED.value,
+                        apply=True, ask_for_confirmation=True).verify_result()
+            _validate_state_with_retry(selected_port, ZLState.DISABLED.value,
+                                       ZLState.DISABLED.value, ZLMonitor.NA.value)
+
+        with allure.step("Set state to fw-default and verify"):
+            monitor.set(TxBwLossMonitorConsts.STATE, ZLState.FW_DEFAULT.value,
+                        apply=True, ask_for_confirmation=True).verify_result()
+            _validate_state_with_retry(selected_port,
+                                       TxBwLossMonitorConsts.DEFAULT_OPER_STATE,
+                                       TxBwLossMonitorConsts.DEFAULT_APPLIED_STATE,
+                                       TxBwLossMonitorConsts.DEFAULT_MONITOR_STATUS)
+
+        with allure.step("Set state to enabled and verify"):
+            monitor.set(TxBwLossMonitorConsts.STATE, ZLState.ENABLED.value,
+                        apply=True, ask_for_confirmation=True).verify_result()
+            _validate_state_with_retry(selected_port, ZLState.ENABLED.value,
+                                       ZLState.ENABLED.value, ZLMonitor.NORMAL.value)
+
+        with allure.step("Set invalid state and verify rejection"):
+            monitor.set(TxBwLossMonitorConsts.STATE, 'invalid-state',
+                        expected_str=TxBwLossMonitorConsts.ERR_MSG_INVALID_STATE).verify_result()
+
+    finally:
+        with allure.step("Cleanup: unset and verify defaults restored"):
+            monitor.unset(op_param=TxBwLossMonitorConsts.STATE, apply=True,
+                          ask_for_confirmation=True).verify_result()
+            _validate_state_with_retry(selected_port,
                                        TxBwLossMonitorConsts.DEFAULT_OPER_STATE,
                                        TxBwLossMonitorConsts.DEFAULT_APPLIED_STATE,
                                        TxBwLossMonitorConsts.DEFAULT_MONITOR_STATUS)
