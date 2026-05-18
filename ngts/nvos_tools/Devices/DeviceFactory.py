@@ -14,7 +14,7 @@ from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, C
                                               JulietArielPS, JulietNonScaleoutSwitchNoNCI5600,
                                               JulietNonScaleoutSwitchGB300, JulietNonScaleoutSwitchGB300QS,
                                               RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch,
-                                              JulietNonScaleoutSwitchGB300PS, RosalindChipless, TaipanSwitch, PortiaSimx)
+                                              JulietNonScaleoutSwitchGB300PS, RosalindChipless, TaipanSwitch, PortiaSimx, RosalindRTF)
 
 logger = logging.getLogger()
 
@@ -65,6 +65,7 @@ class DeviceFactory:
             'N5500_LD - JulietNonScaleoutSwitchGB300QS': JulietNonScaleoutSwitchGB300QS,
             'N5500_LD - JulietNonScaleoutSwitchGB300PS': JulietNonScaleoutSwitchGB300PS,
             'N6100_LD - Rosalind': RosalindSwitch,
+            'N6100_LD - RTF': RosalindRTF,
             'N6150_LD - RosalindSurrogate': RosalindSurrogateSwitch,
             'N6100_LD - RosalindChipless': RosalindChipless,
             'N6100_LD_simx - Rosalind': RosalindSimx,
@@ -73,9 +74,11 @@ class DeviceFactory:
         }
 
     @staticmethod
-    def create_device(device_name):
+    def create_device(device_name, switch_name):
         try:
-            if device_name not in DeviceFactory.device_type_dict.keys():
+            if "rtf" in switch_name:
+                device_name = 'N6100_LD - RTF'
+            elif device_name not in DeviceFactory.device_type_dict.keys():
                 if "5600" in device_name:
                     device_name = 'Mellanox SN5600'
                 elif "5640" in device_name:
@@ -108,5 +111,6 @@ class DeviceFactory:
         device_objects = DottedDict()
         for player_name, player in filter_objects(topology_obj.players, host_type="dut", engine_type="ssh").items():
             dev_name = player['attributes'].noga_query_data['attributes']['Specific']['switch_type']
-            device_objects[player_name] = DeviceFactory.create_device(dev_name)
+            switch_name = player['attributes'].noga_query_data['attributes']['Common']['Name']
+            device_objects[player_name] = DeviceFactory.create_device(dev_name, switch_name)
         return device_objects

@@ -2619,7 +2619,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                                                        'verification_test.gz', 'system.profile']
 
         self.nvl_trunk_port_speed = '400G'
-        self.access_port_speed = '200G'  # Updated default for Rosalind systems
+        self.access_port_speed = '328G'  # Updated default for Rosalind systems
         self.fnm_link_speed = '200G'
         self.fnm_fae_link_speed = '200G'
         self.nvl_port_type = 'nvl'
@@ -3194,6 +3194,20 @@ class RosalindSimx(RosalindSwitch):
             "PMIC-18-COMEX-VDD-MEM-In-1",
             "PMIC-18-COMEX-VDD-MEM-Out-1"
         ]
+
+
+# -------------------------- RosalindRTF Switch ----------------------------
+
+
+class RosalindRTF(RosalindSwitch):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+        # RosalindRTF will support 200G - GPU configuration is needed
+        self.supported_nvl_speeds.remove('200G')
 
 
 # -------------------------- PortiaSimx Switch ----------------------------
