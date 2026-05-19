@@ -5,8 +5,13 @@ import logging
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_base_df, calculate_avg_on_all_samples
-from devts.infra.tools.exceptions.test_issue import TestIssue
-from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.helpers.performance.sensors_power_parse import (
+    get_controllers_info_str_list,
+    infer_spc6_supply_label,
+    normalized_i2c_address,
+)
+from infra.tools.exceptions.test_issue import TestIssue
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 
@@ -67,9 +72,9 @@ def get_avg_samples_power_dataframe(cli_obj, chip_type, power_samples):
         power_df = get_power_dataframe(cli_obj, sensors_output, chip_type)
         df_list.append(power_df)
     df_result = get_base_df(df_list)
-    power_df[PowerConsts.POWER_CURRENT] = calculate_avg_on_all_samples(df_list, PowerConsts.POWER_CURRENT)
-    power_df[PowerConsts.POWER_WATT] = calculate_avg_on_all_samples(df_list, PowerConsts.POWER_WATT)
-    return power_df
+    df_result[PowerConsts.POWER_CURRENT] = calculate_avg_on_all_samples(df_list, PowerConsts.POWER_CURRENT)
+    df_result[PowerConsts.POWER_WATT] = calculate_avg_on_all_samples(df_list, PowerConsts.POWER_WATT)
+    return df_result
 
 
 def get_sensors_data(cli_obj, power_sample):
@@ -81,16 +86,31 @@ def get_sensors_data(cli_obj, power_sample):
     return sensors_output
 
 
+def _resolve_power_supply_name(chip_type, controller_id, block_text, address_hex):
+    """Map I2C chip + sensor block to a display name; SPC6 uses label inference on SN5600-class dumps."""
+    if chip_type == "SPC6":
+        inferred = infer_spc6_supply_label(block_text)
+        if inferred != "Misc PMIC (unknown rail)":
+            return inferred
+        cmap = SPCControllers.SPCControllers_DICT.get("SPC6", {})
+        if address_hex and address_hex in cmap:
+            return cmap[address_hex]
+        return controller_id
+    cmap = SPCControllers.SPCControllers_DICT[chip_type]
+    return cmap[address_hex]
+
+
 def get_power_dataframe(cli_obj, sensors_output, chip_type):
     """
     Args:
         cli_obj: a cli object of the device DUT
-        sensors_output: output of command "sensors *-i2c-5-*" on the device
+        sensors_output: output of ``sensors`` on the device (may include many ``*-i2c-<bus>-<addr>`` chips)
         chip_type: i.e, "SPC3"
     The Function uses the arguments to parse the sensors data into a power dataframe:
         controller_names_list: a list of the controllers names ['mp2975-i2c-5-63','mp2975-i2c-5-6c',...]
         controllers_info_dicts_list: a list of dicts, each dict contains the values of a controller on the device,
                                      i.e, [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
+                                     Some PMICs report ``pout*`` without ``iout*``; those are handled via ``pout/vout``.
         controllers_by_address_dict: a dict of controller addresses keys and controller names values, i.e,
                                      { "0x61": "HVDD TILES (HVDD_T47)",...}
 
@@ -105,31 +125,46 @@ def get_power_dataframe(cli_obj, sensors_output, chip_type):
     controller_names_list = re.findall(PowerConsts.CONTROLLER_REGEX, sensors_output)
     controllers_info_dicts_list = cli_obj.performance.get_controllers_info_dicts_list(sensors_output)
     controllers_by_address_dict = SPCControllers.SPCControllers_DICT[chip_type]
+    block_list = get_controllers_info_str_list(sensors_output)
     power_dp = []
     for controller_idx, controller_name in enumerate(controller_names_list):
-        address = str(hex(int(re.search(r'.*-i2c-5-(.*)', controller_name).group(1), 16)))
+        address_hex = normalized_i2c_address(controller_name)
+        block_text = block_list[controller_idx] if controller_idx < len(block_list) else ""
+        if chip_type == "SPC6":
+            supply_name = _resolve_power_supply_name(chip_type, controller_name, block_text, address_hex)
+            address_display = address_hex or "na"
+        else:
+            if not address_hex:
+                continue
+            supply_name = controllers_by_address_dict[address_hex]
+            address_display = address_hex
         controller_info_dict = controllers_info_dicts_list[controller_idx]
-        controller_name = controllers_by_address_dict[address]
         for index in [1, 2]:
-            if controller_info_dict.get(f"vout{index}"):
-                controller_dict_df_entry = {}
-                voltage = controller_info_dict[f"vout{index}"]
-                current = controller_info_dict[f"iout{index}"]
-                controller_dict_df_entry[PowerConsts.POWER_SUPPLY] = controller_name
-                controller_dict_df_entry[PowerConsts.POWER_SUPPLY_ADDRESS] = address
-                controller_dict_df_entry[PowerConsts.POWER_VOLTAGE] = voltage
-                controller_dict_df_entry[PowerConsts.POWER_CURRENT] = current
-                controller_dict_df_entry[PowerConsts.POWER_WATT] = get_controller_power(index, controller_info_dict, voltage, current)
-                power_dp.append(controller_dict_df_entry)
+            if not controller_info_dict.get(f"vout{index}"):
+                continue
+            voltage = controller_info_dict[f"vout{index}"]
+            if f"iout{index}" in controller_info_dict:
+                current = abs(controller_info_dict[f"iout{index}"])
+            elif f"pout{index}" in controller_info_dict and voltage:
+                current = abs(controller_info_dict[f"pout{index}"] / voltage)
+            else:
+                continue
+            controller_dict_df_entry = {}
+            controller_dict_df_entry[PowerConsts.POWER_SUPPLY] = supply_name
+            controller_dict_df_entry[PowerConsts.POWER_SUPPLY_ADDRESS] = address_display
+            controller_dict_df_entry[PowerConsts.POWER_VOLTAGE] = voltage
+            controller_dict_df_entry[PowerConsts.POWER_CURRENT] = current
+            controller_dict_df_entry[PowerConsts.POWER_WATT] = get_controller_power(index, controller_info_dict, voltage, current)
+            power_dp.append(controller_dict_df_entry)
     return pd.DataFrame(power_dp)
 
 
 def get_controller_power(index, controller_info_dict, voltage, current):
-    if controller_info_dict.get(f"pout{index}"):
+    if controller_info_dict.get(f"pout{index}") is not None:
         power = controller_info_dict.get(f"pout{index}")
     else:
-        power = current * voltage
-    return power
+        power = abs(current * voltage)
+    return abs(power)
 
 
 def get_sum_power_df_by_collectors_group(power_df):
