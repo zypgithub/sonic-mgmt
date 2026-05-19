@@ -16,7 +16,6 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 logger = logging.getLogger()
 
@@ -59,7 +58,7 @@ def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loop
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
 def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, setup_name,
-                           handle_la_marker_in_manufacture):
+                           standalone_system, handle_la_marker_in_manufacture):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
     with allure.step("Create Cluster object"):
@@ -74,9 +73,11 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         ClusterTools.start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
-        config_files_paths = get_current_config_files_paths(sdn, devices)
-        with allure.step("Wait for chassis_mapping to be populated by nmx-c before baseline snapshot"):
-            config_files_paths[ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING] = _wait_until_chassis_mapping_file_has_content(engines, sdn)
+        skip_chassis_mapping = is_bug_active(4207869) and standalone_system
+        config_files_paths = get_current_config_files_paths(sdn, devices, skip_chassis_mapping)
+        if not skip_chassis_mapping:
+            with allure.step("Wait for chassis_mapping to be populated by nmx-c before baseline snapshot"):
+                config_files_paths[ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING] = _wait_until_chassis_mapping_file_has_content(engines, sdn)
 
         for file_type, file_path in config_files_paths.items():
             initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
@@ -95,11 +96,13 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         with allure.step("Running sdn factory reset"):
             ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
 
-        verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format)
+        verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format,
+                                                  skip_chassis_mapping)
 
         with allure.step("Reboot and verify configuration not changed"):
             result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot)
-            verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format)
+            verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format,
+                                                      skip_chassis_mapping)
 
     finally:
         current_time = get_current_time(engines)
@@ -109,7 +112,8 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
             OperationTime.verify_operation_time(duration, devices.dut.reset_factory, devices).verify_result()
 
 
-def verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format):
+def verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format,
+                                              skip_chassis_mapping):
     """
     Verify current config equals given config for all apps on this device.
     Uses device-specific app configuration to handle different device types.
@@ -119,6 +123,8 @@ def verify_current_config_equals_given_config(sdn, engines, devices, initial_con
         for app in devices.dut.expected_cluster_apps:
             app_config_files = devices.dut.cluster_config_files_by_app.get(app, [])
             for file_type in app_config_files:
+                if file_type == ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING and skip_chassis_mapping:
+                    continue
                 output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
                 installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
                 output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
@@ -142,7 +148,7 @@ def execute_reset_factory(engines, system, operation, flag, current_time):
     return result_obj.duration
 
 
-def get_current_config_files_paths(sdn, devices):
+def get_current_config_files_paths(sdn, devices, skip_chassis_mapping):
     """
     Get current config file paths for all apps on this device.
     Uses device-specific app configuration to handle different device types.
@@ -152,6 +158,8 @@ def get_current_config_files_paths(sdn, devices):
         for app in devices.dut.expected_cluster_apps:
             app_config_files = devices.dut.cluster_config_files_by_app.get(app, [])
             for file_type in app_config_files:
+                if file_type == ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING and skip_chassis_mapping:
+                    continue
                 output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
                 installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
                 output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
@@ -175,4 +183,4 @@ def _wait_until_chassis_mapping_file_has_content(engines, sdn):
             return current_installed_config_path
         logger.info("Sleeping for 5 seconds")
         time.sleep(5)
-    return ''
+    assert False, "Chassis mapping file did not have content"
