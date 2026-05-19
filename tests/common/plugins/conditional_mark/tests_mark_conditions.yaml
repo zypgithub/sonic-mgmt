@@ -3014,6 +3014,12 @@ gnmi:
     conditions:
       - "release in ['202412']"
 
+gnmi/test_gnmi.py::test_gnmi_subscribe_sample:
+  skip:
+    reason: "Test relies on Ethernet0 frontpanel port and COUNTERS_DB; not applicable on BMC"
+    conditions:
+      - "'bmc' in topo_type"
+
 gnmi/test_gnmi_configdb.py:
   skip:
     reason: "This feature is not supported for multi asic. Skipping these test for T2 and multi asic."
@@ -3023,15 +3029,75 @@ gnmi/test_gnmi_configdb.py:
       - "is_multi_asic==True"
       - "release in ['202412']"
 
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_full_replace_01:
+  skip:
+    reason: "not applicable on BMC (no front-panel ports)"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_incremental_01:
+  skip:
+    reason: "not applicable on BMC (no front-panel ports)"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_polling_01:
+  skip:
+    reason: "Test relies on DEVICE_METADATA bgp_asn; not configured on BMC"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_streaming_sample_01:
+  skip:
+    reason: "not applicable on BMC (no DEVICE_METADATA bgp_asn)"
+    conditions:
+      - "'bmc' in topo_type"
+
 gnmi/test_gnmi_countersdb.py:
   xfail:
     reason: "This test does not supported multi-asic. Skipping test for multi-asic DUTs."
     conditions:
       - "is_multi_asic==True"
 
+gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_polling_01:
+  skip:
+    reason: "Test relies on COUNTERS_PORT_NAME_MAP populated by syncd; not applicable on BMC"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_polling_02:
+  skip:
+    reason: "Test relies on COUNTERS_PORT_NAME_MAP populated by syncd; not applicable on BMC"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_streaming_sample_01:
+  skip:
+    reason: "not applicable on BMC (no COUNTERS_PORT_NAME_MAP)"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_streaming_sample_02:
+  skip:
+    reason: "not applicable on BMC (no COUNTERS_PORT_NAME_MAP)"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_countersdb.py::test_gnmi_output:
+  skip:
+    reason: "not applicable on BMC (no COUNTERS_PORT_NAME_MAP)"
+    conditions:
+      - "'bmc' in topo_type"
+
 gnmi/test_gnmi_smartswitch.py:
   skip:
     reason: 'SmartSwitch gNMI tests require SmartSwitch platform, not applicable to BMC'
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_stress.py::test_gnmi_latency_01:
+  skip:
+    reason: "Test relies on PORT table in CONFIG_DB; not configured on BMC"
     conditions:
       - "'bmc' in topo_type"
 
@@ -5401,6 +5467,10 @@ sub_port_interfaces/test_sub_port_l2_forwarding.py::test_sub_port_l2_forwarding[
 #####             syslog          #####
 #######################################
 syslog/test_logrotate.py::test_orchagent_logrotate:
+  skip:
+    reason: "BMC has no orchagent service; not applicable"
+    conditions:
+      - "'bmc' in topo_type"
   xfail:
     reason: "Test case has issue on the t0-isolated-d256u256s2 topo."
     conditions:
@@ -5494,6 +5564,18 @@ telemetry/test_telemetry.py:
     reason: "Skip telemetry test for 201911 and older branches"
     conditions:
       - "(is_multi_asic==True) and (release in ['201811', '201911'])"
+
+telemetry/test_telemetry.py::test_on_change_updates:
+  skip:
+    reason: "Test relies on BGP neighbors; none configured on BMC"
+    conditions:
+      - "'bmc' in topo_type"
+
+telemetry/test_telemetry.py::test_telemetry_ouput:
+  skip:
+    reason: "not applicable on BMC (no Ethernet0/COUNTERS_DB)"
+    conditions:
+      - "'bmc' in topo_type"
 
 telemetry/test_telemetry.py::test_telemetry_queue_buffer_cnt:
   skip:
