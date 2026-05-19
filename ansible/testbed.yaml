@@ -1534,6 +1534,52 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: sonic-bobcat-03-04-ha
+  group-name: vm-t2
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-bobcat-03
+  ptf_ip: 10.245.44.122/20
+  ptf_ipv6:
+  server: server_86
+  vm_base: VM5101
+  dut:
+    - mtvr-bobcat-03
+    - mtvr-bobcat-04
+    - mtvr-bobcat-03-dpu-0
+    - mtvr-bobcat-03-dpu-1
+    - mtvr-bobcat-03-dpu-2
+    - mtvr-bobcat-03-dpu-3
+    - mtvr-bobcat-04-dpu-0
+    - mtvr-bobcat-04-dpu-1
+    - mtvr-bobcat-04-dpu-2
+    - mtvr-bobcat-04-dpu-3
+  inv_name: lab
+  comment: Smartswitch HA testbed
+
+- conf-name: sonic-bobcat-03-04-ha-t1-smartswitch-ha
+  group-name: vm-t2
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-bobcat-03
+  ptf_ip: 10.245.44.122/20
+  ptf_ipv6:
+  server: server_86
+  vm_base: VM5101
+  dut:
+    - mtvr-bobcat-03
+    - mtvr-bobcat-04
+    - mtvr-bobcat-03-dpu-0
+    - mtvr-bobcat-03-dpu-1
+    - mtvr-bobcat-03-dpu-2
+    - mtvr-bobcat-03-dpu-3
+    - mtvr-bobcat-04-dpu-0
+    - mtvr-bobcat-04-dpu-1
+    - mtvr-bobcat-04-dpu-2
+    - mtvr-bobcat-04-dpu-3
+  inv_name: lab
+  comment: Smartswitch HA testbed
+
 - conf-name: bobcat-1250-t0-28
   group-name: vm-t1
   topo: t0-28
