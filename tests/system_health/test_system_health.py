@@ -393,7 +393,7 @@ def test_pdb_device_checker(duthosts, enum_rand_one_per_hwsku_hostname,
                 'Mock PDB power good, but it is still out of power'
 
         health_detail = duthost.shell('show system-health detail')['stdout']
-        pdb_type_pattern = re.compile(r'PDB\s+\d+.*\bPDB\b', re.IGNORECASE)
+        pdb_type_pattern = re.compile(r'PDB\s+\d+.*\b(PDB|PSU)\b', re.IGNORECASE)
         pdb_type_lines = [line for line in health_detail.splitlines()
                           if pdb_type_pattern.search(line)]
         logger.info(f'PDB entries in system-health detail: {pdb_type_lines}')
