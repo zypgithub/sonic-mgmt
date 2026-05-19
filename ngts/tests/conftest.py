@@ -575,9 +575,8 @@ def compare_running_config(pre_running_config, cur_running_config,
                     return False
                 else:
                     logger.info(f"Key {key} is ignored")
-                    pre_running_config.pop(key)
 
-            for key in pre_running_config.keys():
+            for key in pre_keys & cur_keys:
                 # Recursively compare, appending the current key to the path
                 if not compare_running_config(
                     pre_running_config[key],
