@@ -8,7 +8,7 @@ import shutil
 from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, Cl_Consts
 from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from devts.infra.tools.exceptions.test_issue import TestIssue
@@ -228,6 +228,47 @@ def apply_test_configuration(players, scenario, conf_args,
     else:
         for player_alias in players_aliases:
             players[player_alias]['cli'].performance.apply_configuration_file(scenario, conf_args)
+
+
+def validate_perf_dut_ingress_buffer_mode(players):
+    """Cumulus (NVUE) DUT only: assert IBM (ingress buffer) AR profile is active."""
+    cli_obj = players[PerfConsts.DUT_ALIAS]["cli"]
+    if not isinstance(cli_obj, NvueCli):
+        return
+    cli_obj.performance.validate_ingress_buffer_mode_active()
+
+
+def allure_attach_performance_conf_context(players, conf_args, attach_dut_applied_yaml=True):
+    """Attach ``conf_args`` as JSON and, when possible, the DUT-applied NVUE file to Allure.
+
+    The applied YAML is read from ``/home/cumulus/tmp.yaml`` on the DUT after ``nv config replace``
+    (same path used by ``NvuePerformanceCli.apply_configuration_file``).
+
+    Args:
+        players: Pytest players dict.
+        conf_args: Scenario / Jinja parameter dict passed to performance templates.
+        attach_dut_applied_yaml: When True, try to attach DUT ``tmp.yaml`` contents.
+
+    Returns:
+        None
+    """
+    try:
+        payload = json.dumps(conf_args, indent=2, sort_keys=True, default=str)
+    except TypeError:
+        payload = str(conf_args)
+    allure.attach(payload, name="performance_conf_args.json", attachment_type=allure.attachment_type.JSON)
+    if not attach_dut_applied_yaml:
+        return
+    dut = players.get(PerfConsts.DUT_ALIAS)
+    if not dut or "engine" not in dut:
+        return
+    try:
+        yaml_path = f"{Cl_Consts.CL_HOME_DIR}/tmp.yaml"
+        out = dut["engine"].run_cmd(f"sudo cat {yaml_path} 2>/dev/null || true")
+        if out and str(out).strip():
+            allure.attach(str(out), name="dut_applied_tmp.yaml", attachment_type=allure.attachment_type.YAML)
+    except Exception as exc:
+        logger.info("allure_attach_performance_conf_context: skip DUT tmp.yaml (%s)", exc)
 
 
 def configure_mloops(players, validate_mloops=True, is_simx=False,

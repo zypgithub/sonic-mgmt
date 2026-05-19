@@ -15,6 +15,7 @@ TESTS_SCENARIO = "spcx_ra"
 @pytest.fixture(scope='module', autouse=True)
 def skip_test_conditionally(chip_type):
     skip_test_on_unsupported_chip_type(chip_type, "SPC4")
+    skip_test_on_unsupported_chip_type(chip_type, "SPC6")
     yield
 
 

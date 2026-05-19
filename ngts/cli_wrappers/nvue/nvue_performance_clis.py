@@ -79,6 +79,12 @@ class NvuePerformanceCli(PerformanceCommon):
         self.port_groups = self.get_right_left_ports_dict()
         self.get_os_ports_name_mapping()
 
+    def unsplit_all_ports(self):
+        """Initialize NVUE ports before LLDP-based performance templates are rendered."""
+        logging.info("Initializing physical ports")
+        self.cli_obj.interface.initialize_physical_ports()
+        # TODO(336181): replace with wait_for_all_swp_ports_admin_up() after initialize_physical_ports()
+
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=Cl_Consts.CL_HOME_DIR):
         src_file = self.get_configuration_file(scenario, conf_args, template_suite)
         logging.info(f"Applying configuration file on {self.dut_alias}")

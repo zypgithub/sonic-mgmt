@@ -120,6 +120,10 @@ class PerformanceCommon:
         """
         pass
 
+    def validate_ingress_buffer_mode_active(self):
+        """Assert ingress buffer mode (IBM) is active. NVUE-only; no-op on other CLIs."""
+        pass
+
     def save_configuration_file(self, conf_path, conf_json, dst_dut_dir="/tmp"):
         """
         This method should be implemented in child class
