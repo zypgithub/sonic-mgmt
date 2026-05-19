@@ -38,8 +38,8 @@ def set_dpu_bin(topic_map) {
     // In the future we should throw exception if DPU_bin_path is not defined and remove this if
     if (DPU_bin_path != "Not Defined") {
         DPU_bin_path = "${env.DPU_VERSION_DIRECTORY}/${dpu_version_name}/dev/Nvidia-bluefield/sonic-nvidia-bluefield.bfb"
-        if (! new File(DPU_bin_path).exists()) {
-            error "ERROR:SONiC bin file not found: ${DPU_bin_path}"
+        if (! fileExists(DPU_bin_path)) {
+         error "ERROR:SONiC bin file not found: ${DPU_bin_path}"
         }
     }
     env.DPU_BIN = DPU_bin_path
@@ -85,7 +85,17 @@ def set_sonic_bin(topic_map, project) {
             error "ERROR:SONiC bin file not found: ${sonic_bin_path}"
         }
     }
-    handleAirUpload("${env.README_PATH}")
+    try {
+        handleAirUpload("${env.README_PATH}")
+        env.SKIP_AIR = false
+    } catch (Exception ex) {
+        env.SKIP_AIR = true
+        if (env.FAIL_ON_AIR_UNSUPPORTED == "true") {
+            error "ERROR: AIR upload failed: ${ex.message}"
+        } else {
+            echo "WARNING: AIR upload failed: ${ex.message}"
+        }
+    }
     env.SONIC_BIN = sonic_bin_path
     print "SONIC_BIN = ${env.SONIC_BIN}"
 }
@@ -106,22 +116,7 @@ def get_vault_connection() {
     return [configuration: configuration, vaultSecrets: vaultSecrets]
 }
 
-/**
- * Validates the existence of an AIR image ID in the AIR system
- * 
- * This method checks if the provided AIR image ID exists in the AIR system
- * and logs a warning message if the image is not found. The method does not
- * perform any upload or update operations despite its name suggesting otherwise.
- * 
- * @param air_image_id The AIR image ID to validate (String)
- * @return void - No return value, only logs warnings for missing images
- * @throws None - Method handles missing images gracefully with warnings
- * 
- * @example
- * handleAirUpload("efce1b69-4b56-44c8-9715-8b1719032bc8")
- * 
- * @see devopsAir.getImageById() for the underlying AIR system query
- */
+
 def handleAirUpload(String readme_path) {
     def readmeFullPath = "${readme_path}/README"
     echo "readme_path: ${readmeFullPath}"
