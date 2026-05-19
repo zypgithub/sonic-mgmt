@@ -385,7 +385,7 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
     If so, we will reload the running config after test case running.
     """
     not_fail_config_check = False
-    if request.node.get_closest_marker('skip_config_check'):
+    if request.node.get_closest_marker('not_fail_config_check'):
         not_fail_config_check = True
         logger.info("**************************** Config check will run but will not fail for module: %s****************************", request.node.name)
 
@@ -516,7 +516,11 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
             if isinstance(cli_objects.dut, NvueCli):
                 logger.info("reload flow is currently not supported for NVUE")
             else:
-                cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
+                ports_list = topology_obj.players_all_ports.get(cli_objects.dut.general.dut_alias, [])
+                if not ports_list:
+                    all_intf = cli_objects.dut.interface.parse_interfaces_status()
+                    ports_list = [port for port, info in all_intf.items() if info.get('Admin') == 'up']
+                cli_objects.dut.general.reload_flow(ports_list=ports_list, topology_obj=topology_obj, reload_force=True)
             if isinstance(cli_objects.dut.general, SonicGeneralCliDefault) and \
                     cli_objects.dut.general.get_image_sonic_release() == "none" and \
                     is_os_upgraded():
@@ -527,7 +531,7 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
                 )
                 return
             if not_fail_config_check:
-                logger.info(f"Config check failed for {module_name}, but skipping config check due to skip_config_check mark")
+                logger.info(f"Config check failed for {module_name}, but the test will not fail due to not_fail_config_check mark")
                 return
             raise Exception(config_check_error_message)
         else:

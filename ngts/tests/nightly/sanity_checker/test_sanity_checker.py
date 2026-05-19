@@ -21,7 +21,7 @@ from tests.common.helpers.firmware_helper import (
 
 pytestmark = [
     pytest.mark.disable_loganalyzer,
-    pytest.mark.skip_config_check
+    pytest.mark.not_fail_config_check
 ]
 
 logger = logging.getLogger()
