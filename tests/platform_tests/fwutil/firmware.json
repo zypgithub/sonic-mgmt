@@ -523,29 +523,37 @@
 			"component":{
 				"BIOS": [
 					{
-					
-					},
-					{
-				
+						"force_reboot": true,
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/V3000/0ACUZ_00.01.004/Release/0ACUZ.cab",
+						"version": "0ACUZ_00.01.004",
+						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0020-rc2/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0021/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
-						"version": "2025.05-5.3.0020-rc2-115200-dev",
+						"version": "2025.05-5.3.0021-115200-dev",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0019-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0021/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
-						"version": "2025.05-5.3.0019-115200-dev",
+						"version": "2025.05-5.3.0021-115200-dev",
 						"reboot": ["cold"]
 					}
 				],
 				"CPLD2": [
 					{
-					
+						"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6810_LD/FUI000468/FUI000468.mpfa",
+						"version": "CPLD000467_REV0002",
+						"reboot": ["power off", "cold"]
+					},
+					{"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6810_LD/FUI000468/FUI000468.mpfa",
+						"version": "CPLD000467_REV0002",
+						"reboot": ["power off", "cold"]
 					}
 				],
 				"BMC": [
