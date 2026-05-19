@@ -1,4 +1,5 @@
 import base64
+import json
 import subprocess
 from json.decoder import JSONDecodeError
 
@@ -23,6 +24,7 @@ from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBo
 from ngts.constants.constants import SerialLoggerConst
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.cli_wrappers.nvue.nvue_json_utils import parse_nvue_json_cli_output
 
 logger = logging.getLogger()
 
@@ -608,7 +610,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def get_asic_model(self, engine):
         output = engine.run_cmd("nv show platform -o json")
         try:
-            output = json.loads(output)
+            output = parse_nvue_json_cli_output(output)
         except JSONDecodeError as j:
             logging.error("Interface output is not a valid JSON object")
             logging.error(f"Output is : {output}")
@@ -797,7 +799,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
     def get_dut_mac_address(self):
         output = self.engine.run_cmd("nv show platform -o json", print_output=False)
-        output = json.loads(output)
+        output = parse_nvue_json_cli_output(output)
         return output['system-mac']
 
     def pre_installation_steps(self, context, threads_dict):

@@ -1,8 +1,10 @@
+import json
+import logging
+import re
+
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.cli_wrappers.sonic.sonic_interface_clis import SonicInterfaceCli
-import logging
-import json
-import re
+from ngts.cli_wrappers.nvue.nvue_json_utils import parse_nvue_json_cli_output
 from ngts.constants.performance_constants import Cl_Consts
 
 
@@ -85,7 +87,7 @@ class NvueInterfaceCli(SonicInterfaceCli):
 
     def get_physical_ports(self):
         output = self.engine.run_cmd("nv sh platform -o json", print_output=False)
-        output = json.loads(output)
+        output = parse_nvue_json_cli_output(output)
         if output['asic-model'] == 'Spectrum-5':
             # for Spectrum 5 the number of ports is 66 but reported as 130
             return 66
