@@ -9,7 +9,7 @@ from retry import retry
 from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_constants.constants_nvos import CumulusConsts, NvosConst
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.tools.test_utils import allure_utils as allure
@@ -246,8 +246,16 @@ class CumulusGeneralCli(NvueGeneralCli):
             onie_menu_pointer = 1
             cumulus_esc_pointer = 2
             grub_shell_pointer = 3
-            login_prompt_pointer = 4
-            grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.CUMULUS_ESC_PATTERN, GrubMenuTool.GRUB_SHELL_PATTERN, 'login:']
+            grub_rescue_pointer = 4
+            login_prompt_pointer = 5
+            grub_menu_patterns = [
+                'ONIE\\s+',
+                onie_menu_entry,
+                GrubMenuTool.CUMULUS_ESC_PATTERN,
+                GrubMenuTool.GRUB_SHELL_PATTERN,
+                GrubMenuTool.GRUB_RESCUE_PATTERN,
+                CumulusConsts.LOGIN_BOOT_PATTERN
+            ]
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
             respond = self._wait_for_grub_with_key_spam(serial_engine, all_patterns, timeout=240)
 
@@ -268,6 +276,13 @@ class CumulusGeneralCli(NvueGeneralCli):
                 with allure.step('Recover from GRUB shell'):
                     logger.info('Detected grub> shell, attempting recovery to ONIE menu')
                     output, respond = GrubMenuTool.recover_from_grub_shell(
+                        serial_engine, all_patterns, timeout=60
+                    )
+
+            if respond == grub_rescue_pointer:
+                with allure.step('Recover from GRUB rescue prompt'):
+                    logger.info('Detected grub rescue> prompt, attempting recovery to ONIE menu')
+                    output, respond = GrubMenuTool.recover_from_grub_rescue(
                         serial_engine, all_patterns, timeout=60
                     )
 

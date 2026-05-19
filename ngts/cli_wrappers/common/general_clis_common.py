@@ -553,7 +553,8 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
         logger.info(f"Reboot to ONIE with boot-mode {mode}")
         with allure.step(f"Reboot to ONIE with boot-mode {mode}"):
             if mode == "uninstall":
-                timeout = PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE[chip_type]
+                timeout = PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE.get(
+                    chip_type, PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE_DEFAULT)
             else:
                 timeout = PerfConsts.TIMEOUT_FOR_INSTALL_MODE
 
@@ -567,7 +568,10 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
                 self.engine.reload("sudo onie-select -i -f && sudo reboot", wait_after_ping=PerfConsts.TIMEOUT_FOR_INSTALL_MODE, ssh_after_reload=False)
             else:
                 logger.info("Cumulus/NVOS detected wiping out the entire system")
-                self.engine.reload("sudo onie-select -k -f && sudo reboot", wait_after_ping=PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE[chip_type], ssh_after_reload=False)
+                uninstall_wait = PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE.get(
+                    chip_type, PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE_DEFAULT)
+                self.engine.reload("sudo onie-select -k -f && sudo reboot", wait_after_ping=uninstall_wait,
+                                   ssh_after_reload=False)
         else:
             onie_reboot_script_path = self.prepare_onie_reboot_script_on_dut()
             if target_cli_type == "NVUE":
