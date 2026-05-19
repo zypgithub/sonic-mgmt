@@ -7,6 +7,8 @@
 {% set neigbor_list_left = generate_ip_address_list(address_start_v6="fcbb:aaaa:2::1", mode="v6", step_v6="0x100000000000000000000",number_of_address=((total_ports//2) * split_left)) %}
 {% set neigbor_list_right_start = address_calculator(address = "fcbb:aaaa:2::1", operation = "add" , step = "0x100000000000000000000", operand = ((total_ports//2) * split_left)) %}
 {% set neigbor_list_right = generate_ip_address_list(address_start_v6=neigbor_list_right_start, mode="v6", step_v6="0x100000000000000000000",number_of_address=((total_ports//2) * split_right)) %}
+{% set pre_left = cumulus_ports_already_logical_split(left_ports) %}
+{% set pre_right = cumulus_ports_already_logical_split(right_ports) %}
 
 - header:
     model: sn5600
@@ -22,7 +24,7 @@
             set-hostname: disabled
         vrf: mgmt
         type: eth
-    {% if split_left!=1 %}
+    {% if split_left!=1 and not pre_left %}
     {% for port in left_ports  %}
       {{ port }}:
         link:
@@ -31,7 +33,7 @@
         type: swp
     {% endfor %}
     {% endif %}
-    {% if split_right!=1 %}
+    {% if split_right!=1 and not pre_right %}
     {% for port in right_ports  %}
       {{ port }}:
         link:
@@ -42,6 +44,17 @@
     {% endif %}
     {% set address_list_index = namespace(value=0) %}
     {% set counter = namespace(value=0) %}
+    {% if split_left != 1 and pre_left %}
+    {% for port in sort_swp_split_port_names(left_ports) %}
+      {{ port }}:
+        ipv6:
+          address:
+            {{ address_list[address_list_index.value] }}/48 : {}
+        {% set counter.value = counter.value + 1 %}
+        {% set address_list_index.value = address_list_index.value + 1 %}
+        type: swp
+    {% endfor %}
+    {% else %}
     {% for port in left_ports %}
     {% for split in range(0, split_left) %}
       {{ port }}{% if split_left != 1 %}s{{ split }} {% endif %}:
@@ -58,7 +71,19 @@
         type: swp
     {% endfor %}
     {% endfor %}
+    {% endif %}
     {% set counter = namespace(value=0) %}
+    {% if split_right != 1 and pre_right %}
+    {% for port in sort_swp_split_port_names(right_ports) %}
+      {{ port }}:
+        ipv6:
+          address:
+            {{ address_list[address_list_index.value] }}/48 : {}
+        {% set counter.value = counter.value + 1 %}
+        {% set address_list_index.value = address_list_index.value + 1 %}
+        type: swp
+    {% endfor %}
+    {% else %}
     {% for port in right_ports %}
       {% for split in range(0, split_right)%}
       {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
@@ -75,6 +100,7 @@
         type: swp
       {% endfor %}
     {% endfor %}
+    {% endif %}
     qos:
       roce:
         state: enabled

@@ -3,11 +3,15 @@
 {% set split_left = parameter_dict.split_left %}
 {% set split_right = parameter_dict.split_right %}
 {% set total_ports = parameter_dict.total_ports %}
-{% set left_address_list = generate_ip_address_list("172.15.1.2", "172::1:2", mode="dual", number_of_address=(total_ports//2)*split_left) %}
-{% set right_address_list = generate_ip_address_list("192.168.1.2", "192::1:2", mode="dual", number_of_address=(total_ports//2)*split_right) %}
-{% set right_bgp_neighbors = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=(total_ports//2)*split_left) %}
-{% set left_bgp_neighbors = generate_ip_address_list("172.15.1.1", "172::1:1", mode="dual", number_of_address=(total_ports//2)*split_right) %}
 {% set two_sided_ar = parameter_dict.two_sided_ar | string %}
+{% set pre_left = cumulus_ports_already_logical_split(left_ports) %}
+{% set pre_right = cumulus_ports_already_logical_split(right_ports) %}
+{% set left_count = left_ports|length if pre_left else (left_ports|length * (split_left | int)) %}
+{% set right_count = right_ports|length if pre_right else (right_ports|length * (split_right | int)) %}
+{% set left_address_list = generate_ip_address_list("172.15.1.2", "172::1:2", mode="dual", number_of_address=left_count) %}
+{% set right_address_list = generate_ip_address_list("192.168.1.2", "192::1:2", mode="dual", number_of_address=right_count) %}
+{% set left_bgp_neighbors = generate_ip_address_list("172.15.1.1", "172::1:1", mode="dual", number_of_address=left_count) %}
+{% set right_bgp_neighbors = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=right_count) %}
 - header:
     model: sn5600
     nvue-api-version: nvue_v1
@@ -22,28 +26,48 @@
             set-hostname: disabled
         vrf: mgmt
         type: eth
-    {% if split_left!=1 %}
+    {% if split_left!=1 and not pre_left %}
     {% for port in left_ports  %}
       {{ port }}:
-        link:
+{% include '_interface_link_phy_breakout.jinja' %}
           breakout:
             {{ split_left }}x: {}
         type: swp
     {% endfor %}
     {% endif %}
-    {% if split_right!=1 %}
+    {% if split_right!=1 and not pre_right %}
     {% for port in right_ports  %}
       {{ port }}:
-        link:
+{% include '_interface_link_phy_breakout.jinja' %}
           breakout:
             {{ split_right }}x: {}
         type: swp
     {% endfor %}
     {% endif %}
     {% set counter = namespace(value=0) %}
+    {% if split_left != 1 and pre_left %}
+    {% for port in sort_swp_split_port_names(left_ports) %}
+      {{ port }}:
+{% include '_interface_link_phy_optional.jinja' %}
+        ipv4:
+          address:
+            {{ left_address_list["v4"][counter.value] }}/24 : {}
+        ipv6:
+          address:
+            {{ left_address_list["v6"][counter.value] }}/120 : {}
+        {% set counter.value = counter.value + 1 %}
+        {% if two_sided_ar=='True' %}
+        router:
+          adaptive-routing:
+            state: enabled
+        {% endif %}
+        type: swp
+    {% endfor %}
+    {% else %}
     {% for port in left_ports %}
     {% for split in range(0, split_left) %}
       {{ port }}{% if split_left != 1 %}s{{ split }} {% endif %}:
+{% include '_interface_link_phy_optional.jinja' %}
         ipv4:
           address:
             {{ left_address_list["v4"][counter.value] }}/24 : {}
@@ -59,10 +83,29 @@
         type: swp
     {% endfor %}
     {% endfor %}
+    {% endif %}
     {% set counter = namespace(value=0) %}
+    {% if split_right != 1 and pre_right %}
+    {% for port in sort_swp_split_port_names(right_ports) %}
+      {{ port }}:
+{% include '_interface_link_phy_optional.jinja' %}
+        ipv4:
+          address:
+            {{ right_address_list["v4"][counter.value] }}/24 : {}
+        ipv6:
+          address:
+            {{ right_address_list["v6"][counter.value] }}/120 : {}
+        {% set counter.value = counter.value + 1 %}
+        router:
+          adaptive-routing:
+            state: enabled
+        type: swp
+    {% endfor %}
+    {% else %}
     {% for port in right_ports %}
       {% for split in range(0, split_right)%}
       {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
+{% include '_interface_link_phy_optional.jinja' %}
         ipv4:
           address:
             {{ right_address_list["v4"][counter.value] }}/24 : {}
@@ -76,6 +119,7 @@
         type: swp
       {% endfor %}
     {% endfor %}
+    {% endif %}
     qos:
       pfc:
         default-global:
@@ -158,21 +202,25 @@
               {{ neighbor }}:
                 peer-group: v4_group_left
                 type: numbered
+                update-source: {{ left_address_list["v4"][loop.index0] }}
               {% endfor %}
               {% for neighbor in left_bgp_neighbors["v6"] %}
               {{ neighbor }}:
                 peer-group: v6_group_left
                 type: numbered
+                update-source: {{ left_address_list["v6"][loop.index0] }}
               {% endfor %}
               {% for neighbor in right_bgp_neighbors["v4"] %}
               {{ neighbor }}:
                 peer-group: v4_group_right
                 type: numbered
+                update-source: {{ right_address_list["v4"][loop.index0] }}
               {% endfor %}
               {% for neighbor in right_bgp_neighbors["v6"] %}
               {{ neighbor }}:
                 peer-group: v6_group_right
                 type: numbered
+                update-source: {{ right_address_list["v6"][loop.index0] }}
               {% endfor %}
             peer-group:
               v4_group_left:

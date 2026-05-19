@@ -7,6 +7,8 @@
 {% set neighbor_start = address_calculator(address = "fcbb:aaaa:2::2", operation = "add" , step = "0x100000000000000000000", operand = (total_ports//2)*split_left) %}
 {% set neighbor_list = generate_ip_address_list(address_start_v6 = neighbor_start, mode="v6", step_v6="0x100000000000000000000", number_of_address=(total_ports//2)*split_right) %}
 {% set mloop_ports = down_ports() %}
+{% set dut_pre_split = cumulus_ports_already_logical_split(port_list['dut']) %}
+{% set mloop_pre_split = cumulus_ports_already_logical_split(mloop_ports) %}
 {% set speed = parameter_dict.speed | int %}
 - header:
     model: sn5600
@@ -82,7 +84,7 @@
             {{ address | replace("aaaa", "bbbb") }}/48: {}
           {% endfor %}
         type: loopback
-    {% if split_right!=1 %}
+    {% if split_right!=1 and not dut_pre_split %}
     {% for port in port_list['dut']  %}
       {{ port }}:
         link:
@@ -91,7 +93,7 @@
         type: swp
     {% endfor %}
     {% endif %}
-    {% if split_right!=1 %}
+    {% if split_right!=1 and not mloop_pre_split %}
     {% for port in mloop_ports  %}
       {{ port }}:
         link:
@@ -101,6 +103,18 @@
     {% endfor %}
     {% endif %}
     {% set counter = namespace(value=0) %}
+    {% if split_right != 1 and dut_pre_split %}
+    {% for port in sort_swp_split_port_names(port_list['dut']) %}
+      {{ port }}:
+        bridge:
+          domain:
+            br_default:
+              access: {{ counter.value + 200 }}
+              {% set counter.value = counter.value + 1 %}
+              learning: disabled
+        type: swp
+    {% endfor %}
+    {% else %}
     {% for port in port_list['dut'] %}
     {% for split in range(0, split_right | int ) %}
       {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
@@ -120,7 +134,23 @@
         type: swp
     {% endfor %}
     {% endfor %}
+    {% endif %}
     {% set counter = namespace(value=0) %}
+    {% if split_right != 1 and mloop_pre_split %}
+    {% for port in sort_swp_split_port_names(mloop_ports) %}
+      {{ port }}:
+        acl:
+          acl-drop-arp-bgp:
+            inbound: {}
+        bridge:
+          domain:
+            br_default:
+              access: {{ counter.value + 200 }}
+              {% set counter.value = counter.value + 1 %}
+              learning: disabled
+        type: swp
+    {% endfor %}
+    {% else %}
     {% for port in mloop_ports %}
     {% for split in range(0, split_right | int ) %}
       {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
@@ -143,6 +173,7 @@
         type: swp
     {% endfor %}
     {% endfor %}
+    {% endif %}
     {% for vlan in range(200, 200 + address_list|length ) %}
       vlan{{ vlan }}:
         base-interface: br_default
