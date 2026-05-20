@@ -1,11 +1,27 @@
 {% set port_list = filter_ports(["dut"]) %}
-{% set total_ports = parameter_dict.total_ports %}
 {% set split_left = parameter_dict.split_left %}
-{% set address_list = generate_ip_address_list(address_start_v6 = "fcbb:aaaa:2::1", mode="v6", step_v6="0x100000000000000000000", number_of_address=(total_ports//2)*split_left) %}
-{% set neighbor_list = generate_ip_address_list(address_start_v6 = "fcbb:aaaa:2::2", mode="v6", step_v6="0x100000000000000000000", number_of_address=(total_ports//2)*split_left) %}
-{% set mloop_ports = down_ports() %}
-{% set dut_pre_split = cumulus_ports_already_logical_split(port_list['dut']) %}
-{% set mloop_pre_split = cumulus_ports_already_logical_split(mloop_ports) %}
+{% set dut_lldp_ports = port_list['dut'] %}
+{% set mloop_lldp_ports = down_ports() %}
+{% set dut_pre_split = cumulus_ports_already_logical_split(dut_lldp_ports) %}
+{% set mloop_pre_split = cumulus_ports_already_logical_split(mloop_lldp_ports) %}
+{% set _ = validate_no_unsupported_service_port_split(dut_lldp_ports, split_left, "SRv6 left TG DUT-facing ports") %}
+{% set _ = validate_no_unsupported_service_port_split(mloop_lldp_ports, split_left, "SRv6 left TG mloop ports") %}
+{% set dut_parent_ports = get_swp_parent_port_names(dut_lldp_ports) %}
+{% set mloop_parent_ports = get_swp_parent_port_names(mloop_lldp_ports) %}
+{% set _ = validate_no_overlapping_swp_parent_ports(dut_lldp_ports, mloop_lldp_ports, "SRv6 left TG DUT-facing and mloop ports") %}
+{% if dut_pre_split and split_left | int == 2 %}
+{% set dut_ports = sort_swp_split_port_names(dut_lldp_ports) %}
+{% else %}
+{% set dut_ports = get_swp_ports_for_split(dut_lldp_ports, split_left) %}
+{% endif %}
+{% if mloop_pre_split and split_left | int == 2 %}
+{% set mloop_ports = sort_swp_split_port_names(mloop_lldp_ports) %}
+{% else %}
+{% set mloop_ports = get_swp_ports_for_split(mloop_lldp_ports, split_left) %}
+{% endif %}
+{% set dut_ports_num = dut_ports|length %}
+{% set address_list = generate_ip_address_list(address_start_v6 = "fcbb:aaaa:2::1", mode="v6", step_v6="0x100000000000000000000", number_of_address=dut_ports_num) %}
+{% set neighbor_list = generate_ip_address_list(address_start_v6 = "fcbb:aaaa:2::2", mode="v6", step_v6="0x100000000000000000000", number_of_address=dut_ports_num) %}
 {% set speed = parameter_dict.speed | int %}
 - header:
     model: sn5600
@@ -81,8 +97,8 @@
             {{ address | replace("aaaa", "bbbb") }}/48: {}
           {% endfor %}
         type: loopback
-    {% if split_left!=1 and not dut_pre_split %}
-    {% for port in port_list['dut']  %}
+    {% if split_left | int != 1 and not (dut_pre_split and split_left | int == 2) %}
+    {% for port in dut_parent_ports %}
       {{ port }}:
         link:
           breakout:
@@ -90,8 +106,8 @@
         type: swp
     {% endfor %}
     {% endif %}
-    {% if split_left!=1 and not mloop_pre_split %}
-    {% for port in mloop_ports  %}
+    {% if split_left | int != 1 and not (mloop_pre_split and split_left | int == 2) %}
+    {% for port in mloop_parent_ports %}
       {{ port }}:
         link:
           breakout:
@@ -100,22 +116,9 @@
     {% endfor %}
     {% endif %}
     {% set counter = namespace(value=0) %}
-    {% if split_left != 1 and dut_pre_split %}
-    {% for port in sort_swp_split_port_names(port_list['dut']) %}
+    {% for port in dut_ports %}
       {{ port }}:
-        bridge:
-          domain:
-            br_default:
-              access: {{ counter.value + 200 }}
-              {% set counter.value = counter.value + 1 %}
-              learning: disabled
-        type: swp
-    {% endfor %}
-    {% else %}
-    {% for port in port_list['dut'] %}
-    {% for split in range(0, split_left | int ) %}
-      {{ port }}{% if split_left != 1 %}s{{ split }}{% endif %}:
-      {% if split_left == 1 %}
+      {% if split_left | int == 1 %}
         link:
           breakout:
             1x: {}
@@ -130,33 +133,18 @@
               learning: disabled
         type: swp
     {% endfor %}
-    {% endfor %}
-    {% endif %}
     {% set counter = namespace(value=0) %}
-    {% if split_left != 1 and mloop_pre_split %}
-    {% for port in sort_swp_split_port_names(mloop_ports) %}
-      {{ port }}:
-        acl:
-          acl-drop-arp-bgp:
-            inbound: {}
-        bridge:
-          domain:
-            br_default:
-              access: {{ counter.value + 200 }}
-              {% set counter.value = counter.value + 1 %}
-              learning: disabled
-        type: swp
-    {% endfor %}
-    {% else %}
     {% for port in mloop_ports %}
-    {% for split in range(0, split_left | int ) %}
-      {{ port }}{% if split_left != 1 %}s{{ split }} {% endif %}:
-      {% if split_left == 1 %}
+      {{ port }}:
+      {% if split_left | int == 1 %}
         link:
           breakout:
             1x: {}
           state:
             up: {}
+      {% elif split_left | int == 8 and parameter_dict.get('link_phy_speed') %}
+        link:
+          speed: {{ parameter_dict.get('link_phy_speed') }}
         {% endif %}
         acl:
           acl-drop-arp-bgp:
@@ -169,8 +157,6 @@
               learning: disabled
         type: swp
     {% endfor %}
-    {% endfor %}
-    {% endif %}
     {% for vlan in range(200, 200 + address_list|length ) %}
       vlan{{ vlan }}:
         base-interface: br_default
@@ -266,6 +252,7 @@
                     state: enabled
                 peer-group: dut
                 type: numbered
+                update-source: {{ address_list[loop.index0] }}
               {% endfor %}
             peer-group:
               dut:

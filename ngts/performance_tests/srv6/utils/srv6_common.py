@@ -103,6 +103,10 @@ class TestSRv6Base:
         self.vlan_interface_configuration_dict = {}
         self.shaper_value = shaper_value
 
+    def wait_for_traffic_to_stabilize(self, scenario_tag="traffic", delay=10):
+        with allure.step(f"Wait for {scenario_tag} traffic to stabilize before validation"):
+            time.sleep(delay)
+
     def round_robin_traffic_test_runner(self, test_name, traffic_type,
                                         upstream_group, downstream_group, bisection_traffic=True):
         upstream_downstream_group = list(zip(upstream_group, downstream_group))
@@ -116,6 +120,7 @@ class TestSRv6Base:
                                                     dut_interfaces_ipv6_configuration_dict=self.dut_interfaces_ipv6_configuration_dict)
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=MRCConsts.BEFORE_TEST_SHAPER_VALUE)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+            self.wait_for_traffic_to_stabilize("round-robin")
         with allure.step(f"Verifying round-robin traffic pattern on all upstream ports and all downstream ports"):
             half_ports_num = len(all_ports_in_test) // 2
             round_robin_occ_th_dict = {ValidationConsts.OCC_AVG: 11 * half_ports_num,
@@ -167,6 +172,7 @@ class TestSRv6Base:
             with allure.step(f"Run traffic"):
                 start_time = time.time()
                 run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+            self.wait_for_traffic_to_stabilize("many-to-one")
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
             samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
             additional_validations = self.get_many_to_one_additional_validations(traffic_type)
@@ -217,6 +223,7 @@ class TestSRv6Base:
                                                     pairing=pairing)
             start_time = time.time()
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+            self.wait_for_traffic_to_stabilize("many-to-few")
         samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
         samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
         bw_threshold = self.get_trimming_bw_threshold(traffic_type)

@@ -389,15 +389,18 @@ class Cl_Consts:
     COMMON_IP_PREFIX_RIGHT = "110"
     SRV6_SPEED_BY_CHIP_TYPE = {
         "SPC4": "200000000",
-        "SPC5": "100000000"
+        "SPC5": "100000000",
+        "SPC6": "200000000",  # TODO(#5088329): confirm correct SRv6 speed for SPC6 with arch
     }
     SRV6_SPLIT_LEFT_BY_CHIP_TYPE = {
         "SPC4": 4,
-        "SPC5": 8
+        "SPC5": 8,
+        "SPC6": 8,  # TODO(#5088329): confirm correct SRv6 split_left for SPC6 with arch
     }
     SRV6_SPLIT_RIGHT_BY_CHIP_TYPE = {
         "SPC4": 4,
-        "SPC5": 8
+        "SPC5": 8,
+        "SPC6": 8,  # TODO(#5088329): confirm correct SRv6 split_right for SPC6 with arch
     }
     SDK_DEB_DIR_TEMPLATE = os.path.join(PerfConsts.SDK_VERSION_PATH, "sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-29-2-amd64/")
 
@@ -522,7 +525,8 @@ class MRCConsts:
     UPLINKS = "Uplinks"
     T1_MANY_TO_FEW_INGRESS_PORTS_NUM_BY_CHIP_TYPE = {
         "SPC4": 256,
-        "SPC5": 448
+        "SPC5": 448,
+        "SPC6": 448
     }
     T0_DOWNLINKS_LIST = []
     T0_UPLINKS_LIST = []
@@ -565,26 +569,36 @@ class MRCConsts:
         "SPC4": {"leaf": "Mellanox-SN5600-C256S1",
                  "spine": "Mellanox-SN5600-C224O8"},
         "SPC5": {"leaf": "Mellanox-SN5640-C512S2",
-                 "spine": "Mellanox-SN5640-C448O16"}
+                 "spine": "Mellanox-SN5640-C448O16"},
+        # leaf: ACS-SN6600_LD-SPIL-8 = full 8×200G split = 512 ports (confirmed)
+        # spine: TODO(#5088329): confirm correct SPC6 spine SKU with arch
+        "SPC6": {"leaf": "ACS-SN6600_LD-SPIL-8",
+                 "spine": "Mellanox-SN6600_LD-P128C2"},
     }
     HWSKU_SWITCH_TYPE = {
         "Mellanox-SN5600-C256S1": 'ToRRouter',
         "Mellanox-SN5600-C224O8": 'LeafRouter',
         "Mellanox-SN5640-C512S2": 'ToRRouter',
-        "Mellanox-SN5640-C448O16": 'LeafRouter'
+        "Mellanox-SN5640-C448O16": 'LeafRouter',
+        "ACS-SN6600_LD-SPIL-8": 'ToRRouter',          # SPC6 leaf — confirmed HWSKU
+        # TODO(#5088329): confirm correct SPC6 spine switch type with arch
+        "Mellanox-SN6600_LD-P128C2": 'LeafRouter',
     }
     UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE = {
         "SPC4": 128,
-        "SPC5": 180
+        "SPC5": 180,
+        "SPC6": 180,  # SPIL-8: 512×200G — same port count as SPC5 512×100G
     }
     VICTIM_PORTS_NUM = 90
     LEAF_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
         "SPC4": {'group_size': 16, 'group_num': 8},
-        "SPC5": {'group_size': 10, 'group_num': 18}
+        "SPC5": {'group_size': 10, 'group_num': 18},
+        "SPC6": {'group_size': 10, 'group_num': 18},  # same as SPC5 — identical port count
     }
     SPINE_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
         "SPC4": {'group_size': 16, 'group_num': 7},
-        "SPC5": {'group_size': 14, 'group_num': 16}
+        "SPC5": {'group_size': 14, 'group_num': 16},
+        "SPC6": {'group_size': 14, 'group_num': 16},  # same as SPC5 — identical port count
     }
     TRAFFIC_TYPE_IPV6 = "IPv6"
     TRAFFIC_TYPE_SRV6 = "SRv6"
@@ -605,9 +619,13 @@ class MRCConsts:
     SPC4_POOL_SIZE_BYTES = 158230080
     SPC5_POOL_SIZE_CELLS = SPC5_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
     SPC4_POOL_SIZE_CELLS = SPC4_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
+    SPC6_POOL_SIZE_MB = 105
+    SPC6_POOL_SIZE_BYTES = SPC6_POOL_SIZE_MB * 1000 * 1000
+    SPC6_POOL_SIZE_CELLS = SPC6_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
     POOL_SIZE_CELLS_BY_CHIP_TYPE = {
         "SPC5": SPC5_POOL_SIZE_CELLS,
-        "SPC4": SPC4_POOL_SIZE_CELLS
+        "SPC4": SPC4_POOL_SIZE_CELLS,
+        "SPC6": SPC6_POOL_SIZE_CELLS
     }
     FULL_MRC_DATA_PACKET_SIZE = 23
     HALF_MRC_DATA_PACKET_SIZE = FULL_MRC_DATA_PACKET_SIZE / 2
@@ -679,6 +697,12 @@ class MRCConsts:
     # Drop Over Max constants per chip type
     DROP_OVER_MAX_BY_CHIP_TYPE = {
         "SPC5": {
+            "packet_size": 3072,
+            "mrc_num_packets": 10,
+            "num_dummy_acls": 25,
+        },
+        # TODO(#5088329): confirm correct Drop Over Max params for SPC6 with arch (seeded from SPC5)
+        "SPC6": {
             "packet_size": 3072,
             "mrc_num_packets": 10,
             "num_dummy_acls": 25,

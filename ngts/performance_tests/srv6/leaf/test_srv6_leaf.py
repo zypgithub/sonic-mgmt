@@ -96,6 +96,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                                   vary_src_ip=is_drop_over_max)
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=self.shaper_value)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+            self.wait_for_traffic_to_stabilize("bisection")
 
         with allure.step("Verifying the traffic for all egress ports"):
             additional_validations = self.get_additional_validations(traffic_type,
@@ -222,6 +223,7 @@ class TestSRv6Leaf(TestSRv6Base):
             run_traffic(self.players, self.scenario, bisection_traffic_jsons)
         with allure.step("run many to one traffic"):
             run_traffic(self.players, self.scenario, many_to_one_traffic_jsons)
+        self.wait_for_traffic_to_stabilize("victim-flow")
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()

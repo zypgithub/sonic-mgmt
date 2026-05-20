@@ -1,14 +1,29 @@
-{% set left_ports = get_right_left_ports_dict(bring_up_ports=False)['left_ports'] %}
-{% set right_ports = get_right_left_ports_dict(bring_up_ports=False)['right_ports'] %}
+{% set left_lldp_ports = get_right_left_ports_dict(bring_up_ports=False)['left_ports'] %}
+{% set right_lldp_ports = get_right_left_ports_dict(bring_up_ports=False)['right_ports'] %}
 {% set split_left = parameter_dict.split_left %}
 {% set split_right = parameter_dict.split_right %}
-{% set total_ports = parameter_dict.total_ports %}
-{% set address_list = generate_ip_address_list(address_start_v6="fcbb:aaaa:2::2", mode="v6", step_v6="0x100000000000000000000",number_of_address=(total_ports * split_left)) %}
-{% set neigbor_list_left = generate_ip_address_list(address_start_v6="fcbb:aaaa:2::1", mode="v6", step_v6="0x100000000000000000000",number_of_address=((total_ports//2) * split_left)) %}
-{% set neigbor_list_right_start = address_calculator(address = "fcbb:aaaa:2::1", operation = "add" , step = "0x100000000000000000000", operand = ((total_ports//2) * split_left)) %}
-{% set neigbor_list_right = generate_ip_address_list(address_start_v6=neigbor_list_right_start, mode="v6", step_v6="0x100000000000000000000",number_of_address=((total_ports//2) * split_right)) %}
-{% set pre_left = cumulus_ports_already_logical_split(left_ports) %}
-{% set pre_right = cumulus_ports_already_logical_split(right_ports) %}
+{% set pre_left = cumulus_ports_already_logical_split(left_lldp_ports) %}
+{% set pre_right = cumulus_ports_already_logical_split(right_lldp_ports) %}
+{% set _ = validate_no_unsupported_service_port_split(left_lldp_ports, split_left, "SRv6 DUT left ports") %}
+{% set _ = validate_no_unsupported_service_port_split(right_lldp_ports, split_right, "SRv6 DUT right ports") %}
+{% set left_parent_ports = get_swp_parent_port_names(left_lldp_ports) %}
+{% set right_parent_ports = get_swp_parent_port_names(right_lldp_ports) %}
+{% if pre_left and split_left | int == 2 %}
+{% set left_ports = sort_swp_split_port_names(left_lldp_ports) %}
+{% else %}
+{% set left_ports = get_swp_ports_for_split(left_lldp_ports, split_left) %}
+{% endif %}
+{% if pre_right and split_right | int == 2 %}
+{% set right_ports = sort_swp_split_port_names(right_lldp_ports) %}
+{% else %}
+{% set right_ports = get_swp_ports_for_split(right_lldp_ports, split_right) %}
+{% endif %}
+{% set left_ports_num = left_ports|length %}
+{% set right_ports_num = right_ports|length %}
+{% set address_list = generate_ip_address_list(address_start_v6="fcbb:aaaa:2::2", mode="v6", step_v6="0x100000000000000000000",number_of_address=(left_ports_num + right_ports_num)) %}
+{% set neigbor_list_left = generate_ip_address_list(address_start_v6="fcbb:aaaa:2::1", mode="v6", step_v6="0x100000000000000000000",number_of_address=left_ports_num) %}
+{% set neigbor_list_right_start = address_calculator(address = "fcbb:aaaa:2::1", operation = "add" , step = "0x100000000000000000000", operand = left_ports_num) %}
+{% set neigbor_list_right = generate_ip_address_list(address_start_v6=neigbor_list_right_start, mode="v6", step_v6="0x100000000000000000000",number_of_address=right_ports_num) %}
 
 - header:
     model: sn5600
@@ -24,8 +39,8 @@
             set-hostname: disabled
         vrf: mgmt
         type: eth
-    {% if split_left!=1 and not pre_left %}
-    {% for port in left_ports  %}
+    {% if split_left | int != 1 and not (pre_left and split_left | int == 2) %}
+    {% for port in left_parent_ports %}
       {{ port }}:
         link:
           breakout:
@@ -33,8 +48,8 @@
         type: swp
     {% endfor %}
     {% endif %}
-    {% if split_right!=1 and not pre_right %}
-    {% for port in right_ports  %}
+    {% if split_right | int != 1 and not (pre_right and split_right | int == 2) %}
+    {% for port in right_parent_ports %}
       {{ port }}:
         link:
           breakout:
@@ -43,51 +58,9 @@
     {% endfor %}
     {% endif %}
     {% set address_list_index = namespace(value=0) %}
-    {% set counter = namespace(value=0) %}
-    {% if split_left != 1 and pre_left %}
-    {% for port in sort_swp_split_port_names(left_ports) %}
-      {{ port }}:
-        ipv6:
-          address:
-            {{ address_list[address_list_index.value] }}/48 : {}
-        {% set counter.value = counter.value + 1 %}
-        {% set address_list_index.value = address_list_index.value + 1 %}
-        type: swp
-    {% endfor %}
-    {% else %}
     {% for port in left_ports %}
-    {% for split in range(0, split_left) %}
-      {{ port }}{% if split_left != 1 %}s{{ split }} {% endif %}:
-      {% if split_left == 1 %}
-        link:
-          breakout:
-            1x: {}
-        {% endif %}
-        ipv6:
-          address:
-            {{ address_list[address_list_index.value] }}/48 : {}
-        {% set counter.value = counter.value + 1 %}
-        {% set address_list_index.value = address_list_index.value + 1 %}
-        type: swp
-    {% endfor %}
-    {% endfor %}
-    {% endif %}
-    {% set counter = namespace(value=0) %}
-    {% if split_right != 1 and pre_right %}
-    {% for port in sort_swp_split_port_names(right_ports) %}
       {{ port }}:
-        ipv6:
-          address:
-            {{ address_list[address_list_index.value] }}/48 : {}
-        {% set counter.value = counter.value + 1 %}
-        {% set address_list_index.value = address_list_index.value + 1 %}
-        type: swp
-    {% endfor %}
-    {% else %}
-    {% for port in right_ports %}
-      {% for split in range(0, split_right)%}
-      {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
-      {% if split_right == 1 %}
+      {% if split_left | int == 1 %}
         link:
           breakout:
             1x: {}
@@ -95,12 +68,22 @@
         ipv6:
           address:
             {{ address_list[address_list_index.value] }}/48 : {}
-        {% set counter.value = counter.value + 1 %}
         {% set address_list_index.value = address_list_index.value + 1 %}
         type: swp
-      {% endfor %}
     {% endfor %}
-    {% endif %}
+    {% for port in right_ports %}
+      {{ port }}:
+      {% if split_right | int == 1 %}
+        link:
+          breakout:
+            1x: {}
+        {% endif %}
+        ipv6:
+          address:
+            {{ address_list[address_list_index.value] }}/48 : {}
+        {% set address_list_index.value = address_list_index.value + 1 %}
+        type: swp
+    {% endfor %}
     qos:
       roce:
         state: enabled
@@ -176,6 +159,7 @@
                     state: enabled
                 peer-group: left_bgp
                 type: numbered
+                update-source: {{ address_list[loop.index0] }}
               {% endfor %}
             {% for neighbor in neigbor_list_right %}
               {{ neighbor }}:
@@ -184,6 +168,7 @@
                     state: enabled
                 peer-group: right_bgp
                 type: numbered
+                update-source: {{ address_list[left_ports_num + loop.index0] }}
               {% endfor %}
             peer-group:
               left_bgp:

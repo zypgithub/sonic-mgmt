@@ -7,6 +7,7 @@ import yaml
 import re
 import random
 from retry import retry
+from retry.api import retry_call
 import copy
 import allure
 from collections import defaultdict
@@ -21,14 +22,26 @@ from ngts.helpers.performance.traffic_helpers import generate_ip_address_list, i
 from time import sleep
 
 _LOGICAL_SWP_SPLIT_RE = re.compile(r"^swp\d+s\d+$")
+# ``nv show interface`` table row: ``swp1s0  up  up`` (port, admin, oper).
+_NV_SHOW_INTERFACE_LINE_RE = re.compile(r"^(swp\d+(?:s\d+)?)\s+(\S+)\s+(\S+)")
+_SPC6_SERVICE_PORT_PARENT_NAMES = {"swp65"}
+
+
+class _SwpPortsNotReady(Exception):
+    """Sentinel raised while polling switch-port admin/oper readiness."""
+
+
+class _LldpLeftPortsNotReady(Exception):
+    """Sentinel raised while waiting for DUT left-side LLDP neighbors."""
 
 
 def cumulus_ports_already_logical_split(ports):
     """True if every port looks like an already-split Cumulus name (e.g. swp1s0).
 
     On platforms such as SPC6, front-panel ports are often exposed pre-split (2x as
-    ``swpNs0`` / ``swpNs1``). NVUE must not apply ``link breakout`` again, and Jinja
-    must not append a second ``sM`` suffix.
+    ``swpNs0`` / ``swpNs1``). Template callers use this to decide whether current
+    child ports should be used as-is or collapsed back to parent ``swpN`` ports when
+    rendering a different breakout.
 
     Args:
         ports: Iterable of interface name strings (may be empty).
@@ -58,6 +71,101 @@ def sort_swp_split_port_names(ports):
     return sorted(ports, key=_key)
 
 
+def get_swp_parent_port_names(ports):
+    """Return unique parent ``swpN`` names from plain or split Cumulus interface names.
+
+    Split child names such as ``swp1s0`` / ``swp1s1`` collapse to ``swp1`` so readiness
+    checks and split math operate on physical parent ports rather than breakout indices.
+    Plain ``swpN`` names pass through unchanged.
+    """
+
+    parent_ports = []
+    seen = set()
+    for port in sort_swp_split_port_names(ports):
+        name = str(port)
+        match = re.match(r"^(swp\d+)s\d+$", name)
+        parent_port = match.group(1) if match else name
+        if parent_port not in seen:
+            parent_ports.append(parent_port)
+            seen.add(parent_port)
+    return sort_swp_split_port_names(parent_ports)
+
+
+def get_swp_ports_for_split(ports, split):
+    """Return the interface names expected after applying ``split`` to parent ports."""
+
+    split = int(split)
+    parent_ports = get_swp_parent_port_names(ports)
+    if split == 1:
+        return parent_ports
+    return [f"{port}s{index}" for port in parent_ports for index in range(split)]
+
+
+def get_srv6_left_ports_count(lldp_ports, split_left):
+    """Return logical left-side port count (same rules as ``dut.yaml.jinja``)."""
+
+    pre_left = cumulus_ports_already_logical_split(lldp_ports)
+    if pre_left and int(split_left) == 2:
+        return len(sort_swp_split_port_names(lldp_ports))
+    return len(get_swp_ports_for_split(lldp_ports, split_left))
+
+
+def get_srv6_dut_left_ports_num(performance_cli, split_left, timeout=180, interval=10):
+    """Return DUT left-side port count for SRv6 templates after LLDP neighbors are visible.
+
+    Args:
+        performance_cli: DUT performance CLI wrapper exposing ``get_right_left_ports_dict``.
+        split_left: Left-side breakout factor passed to ``get_srv6_left_ports_count``.
+        timeout: Max seconds to wait for non-empty left-side LLDP port list.
+        interval: Poll interval in seconds.
+
+    Returns:
+        Logical left-side port count for SRv6 Jinja address offset.
+
+    Raises:
+        TestIssue: If left-side LLDP neighbors are still empty after ``timeout``.
+    """
+    tries = max(1, timeout // interval)
+
+    def _poll_lldp_left_ports():
+        left_lldp_ports = performance_cli.get_right_left_ports_dict()['left_ports']
+        if not left_lldp_ports:
+            logging.info("Waiting for DUT left-side LLDP neighbors before computing dut_left_ports_num")
+            raise _LldpLeftPortsNotReady()
+        return get_srv6_left_ports_count(left_lldp_ports, split_left)
+
+    try:
+        return retry_call(_poll_lldp_left_ports, tries=tries, delay=interval, logger=logging.getLogger())
+    except _LldpLeftPortsNotReady:
+        raise TestIssue(
+            f"DUT left-side LLDP neighbors not populated after {timeout}s; "
+            "cannot compute dut_left_ports_num for SRv6 addressing")
+
+
+def validate_no_unsupported_service_port_split(ports, split, context):
+    """Raise if an SN6600 service port would be moved away from its supported 2x split."""
+
+    split = int(split)
+    if split == 2:
+        return True
+    service_ports = sorted(set(get_swp_parent_port_names(ports)) & _SPC6_SERVICE_PORT_PARENT_NAMES)
+    if service_ports:
+        raise ValueError(f"{context}: SN6600 service ports {service_ports} support only 2x breakout")
+    return True
+
+
+def validate_no_overlapping_swp_parent_ports(first_ports, second_ports, context):
+    """Raise if two logical port groups collapse to the same parent ``swpN`` ports."""
+
+    first_parents = set(get_swp_parent_port_names(first_ports))
+    second_parents = set(get_swp_parent_port_names(second_ports))
+    overlapping_ports = sorted(first_parents & second_parents, key=sort_swp_split_port_names)
+    if overlapping_ports:
+        raise ValueError(f"{context}: overlapping parent ports {overlapping_ports} would render duplicate "
+                         f"NVUE interface keys. Check DUT-facing LLDP ports and mloop/down ports.")
+    return True
+
+
 class NvuePerformanceCli(PerformanceCommon):
 
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
@@ -83,7 +191,7 @@ class NvuePerformanceCli(PerformanceCommon):
         """Initialize NVUE ports before LLDP-based performance templates are rendered."""
         logging.info("Initializing physical ports")
         self.cli_obj.interface.initialize_physical_ports()
-        # TODO(336181): replace with wait_for_all_swp_ports_admin_up() after initialize_physical_ports()
+        self.wait_for_all_swp_ports_admin_up()
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=Cl_Consts.CL_HOME_DIR):
         src_file = self.get_configuration_file(scenario, conf_args, template_suite)
@@ -94,11 +202,85 @@ class NvuePerformanceCli(PerformanceCommon):
         self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)
         self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         logging.info(f"The configuration file on {self.dut_alias} was applied successfully")
+        # TODO: validate admin-up wait timeouts/behavior on SPC6 SRv6 lab runs (post-breakout bring-up)
+        self.wait_for_all_swp_ports_admin_up()
         self.ports = self.retry_get_player_ports()
         self.connected_ports = self.ports["connected_ports"]
         self.unconnected_ports = self.ports["unconnected_ports"]
         self.port_groups = self.get_right_left_ports_dict()
         self.get_os_ports_name_mapping()
+
+    def wait_for_all_swp_ports_admin_up(self, timeout=180, interval=10):
+        """Wait until all non-bonus switch ports shown by NVUE are admin up.
+
+        Polls ``nv show interface`` every ``interval`` seconds. Raises ``TestIssue`` after
+        ``timeout`` with the last set of ports still admin-down (bonus/service ports excluded).
+        """
+        bonus_ports = set(self.cli_obj.interface.get_bonus_ports(self.engine))
+        bonus_parent_ports = set(get_swp_parent_port_names(bonus_ports))
+        self._wait_for_swp_ports_ready(bonus_parent_ports, require_oper_up=False,
+                                       timeout=timeout, interval=interval, state_label="admin")
+
+    def wait_for_all_swp_ports_oper_up(self, timeout=180, interval=10):
+        """Wait until all non-bonus switch ports shown by NVUE are admin and oper up.
+
+        Polls ``nv show interface`` every ``interval`` seconds. Raises ``TestIssue`` after
+        ``timeout`` with the last down-port snapshot so logs show which interfaces blocked readiness.
+        """
+        bonus_ports = set(self.cli_obj.interface.get_bonus_ports(self.engine))
+        bonus_parent_ports = set(get_swp_parent_port_names(bonus_ports))
+        self._wait_for_swp_ports_ready(bonus_parent_ports, require_oper_up=True,
+                                       timeout=timeout, interval=interval, state_label="oper")
+
+    def _wait_for_swp_ports_ready(self, bonus_parent_ports, require_oper_up, timeout, interval,
+                                  state_label):
+        """Poll NVUE until non-bonus swp ports meet admin/oper requirements."""
+        tries = max(1, timeout // interval)
+        last_down_ports = []
+
+        def _poll_once():
+            nonlocal last_down_ports
+            last_down_ports = self.get_down_swp_ports(bonus_parent_ports, require_oper_up=require_oper_up)
+            if last_down_ports:
+                logging.info(
+                    f"Waiting for switch ports to become {state_label} up on {self.dut_alias}: "
+                    f"{last_down_ports}")
+                raise _SwpPortsNotReady()
+            logging.info(f"All switch ports are {state_label} up on {self.dut_alias}")
+
+        try:
+            retry_call(_poll_once, tries=tries, delay=interval, logger=logging.getLogger())
+        except _SwpPortsNotReady:
+            raise TestIssue(
+                f"Ports did not become {state_label} up on {self.dut_alias} after {timeout}s: "
+                f"{last_down_ports}")
+
+    def get_down_swp_ports(self, bonus_parent_ports, require_oper_up=True):
+        """Return non-bonus ``swp`` ports that are not admin/oper up per ``nv show interface``.
+
+        Parses each line of NVUE tabular output with ``_NV_SHOW_INTERFACE_LINE_RE``:
+        group 1 is the interface name (``swpN`` or split ``swpNsM``), group 2 is admin
+        state, group 3 is oper state. Bonus/service parent ports are excluded.
+        """
+        output = self.execute_cmd("nv show interface", print_output=False)
+        down_ports = []
+        for line in output.splitlines():
+            match = _NV_SHOW_INTERFACE_LINE_RE.match(line.strip())
+            if not match:
+                continue
+            port, admin_state, oper_state = match.groups()
+            parent_port = get_swp_parent_port_names([port])[0]
+            if parent_port in bonus_parent_ports:
+                continue
+            if admin_state != "up" or (require_oper_up and oper_state != "up"):
+                down_ports.append(f"{port}(admin={admin_state}, oper={oper_state})")
+        return down_ports
+
+    def configure_mloops(self, validate_mloops=True, is_simx=False):
+        super().configure_mloops(validate_mloops=validate_mloops, is_simx=is_simx)
+        if validate_mloops:
+            # TODO: validate oper-up wait after mloop config on SPC6 SRv6 (may be too strict for mloop ports)
+            self.wait_for_all_swp_ports_oper_up()
 
     @retry(exceptions=Exception, tries=3, delay=5)
     def retry_get_player_ports(self):
@@ -480,6 +662,10 @@ class NvuePerformanceCli(PerformanceCommon):
                      "address_calculator": address_calculator,
                      "cumulus_ports_already_logical_split": cumulus_ports_already_logical_split,
                      "sort_swp_split_port_names": sort_swp_split_port_names,
+                     "get_swp_parent_port_names": get_swp_parent_port_names,
+                     "get_swp_ports_for_split": get_swp_ports_for_split,
+                     "validate_no_unsupported_service_port_split": validate_no_unsupported_service_port_split,
+                     "validate_no_overlapping_swp_parent_ports": validate_no_overlapping_swp_parent_ports,
                      }
         asic = self.cli_obj.general.get_asic_model(self.engine)
         number_of_bonus_ports = len(Cl_Consts.BONUS_PORTS[asic])
@@ -501,6 +687,7 @@ class NvuePerformanceCli(PerformanceCommon):
             "link_auto_negotiate": conf_args.get('link_auto_negotiate', False),
             "link_phy_autoneg": conf_args.get("link_phy_autoneg"),
             "link_phy_speed": conf_args.get("link_phy_speed"),
+            "dut_left_ports_num": conf_args.get("dut_left_ports_num"),
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
         try:
@@ -510,7 +697,7 @@ class NvuePerformanceCli(PerformanceCommon):
             logging.error(f"{self.dut_alias}'s Jinja file has resulted in incorrect YAML configuration :- \r\n{pprint.pformat(outputText, depth=12, width=128)}\r\n")
             raise
         fd, path = tempfile.mkstemp()
-        with open(path, 'w') as f:
+        with os.fdopen(fd, 'w') as f:
             f.write(outputText)
         return path
 
