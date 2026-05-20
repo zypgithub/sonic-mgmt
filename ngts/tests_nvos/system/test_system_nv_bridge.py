@@ -376,7 +376,8 @@ def test_system_nv_bridge_primary_secondary(engines, nv_command, random_api, top
                                      dut_engine=engines.dut, connections=eth0_ip, local_host=True)
 
         with allure.step("Wait for cluster apps in ok state"):
-            ClusterTools.wait_for_app_healthy(cluster, ClusterApps.NMX_CONTROLLER)
+            if not standalone_system:
+                ClusterTools.wait_for_app_healthy(cluster, ClusterApps.NMX_CONTROLLER)
             ClusterTools.wait_for_app_healthy(cluster, ClusterApps.NMX_TELEMETRY)
             TestToolkit.tested_api = ApiType.NVUE
             ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format, standalone_system,
