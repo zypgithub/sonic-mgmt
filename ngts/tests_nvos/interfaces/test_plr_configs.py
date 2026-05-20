@@ -94,6 +94,7 @@ def _verify_plr_configuration(port: Port, mode: str):
         # but if the port is down,
         # we should wait till it goes up again so we can verify the configuration
         plr = port.interface.link.plr.parse_show()
+        allure.attach(f"plr-cfg-{port.name}.json", plr, attachment_type=AttachmentType.JSON)
         logger.info(f"Current PLR configuration: {plr}")
 
         items = (
@@ -114,9 +115,18 @@ def _verify_plr_configuration_on_ports(ports: Iterable[Port], mode: str, step_na
     verification_ports = list(ports)
     logger.info(f"{step_name}. Verification ports: {[port.name for port in verification_ports]}")
 
+    sorted_ports = sorted(verification_ports, key=lambda p: int(re.search(r'\d+', p.name).group(0)))
+
+    @retry.retry(exceptions=ExceptionGroup, tries=5, delay=10)
+    def _wait_port_down(port: Port):
+        port.wait_for_port_state(port, NvosConsts.LINK_STATE_DOWN)
+
+    with allure.step(f"Wait for port {sorted_ports[0].name} to be down"):
+        _wait_port_down(sorted_ports[0])
+
     with allure.step(step_name):
         # sort the ports by the port number, since lower number ports might be up faster than higher number ports
-        for port in sorted(verification_ports, key=lambda p: int(re.search(r'\d+', p.name).group(0))):
+        for port in sorted_ports:
             with allure.independent_step(f'Verify PLR configuration on port {port.name}'):
                 _verify_plr_configuration(port, mode)
 
