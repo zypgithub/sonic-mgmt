@@ -11,18 +11,18 @@ from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
-from ngts.tests_nvos.general.security.centralized_tests.upgrade import test_upgrade  # TODO: we should't import stuff from other test files directly
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.tests_nvos.general.security import conftest as security_conftest  # TODO: we should't import stuff from conftest directly
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.ngts_types import DevicesT
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime, SubDuration
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import OperationTimeConsts, SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.tests_nvos.checklist import test_checklist_ipv6  # TODO: we shouldn't import stuff from other test files directly
@@ -224,7 +224,9 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image,
                                      partition_id=partition_id_for_new_image,
                                      original_images=original_images, system=system, release_name=release_name,
-                                     test_name='test_downgrade_upgrade')
+                                     test_name='test_downgrade_upgrade',
+                                     devices=devices,
+                                     operation_label=OperationTimeConsts.IMAGE_DOWNGRADE)
 
             with allure.step('uninstall orig version'):
                 system.image.action_uninstall('force')
@@ -238,24 +240,31 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         with allure.step('Get config file and path for target version'):
             config_file_path, config_filename = devices.dut.get_test_config_file_by_version(original_version)
 
-        TestToolkit.tested_api = ApiType.NVUE
-        mtu_info, _ = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
-            config_filename, config_file_path, engines, devices, system, scp_host_creds, engines.dut,
-            include_mtu_testing=include_mtu_testing, verify_result=True)
+        with TestToolkit.force_api(ApiType.NVUE):
+            mtu_info, _ = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
+                config_filename, config_file_path, engines, devices, system, scp_host_creds, engines.dut,
+                include_mtu_testing=include_mtu_testing, verify_result=True)
 
-        logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
-        engines.dut.disconnect()
-        engines.dut.run_cmd("true")
+            logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
+            engines.dut.disconnect()
+            engines.dut.run_cmd("true")
 
-        TestToolkit.tested_api = random_api
         run_pre_upgrade_steps(topology_obj, engines, ib_router)
 
     finally:
         with allure.step(f"Run upgrade: {target_version_realpath}"):
-            test_upgrade.fetch_install_img(system, target_version_realpath, engines)
+            _, _, _, partition_id_for_target, target_fetched_image = \
+                get_image_data_and_fetch_base_image(system, target_version_realpath)
+            install_image_and_verify(orig_engine=TestToolkit.engines.dut,
+                                     image_name=target_fetched_image,
+                                     partition_id=partition_id_for_target,
+                                     original_images=original_images, system=system,
+                                     release_name=release_name,
+                                     test_name='test_downgrade_upgrade',
+                                     devices=devices,
+                                     operation_label=OperationTimeConsts.IMAGE_UPGRADE)
         with allure.step('Run curl via ipv6, customer bug #4318552'):
             test_checklist_ipv6.send_open_api_request(dut_ipv6_addr, engines.dut)
-        target_fetched_image = target_version_realpath.split('/')[-1]
 
         with allure.step('Verify configuration preserved after upgrade and cleanup'):
 
@@ -492,7 +501,7 @@ def test_install_multiple_images(release_name, test_name, random_api, original_v
         with allure.step("Install the first image"):
             orig_engine: LinuxSshEngine = TestToolkit.engines.dut
             install_image_and_verify(orig_engine, BASE_IMAGE_VERSION_TO_INSTALL, partition_id_for_new_image,
-                                     original_images, system, test_name)
+                                     original_images, system, release_name, test_name, devices=devices)
         with allure.step("Test partitions available capacity"):
             nvos_general_utils.check_partitions_capacity(allowed_limit=60)
 
@@ -541,7 +550,7 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
         with allure.step("Install image and verify"):
             orig_engine: LinuxSshEngine = TestToolkit.engines.dut
             install_image_and_verify(orig_engine, fetched_image, partition_id_for_new_image, original_images, system,
-                                     release_name, test_name)
+                                     release_name, test_name, devices=devices)
 
             with allure.step("Set the original image to be booted next and verify"):
                 system.image.boot_next_and_verify(original_image_partition)
@@ -791,6 +800,9 @@ def install_image_and_verify(
     system: System,
     release_name: str,
     test_name: str = '',
+    devices: DevicesT | None = None,
+    *,
+    operation_label: str = OperationTimeConsts.IMAGE_INSTALL,
 ) -> None:
     with allure.step("Installing image {}".format(image_name)):
         new_engine = LinuxSshEngine(
@@ -804,12 +816,21 @@ def install_image_and_verify(
             engine_connect_retries=orig_engine.engine_connect_retries,
             is_on_air=orig_engine.is_on_air,
         )
-        res_obj, _ = OperationTime.save_duration('image install', '', test_name,
-                                                 system.image.files.file_name[image_name].action_file_install_with_reboot,
-                                                 expected_str=SystemConsts.REBOOT_RESPONSE_MESSAGES,
-                                                 force=True, recovery_engine=new_engine
-                                                 )
+        with OperationTime.capture_sub_durations() as sub_durations:
+            res_obj, _ = OperationTime.save_duration(operation_label, '', test_name,
+                                                     system.image.files.file_name[image_name].action_file_install_with_reboot,
+                                                     expected_str=SystemConsts.REBOOT_RESPONSE_MESSAGES,
+                                                     force=True, recovery_engine=new_engine
+                                                     )
         res_obj.verify_result()
+
+        operation_duration = sub_durations.get(SubDuration.OPERATION)
+        if operation_duration is not None and devices is not None:
+            # Threshold key is the canonical one registered by device classes
+            # (e.g. IbSwitch._init_expected_operation_durations)
+            OperationTime.verify_operation_time(
+                operation_duration, OperationTimeConsts.IMAGE_INSTALL_OPERATION_ROW, devices
+            ).verify_result()
 
     with allure.step('replace dut engine'):
         TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine

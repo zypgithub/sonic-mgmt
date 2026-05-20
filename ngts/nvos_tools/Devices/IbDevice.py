@@ -10,7 +10,8 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts, TcpDumpConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
-                                                DocumentsConsts, RebootConsts, SystemConsts, SyslogConsts)
+                                                DocumentsConsts, RebootConsts, SystemConsts, SyslogConsts,
+                                                OperationTimeConsts)
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
@@ -70,6 +71,13 @@ class IbSwitch(BaseSwitch):
         self._init_interface_lists()
         self._init_interface_attributes_mapping_dict()
         self._init_link_error_counters()
+
+    def _init_expected_operation_durations(self):
+        super()._init_expected_operation_durations()
+        self.expected_operation_durations.update({
+            # The synchronous "nv action install" portion (before reboot/recovery).
+            OperationTimeConsts.IMAGE_INSTALL_OPERATION_ROW: 120,
+        })
 
     def get_health_issue_dict_fan_and_psu(self, psu_display_name, fan_display_name):
         """Return expected health issues dict for simulated fan+PSU fault (IB)."""

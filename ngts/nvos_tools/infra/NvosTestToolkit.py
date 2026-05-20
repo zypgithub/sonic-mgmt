@@ -1,9 +1,10 @@
+import contextlib
 import logging
 import math
 import time
 import re
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -48,7 +49,7 @@ class TestToolkit:
             TestToolkit.active_dut = dut_name
 
     @staticmethod
-    def get_engine(dut_name: Optional[str] = None) -> Any:
+    def get_engine(dut_name: str | None = None) -> Any:
         """
         Get engine for specified DUT or active DUT.
 
@@ -59,7 +60,7 @@ class TestToolkit:
         return getattr(TestToolkit.engines, dut_name or TestToolkit.active_dut)
 
     @staticmethod
-    def get_device(dut_name: Optional[str] = None) -> Any:
+    def get_device(dut_name: str | None = None) -> Any:
         """
         Get device for specified DUT or active DUT.
 
@@ -93,6 +94,24 @@ class TestToolkit:
         with allure.step("Update api in TestTookit to " + api_type):
             TestToolkit.tested_api = api_type
             logger.info("API updated to: " + api_type)
+
+    @staticmethod
+    @contextlib.contextmanager
+    def force_api(api_type: str):
+        """Pin TestToolkit.tested_api inside the with-block; restore on exit (raise or not).
+
+        Use this whenever a section must run against a specific API regardless of the
+        outer random_api / test_api parametrization — the restore is exception-safe,
+        so a raise inside the block won't leak the override into later code (e.g. a
+        finally block that re-enters the dispatcher).
+        """
+        prev = TestToolkit.tested_api
+        with allure.step(f"Force API to {api_type} (restore on exit)"):
+            TestToolkit.tested_api = api_type
+            try:
+                yield
+            finally:
+                TestToolkit.tested_api = prev
 
     @staticmethod
     def update_port_output_dictionary(port_obj, engine=None):

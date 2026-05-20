@@ -2124,6 +2124,12 @@ class OperationTimeConsts:
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
 
+    # Operation labels used by save_duration / row-name lookups in expected_operation_durations.
+    IMAGE_INSTALL = 'image install'
+    IMAGE_UPGRADE = 'image upgrade'
+    IMAGE_DOWNGRADE = 'image downgrade'
+    IMAGE_INSTALL_OPERATION_ROW = 'image install (operation)'
+
 
 class StatsConsts:
     class State(Enum):

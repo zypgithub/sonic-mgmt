@@ -125,7 +125,7 @@ def is_cur_version_as_expected(system: System, expected_version: str) -> ResultO
                          f'cur version is {"" if res else "not "}as expected.\nexpected: {expected_version}\nactual: {cur_version}')
 
 
-def fetch_install_img(system: System, img_path: str, engines):
+def fetch_install_img(system: System, img_path: str, engines, *, install_timeout=None):
     @retry.retry(Exception, tries=3, delay=1)
     def _fetch_img_with_retry(scp_url):
         system.image.action_fetch(scp_url, base_url='')
@@ -137,6 +137,6 @@ def fetch_install_img(system: System, img_path: str, engines):
                                                      ip=scp_player.ip, path=img_path)
         _fetch_img_with_retry(scp_url)
     with allure.step(f'install image: {img_name}'):
-        system.image.files.file_name[img_name].action_install(reboot_params=RebootParams())
+        system.image.files.file_name[img_name].action_install(reboot_params=RebootParams(), timeout=install_timeout)
     with allure.step('disconnect dut engine'):
         engines.dut.disconnect()
