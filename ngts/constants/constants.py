@@ -1718,6 +1718,8 @@ class FatalStateConsts:
 
 class GnmiConsts:
     GNMI_DOCKER = 'nv-gnmi'
+    GNMI_SOCKET_PATH = '/var/run/nv-gnmi/gnmi.sock'
+    GNMI_READY_STABILIZATION_SEC = 2
     GNMI_STATE_FIELD = 'state'
     GNMI_STATE_ENABLED = 'enabled'
     GNMI_STATE_DISABLED = 'disabled'

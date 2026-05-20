@@ -15,6 +15,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmiServerStatus
 from ngts.tests_nvos.system.gnmi.helpers import (
+    get_gnmi_status_clients,
     parse_gnmi_status,
     validate_gnmi_enabled_and_running,
 )
@@ -36,16 +37,6 @@ def _get_counter(status_dict, key, default=0):
         val = status_dict[key]
         return int(val) if val is not None else default
     return default
-
-
-def _get_clients(status_dict):
-    """Get client list from status dict."""
-    clients = status_dict.get(GnmiServerStatus.CLIENT)
-    if clients is None:
-        return []
-    if isinstance(clients, dict) and len(clients) == 0:
-        return []
-    return clients if isinstance(clients, list) else [clients]
 
 
 @pytest.mark.system
@@ -92,7 +83,7 @@ def test_gnmi_server_status_counters_and_persistence(engines, devices):
         exp_received_subs = _get_counter(status1, GnmiServerStatus.RECEIVED_SUBSCRIPTION_REQUESTS)
         exp_rejected = _get_counter(status1, GnmiServerStatus.REJECTED_SUBSCRIPTIONS)
         exp_caps = _get_counter(status1, GnmiServerStatus.RECEIVED_CAPABILITIES_REQUESTS)
-        assert len(_get_clients(status1)) == 0
+        assert len(get_gnmi_status_clients(status1)) == 0
 
     # --- Step 2: Rejected subscription (invalid YANG path) ---
     with allure.step("Step 2: Set up rejected gNMI subscription (invalid YANG path)"):
@@ -143,7 +134,7 @@ def test_gnmi_server_status_counters_and_persistence(engines, devices):
         assert _get_counter(status4, GnmiServerStatus.RECEIVED_SUBSCRIPTION_REQUESTS) == exp_received_subs
         assert _get_counter(status4, GnmiServerStatus.REJECTED_SUBSCRIPTIONS) == exp_rejected
         assert _get_counter(status4, GnmiServerStatus.RECEIVED_CAPABILITIES_REQUESTS) == exp_caps
-        clients4 = _get_clients(status4)
+        clients4 = get_gnmi_status_clients(status4)
         assert len(clients4) == 1
         # Client id is 1-based index: one client -> "client 1", two clients -> "client 1" / "client 2"
         client_id = "1"
@@ -161,8 +152,8 @@ def test_gnmi_server_status_counters_and_persistence(engines, devices):
             dut_engine=dut,
         )
         parsed = parse_gnmi_status(output)
-        assert len(_get_clients(parsed)) == 0, (
-            f"Expected empty client list for invalid client id, got: {_get_clients(parsed)}"
+        assert len(get_gnmi_status_clients(parsed)) == 0, (
+            f"Expected empty client list for invalid client id, got: {get_gnmi_status_clients(parsed)}"
         )
 
     # --- Step 6: Clear, then show ---
@@ -177,7 +168,7 @@ def test_gnmi_server_status_counters_and_persistence(engines, devices):
         assert _get_counter(status6, GnmiServerStatus.RECEIVED_SUBSCRIPTION_REQUESTS) == exp_received_subs
         assert _get_counter(status6, GnmiServerStatus.REJECTED_SUBSCRIPTIONS) == exp_rejected
         assert _get_counter(status6, GnmiServerStatus.RECEIVED_CAPABILITIES_REQUESTS) == exp_caps
-        clients6 = _get_clients(status6)
+        clients6 = get_gnmi_status_clients(status6)
         assert len(clients6) == 1
 
     # --- Step 7: Stop subscription ---
@@ -191,7 +182,7 @@ def test_gnmi_server_status_counters_and_persistence(engines, devices):
         assert _get_counter(status7, GnmiServerStatus.RECEIVED_SUBSCRIPTION_REQUESTS) == exp_received_subs
         assert _get_counter(status7, GnmiServerStatus.REJECTED_SUBSCRIPTIONS) == exp_rejected
         assert _get_counter(status7, GnmiServerStatus.RECEIVED_CAPABILITIES_REQUESTS) == exp_caps
-        assert len(_get_clients(status7)) == 0
+        assert len(get_gnmi_status_clients(status7)) == 0
 
     # --- Step 8: Valid sub, rejected sub, capabilities again ---
     with allure.step("Step 8: Setup valid subscribe (once), rejected subscribe, capabilities"):

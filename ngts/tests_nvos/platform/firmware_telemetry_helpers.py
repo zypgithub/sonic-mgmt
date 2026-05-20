@@ -5,7 +5,7 @@ from typing import List
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.helpers import validate_gnmi_server_docker_state
+from ngts.tests_nvos.system.gnmi.helpers import wait_for_gnmi_ready
 from ngts.tests_nvos.system.gnmi.mapping.helpers import parse_gnmic_flat_output, run_gnmic_once_flat
 from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
@@ -58,8 +58,7 @@ def assert_gnmi_firmware_version_matches_nvue(
     gnmi_client: GnmiClient, component_name: str, nvue_version: str
 ) -> None:
     """Single gNMI Get: assert firmware-version is present/not N/A and matches NVUE."""
-    # Wait for 'nv-gnmi' docker after FW-install reboot (NVUE returns first, socket races).
-    validate_gnmi_server_docker_state(TestToolkit.engines, should_run=True)
+    wait_for_gnmi_ready(TestToolkit.engines)
     path = _firmware_version_gnmi_path(component_name)
     out, _duration = run_gnmic_once_flat(path, client=gnmi_client)
     actual = _assert_gnmi_firmware_version_from_flat(component_name, path, out)

@@ -650,6 +650,7 @@ def test_gnmi_rate_limit_restart_gnmi_under_load(engines, devices):
                     time.sleep(gnmi_consts.GNMI_RESTART_POST_ENABLE_WAIT_SEC)
 
             with allure.step("Validate gNMI after restart"):
+                gnmi_helpers.wait_for_gnmi_ready(engines)
                 gnmi_helpers.validate_gnmi_enabled_and_running(system.gnmi_server, engines)
 
             with allure.step("Pause flood; Capabilities reachability"):

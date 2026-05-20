@@ -159,11 +159,27 @@ def validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines
 
 @retry(Exception, tries=6, delay=2)
 def validate_gnmi_server_docker_state(engines, should_run=True):
+    """Assert the nv-gnmi container is running or stopped (docker ps only)."""
     cmd_output = engines.dut.run_cmd('docker ps |grep {}'.format(GnmiConsts.GNMI_DOCKER))
     should_run_str = '' if should_run else 'not'
     is_running_str = '' if cmd_output else 'not'
     assert bool(cmd_output) == should_run, f"The gnmi-server docker is {is_running_str} running, " \
         f"but we expect it {should_run_str} to run"
+
+
+@retry(AssertionError, tries=5, delay=2)
+def wait_for_gnmi_ready(engines, socket_path=GnmiConsts.GNMI_SOCKET_PATH):
+    """
+    Wait until the gNMI agent is ready after container start or node restart.
+
+    Envoy may be up while the gNMI agent is still initializing; require the container
+    (validate_gnmi_server_docker_state), the agent socket, then a short stabilization period.
+    """
+    validate_gnmi_server_docker_state(engines, should_run=True)
+    socket_check = engines.dut.run_cmd(f"test -S {socket_path} && echo ok")
+    assert "ok" in socket_check, f"gNMI socket {socket_path} does not exist"
+    logger.info(f"gNMI container and socket ready; waiting {GnmiConsts.GNMI_READY_STABILIZATION_SEC}s to be sure gnmi is up fully")
+    time.sleep(GnmiConsts.GNMI_READY_STABILIZATION_SEC)
 
 
 def validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_ENABLED):
@@ -603,6 +619,25 @@ def parse_gnmi_status(output):
         if isinstance(inner, dict) and (GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS in inner or GnmiServerStatus.CLIENT in inner):
             return inner
     return d
+
+
+def get_gnmi_status_clients(status_dict):
+    """
+    Return a list of per-client status dicts from parsed gnmi-server status output.
+
+    The ``client`` field may be absent, a list, or a dict keyed by client id (as returned
+    by ``nv show system gnmi-server status`` when multiple clients are connected).
+    """
+    clients = status_dict.get(GnmiServerStatus.CLIENT)
+    if clients is None:
+        return []
+    if isinstance(clients, dict):
+        if not clients:
+            return []
+        return list(clients.values())
+    if isinstance(clients, list):
+        return clients
+    return [clients]
 
 
 def verify_gnmi_client(test_flow, server_host, server_port, username, password, skip_cert_verify: bool,

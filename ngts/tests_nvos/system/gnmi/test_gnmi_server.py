@@ -20,17 +20,16 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
-from retry import retry
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr, GnmiServerStatus
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
     validate_show_gnmi, validate_gnmi_server_in_health_issues, run_gnmi_client_in_the_background, \
-    verify_description_value, run_gnmi_client_and_parse_output, validate_gnmi_enabled_and_running, \
+    verify_description_value, run_gnmi_client_and_parse_output, validate_gnmi_enabled_and_running, wait_for_gnmi_ready, \
     validate_memory_and_cpu_utilization, get_infiniband_name_from_port_name, get_port_oid_from_infiniband_port, \
     create_gnmi_infiniband_list, validate_redis_cli_and_gnmi_commands_results, create_interface_state_commands_list, \
     create_gnmi_counter_list, create_platform_general_commands_list, change_interface_description, \
-    verify_msg_not_in_out_or_err, verify_msg_in_out_or_err, parse_gnmi_status, \
+    verify_msg_not_in_out_or_err, verify_msg_in_out_or_err, parse_gnmi_status, get_gnmi_status_clients, \
     run_gnmi_client_and_parse_multi_path_json_output, validate_notification_has_prefix_and_leaves
 from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
     assert_gnmi_firmware_version_matches_nvue,
@@ -50,21 +49,6 @@ def _get_counter(status_dict, key, default=0):
         val = status_dict[key]
         return int(val) if val is not None else default
     return default
-
-
-@retry(AssertionError, tries=5, delay=2)
-def _validate_docker_is_up(engine, docker):
-    assert docker in engine.run_cmd("docker ps"), f"docker {docker} is not running"
-
-
-def _get_clients(status_dict):
-    """Get client list from status dict."""
-    clients = status_dict.get(GnmiServerStatus.CLIENT)
-    if clients is None:
-        return []
-    if isinstance(clients, dict) and len(clients) == 0:
-        return []
-    return clients if isinstance(clients, list) else [clients]
 
 
 @pytest.mark.system
@@ -262,7 +246,7 @@ def test_gnmi_performance(engines, devices):
         out_before = gnmi_status.show(dut_engine=dut)
         status_before = parse_gnmi_status(out_before)
         with allure.independent_step("Expect no clients before setup"):
-            assert len(_get_clients(status_before)) == 0
+            assert len(get_gnmi_status_clients(status_before)) == 0
         with allure.independent_step("Expect total-active-subscriptions 0 before setup"):
             assert _get_counter(status_before, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == 0
 
@@ -277,7 +261,7 @@ def test_gnmi_performance(engines, devices):
         out_after_setup = gnmi_status.show(dut_engine=dut)
         status_after_setup = parse_gnmi_status(out_after_setup)
         with allure.independent_step(f"Expect {num_engines} clients"):
-            assert len(_get_clients(status_after_setup)) == num_engines
+            assert len(get_gnmi_status_clients(status_after_setup)) == num_engines
         with allure.independent_step(f"Expect total-active-subscriptions {num_engines}"):
             assert _get_counter(status_after_setup, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == num_engines
 
@@ -305,7 +289,7 @@ def test_gnmi_performance(engines, devices):
         out_after_teardown = gnmi_status.show(dut_engine=dut)
         status_after_teardown = parse_gnmi_status(out_after_teardown)
         with allure.independent_step("Expect no clients after teardown"):
-            assert len(_get_clients(status_after_teardown)) == 0
+            assert len(get_gnmi_status_clients(status_after_teardown)) == 0
         with allure.independent_step("Expect total-active-subscriptions 0 after teardown"):
             assert _get_counter(status_after_teardown, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == 0
 
