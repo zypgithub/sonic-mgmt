@@ -1066,7 +1066,7 @@ class BlackMambaSwitch(IbSwitch):
     def _init_interface_lists(self):
         super()._init_interface_lists()
         self.ib_ports_num = 2 * 72
-        self.mgmt_ports = ['eth0']  # 'eth1' disabled for now
+        self.mgmt_ports = ['eth0', 'eth1']
         ib_ports = self.fnm_external_port_list + [f'sw{a + 1}p{b}' for a in range(self.ib_ports_num) for b in (1, 2)]
         # = ['fnm1', 'sw1p1', 'sw1p2', ..., 'sw72p1', 'sw72p2']
         self.interface_list = self.network_ports + ib_ports + ['eth1']

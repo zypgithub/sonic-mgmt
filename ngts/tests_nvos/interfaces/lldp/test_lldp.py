@@ -548,16 +548,17 @@ def _verify_lldp_not_running(lldp, engine, device):
 
 
 def _wait_until_ipv6_removed_from_interface(mgmt_interface, ip_address_full, serial_engine,
-                                            timeout=INTERFACE_CLEANUP_DELAY, poll_interval=2):
-    """Poll until the given IPv6 address is no longer present on the interface (after unset)."""
+                                            timeout=INTERFACE_CLEANUP_DELAY):
+    """Wait for interface cleanup after IPv6 unset before configuring the next mgmt port.
+
+    `nv config apply` for the unset returns and `parse_show` stops reporting the address
+    well before the management plane has actually settled. Returning early causes the
+    next port's set to race and the just-set address to be invisible to verify
+    (Redmine #4544216). A flat sleep for the full INTERFACE_CLEANUP_DELAY is required.
+    """
     ip_address = ip_address_full.split("/")[0] if "/" in ip_address_full else ip_address_full
-    deadline = time.monotonic() + timeout
-    with allure.step(f"Wait up to {timeout}s for interface cleanup after IPv6 unset"):
-        while time.monotonic() < deadline:
-            addrs_dict = mgmt_interface.interface.ipv6.address.parse_show(dut_engine=serial_engine)
-            if not addrs_dict or ip_address not in str(addrs_dict):
-                return
-            time.sleep(poll_interval)
+    with allure.step(f"Wait {timeout}s for interface cleanup after IPv6 unset"):
+        time.sleep(timeout)
         addrs_dict = mgmt_interface.interface.ipv6.address.parse_show(dut_engine=serial_engine)
         assert ip_address not in str(addrs_dict), (
             f"IPv6 {ip_address} still present on interface after {timeout}s"
