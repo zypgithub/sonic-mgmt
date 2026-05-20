@@ -143,8 +143,6 @@ def test_firmware_install_invalid_version(devices, random_api, test_name):
 
     with allure.step('Install deleted firmware file'):
         path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component)
-        if component == FW_COMPONENT_SSD and version_name is None:
-            pytest.skip(f"Package {filename!r} does not support SSD model")
         result = BmcTool.install_fw_image_without_reboot(platform_component=platform_component,
                                                          test_name=test_name,
                                                          filename=filename).verify_result(False)
@@ -162,8 +160,6 @@ def install_same_firmware_version(devices, test_name, component, platform_compon
     try:
         with allure.step("Fetch and install current firmware version on component"):
             path, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component)
-            if component == FW_COMPONENT_SSD and version_name is None:
-                pytest.skip(f"Package {filename!r} does not support SSD model")
             with allure.step(f"Verify current fw version on {component} is {version_name}"):
                 if component == 'cpld':
                     BmcTool.verify_cpld_versions(version_name)
@@ -247,6 +243,15 @@ def _select_random_sma_component(devices):
     return sma_name, firmware_component
 
 
+def _fw_package_supports_ssd():
+    """Return True if the FW package has SSD entries for this device's part number."""
+    _, filename, version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+    if version_name is None:
+        logger.info("Excluding SSD from component list: package %r does not support SSD model", filename)
+        return False
+    return True
+
+
 def select_random_component(devices):
     """
         @summary: Select a random component on tested device
@@ -257,11 +262,13 @@ def select_random_component(devices):
         if not has_bmc:
             logger.info("Device does not have BMC.")
         else:
-            components_list = devices.dut.components_list
+            components_list = list(devices.dut.components_list)
 
     # Add SSD for switches that support SSD firmware updates (if not already from components_list)
     if devices.dut.supports_ssd_upgrade and FW_COMPONENT_SSD not in components_list:
         components_list.append(FW_COMPONENT_SSD)
+    if FW_COMPONENT_SSD in components_list and not _fw_package_supports_ssd():
+        components_list.remove(FW_COMPONENT_SSD)
 
     with allure.step("Randomize a components from components list"):
         logger.info(f"Components list = {components_list}")
