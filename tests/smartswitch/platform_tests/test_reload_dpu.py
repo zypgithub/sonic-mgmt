@@ -409,7 +409,7 @@ def test_cold_reboot_switch(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname
     ip_address_list, dpu_on_list, dpu_off_list = pre_test_check(duthost, platform_api_conn, num_dpu_modules)
 
     logging.info("Starting switch reboot...")
-    reboot(duthost, localhost, reboot_type=REBOOT_TYPE_COLD)
+    perform_reboot(duthost, REBOOT_TYPE_COLD, None)
 
     logging.info("Executing post test check")
     post_test_switch_check(duthost, localhost,
