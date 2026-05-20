@@ -7,8 +7,13 @@ import traceback
 import re
 import os
 import pathlib
-from ngts.constants.constants import LinuxConsts
 from jinja2 import Environment, FileSystemLoader
+
+repo_root = pathlib.Path(__file__).resolve().parents[2]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+from ngts.constants.constants import LinuxConsts
+
 logger = logging.getLogger("")
 
 
@@ -23,8 +28,8 @@ def init_parser():
                    'Creating an MPFA file for CPLD fwutil update on sonic.\n'
                    'The MPFA file is a zip file containing:\n'
                    '1) VME burn file\n'
-                   '2) VME refresh file\n'
-                   '3) metadate.ini file\n'
+                   '2) optional VME refresh file\n'
+                   '3) metadata.ini file\n'
                    'for additional information:\n'
                    'https://wikinox.mellanox.com/pages/viewpage.action?spaceKey=SW'
                    '&title=SONiC+Platform+components+tools\n')
@@ -39,10 +44,11 @@ def init_parser():
                              'FUI000076_Burn_Panther_CR_CPLD000130_Rev0300_CPLD000128_Rev0600_CPLD000085_Rev1700.vme\n'
                              'should be located at path provided in argument mpfa_path')
 
-    parser.add_argument('--cpld_refresh', required=True,
+    parser.add_argument('--cpld_refresh', required=False, default=None,
                         help='name of the refresh VME file i.e.,\n'
                              'FUI000076_Refresh_Panther_CR_CPLD000130_Rev0300_CPLD000128_Rev0600_CPLD000085_Rev1700.vme,\n'
-                             'should be located at path provided in argument mpfa_path')
+                             'should be located at path provided in argument mpfa_path.\n'
+                             'This argument is optional for platforms that do not require refresh (i.e.  spc6).')
 
     parser.add_argument('--mpfa_path', required=True,
                         help='path to where .mpfa file should be stored at the end of script run,\n'
@@ -101,21 +107,23 @@ def create_mpfa_file(FUI, cpld_burn, cpld_refresh, mpfa_path, cplds_arg_list):
     """
     :param FUI: i.e FUI000076
     :param cpld_burn: i.e FUI000076_Burn_Panther_CR_CPLD000130_Rev0300_CPLD000128_Rev0600_CPLD000085_Rev1700
-    :param cpld_refresh: FUI000076_Refresh_Panther_CR_CPLD000130_Rev0300_CPLD000128_Rev0600_CPLD000085_Rev1700
+    :param cpld_refresh: optional, i.e.
+    FUI000076_Refresh_Panther_CR_CPLD000130_Rev0300_CPLD000128_Rev0600_CPLD000085_Rev1700
     :param mpfa_path: i.e, /auto/sw_system_release/hw_cpld/FUI000076
     :param cplds_arg_list: i.e [] or [CPLD000130_Rev0300, CPLD000128_Rev0600, CPLD000085_Rev1700]
     :return: none, creates FUI000076.mpfa at path mpfa_path
     """
     cplds = parse_cplds_revision(cpld_burn, cplds_arg_list)
     template = get_template()
-    output = template.render(cpld_burn=cpld_burn, cpld_refresh=cpld_refresh, cplds=cplds)
+    output = template.render(cpld_burn=cpld_burn, cpld_refresh=cpld_refresh or "", cplds=cplds)
     path = os.path.join(mpfa_path, FUI)
     os.mkdir(path)
     with open(os.path.join(path, "metadata.ini"), "w+") as f:
         f.write(output)
-    logger.info(f"metadate.ini content:\n{output}")
+    logger.info(f"metadata.ini content:\n{output}")
     os.system(f"cp {mpfa_path}/{cpld_burn} {path}")
-    os.system(f"cp {mpfa_path}/{cpld_refresh} {path}")
+    if cpld_refresh:
+        os.system(f"cp {mpfa_path}/{cpld_refresh} {path}")
     logger.info(f"Creating {FUI}.tar.gz file at {mpfa_path} for backup (this file can be seen in mc tool)")
     os.system(f"tar -czvf {mpfa_path}/{FUI}.tar.gz -C {path} .")
     logger.info(f"Creating {FUI}.mpfa file at {mpfa_path}")
