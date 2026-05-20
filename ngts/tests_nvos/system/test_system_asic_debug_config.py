@@ -1,6 +1,7 @@
 import pytest
 import logging
 import random
+import retry
 import re
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -166,10 +167,7 @@ def test_asic_debug_config_negative(engines, devices, nv_command):
                                             additional_params={'files': f'{SystemConsts.FAIL_ASIC_DEBUG_CONFIG_WRONG_REGISTER}'})
 
     with allure.step("Verify asic-debug-config failed"):
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
-            system.asic_debug_config.show()).get_returned_value()
-        ValidationTool.verify_field_value_in_output(output_dictionary, SystemConsts.STATUS_ASIC_DEBUG_CONFIG,
-                                                    SystemConsts.FAILED_STATUS_ASIC_DEBUG_CONFIG).verify_result()
+        _wait_asic_debug_config_status_changed(system, SystemConsts.STATUS_ASIC_DEBUG_CONFIG, SystemConsts.FAILED_STATUS_ASIC_DEBUG_CONFIG)
 
     with allure.step("Cleanup for asic debug config"):
         system.asic_debug_config.action(ActionConsts.DELETE,
@@ -211,7 +209,7 @@ def test_asic_debug_config_pgcb(engines, devices, nv_command, test_api):
     with allure.step('Download positive asic-debug-config and verify output'):
         _download_asic_debug_config(system, SystemConsts.PGCB_PASS_CONFIG)
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.asic_debug_config.show()).get_returned_value()
-        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(), output_dictionary)
+        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(), output_dictionary).verify_result()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.asic_debug_config.files.show()).get_returned_value()
         ValidationTool.verify_expected_output(output_dictionary, SystemConsts.PGCB_PASS_CONFIG).verify_result()
 
@@ -221,7 +219,7 @@ def test_asic_debug_config_pgcb(engines, devices, nv_command, test_api):
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.asic_debug_config.show()).get_returned_value()
-        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), [SystemConsts.NA, SystemConsts.PGCB_PASS_CONFIG], output_dictionary)
+        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), [SystemConsts.NA, SystemConsts.PGCB_PASS_CONFIG], output_dictionary).verify_result()
 
     with allure.step("Try to delete config file, when it already set"):
         system.asic_debug_config.files.file_name[SystemConsts.PGCB_PASS_CONFIG].action_delete().verify_result(should_succeed=False)
@@ -510,3 +508,13 @@ def validate_return_status(output: str, field_name: str, expected: str = "0x0000
             return actual == expected
 
     return False
+
+
+@retry.retry(Exception, tries=2, delay=1)
+def _wait_asic_debug_config_status_changed(system, status='', status_value=''):
+    with allure.step("Run show show asic debug config"):
+        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+            system.asic_debug_config.show()).get_returned_value()
+
+    with allure.step("Verify asic debug config status changed"):
+        ValidationTool.verify_field_value_in_output(output_dictionary, status, status_value).verify_result()
