@@ -201,4 +201,4 @@
             name: lldp
             state: absent
           become: true
-      when: lldp_container.stdout != "" and "marvell-teralynx" in fanout_sonic_version.asic_type
+      when: lldp_container.stdout != "" and fanout_sonic_version.asic_type in ['marvell-teralynx', 'mellanox']
