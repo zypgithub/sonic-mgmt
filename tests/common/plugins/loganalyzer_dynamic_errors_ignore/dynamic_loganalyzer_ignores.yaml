@@ -22,19 +22,6 @@
 #      - https://github.com/Azure/sonic-buildimage/issues/9811
 
 # ===== Not specific defined =====
-
-# Ignore thermalctld fan_dir FileNotFoundError on Bobcat platform
-# The fan_dir sysfs file does not exist on sn4280 (Bobcat), causing thermalctld to log errors
-# Issue already tracked by [SONIC - Design] Bug SW #4902985
-
-- Errors_list:
-  - '.*ERR pmon#thermalctld: Failed to read from file /var/run/hw-management/thermal/fan\d+_dir - FileNotFoundError.*'
-  Conditions:
-  - Redmine:
-    - 4902985
-    Platform:
-    - sn4280
-
 - Errors_list:
   - '.*ERR root: /etc/dhcp/dhclient-exit-hooks.d/ntp returned non-zero exit status 1.*'
   Conditions:
@@ -60,20 +47,11 @@
     - 2615940
 
 - Errors_list:
-  - 'ERR pmon#sensord: Error getting sensor data: mp2975.*16: Kernel interface error.*'
-  Conditions:
-  - Redmine:
-    - 4029831
-    Platform:
-    - sn4280
-
-- Errors_list:
   - '.*ERR kernel:.*mlxsw_minimal .* Eeprom query failed.*'
   Conditions:
   - Affected_test_cases:
     - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
     - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    - tests/nightly/app_extension/test_app_extension_reboot.py::test_app_start_delay_after_reboot
     - platform_tests/sfp/test_sfputil.py
     - platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file
     - show_techsupport/test_techsupport.py::test_techsupport
@@ -178,24 +156,6 @@
     - 3263805
 
 - Errors_list:
-  - '.*ERR kernel.*Unknown EEPROM type.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_max_limit
-    - platform_tests/sfp/test_sfputil.py
-    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    Redmine:
-    - 3283464
-
-- Errors_list:
-  - '.*ERR syncd#SDK: \[SX_API_DBG\.ERR\].+CR-Space dump faile.*'
-  - '.*ERR syncd#SDK: \[SX_API_DBG_AMBER\.ERR\].+Failed to create dump file.*'
-  - '.*ERR syncd#SDK: \[SX_API_DBG\.ERR\].+AMBER dump failed.*'
-  Conditions:
-  - Redmine:
-    - 3580534
-
-- Errors_list:
   - '.*ERR swss#orchagent: :- meta_generic_validation_remove: object.*'
   - '.*ERR swss#orchagent: :- meta_sai_validate_eni_ether_address_map_entry: object key SAI_OBJECT_TYPE_ENI_ETHER_ADDRESS_MAP_ENTRY.*exist.*'
   - '.*ERR swss#orchagent: :- flush_removing_entries: ObjectBulker.flush remove entries failed, number of entries to remove: \d+, status: SAI_STATUS_OBJECT_IN_USE.*'
@@ -232,26 +192,10 @@
     - 3693907
 
 - Errors_list:
-  - '.*ERR kernel:.*usb usb\d-port\d: connect-debounce failed.*'
-  Conditions:
-  - Redmine:
-    - 3735940
-
-- Errors_list:
   - '.* ERR kernel:.*i2c i2c-\d+: Invalid block size returned.*'
   Conditions:
   - Redmine:
     - 3827149
-
-# Errors which should be ignored in tests which doing reboot/reload
-- Errors_list:
-  - '.*ERR systemctl.*: Failed to start dhcp_relay\.service: Unit dhcp_relay\.service is masked.*'
-  - '.*ERR ntpd.*: CONFIG: restrict nopeer ignored.*'
-  - '.*ERR kernel:.*ima: impossible to appraise a kernel image without a file descriptor; try using kexec_file_load syscall.*'
-  - '.*ERR kernel:.*x86\/cpu: SGX disabled by BIOS.*'
-  Conditions:
-  - Redmine:
-    - 3726137
 
 - Errors_list:
   - '.*ERR swss#orchagent.*doPortTask: Unsupported port speed.*'
@@ -320,7 +264,6 @@
   Conditions:
   - Affected_test_cases:
       # Canonical
-    - tests/nightly/app_extension/test_app_extension_reboot.py::test_app_start_delay_after_reboot
     - tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_conf
     - tests/nightly/copp/test_copp.py::test_copp_policer
     - tests/nightly/fdb/test_fdb_basic.py::TestFdbBasic::test_fdb_aging_time_expire
@@ -553,14 +496,6 @@
     - 3114029
 
 - Errors_list:
-  - '.*Bulk-Cntr PPCNT parser - unexpected local port.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/general/qos/test_qos_reload.py
-    Redmine:
-    - 3279709
-
-- Errors_list:
   - ".* ERR swss#supervisor-proc-exit-listener: Process 'orchagent' is stuck in namespace 'host'.*"
   Conditions:
   - Affected_test_cases:
@@ -583,14 +518,6 @@
     - tests/nightly/dynamic_port_breakout/test_dpb_introp.py
     Redmine:
     - 3405332
-
-- Errors_list:
-  - '.*ERR ntpd.*: CLOCK: Panic: offset too big.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
-  - Redmine:
-    - 4056053
 
 # Errors which should be ignored in tests which doing reboot/reload
 - Errors_list:
@@ -871,15 +798,6 @@
     - simx
 
 - Errors_list:
-  - '.* ERR dhclient\[\d+\]: send_packet: No such device or address'
-  - '.* ERR dhclient\[\d+\]: dhclient\.c:\d+: Failed to send \d+ byte long packet over .* interface.*'
-  Conditions:
-  - Redmine:
-    - 3006222
-    Platform:
-    - simx
-
-- Errors_list:
   - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to IndexError\(''list index out of range''\)'
   Conditions:
   - Affected_test_cases:
@@ -929,16 +847,6 @@
     - simx
 
 - Errors_list:
-  - '.*ERR syncd#SDK: \[TRACE_CBUFF.ERR\] Received port profile apply done OK event, but port profile \(index \d+\) has already been destroyed.*'
-  - '.*ERR syncd#SDK: \[TRACE_CBUFF.ERR\] Could not send port added events.*'
-  - '.*ERR syncd#SDK: \[CORE_API.ERR\] Failed to process port profile apply status job, error: Internal Error.*'
-  Conditions:
-  - Redmine:
-    - 3908922
-    Platform:
-    - simx
-
-- Errors_list:
   - '.*ERR kernel:.* RETBleed: WARNING: Spectre v\d+ mitigation leaves CPU vulnerable to RETBleed attacks, data leaks possible.*'
   Conditions:
   - Redmine:
@@ -953,16 +861,6 @@
     - 3856952
     Platform:
     - simx
-
-
-- Errors_list:
-  - '.*ERR kernel:.*mlxplat mlxplat: Failed to get adapter for bus \d+.*'
-  - '.*ERR kernel:.*mlxplat mlxplat: probe with driver mlxplat failed with error \-\d+.*'
-  Conditions:
-  - Platform:
-    - sn6600_simx
-    Redmine:
-    - 4836707
 
 - Errors_list:
   - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, ''No such file or directory''\)'
