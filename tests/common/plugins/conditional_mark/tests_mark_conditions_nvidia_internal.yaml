@@ -80,10 +80,11 @@ tests/nightly/copp/test_copp.py::test_copp_policer[LLDP]:
 
 tests/nightly/sflow/test_sflow.py:
   skip:
-    reason: "Test is not supported on simx"
+    reason: "Test is not supported on simx or due to RM issue: https://redmine.mellanox.com/issues/5041113 on sn6600_ld platform"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/2271111 and 'simx' in platform"
+    - "https://redmine.mellanox.com/issues/5041113 and 'sn6600_ld' in platform"
   xfail:
     reason: "known issue https://redmine.mellanox.com/issues/4830085"
     conditions:
@@ -277,9 +278,11 @@ tests/nightly/sensors/test_psu.py::test_psu_sensor_key_prefix:
 
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
-    reason: "sflow still isn't supported on Simx "
+    reason: "sflow still isn't supported on Simx or due to RM issue: https://redmine.mellanox.com/issues/5041113 on sn6600_ld platform"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/2271111 and 'simx' in platform"
+    - "https://redmine.mellanox.com/issues/5041113 and 'sn6600_ld' in platform"
 
 tests/push_build_tests/L2/lldp/test_lldp.py:
   skip:
