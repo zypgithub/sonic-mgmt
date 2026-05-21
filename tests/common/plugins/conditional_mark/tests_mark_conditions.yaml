@@ -5333,6 +5333,12 @@ snmp/test_snmp_queue_counters.py:
     conditions:
       - "'t0-isolated-d256u256s2' in topo_name and platform in ['x86_64-nvidia_sn5640-r0']"
 
+snmp/test_snmp_psu.py:
+  skip:
+    reason: "Test is not supported on Mellanox LD platforms"
+    conditions:
+    - "asic_type in ['mellanox'] and '_ld' in platform"
+
 #######################################
 #####            span             #####
 #######################################
