@@ -247,13 +247,6 @@
   delay: 60
   when: enable_async
 
-- name: Reinsert 8021q module
-  vm_topology:
-    cmd: 'reinsert-8021q'
-    vm_names: "{{ VM_targets }}"
-  become: yes
-  when: vm_type is defined and vm_type=="ceos"
-
 - name: Destroy DPUs network
   vm_topology:
     cmd: 'destroy'
