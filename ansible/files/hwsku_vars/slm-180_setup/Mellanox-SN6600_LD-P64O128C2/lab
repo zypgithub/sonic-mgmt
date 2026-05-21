@@ -1,0 +1,21 @@
+[sonic_latest]
+slm-180      ansible_host=10.220.12.180 ansible_hostv6="fe80::a6a6:4eff:fec9:5318" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=800000 mgmt_subnet_mask_length=22 vm_base=VM1401
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-slm-180  ansible_host=10.220.185.7 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="22"
+
+
+[fanout]
+slm-26        ansible_host=10.220.13.26 os=sonic
+slm-238       ansible_host=10.220.12.238 os=sonic
+

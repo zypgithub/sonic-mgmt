@@ -1,0 +1,33 @@
+[sonic_latest]
+# MTVR community testbed slm-180_setup topologies
+slm-180  ansible_host=10.220.12.180 sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2 iface_speed=800000 serial_console="ssh -l rcon:7046 10.220.12.161" ptf_host=ptf-slm-180 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="" console_baudrate=115200 base_mac=DC:73:FC:5F:61:06 serial=MT2614600VRF model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-QPK', '0x23': u'MT2614600VRF', '0x24': u'DC:73:FC:5F:61:06', '0x25': u'03/31/2026 08:54:08', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2A': u'546', '0x2B': u'Nvidia', '0x2D': u'Nvidia', '0xFE': u'0x01203856'}"
+slm-180-t0-16 ansible_host=10.220.12.180 sonic_version=v2 sonic_hwsku=Mellanox-SN6600_LD-P64O128C2 iface_speed=800000 serial_console="ssh -l rcon:7046 10.220.12.161" ptf_host=ptf-slm-180 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="" console_baudrate=115200 base_mac=DC:73:FC:5F:61:06 serial=MT2614600VRF model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-QPK', '0x23': u'MT2614600VRF', '0x24': u'DC:73:FC:5F:61:06', '0x25': u'03/31/2026 08:54:08', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2A': u'546', '0x2B': u'Nvidia', '0x2D': u'Nvidia', '0xFE': u'0x01203856'}"
+slm-180-t0-isolated-d32u32s2-mix ansible_host=10.220.12.180 sonic_version=v2 sonic_hwsku=Mellanox-SN6600_LD-P64O128C2 iface_speed=800000 serial_console="ssh -l rcon:7046 10.220.12.161" ptf_host=ptf-slm-180 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="" console_baudrate=115200 base_mac=DC:73:FC:5F:61:06 serial=MT2614600VRF model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-QPK', '0x23': u'MT2614600VRF', '0x24': u'DC:73:FC:5F:61:06', '0x25': u'03/31/2026 08:54:08', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2A': u'546', '0x2B': u'Nvidia', '0x2D': u'Nvidia', '0xFE': u'0x01203856'}"
+
+
+slm-26 ansible_host=slm-26 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+slm-238 ansible_host=slm-238 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+slm-180
+slm-180-t0-16
+slm-180-t0-isolated-d32u32s2-mix
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+slm-180
+slm-180-t0-16
+slm-180-t0-isolated-d32u32s2-mix
+
+[ptf]
+# slm-180_setup PTF host
+ptf-slm-180 ansible_host=10.220.185.7 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.220.185.7 ansible_host=10.220.185.7 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+
+
