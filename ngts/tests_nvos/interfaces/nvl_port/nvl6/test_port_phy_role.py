@@ -4,13 +4,13 @@ import pytest
 import logging
 from typing import TypedDict
 from ngts.ngts_types.devices_T import DevicesT
-from ngts.nvos_tools.ib.InterfaceConfiguration import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.interfaces.nvl_port import helpers as nvl_helpers
 from ngts.nvos_constants.constants_nvos import ApiType, PhyRoleConsts, ConfState
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.ib.InterfaceConfiguration import Port
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -215,7 +215,7 @@ def test_port_phy_role(devices: DevicesT, fae_objs: tuple[Fae, Fae], test_api: A
         verify_phy_role_default(fae_port_1, fae_port_2)
 
 
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_port_constant_role(devices: DevicesT, fae_objs: tuple[Fae, Fae], test_api: ApiType):
     """
     Test constant role functionality on NVL ports.
@@ -235,7 +235,9 @@ def test_port_constant_role(devices: DevicesT, fae_objs: tuple[Fae, Fae], test_a
 
     TestToolkit.tested_api = test_api
     fae_port_1, fae_port_2 = fae_objs
-    port_1, port_2 = (Port.Port(fae.port.name) for fae in fae_objs)
+    port_1 = Port.Port(fae_port_1.port.name)
+    port_2 = Port.Port(fae_port_2.port.name)
+
     with allure.step("Verify default phy-role and constant-role on both ports"):
         verify_phy_role_default(fae_port_1, fae_port_2)
         roles_outputs: dict[Fae, PhyRolesOutputT] = role_case(
@@ -277,8 +279,8 @@ def test_port_constant_role(devices: DevicesT, fae_objs: tuple[Fae, Fae], test_a
     with allure.step("Unset constant-role"):
         fae_port_1.interface.link.unset(op_param=PhyRoleConsts.CONSTANT_ROLE, apply=True, ask_for_confirmation=True).verify_result()
         fae_port_2.interface.link.unset(op_param=PhyRoleConsts.CONSTANT_ROLE, apply=True, ask_for_confirmation=True).verify_result()
-        fae_port_1.port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
-        fae_port_2.port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
+        port_1.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
+        port_2.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
         role_case(
             expected_values=[
                 (fae_port_1, PhyRoleConsts.PHY_ROLE, port_1_expected_operational_role, PhyRoleConsts.PhyRole.AUTO.value),
