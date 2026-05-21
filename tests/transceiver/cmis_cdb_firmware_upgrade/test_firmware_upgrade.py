@@ -9,6 +9,7 @@ from tests.transceiver.transceiver_test_base import TransceiverTestBase
 
 pytestmark = [
     pytest.mark.topology('ptp-256')
+    pytest.mark.topology('ptp-130')
 ]
 
 logger = logging.getLogger(__name__)

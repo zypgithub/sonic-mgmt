@@ -11,6 +11,7 @@ all:
       vars:
         topologies:
           - t1-isolated-d28u1
+          - ptp-130
 
       children:
         server_21:

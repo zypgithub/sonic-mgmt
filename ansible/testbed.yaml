@@ -14871,6 +14871,18 @@
   vm_base: VM1401
   dut:
     - slm-180
+
+- conf-name: slm-18-ptp-130
+  group-name: vm-t1
+  topo: ptp-130
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-18
+  ptf_ip: 10.220.184.12/23
+  ptf_ipv6:
+  server: server_21
+  vm_base: VM2601
+  dut:
+    - slm-18
   inv_name: lab
   comment: Mellanox MEC testbed
 
