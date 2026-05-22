@@ -815,16 +815,20 @@ class DeployOrchestrator:
             shutil.rmtree(cache_full_path, ignore_errors=True)
 
         # Phase 5: DPU installation
-        if self.context.deploy_dpu:
-            # TODO: WA for RM#4946685, power cycle duts
-            with allure.step("Power cycle r-bobcat-01/r-bobcat-03"):
+        # TODO: WA for RM#4946685, power cycle duts
+        if self.context.deploy_dpu and "01-03-ha" in self.context.setup_name:
+            with allure.step("Power cycle the DUTs if it's HA setup"):
                 for dut in self.context.setup_info["duts"]:
-                    if dut["dut_name"] == "r-bobcat-01" or dut["dut_name"] == "r-bobcat-03":
-                        dut["cli_obj"].remote_reboot(
-                            self.context.topology_obj,
-                            dut_alias=dut["dut_alias"])
+                    dut["cli_obj"].remote_reboot(self.context.topology_obj, dut_alias=dut["dut_alias"])
+        if self.context.deploy_dpu:
             # install DPUs
             self.execute_dpu_image_installation()
+            # TODO: WA for RM#4946685, power cycle duts
+            if "03-04-ha" in self.context.setup_name:
+                with allure.step("Power cycle the DUTs if it's HA setup"):
+                    for dut in self.context.setup_info["duts"]:
+                        dut["cli_obj"].remote_reboot(self.context.topology_obj, dut_alias=dut["dut_alias"])
+                    time.sleep(120)
             self.execute_dpu_post_installation_steps()
 
         return results
