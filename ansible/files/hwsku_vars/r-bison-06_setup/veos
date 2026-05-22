@@ -62,6 +62,7 @@ all:
           - t1-isolated-v6-d56u2
           - t1-isolated-d56u1-lag
           - t1-isolated-v6-d56u1-lag
+          - t1-isolated-d56u1-lag
           - t1-isolated-d224u8
           - t1-isolated-d254u2s1
           - t1-isolated-d510u2
