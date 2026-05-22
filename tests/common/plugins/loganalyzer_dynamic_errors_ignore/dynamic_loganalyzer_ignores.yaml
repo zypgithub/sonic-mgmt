@@ -38,7 +38,7 @@
     - tests/push_build_tests/L3/crm/test_crm.py::test_crm_nexthop_group_and_member
     - tests/push_build_tests/L3/crm/test_crm.py::test_crm_fdb_entry
     - tests/push_build_tests/L3/crm/test_crm.py::test_crm_acl
-    - pc/test_po_update.py::test_po_update_io_no_los
+    - pc/test_po_update.py::test_po_update_io_no_loss
     - vxlan/test_vnet_route_leak.py::test_vnet_route_leak
     - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py
     - drop_packets/test_wjh.py::test_wjh_starts_after_config_reload
@@ -52,7 +52,6 @@
   - Affected_test_cases:
     - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
     - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    - platform_tests/sfp/test_sfputil.py
     - platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file
     - show_techsupport/test_techsupport.py::test_techsupport
     - show_techsupport/test_auto_techsupport.py
@@ -150,7 +149,6 @@
     - show_techsupport/test_auto_techsupport.py
     - show_techsupport/test_techsupport_no_secret.py
     - show_techsupport/test_techsupport.py::test_techsupport
-    - platform_tests/sfp/test_sfputil.py::test_check_sfputil_reset
     - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
     Redmine:
     - 3263805
@@ -265,7 +263,6 @@
   - Affected_test_cases:
       # Canonical
     - tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_conf
-    - tests/nightly/copp/test_copp.py::test_copp_policer
     - tests/nightly/fdb/test_fdb_basic.py::TestFdbBasic::test_fdb_aging_time_expire
     - tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_loopback_ports
     - tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_hosts_ports
@@ -299,9 +296,6 @@
     - platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current
     - platform_tests/fwutil/test_fwutil.py::test_fwutil_update_next
     - platform_tests/fwutil/test_fwutil.py::test_fwutil_auto
-    - copp/test_copp.py::TestCOPP::test_add_new_trap
-    - copp/test_copp.py::TestCOPP::test_remove_trap
-    - copp/test_copp.py::TestCOPP::test_trap_config_save_after_reboot
     - vxlan/test_vnet_vxlan.py
     - ecmp/inner_hashing/test_wr_inner_hashing.py
     - dhcp_relay/test_dhcp_relay.py::test_interface_binding
@@ -327,7 +321,6 @@
   - '.*ERR kernel: .* mlxsw_minimal .*: Cmd exec timed-out \(opcode=\d+\(ACCESS_REG\),opcode_mod=\d,in_mod=\d\).*'
   Conditions:
   - Affected_test_cases:
-    - autorestart/test_container_autorestart.py::test_containers_autorestart
     - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
 
 - Errors_list:
@@ -400,7 +393,6 @@
   - Affected_test_cases:
     - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
     - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_blacklist
-    - platform_tests/test_platform_info.py::test_show_platform_temperature_mocked
 
 - Errors_list:
   - '.*ERR dualtor_neighbor_check.py: .*'
@@ -624,12 +616,6 @@
     - tests/nightly/fdb/test_fdb_basic.py::TestFdbBasic::test_fdb_aging_time_expire
 
 - Errors_list:
-  - '.*WARNING syncd#SDK: \[HOST_INTERFACE\.WARNING\] Receive event of FW SOS.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
-
-- Errors_list:
   - '.*ERR.*dhcp_relay#dhcrelay\[\d+\]:\sparse_option_buffer:\smalformed\soption\sdhcp6\.<unknown>\s\(code 29797\):\soption\slength\sexceeds\soption\sbuffer\slength\.'
   - '.*ERR.*dhcp_relay#dhcrelay\[\d+\]:\smessage\srepeated\s\d+\stimes:\s\[\sparse_option_buffer:\smalformed\soption\sdhcp6\.<unknown>\s\(code 29797\):\soption\slength\sexceeds\soption\sbuffer\slength\.'
   Conditions:
@@ -687,12 +673,6 @@
   - Affected_test_cases:
     - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
 
-- Errors_list:
-  - '.*ERR syncd#SDK: \[SX_API_DBG.ERR\] .* halt irisc \d  halt_addr.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_event_sdk_dump
-
 # ===== Only Community =====
 
 - Errors_list:
@@ -702,22 +682,6 @@
     - pc/test_po_update.py::test_po_update
     Redmine:
     - 2615940 
-
-- Errors_list:
-  - '.*ERR kernel:.*Failed to bind BFD socket to local_addr.*'
-  - '.*ERR kernel:.*Failed to create TX socket for session.*'
-  - '.*ERR kernel:.*Parsing BFD command \d+ failed.*'
-  - '.*ERR syncd#SDK: \[BFD.ERR\] ioctl failed, error description: Input.output error'
-  - '.*ERR syncd#SDK: \[CORE_API.ERR\] Failed in bfd_offload_set().* error:.*'
-  - '.*ERR syncd#SDK: \[SAI_BFD.ERR\] .*mlnx_sai_bfd.c\[\d+\]- mlnx_set_offload_bfd_tx_session.*: Error create TX BFD session.*'
-  - '.*ERR syncd#SDK: :- sendApiResponse: api SAI_COMMON_API_CREATE failed in syncd mode: SAI_STATUS_FAILURE'
-  - '.*ERR syncd#SDK: :- processQuadEvent: attr: SAI_BFD_SESSION_ATTR_.*'
-  - '.*ERR swss#orchagent: :- create: create status: SAI_STATUS_FAILURE.*'
-  Conditions:
-  - Affected_test_cases:
-    - vxlan/test_vxlan_ecmp.py
-    Redmine:
-    - 3536554
 
 - Errors_list:
   - '.* ERR vnet_route_check.py:.*results.*missed_in_asic_db_routes.*Vnet.*'
@@ -877,15 +841,6 @@
   - ".*ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/\\d+-\\d+/raw due to IndexError\\('list index out of range'\\)"
   Conditions:
   - Platform:
-    - simx
-
-- Errors_list:
-  - '.* ERR dhclient\[\d+\]: receive_packet failed on .*: Network is down'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay::test_dhcp6_relay_multiple_dhcp_servers
-    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay::test_dhcp6_relay_remove_dhcp_server
-    Platform:
     - simx
 
 - Errors_list:
