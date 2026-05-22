@@ -214,11 +214,6 @@ def pytest_runtest_makereport(item, call):
                         'sysdump will not be created ###')
             return
         suite_name = item.parent.name
-        if test_suites_dumps.get(suite_name, 0) > 2:
-            logger.info('### The number of sysdumps for this test suite is more than 3, '
-                        'sysdump will not be created ###')
-            return
-        test_suites_dumps[suite_name] += 1
 
         with allure.step('The test case has failed, generating a sysdump'):
             try:
@@ -226,6 +221,8 @@ def pytest_runtest_makereport(item, call):
                 # Set up configuration for Community test infra as it doesn't have topology_obj
                 if (topology_obj := item.funcargs.get('topology_obj')) is None:
                     topology_obj = get_topology_obj(item)
+                    duration = 7200
+                elif "test_sanity_checker" in suite_name:
                     duration = 7200
                 else:
                     duration = get_test_duration(item)
@@ -237,7 +234,11 @@ def pytest_runtest_makereport(item, call):
                     dump_path = f'{dumps_folder}/{existing_dump_file}'
                     with allure.step(f'The test case has failed, dump already exists at log folder {dump_path}'):
                         pass
+                elif test_suites_dumps.get(suite_name, 0) > 2:
+                    logger.info('### The number of sysdumps for this test suite is more than 3, '
+                                'sysdump will not be created ###')
                 else:
+                    test_suites_dumps[suite_name] += 1
                     with allure.step('The test case has failed, generating a sysdump'):
                         generate_and_copy_dump(item, dumps_folder, topology_obj, duration)
             except BaseException as err:
