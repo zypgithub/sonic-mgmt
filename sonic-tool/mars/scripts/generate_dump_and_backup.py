@@ -27,6 +27,9 @@ logger = get_logger("DumpBackup")
 def _is_ipv6_address(ip_str):
     """Check if the given string is an IPv6 address."""
     try:
+        # ipaddress on Python 2 requires unicode input
+        if hasattr(ip_str, 'decode'):
+            ip_str = ip_str.decode('utf-8')
         addr = ipaddress.ip_address(ip_str)
         return isinstance(addr, ipaddress.IPv6Address)
     except ValueError:
@@ -45,6 +48,32 @@ def _parse_args():
     return parser.parse_args()
 
 
+def _build_ipv6_gateway(topo):
+    """Build a fabric Connection gateway via the SONIC_MGMT device for IPv6 DUT access.
+
+    When the DUT only has an IPv6 management address and the execution environment (e.g. MARS
+    docker) lacks IPv6 connectivity, the sonic-mgmt docker (which *does* have IPv6) can act
+    as an SSH jump host.
+
+    Returns a Connection object to the SONIC_MGMT device, or None if the device is not found.
+    """
+    try:
+        mgmt_device = topo.get_device_by_topology_id(constants.SONIC_MGMT_DEVICE_ID)
+        mgmt_username, mgmt_password = topo.get_user_access(mgmt_device.USERS[0])
+        logger.info("Using SONIC_MGMT device {} as SSH gateway for IPv6 DUT access".format(mgmt_device.BASE_IP))
+        return Connection(mgmt_device.BASE_IP, user=mgmt_username,
+                          connect_kwargs={"password": mgmt_password})
+    except Exception as e:
+        logger.warning("Failed to build IPv6 gateway via SONIC_MGMT device: {}".format(e))
+        return None
+
+
+def _build_ssh_proxy_command(mgmt_ip, mgmt_username, mgmt_password):
+    """Build an SSH ProxyCommand string to tunnel through the SONIC_MGMT device."""
+    return ('sshpass -p {pwd} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
+            '-W [%h]:%p {user}@{ip}').format(pwd=mgmt_password, user=mgmt_username, ip=mgmt_ip)
+
+
 def main():
 
     args = _parse_args()
@@ -55,15 +84,34 @@ def main():
     topo = parse_topology(args.topo)
     dut_device = topo.get_device_by_topology_id(constants.DUT_DEVICE_ID)
     dut_device_username, dut_device_password = topo.get_user_access(dut_device.USERS[0])
+
+    # When the DUT has an IPv6 address, use the sonic-mgmt docker as an SSH gateway
+    # because the MARS docker typically does not have IPv6 connectivity.
+    ipv6_dut = _is_ipv6_address(dut_device.BASE_IP)
+    gateway = None
+    proxy_command = ""
+    if ipv6_dut:
+        gateway = _build_ipv6_gateway(topo)
+        if gateway is None:
+            logger.error("DUT has IPv6 address but no SONIC_MGMT gateway is available. "
+                         "Connection will likely fail.")
+        else:
+            # Also prepare ProxyCommand for subprocess-based SSH calls
+            mgmt_device = topo.get_device_by_topology_id(constants.SONIC_MGMT_DEVICE_ID)
+            mgmt_username, mgmt_password = topo.get_user_access(mgmt_device.USERS[0])
+            proxy_command = _build_ssh_proxy_command(mgmt_device.BASE_IP, mgmt_username, mgmt_password)
+
     switch_dut = Connection(dut_device.BASE_IP, user=dut_device_username,
                      config=Config(overrides={"run": {"echo": True}}),
-                     connect_kwargs={"password": dut_device_password})
+                     connect_kwargs={"password": dut_device_password},
+                     gateway=gateway)
     duts = [switch_dut]
     if "bobcat" in args.topo:
         for dpu_port in range(5021, 5025):
             dpu_dut = Connection(dut_device.BASE_IP, user=dut_device_username, port=dpu_port,
                              config=Config(overrides={"run": {"echo": True}}), connect_timeout=15,
-                             connect_kwargs={"password": dut_device_password})
+                             connect_kwargs={"password": dut_device_password},
+                             gateway=gateway)
             dpu_dut.ssh_port = dpu_port
             try:
                 dpu_dut.open()
@@ -88,10 +136,12 @@ def main():
         generate_dump_cmd = "sudo generate_dump -s '%s'" % args.since
         ssh_port_param = "-p {}".format(dut.ssh_port) if hasattr(dut, "ssh_port") else ""
 
-        # Handle IPv6 addresses by adding -6 flag to SSH
-        ipv6_flag = "-6" if _is_ipv6_address(dut_device.BASE_IP) else ""
-        cmd_run = 'sshpass -p {} ssh {} {} {}@{} -o StrictHostKeyChecking=no "{}"'.format(
-            dut_device_password, ipv6_flag, ssh_port_param, dut_device_username, dut_device.BASE_IP, generate_dump_cmd)
+        # Build SSH command, using ProxyCommand for IPv6 DUTs
+        proxy_option = '-o "ProxyCommand={}"'.format(proxy_command) if proxy_command else ""
+        ipv6_flag = "-6" if ipv6_dut and not proxy_command else ""
+        cmd_run = 'sshpass -p {} ssh {} {} {} {}@{} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "{}"'.format(
+            dut_device_password, ipv6_flag, ssh_port_param, proxy_option,
+            dut_device_username, dut_device.BASE_IP, generate_dump_cmd)
         logger.info("Running command: {}".format(cmd_run))
         process = subprocess.Popen(cmd_run, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, stderr = process.communicate()
