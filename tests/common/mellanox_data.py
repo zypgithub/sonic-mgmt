@@ -1661,9 +1661,25 @@ SWITCH_MODELS = {
         "fans": {
             "number": 0
         },
-        "cpu_pack": {
+        "cpu_cores": {
             "number": 0
-        }
+        },
+        "cpu_pack": {
+            "number": 1
+        },
+        "thermals": {
+            "module": {
+                "start": 1,
+                "number": 128
+            },
+            "cpu_pack": {
+                "number": 1
+            },
+            "sodimm": {
+                "start": 1,
+                "number": 2
+            }
+         }
     },
     "x86_64-nvidia_sn6810_ld-r0": {
         "chip_type": "spectrum6",
