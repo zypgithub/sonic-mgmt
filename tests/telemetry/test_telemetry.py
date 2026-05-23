@@ -12,7 +12,6 @@ from tests.common.helpers.telemetry_helper import setup_telemetry_forpyclient
 from telemetry_utils import assert_equal, get_list_stdout, get_dict_stdout, skip_201911_and_older
 from telemetry_utils import generate_client_cli, parse_gnmi_output, check_gnmi_cli_running
 from tests.common import config_reload
-from tests.common.fixtures.duthost_utils import ports_list
 
 pytestmark = [
     pytest.mark.topology('any', 't1-multi-asic')
@@ -135,7 +134,7 @@ def test_telemetry_ouput(duthosts, enum_rand_one_per_hwsku_hostname, ptfhost,
 @pytest.mark.parametrize('setup_streaming_telemetry', [False], indirect=True)
 @pytest.mark.disable_loganalyzer
 def test_telemetry_queue_buffer_cnt(duthosts, enum_rand_one_per_hwsku_hostname, ptfhost,
-                                    setup_streaming_telemetry, gnxi_path, ports_list):
+                                    setup_streaming_telemetry, gnxi_path):
     """
     Run pyclient from ptfdocker and check number of queue counters to check
     correctness of the feature of polling only configured port buffer queues.
