@@ -28,6 +28,7 @@ def test_show_eeprom_bmc(devices, random_api, output_format):
             fae.platform.eeprom.show("BMC", output_format=output_format),
             output_format=output_format, field_name_dict={}).get_returned_value()
 
-        output = {key: value["value"] for key, value in output.items()}
+        output = {key: value["value"] if isinstance(value, dict) else value
+                  for key, value in output.items()}
         expected = device.fae_eeprom_values['BMC']
         ValidationTool.validate_output_of_show(output, expected, allow_extra_fields=True).verify_result()
