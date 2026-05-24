@@ -1214,6 +1214,7 @@ class PlatformConsts:
     EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
     INV_STATE = 'state'
     INV_OK = 'ok'
+    HARDWARE_VERSION = "hardware-version"
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/x86_64-nvidia_{}-r0/asic.conf"
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_BIOS_INSTALL = 720
