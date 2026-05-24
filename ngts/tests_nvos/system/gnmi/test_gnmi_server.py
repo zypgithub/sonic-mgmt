@@ -91,6 +91,7 @@ def test_gnmi_basic_flow_poll(engines, topology_obj):
 
 @pytest.mark.system
 @pytest.mark.gnmi
+@pytest.mark.nvos_ci
 def test_gnmi_basic_flow_once(engines, topology_obj):
     """
     Check gnmi basic flow: show command , disable and enable commands, validate stream updates to gnmi-client,

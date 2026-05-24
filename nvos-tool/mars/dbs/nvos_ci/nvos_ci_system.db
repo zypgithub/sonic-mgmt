@@ -26,4 +26,8 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_system.cases </cases>
 	</test>
 
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_tech_support_expected_files.cases </cases>
+	</test>
+
 </DBDEF>
