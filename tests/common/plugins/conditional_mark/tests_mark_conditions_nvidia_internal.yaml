@@ -1222,7 +1222,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
     - "'simx' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_reset:
-  skip:
+  xfail:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4999830"
     conditions:
     - "https://redmine.mellanox.com/issues/4999830 and 'sn6600_ld' in platform"
