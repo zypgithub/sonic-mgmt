@@ -15,9 +15,16 @@ class SupportedRebootReloadTypes:
         self.fast_reboot = 'fast-reboot'
         self.warm_reboot = 'warm-reboot'
         self.config_reload = 'config reload -y'
-        if '4280' in platform:
+        if platform and '4280' in platform:
             del self.fast_reboot
             del self.warm_reboot
+        if platform and 'sn6600_ld' in platform:
+            if is_redmine_issue_active([5042499])[0]:
+                del self.fast_reboot
+                logger.info('Redmine #5042499 is active, removing fast-reboot from the list of supported reboot types')
+            if is_redmine_issue_active([5008193])[0]:
+                del self.warm_reboot
+                logger.info('Redmine #5008193 is active, removing warm reboot from the list of supported reboot types')
 
 
 def get_supported_reboot_reload_types_list(platform=None):
