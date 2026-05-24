@@ -25,6 +25,12 @@ scripts/sonic_deploy/test_deploy_and_upgrade.py::test_more_then_2_fan_status_wro
     conditions:
     - "'sn6600_ld' in platform"
 
+scripts/test_verify_fanout_version.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5042675 for SN6600_LD platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5042675 and 'sn6600_ld' in platform"
+
 tests/nightly/cpld/test_cpld.py:
   skip:
     reason: "Testcase skipped on simx platforms"
