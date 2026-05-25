@@ -11,6 +11,7 @@ import argparse
 import os
 import subprocess
 import ipaddress
+import time
 
 # Third-party libs
 from fabric import Config
@@ -142,18 +143,43 @@ def main():
         cmd_run = 'sshpass -p {} ssh {} {} {} {}@{} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "{}"'.format(
             dut_device_password, ipv6_flag, ssh_port_param, proxy_option,
             dut_device_username, dut_device.BASE_IP, generate_dump_cmd)
-        logger.info("Running command: {}".format(cmd_run))
-        process = subprocess.Popen(cmd_run, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, stderr = process.communicate()
-        if stderr:
-            logger.error("stderr: {}".format(stderr))
-        dump_file = output.splitlines()[-1]
+        # Retry generate_dump if another techsupport instance is already running.
+        retry_timeout = 360
+        retry_interval = 30
+        start_time = time.time()
+        dump_file = None
+        while True:
+            logger.info("Running command: {}".format(cmd_run))
+            process = subprocess.Popen(cmd_run, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output, stderr = process.communicate()
+            elapsed = time.time() - start_time
+            if stderr and b"Another instance of techsupport" in stderr:
+                logger.warning(stderr)
+                if elapsed < retry_timeout:
+                    time.sleep(retry_interval)
+                    continue
+                else:
+                    logger.error("Another techsupport instance is still running on {}. Skipping the dump.".format(target))
+                    break
+            elif output and output.strip():
+                dump_file = output.splitlines()[-1]
+                break
+            else:
+                logger.info("output: {}".format(output))
+                logger.info("stderr: {}".format(stderr))
+                logger.error("Failed to get the sysdump.")
+                break
+
+        if not dump_file:
+            logger.error("Skipping dump backup for {} - no dump file generated.".format(target))
+            continue
+
         logger.info("Generated dump {} on DUT {}".format(dump_file, target))
         logger.info("Backup the generated dump to %s" % session_folder)
         dut_scp = Transfer(dut)
         dut_scp.get(dump_file, local=os.path.join(session_folder, os.path.basename(dump_file)))
 
-        logger.info("################### DONE ###################")
+    logger.info("################### DONE ###################")
 
 
 if __name__ == "__main__":

@@ -306,7 +306,27 @@ def generate_and_copy_sonic_dump_runner(topology_obj, device_engine, device_alia
         str: The path to the generated sysdump file
     """
     logger.info(f"Started {device_alias} sysdump")
-    output = device_engine.run_cmd('sudo generate_dump -s \"-{} seconds\"'.format(duration), validate=True)
+    # Retry generate_dump if another techsupport instance is already running.
+    retry_timeout = 360
+    retry_interval = 30
+    start_time = time.time()
+    output = None
+    while True:
+        try:
+            output = device_engine.run_cmd(f'sudo generate_dump -s \"-{duration} seconds\"', validate=True)
+        except Exception as err:
+            elapsed = time.time() - start_time
+            if "Another instance of techsupport" in str(err) and elapsed < retry_timeout:
+                logger.warning(f"Another techsupport instance is running on {device_alias}. "
+                               f"Retrying in {retry_interval}s (elapsed: {elapsed:.0f}s / {retry_timeout}s)")
+                time.sleep(retry_interval)
+                continue
+            raise
+        break
+
+    if not output or not output.strip():
+        raise RuntimeError(f"generate_dump produced no output on {device_alias}")
+
     remote_dump_path = output.splitlines()[-1]
     logger.debug(f"Remote dump path for {device_alias}: {remote_dump_path}")
     dest_file = dumps_folder + f'/sysdump_{device_alias}_' + item_clean_name + '.tar.gz'
