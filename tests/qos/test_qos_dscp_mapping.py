@@ -477,7 +477,8 @@ class TestQoSSaiDSCPQueueMapping_IPIP_Base():
 
             outer_dscp = rotating_dscp if decap_mode == "uniform" else DEFAULT_DSCP
             inner_dscp = DEFAULT_DSCP if decap_mode == "uniform" else rotating_dscp
-            for i in range(step):
+            effective_step = min(step, 64 - rotating_dscp)
+            for i in range(effective_step):
                 logger.info(f"{decap_mode} mode: outer_dscp ="
                             f"{outer_dscp + i if decap_mode == 'uniform' else DEFAULT_DSCP}, "
                             f"inner_dscp = {inner_dscp if decap_mode == 'uniform' else inner_dscp + i}")
@@ -498,7 +499,7 @@ class TestQoSSaiDSCPQueueMapping_IPIP_Base():
             queue_val_list = []
             global output_table
 
-            for i in range(step):
+            for i in range(effective_step):
                 queue_val = get_dscp_to_queue_value(rotating_dscp + i,
                                                     dut_qos_maps_module.get("dscp_to_tc_map").get("AZURE"),
                                                     dut_qos_maps_module.get("tc_to_queue_map").get("AZURE"))
@@ -527,7 +528,7 @@ class TestQoSSaiDSCPQueueMapping_IPIP_Base():
             global packet_egressed_success
 
             dut_egress_port_list = []
-            for i in range(step):
+            for i in range(effective_step):
                 dst_ptf_port_id = dst_ptf_port_id_list[i]
                 if dst_ptf_port_id in ptf_port_to_dut_port_map:
                     dut_egress_port = ptf_port_to_dut_port_map[dst_ptf_port_id]
@@ -549,7 +550,7 @@ class TestQoSSaiDSCPQueueMapping_IPIP_Base():
 
             global egress_queue_count_list, egress_queue_val_list
 
-            for i in range(step):
+            for i in range(effective_step):
                 cur_dscp = rotating_dscp + i
                 if packet_egressed_success[i]:
                     if egress_queue_count_list[i] >= DEFAULT_PKT_COUNT:
