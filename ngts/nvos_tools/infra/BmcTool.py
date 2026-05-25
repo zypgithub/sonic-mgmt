@@ -224,7 +224,7 @@ class BmcTool:
                 engines.dut.run_cmd(curl_request)).verify_result()
             ipv6_data = eth0_details["IPv6Addresses"]
             slaac_address = next(
-                (address['Address'] for address in ipv6_data if address['AddressOrigin'] == 'SLAAC'),
+                (address['Address'] for address in ipv6_data if (address['AddressOrigin'] == 'SLAAC') or (address['AddressOrigin'] == 'DHCPv6')),
                 None  # If no SLAAC address is found, return None
             )
             ip_addresses["IPv6"] = slaac_address
