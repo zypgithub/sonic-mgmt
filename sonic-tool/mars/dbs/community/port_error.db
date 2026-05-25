@@ -59,4 +59,8 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/port_error.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/transceivers.cases </cases>
+    </test>
+
 </DBDEF>
