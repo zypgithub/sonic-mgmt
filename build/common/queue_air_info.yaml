@@ -1,0 +1,32 @@
+# queue_info.yaml
+queues:
+  devops_sonic_ci_air_spc:
+    setup_type: "CI_SONIC_AIR_SPC"
+    device_var: "SWITCH_PANTHER1"
+    chip_type: "SPC"
+
+  devops_sonic_ci_air_spc3:
+    setup_type: "CI_SONIC_AIR_SPC3"
+    device_var: "SWITCH_LEOPARD1"
+    chip_type: "SPC3"
+
+  devops_sonic_ci_air_spc4:
+    setup_type: "CI_SONIC_AIR_SPC4"
+    device_var: "SWITCH_MOOSE1"
+    chip_type: "SPC4"
+
+  devops_sonic_ci_air_spc5:
+    setup_type: "CI_SONIC_AIR_SPC5"
+    device_var: "SWITCH_BISON1"
+    chip_type: "SPC5"
+
+  devops_sonic_ci_air_spc6:
+    setup_type: "CI_SONIC_AIR_SPC6"
+    device_var: "SWITCH_SALAMANDRA"
+    chip_type: "SPC6"
+
+  devops_sonic_ci_air_spc6s:
+    setup_type: "CI_SONIC_AIR_SPC6S"
+    device_var: "SWITCH_SALAMANDRA"
+    chip_type: "SPC6S"
+

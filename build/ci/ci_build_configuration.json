@@ -14,7 +14,8 @@
     "SIMX_ON_FAILURE=stop",
     "AIR_ON_FAILURE=continue",
     "CI_SONIC_SPC_SETUP_CHIP_TYPE=SPC",
-    "CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE=SPC"
+    "CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE=SPC",
+    "CI_SONIC_AIR_SPC_SETUP_CHIP_TYPE=SPC"
   ],
   "agentConfig": [
     {
@@ -401,103 +402,16 @@
         },
         {
           "name": "Allocate setup AIR SPC",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
+          "module": "${nfs_dir}/general/build/smart_allocate_setup/smart_allocate_setup.groovy",
           "category": "Allocate setups",
           "container": "mini-mars:POD_MARS_AIR@AIR_SPC",
           "parameters": {
-            "queue_id": "devops_sonic_ci_air_spc",
             "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_AIR_SPC",
-            "device_var": "SWITCH_PANTHER1",
             "setup_var": "CI_SONIC_AIR_SPC_SETUP",
+            "yaml_path": "${nfs_dir}/build/common/queue_air_info.yaml",
             "setup_requirements": "group_name:Sagi,sub_group:SONIC_AIR_CI,setup_status:enable"
           },
-          "skip": "${SKIP_SPC} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": true
-        },
-        {
-          "name": "Allocate setup AIR SPC3",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC3",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_air_spc3",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_AIR_SPC3",
-            "setup_var": "CI_SONIC_AIR_SPC3_SETUP",
-            "device_var": "SWITCH_LEOPARD1",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_AIR_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SPC3} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": true
-        },
-        {
-          "name": "Allocate setup AIR SPC4",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC4",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_air_spc4",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_AIR_SPC4",
-            "device_var": "SWITCH_MOOSE1",
-            "setup_var": "CI_SONIC_AIR_SPC4_SETUP",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_AIR_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SPC4} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": true
-        },
-        {
-          "name": "Allocate setup AIR SPC5",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC5",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_air_spc5",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_AIR_SPC5",
-            "device_var": "SWITCH_BISON1",
-            "setup_var": "CI_SONIC_AIR_SPC5_SETUP",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_AIR_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SPC5} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": true
-        },
-        {
-          "name": "Allocate setup AIR SPC6",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC6",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_air_spc6",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_AIR_SPC6",
-            "device_var": "SWITCH_SALAMANDRA",
-            "setup_var": "CI_SONIC_AIR_SPC6_SETUP",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_AIR_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SPC6} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": true
-        },
-        {
-          "name": "Allocate setup AIR SPC6S",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC6S",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_air_spc6s",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_AIR_SPC6S",
-            "device_var": "SWITCH_SALAMANDRA",
-            "setup_var": "CI_SONIC_AIR_SPC6S_SETUP",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_AIR_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SPC6S} || ${SKIP_AIR}",
+          "skip": "${SKIP_AIR}",
           "on_failure": "${AIR_ON_FAILURE}",
           "out_of_mail": true
         },
@@ -508,7 +422,7 @@
           "container": "mini-mars:POD_MARS_AIR@AIR_SPC",
           "parameters": {
             "row": "AIR",
-            "column": "SPC",
+            "column": "${CI_SONIC_AIR_SPC_SETUP_CHIP_TYPE}",
             "global_conf": "${MARS_AIR_GLOBAL_CONF}",
             "local_conf": "${MARS_AIR_LOCAL_CONF}",
             "setup_id": "${CI_SONIC_AIR_SPC_SETUP}",
@@ -520,7 +434,7 @@
             "test_name": "deploy",
             "run_in_container": true
           },
-          "skip": "${SKIP_SPC} || ${SKIP_AIR}",
+          "skip": "${SKIP_AIR}",
           "on_failure": "${AIR_ON_FAILURE}",
           "out_of_mail": false
         },
@@ -531,7 +445,7 @@
           "container": "mini-mars:POD_MARS_AIR@AIR_SPC",
           "parameters": {
             "row": "AIR",
-            "column": "SPC",
+            "column": "${CI_SONIC_AIR_SPC_SETUP_CHIP_TYPE}",
             "global_conf": "${MARS_AIR_GLOBAL_CONF}",
             "local_conf": "${MARS_AIR_LOCAL_CONF}",
             "setup_id": "${CI_SONIC_AIR_SPC_SETUP}",
@@ -544,238 +458,7 @@
             "test_name": "test",
             "run_in_container": true
           },
-          "skip": "${SKIP_SPC} || ${FAILED_DEPLOY_AIR_SPC} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Deploy AIR SPC3",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC3",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC3",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC3_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC3_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "test_name": "deploy",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC3} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Test AIR SPC3",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC3",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC3",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC3_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC3_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "repeat_mars": "${STABILITY}",
-            "test_name": "test",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC3} || ${FAILED_DEPLOY_AIR_SPC3} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Deploy AIR SPC4",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC4",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC4",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC4_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC4_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "test_name": "deploy",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC4} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Test AIR SPC4",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC4",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC4",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC4_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC4_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "repeat_mars": "${STABILITY}",
-            "test_name": "test",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC4} || ${FAILED_DEPLOY_AIR_SPC4} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Deploy AIR SPC5",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC5",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC5",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC5_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC5_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "test_name": "deploy",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC5} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Test AIR SPC5",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC5",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC5",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC5_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC5_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "repeat_mars": "${STABILITY}",
-            "test_name": "test",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC5} || ${FAILED_DEPLOY_AIR_SPC5} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Deploy AIR SPC6",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC6",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC6",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC6_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC6_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "test_name": "deploy",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC6} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Deploy AIR SPC6S",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC6S",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC6S",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC6S_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC6S_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "test_name": "deploy",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC6S} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Test AIR SPC6",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC6",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC6",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC6_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC6_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "repeat_mars": "${STABILITY}",
-            "test_name": "test",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC6} || ${FAILED_DEPLOY_AIR_SPC6} || ${SKIP_AIR}",
-          "on_failure": "${AIR_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "Test AIR SPC6S",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC6S",
-          "parameters": {
-            "row": "AIR",
-            "column": "SPC6S",
-            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
-            "local_conf": "${MARS_AIR_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_AIR_SPC6S_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC6S_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type" : "CI",
-            "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "repeat_mars": "${STABILITY}",
-            "test_name": "test",
-            "run_in_container": true
-          },
-          "skip": "${SKIP_SPC6S} || ${FAILED_DEPLOY_AIR_SPC6S} || ${SKIP_AIR}",
+          "skip": "${FAILED_DEPLOY_AIR_SPC} || ${SKIP_AIR}",
           "on_failure": "${AIR_ON_FAILURE}",
           "out_of_mail": false
         },
@@ -935,72 +618,7 @@
           "parameters": {
             "setup_name": "${CI_SONIC_AIR_SPC_SETUP}"
           },
-          "skip": "${SKIP_SPC} || ${SKIP_AIR}",
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
-          "name": "Free AIR SPC3 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC3",
-          "parameters": {
-            "setup_name": "${CI_SONIC_AIR_SPC3_SETUP}"
-          },
-          "skip": "${SKIP_SPC3} || ${SKIP_AIR}",
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
-          "name": "Free AIR SPC4 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC4",
-          "parameters": {
-            "setup_name": "${CI_SONIC_AIR_SPC4_SETUP}"
-          },
-          "skip": "${SKIP_SPC4} || ${SKIP_AIR}",
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
-          "name": "Free AIR SPC5 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC5",
-          "parameters": {
-            "setup_name": "${CI_SONIC_AIR_SPC5_SETUP}"
-          },
-          "skip": "${SKIP_SPC5} || ${SKIP_AIR}",
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
-          "name": "Free AIR SPC6 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC6",
-          "parameters": {
-            "setup_name": "${CI_SONIC_AIR_SPC6_SETUP}"
-          },
-          "skip": "${SKIP_SPC6} || ${SKIP_AIR}",
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
-          "name": "Free AIR SPC6S setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "container": "mini-mars:POD_MARS_AIR@AIR_SPC6S",
-          "parameters": {
-            "setup_name": "${CI_SONIC_AIR_SPC6S_SETUP}"
-          },
-          "skip": "${SKIP_SPC6S} || ${SKIP_AIR}",
+          "skip": "${SKIP_AIR}",
           "finally": true,
           "on_failure": "ignore",
           "out_of_mail": true
@@ -1074,26 +692,6 @@
                 "AIR": [
                   {
                     "SPC": [
-                      "deploy",
-                      "test"
-                    ],
-                    "SPC3": [
-                      "deploy",
-                      "test"
-                    ],
-                    "SPC4": [
-                      "deploy",
-                      "test"
-                    ],
-                    "SPC5": [
-                      "deploy",
-                      "test"
-                    ],
-                    "SPC6": [
-                      "deploy",
-                      "test"
-                    ],
-                    "SPC6S": [
                       "deploy",
                       "test"
                     ]
