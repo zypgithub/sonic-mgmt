@@ -19,14 +19,3 @@ queues:
     setup_type: "CI_SONIC_AIR_SPC5"
     device_var: "SWITCH_BISON1"
     chip_type: "SPC5"
-
-  devops_sonic_ci_air_spc6:
-    setup_type: "CI_SONIC_AIR_SPC6"
-    device_var: "SWITCH_SALAMANDRA"
-    chip_type: "SPC6"
-
-  devops_sonic_ci_air_spc6s:
-    setup_type: "CI_SONIC_AIR_SPC6S"
-    device_var: "SWITCH_SALAMANDRA"
-    chip_type: "SPC6S"
-
