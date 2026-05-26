@@ -1205,6 +1205,12 @@ platform_tests/mellanox/test_hw_management_service.py:
     conditions:
       - "'bmc' in topo_type"
 
+platform_tests/mellanox/test_psu_power_threshold.py:
+  skip:
+    reason: "Not available on BMC"
+    conditions:
+      - "'bmc' in topo_type"
+
 platform_tests/mellanox/test_reboot_cause.py:
   skip:
     reason: "Platform does not support platform_tests/mellanox/test_reboot_cause.py. sn4280 driver doesn't support reset_from_asic and reset_reload_bios
