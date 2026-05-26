@@ -336,6 +336,18 @@ tests/push_build_tests/L3/dhcp_relay/test_dhcp_relay.py::TestDHCPRelay::test_dhc
     conditions:
     - https://github.com/Azure/sonic-buildimage/issues/6053
 
+tests/dhcp_relay/test_dhcpv4_relay.py::test_dhcp_relay_with_non_default_vrf:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5041721"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5041721"
+
+tests/dhcp_relay/test_dhcpv4_relay.py::test_dhcp_relay_with_different_non_default_vrf:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5041721"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5041721"
+
 tests/push_build_tests/general/wjh/test_wjh.py::TestBuffer::test_buffer:
   skip:
     reason: "Testcase is not supported on simx or due to RM issue: https://redmine.mellanox.com/issues/4815589"
