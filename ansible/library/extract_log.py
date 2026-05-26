@@ -167,6 +167,7 @@ def convert_date(fct, s):
                     dt = datetime.datetime.strptime(str_date, '%Y %b %d %H:%M:%S.%f')
 
     locale.setlocale(locale.LC_ALL, loc)
+
     if dt is None:
         dt = 0
         logger.warning(f"Failed to convert date from string, skipping unparseable line: {s}")
