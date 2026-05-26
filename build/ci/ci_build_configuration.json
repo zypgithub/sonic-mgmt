@@ -691,7 +691,7 @@
               {
                 "AIR": [
                   {
-                    "SPC": [
+                    "${CI_SONIC_AIR_SPC_SETUP_CHIP_TYPE}": [
                       "deploy",
                       "test"
                     ]
