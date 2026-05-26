@@ -59,6 +59,8 @@ from ngts.tests.nightly.logging.test_log_analyzer_errors_during_deploy_sonic imp
     get_new_start_string, insert_new_start_string
 from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker, get_marker_arg_value, is_cur_test_passed
 from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
+from ngts.tests_nvos.infra import nvos_hub as _nvos_hub
+from ngts.tests_nvos.infra.nvos_hub import nvos_hub_ai_investigation  # noqa: F401
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import is_ipv6_setup, wait_for_ldap_nvued_restart_workaround
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
@@ -143,6 +145,16 @@ def pytest_addoption(parser: pytest.Parser):
         metavar="API",
         help="Pin random_api parametrization to NVUE or OpenApi (same strings as test ids). "
              "If unset, NVOS_FIXED_RANDOM_API is used. Default behavior is one random API per run.",
+    )
+    parser.addoption(
+        "--nvos-hub-ai-investigation",
+        action="store_true",
+        default=False,
+        help="Enable NVOS Hub AI-investigation auto-queue on test failures. Off by default. "
+             "When on, every failing test fires a best-effort POST to the dashboard and a deep "
+             "investigation card is auto-generated; the Allure report gets a link to it. "
+             "Also enabled when env var NVOS_HUB_AI_INVESTIGATION is set to one of "
+             "1/true/yes/on.",
     )
 
 
@@ -1545,3 +1557,9 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
                 item.add_marker(la_failed_marker)
                 # 2) Tell Allure directly – this does NOT depend on marker collection
                 allure.dynamic.tag(la_failed_marker)
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    # NVOS Hub: PATCH each queued failure with the final Allure URL once the
+    # upload completes. The autouse fixture is imported at module top.
+    _nvos_hub.terminal_summary_impl(config)
