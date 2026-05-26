@@ -1337,6 +1337,12 @@ platform_tests/test_reboot.py::test_warm_reboot:
     conditions:
     - "https://redmine.mellanox.com/issues/5008193 and 'sn6600_ld' in platform"
 
+fib/test_fib.py::test_nvgre_hash[ipv6:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/5046042 on sn6600_LD platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5046042 and 'sn6600_ld' in platform"
+
 ########################## IGNORE WARM REBOOT ON SN6600_LD START ##########################
 arp/test_wr_arp.py:
   skip:
