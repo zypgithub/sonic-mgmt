@@ -127,12 +127,13 @@ def test_system_nv_bridge_functional(engines, devices, nv_command, dut_engines, 
                                                   apply=True, dut_engine=dut)
 
         with allure.step("Verify output after configure nv bridge"):
+            dut_hostname = dut.run_cmd("hostname")
             _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut, connections=True,
                                      active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip,
-                                     client_id=dut.ip, server_address=dut.ip)
+                                     client_id=dut_hostname, server_address=dut.ip)
             _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut2, connections=True,
                                      active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip,
-                                     client_id=dut2.ip, server_address=dut2.ip)
+                                     client_id=dut_hostname, server_address=dut2.ip)
 
         with allure.step("Get tray index of second dut"):
             tray_index = OutputParsingTool.parse_show_output_to_dict(nv_command.platform.chassis_location.show(dut_engine=dut2)).get_returned_value()[ChassisLocationConsts.TRAY_ID]
@@ -233,8 +234,13 @@ def test_system_nv_bridge_simulate_issue(engines, devices, nv_command, dut_engin
                                                   apply=True, dut_engine=dut)
 
         with allure.step("Verify output after configure nv bridge"):
-            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut, connections=True, active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip, client_id=dut.ip, server_address=dut.ip)
-            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut2, connections=True, active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip, client_id=dut2.ip, server_address=dut2.ip)
+            dut_hostname = dut.run_cmd("hostname")
+            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut, connections=True,
+                                     active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip,
+                                     client_id=dut_hostname, server_address=dut.ip)
+            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut2, connections=True,
+                                     active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip,
+                                     client_id=dut_hostname, server_address=dut2.ip)
 
         with allure.step("Simulate nv-bridge docker issue"):
             start_time = datetime.now()
@@ -250,12 +256,13 @@ def test_system_nv_bridge_simulate_issue(engines, devices, nv_command, dut_engin
                                                       file_output=dut.run_cmd("sudo cat /var/log/health_history"))
 
         with allure.step("Verify output after configure nv bridge"):
+            dut_hostname = dut.run_cmd("hostname")
             _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut,
                                      connections=True, active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE,
-                                     client_address=engines.dut.ip, client_id=engines.dut.ip, server_address=dut.ip)
+                                     client_address=engines.dut.ip, client_id=dut_hostname, server_address=dut.ip)
             _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut2,
                                      connections=True, active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE,
-                                     client_address=dut.ip, client_id=dut2.ip,
+                                     client_address=dut.ip, client_id=dut_hostname,
                                      server_address=dut2.ip)
     finally:
         with allure.step("Unset node"):
