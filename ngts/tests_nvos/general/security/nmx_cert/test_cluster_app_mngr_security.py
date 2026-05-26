@@ -178,6 +178,7 @@ def test_cluster_app_mngr_security_cli(test_api, app_name, engines, ca_type):
     with allure.step("check values after disable cluster"):
         with allure.step("disable cluster"):
             disable_cluster()
+            time.sleep(30)
         with allure.independent_step("Verify outputs contain the required fields"):
             with allure.independent_step("verify manager show - expect item does not exist"):
                 verify_manager_show(app_name, expect_item_not_exist=True)
