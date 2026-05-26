@@ -35,6 +35,8 @@ from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
+from ngts.tests_nvos.infra import nvos_hub as _nvos_hub
+from ngts.tests_nvos.infra.nvos_hub import nvos_hub_ai_investigation  # noqa: F401
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
@@ -149,6 +151,41 @@ def pytest_addoption(parser: pytest.Parser):
     parser.addoption('--upgrade-matrix-json', type=_validate_matrix_arg, help='Path to matrix json file or json string')
     parser.addoption("--override-target-version", action="store_true", default=None,
                      help="Override the target version with the target from the upgrade downgrade matrix")
+    parser.addoption(
+        "--fixed-random-api",
+        action="store",
+        default=None,
+        metavar="API",
+        help="Pin random_api parametrization to NVUE or OpenApi (same strings as test ids). "
+             "If unset, NVOS_FIXED_RANDOM_API is used. Default behavior is one random API per run.",
+    )
+    parser.addoption(
+        "--nvos-hub-ai-investigation",
+        action="store_true",
+        default=False,
+        help="Enable NVOS Hub AI-investigation auto-queue on test failures. Off by default. "
+             "When on, every failing test fires a best-effort POST to the dashboard and a deep "
+             "investigation card is auto-generated; the Allure report gets a link to it. "
+             "Also enabled when env var NVOS_HUB_AI_INVESTIGATION is set to one of "
+             "1/true/yes/on.",
+    )
+
+
+def _resolve_fixed_random_api(config: pytest.Config) -> str | None:
+    """Pinned ApiType value for random_api, or None for default (random / collect-all)."""
+    opt = config.getoption("--fixed-random-api")
+    if opt is None:
+        opt = os.environ.get("NVOS_FIXED_RANDOM_API")
+    if not opt:
+        return None
+    opt_stripped = opt.strip()
+    by_lower = {t.lower(): t for t in ApiType.ALL_TYPES}
+    resolved = by_lower.get(opt_stripped.lower())
+    if resolved is None:
+        raise pytest.UsageError(
+            f"--fixed-random-api / NVOS_FIXED_RANDOM_API must be one of {ApiType.ALL_TYPES}, got {opt_stripped!r}"
+        )
+    return resolved
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -1445,3 +1482,9 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
                 item.add_marker(la_failed_marker)
                 # 2) Tell Allure directly – this does NOT depend on marker collection
                 allure.dynamic.tag(la_failed_marker)
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    # NVOS Hub: PATCH each queued failure with the final Allure URL once the
+    # upload completes. The autouse fixture is imported at module top.
+    _nvos_hub.terminal_summary_impl(config)
