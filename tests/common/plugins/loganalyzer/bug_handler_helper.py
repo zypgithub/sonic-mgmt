@@ -10,7 +10,7 @@ import pytest
 from abc import ABC, abstractmethod
 
 from tests.common.helpers.parallel import parallel_run
-from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
+from devts.infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes, REGRESSION_TYPE_ENV_VAR, RegressionType
 from ngts.nvos_constants.constants_nvos import SystemConsts

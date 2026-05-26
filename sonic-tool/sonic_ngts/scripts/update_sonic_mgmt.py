@@ -9,8 +9,8 @@ import pandas as pd
 import numpy as np
 import re
 
-from infra.tools.general_constants.air_constants import NvidiaAirConstants
-from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
+from devts.infra.tools.general_constants.air_constants import NvidiaAirConstants
+from devts.infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
 from ngts.constants.constants import SerialConsts
 
 logging.basicConfig(level=logging.DEBUG)

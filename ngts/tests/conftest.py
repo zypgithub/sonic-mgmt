@@ -16,7 +16,7 @@ import allure
 from dotted_dict import DottedDict
 from deepdiff import DeepDiff
 from enum import Enum
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import PytestConst

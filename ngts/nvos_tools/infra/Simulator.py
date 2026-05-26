@@ -6,7 +6,7 @@ import re
 from contextlib import contextmanager
 from typing import Dict, Iterator, Tuple, Union
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.ngts_types import DevicesT, EnginesT
 from ngts.nvos_constants.constants_nvos import HealthConsts, SystemConsts, FansConsts
 from ngts.nvos_tools.infra.FilesTool import FilesTool

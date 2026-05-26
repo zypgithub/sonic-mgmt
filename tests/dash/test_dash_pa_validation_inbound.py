@@ -7,7 +7,7 @@ from constants import LOCAL_PTF_INTF, REMOTE_PTF_INTF
 from configs import vnet_to_vnet_config
 from gnmi_utils import apply_messages
 from ipaddress import ip_network
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from tests.common import config_reload
 
 VIP = "10.2.0.1"

@@ -23,7 +23,7 @@ from tests.common.helpers.platform_api.chassis import is_inband_port
 from tests.common.errors import RunAnsibleModuleFail
 from tests.common import constants
 from typing import Dict, Optional, TypedDict
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class ShellResult(TypedDict):

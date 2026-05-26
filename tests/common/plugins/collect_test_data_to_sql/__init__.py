@@ -5,8 +5,8 @@ import json
 
 from ngts.constants.constants import DbConstants, CliType, RebootTestConstants
 from ngts.tools.infra import get_infra_type, CANONICAL_INFRA_TYPE
-from infra.tools.sql.connect_to_mssql import ConnectMSSQL
-from infra.tools.sql.skynet_collector import SkynetGenericCollector
+from devts.infra.tools.sql.connect_to_mssql import ConnectMSSQL
+from devts.infra.tools.sql.skynet_collector import SkynetGenericCollector
 
 logger = logging.getLogger()
 

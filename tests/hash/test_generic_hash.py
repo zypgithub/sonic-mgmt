@@ -22,7 +22,7 @@ from tests.common.reboot import reboot
 from tests.common.config_reload import config_reload
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.dualtor.dual_tor_utils import toggle_all_aa_ports_to_rand_selected_tor  # noqa: F401
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 DEFAULT_VXLAN_PORT = 4789
 PTF_LOG_PATH = "/tmp/generic_hash_test.GenericHashTest.log"

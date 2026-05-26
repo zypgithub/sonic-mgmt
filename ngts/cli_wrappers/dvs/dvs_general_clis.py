@@ -14,7 +14,7 @@ from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
 from ngts.scripts.sonic_deploy.dvs_only_methods import DvsInstallationSteps
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 from devts.infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
 from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive

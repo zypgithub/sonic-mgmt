@@ -14,7 +14,7 @@ from datetime import datetime
 from tests.common.plugins.loganalyzer.bug_handler_helper import handle_log_analyzer_errors
 from tests.common.plugins.loganalyzer.system_msg_handler import AnsibleLogAnalyzer
 from tests.common.plugins.loganalyzer_dynamic_errors_ignore.la_dynamic_errors_ignore import get_extended_ignore_list
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 logger = logging.getLogger()
 RM_URL = "https://redmine.mellanox.com/issues/"
 
