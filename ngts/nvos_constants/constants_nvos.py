@@ -1261,6 +1261,7 @@ class CableCartridgeConsts:
         "HS-32836-003",
         "HS-33868-002",
         "HS-33869-002",
+        "HS-33886-002",
         "755-XXXXX-XXXX-XXX"
     ]
     # Error messages
