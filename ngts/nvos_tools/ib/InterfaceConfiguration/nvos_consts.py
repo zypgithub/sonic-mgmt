@@ -5,7 +5,12 @@ class InternalNvosConsts:
     # Output dictionary
     OPERATIONAL_INDEX = 0
     APPLIED_INDEX = 1
-    DEFAULT_TIMEOUT = 120   # in MS
+    DEFAULT_TIMEOUT = 120  # Non-ACP ports (FNM/SW)
+    NVL5_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 60  # NVL5 ACP ports with LTX enabled
+    NVL5_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 30  # NVL5 ACP ports with LTX (fec-measure-mode) disabled
+    NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 375  # NVL6 ACP ports with LTX enabled
+    NVL6_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 120  # NVL6 ACP ports with LTX (fec-measure-mode) disabled
+    ACP_PORT_GOES_UP = 'acp port goes up'
     IB_TRAFFIC_SENDER_INTERFACE = "h1p1"
     IB_TRAFFIC_RECEIVER_INTERFACE = "h2p1"
     IB_TRAFFIC_LAT_TYPE = "ib_send_lat"

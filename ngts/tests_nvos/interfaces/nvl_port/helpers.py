@@ -6,7 +6,6 @@ import logging
 from retry.api import retry_call
 
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, JulietNonScaleoutSwitch, RosalindSurrogateSwitch
-from ngts.nvos_tools.ib.InterfaceConfiguration import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -14,7 +13,7 @@ from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tools.test_utils.allure_utils import step as allure_step
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration import nvos_consts as ib_consts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.ngts_types import DevicesT, EnginesT
 from ngts.nvos_constants.constants_nvos import NvosConst
@@ -32,18 +31,28 @@ def show_interface_and_validate(engines, devices, ports_list, command=''):
     ValidationTool.compare_values(output_keys.sort(), ports_list.sort()).verify_result()
 
 
-def toggle_port_state(selected_port, port_state, test_name='', devices=None):
-    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-    with allure_step("Wait till port {} is {}".format(selected_port, port_state)):
-        res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
-                                                        selected_port.interface.wait_for_port_state, port_state,
-                                                        sleep_time=0.2)
+def toggle_port_state(selected_port, port_state, test_name, devices):
+    selected_port.interface.link.state.set(
+        op_param_name=port_state, apply=True, ask_for_confirmation=True,
+    ).verify_result()
+    is_acp_up = selected_port.name.startswith('acp') and port_state == ib_consts.NvosConsts.LINK_STATE_UP
+    operation = ib_consts.InternalNvosConsts.ACP_PORT_GOES_UP if is_acp_up else f'port goes {port_state}'
+    timeout_kwargs = {}
+    if is_acp_up:
+        acp_timeout = devices.dut.expected_operation_durations.get(ib_consts.InternalNvosConsts.ACP_PORT_GOES_UP)
+        if acp_timeout:
+            timeout_kwargs = {'timeout': acp_timeout}
+    with allure_step(f"Wait till port {selected_port} is {port_state}"):
+        res_obj, duration = OperationTime.save_duration(
+            operation, '', test_name,
+            selected_port.interface.wait_for_port_state, port_state,
+            sleep_time=0.2, **timeout_kwargs,
+        )
         res_obj.verify_result()
-        operation = 'port goes {}'.format(port_state)
         OperationTime.verify_operation_time(duration, operation, devices).verify_result()
 
 
-def validate_ports_state_and_speed(speed, expected_ports: list, prefix: str, state=NvosConsts.LINK_STATE_UP):
+def validate_ports_state_and_speed(speed, expected_ports: list, prefix: str, state=ib_consts.NvosConsts.LINK_STATE_UP):
     port_requirements = PortRequirements()
     port_requirements.set_port_speed(speed)
     port_requirements.set_port_state(state)
@@ -97,11 +106,13 @@ def is_nvl_device(devices: DevicesT) -> bool:
 EXPECTED_LINK_DIAGNOSTIC_STATUS = {'0': {'status': 'No issue was observed'}}
 
 
-def verify_link_diagnostic(ports: list[str]) -> None:
-    output_dict = Interface.Interface(parent_obj=None).parse_show(op_param='--view link-diagnostics')
-    for port_name in ports:
-        port_diagnostics = output_dict[port_name]['link']['diagnostics']
-        assert port_diagnostics == EXPECTED_LINK_DIAGNOSTIC_STATUS, f"Port {port_name} diagnostics status is: {port_diagnostics} expected: {EXPECTED_LINK_DIAGNOSTIC_STATUS}"
+def verify_link_diagnostic(ports: list[Port]) -> None:
+    for port in ports:
+        port_diagnostics = port.interface.link.diagnostics.parse_show()
+        assert port_diagnostics == EXPECTED_LINK_DIAGNOSTIC_STATUS, (
+            f"Port {port.name} diagnostics value is {port_diagnostics} "
+            f"- expected {EXPECTED_LINK_DIAGNOSTIC_STATUS}"
+        )
 
 
 def get_linked_ports_pair(devices: DevicesT, engines: EnginesT) -> tuple[str, str]:

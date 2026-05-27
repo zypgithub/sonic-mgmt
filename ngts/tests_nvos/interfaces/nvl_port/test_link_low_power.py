@@ -93,8 +93,8 @@ def low_power_state_case(
                 port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
     if expected_values is not None:
         with allure.step("Verify link diagnostic"):
-            port_names: list[str] = [port.name for port, _ in ports_to_set]
-            nvl_helpers.verify_link_diagnostic(port_names)
+            ports: list[Port] = [port for port, _ in ports_to_set]
+            nvl_helpers.verify_link_diagnostic(ports)
         with allure.step("Verify low power states"):
             for port, expected_operational, expected_applied in expected_values:
                 output: LowPowerStateOutputT = _get_low_power_output(port)

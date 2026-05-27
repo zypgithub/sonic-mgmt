@@ -114,8 +114,8 @@ def role_case(
     if expected_values is not None:
         roles_outputs: dict[Fae, PhyRolesOutputT] = {}
         with allure.step("Verify link diagnostic"):
-            port_names: list[str] = [fae.port.name for fae, _, _, _ in expected_values]
-            nvl_helpers.verify_link_diagnostic(port_names)
+            ports: list[Port.Port] = [Port.Port(fae.port.name) for fae, _, _, _ in expected_values]
+            nvl_helpers.verify_link_diagnostic(ports)
         with allure.step("Get ports roles output"):
             seen = set()
             for fae, _, _, _ in expected_values:

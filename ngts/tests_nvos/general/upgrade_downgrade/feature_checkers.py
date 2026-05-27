@@ -50,7 +50,7 @@ from types import SimpleNamespace
 
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.ngts_types import DevicesT, EnginesT
+from ngts.ngts_types import DevicesT, EnginesT, OperationalAppliedT
 from ngts.nvos_constants.constants_nvos import (
     ClusterApps,
     ClusterConsts,
@@ -66,6 +66,7 @@ from ngts.nvos_tools.Devices import IbDevice
 from ngts.nvos_tools.infra.CertificateGenerator import CertificateGenerator
 from ngts.nvos_tools.infra.CrlValidator import ClientConfig, RevokeConfig
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
+from ngts.nvos_tools.ib.InterfaceConfiguration import Port, nvos_consts as ib_consts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
@@ -196,6 +197,7 @@ from ngts.tests_nvos.interfaces.nvl_port.test_link_low_power import (
     low_power_state_case,
     should_skip_if_low_power_not_supported
 )
+from ngts.tests_nvos.helpers.interfaces import interface_helpers
 from ngts.tests_nvos.helpers.interfaces.nvl_port.nvl6 import link_training_helpers
 from ngts.tests_nvos.system.aaa.helpers import create_new_user
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client_tools_installed
@@ -1369,26 +1371,32 @@ def _check_link_training(engines: EnginesT, devices: DevicesT, **kwargs) -> Gene
     try:
         with allure.step("Set fec-measure-mode to enabled on both ports"):
             for fae in fae_objs_tuple:
-                fae.interface.link.kr.set(
+                fae.interface.link.link_training.set(
                     op_param_name=consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE,
                     op_param_value=consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
                     apply=True,
                     ask_for_confirmation=True,
                 ).verify_result()
-            link_training_helpers.wait_and_verify_link(fae_objs_tuple)
+            interface_helpers.wait_and_verify_link(
+                [Port.Port(fae.port.name) for fae in fae_objs_tuple],
+                timeout=ib_consts.InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED,
+            )
 
         random_fail_action = random.choice(consts_nv.LinkTrainingConsts.FecMeasureFailAction.operational())
         with allure.step(f"Set fec-measure-fail-action to '{random_fail_action}' on both ports"):
             for fae in fae_objs_tuple:
-                fae.interface.link.kr.set(
+                fae.interface.link.link_training.set(
                     op_param_name=consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION,
                     op_param_value=random_fail_action,
                     apply=True,
                     ask_for_confirmation=True,
                 ).verify_result()
-            link_training_helpers.wait_and_verify_link(fae_objs_tuple)
+            interface_helpers.wait_and_verify_link(
+                [Port.Port(fae.port.name) for fae in fae_objs_tuple],
+                timeout=ib_consts.InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED,
+            )
 
-        expected_after_set: link_training_helpers.OperationalAppliedT = {
+        expected_after_set: OperationalAppliedT = {
             consts_nv.ConfState.OPERATIONAL: {
                 consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
                 consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION: random_fail_action,
@@ -1398,10 +1406,13 @@ def _check_link_training(engines: EnginesT, devices: DevicesT, **kwargs) -> Gene
                 consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION: random_fail_action,
             },
         }
-        link_training_helpers.verify_link_training([
-            (fae_port_1, expected_after_set),
-            (fae_port_2, expected_after_set),
-        ])
+        with allure.step("Verify link-training params"):
+            for fae in (fae_port_1, fae_port_2):
+                with allure.step(f"Verify port {fae.port.name}"):
+                    ValidationTool.compare_nested_dictionary_content(
+                        fae.interface.link.link_training.parse_show_operational_applied(),
+                        expected_after_set,
+                    ).verify_result()
 
         with allure.step("Save configuration"):
             NvueGeneralCli.save_config(engines.dut)
@@ -1409,13 +1420,15 @@ def _check_link_training(engines: EnginesT, devices: DevicesT, **kwargs) -> Gene
         yield  # Do upgrade
 
         with allure.step("Verify link-training params after upgrade"):
-            link_training_helpers.verify_link_training([
-                (fae_port_1, expected_after_set),
-                (fae_port_2, expected_after_set),
-            ])
+            for fae in (fae_port_1, fae_port_2):
+                with allure.step(f"Verify port {fae.port.name}"):
+                    ValidationTool.compare_nested_dictionary_content(
+                        fae.interface.link.link_training.parse_show_operational_applied(),
+                        expected_after_set,
+                    ).verify_result()
 
     finally:
-        link_training_helpers.cleanup_link_training(fae_objs_tuple)
+        link_training_helpers.cleanup_link_training(devices, fae_objs_tuple)
 
 # #################### End of Feature Checkers ###################
 

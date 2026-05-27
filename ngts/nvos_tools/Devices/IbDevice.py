@@ -24,7 +24,7 @@ from ngts.tests_nvos.general.security.nmx_cert.constants import (
     Defaults,
 )
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, PhyRecoveryConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, InternalNvosConsts, PhyRecoveryConsts
 from ngts.tests_nvos.system.gnmi.constants import GnmiConstants
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.TrafficValidatorTool import TrafficErrorCounters
@@ -1671,6 +1671,7 @@ class JulietSwitch(NvLinkSwitch):
             'install ssd': 20,
             self.generate_tech_support: 120,
             'julietscaleout generate_tech_support': 132,
+            InternalNvosConsts.ACP_PORT_GOES_UP: InternalNvosConsts.NVL5_ACP_LINK_UP_TIMEOUT_LTX_DISABLED,
         })
         self.num_of_plane_ports = 1
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [0, 1])
@@ -2579,7 +2580,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             self.generate_tech_support: 165,
             'julietscaleout generate_tech_support': 165,
             'reboot with new user FW': 450 if is_bug_active(4854038) else 390,
-            'port goes up': 375,  # FIXME: SHAHAR DONT TAKE THIS CHANGE
+            InternalNvosConsts.ACP_PORT_GOES_UP: InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_DISABLED,
         })
         if is_bug_active(4694678):
             power_cycle_increase_timeout = 60

@@ -1535,6 +1535,24 @@ class LinkTrainingConsts:
         FecMeasureFailAction.GOTO_DISABLE.value: 3,
     }
 
+    FEC_MEASURE_FORCE_FAIL: str = 'fec-measure-force-fail'
+
+    class FecMeasureForceFail(Enum):
+        DISABLED = 'disabled'
+        UNTIL_LAST_ITERATION = 'until-last-iteration'
+        ALL_ITERATIONS = 'all-iterations'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+        @classmethod
+        def operational(cls):
+            return [cls.DISABLED.value, cls.UNTIL_LAST_ITERATION.value, cls.ALL_ITERATIONS.value]
+
+    FEC_MEASURE_FORCE_FAIL_OPERATIONAL_DEFAULT = FecMeasureForceFail.DISABLED
+    FEC_MEASURE_FORCE_FAIL_APPLIED_DEFAULT = FecMeasureForceFail.DISABLED
+
 
 class ImageConsts:
     NEXT_IMG = 'next'
