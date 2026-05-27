@@ -475,12 +475,6 @@ autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-
     conditions:
     - "https://redmine.mellanox.com/issues/3587377"
 
-bgp/test_bgp_sentinel.py:
-  xfail:
-    reason: "Testcase expected to fail due to RM issue https://redmine.mellanox.com/issues/4978910"
-    conditions:
-    - https://redmine.mellanox.com/issues/4978910
-
 bgp/test_bgp_bbr.py::test_bbr_enabled_dut_asn_in_aspath:
   xfail:
     reason: "Testcase expected to fail due to RM issue https://redmine.mellanox.com/issues/4989648"
@@ -488,7 +482,7 @@ bgp/test_bgp_bbr.py::test_bbr_enabled_dut_asn_in_aspath:
     - "platform == 'x86_64-mlnx_msn2700-r0' and https://redmine.mellanox.com/issues/4989648"
 
 crm/test_crm.py::test_crm_nexthop_group:
-  xfail:
+  skip:
     reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4978891"
     conditions:
     - https://redmine.mellanox.com/issues/4978891
