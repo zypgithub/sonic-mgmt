@@ -143,8 +143,13 @@ def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
 
     pytest_assert(wait_until(CONFIG_UPDATE_TIME * 3, CRM_POLLING_INTERVAL, 0, _acl_config_applied),
                   "ACL configuration did not propagate within timeout")
-
     collector["acl_tbl_key"] = acl_tbl_key["value"]
+
+    get_acl_entry_stats = "{db_cli} COUNTERS_DB HMGET {acl_tbl_key} " \
+                          "crm_stats_acl_entry_used crm_stats_acl_entry_available" \
+                          .format(db_cli=asichost.sonic_db_cli, acl_tbl_key=collector["acl_tbl_key"])
+    logger.info("Waiting for CRM counters to reflect ACL entries in COUNTERS_DB...")
+    wait_for_crm_counter_update(get_acl_entry_stats, duthost, timeout=CRM_UPDATE_TIME, interval=CRM_POLLING_INTERVAL)
 
 
 def generate_mac(num):
@@ -309,7 +314,7 @@ def verify_thresholds(duthost, asichost, **kwargs):
         with loganalyzer:
             asichost.command(cmd)
             # Make sure CRM counters updated
-            wait_until(CRM_UPDATE_TIME, CRM_POLLING_INTERVAL, 0, lambda: True)
+            wait_until(1, 1, CRM_UPDATE_TIME, lambda: True)
 
 
 def get_crm_stats(cmd, duthost):
