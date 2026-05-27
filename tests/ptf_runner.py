@@ -12,6 +12,40 @@ import six
 logger = logging.getLogger(__name__)
 
 
+def _safe_allure_attach_file(filename, name, attachment_type):
+    """
+    Attach a file to the Allure report, tolerating failures.
+
+    `allure.attach.file()` looks up the current pytest item via Allure's
+    `thread_context`. When called from a worker thread that has no active
+    Allure context (e.g. the InterruptableThread spawned by
+    `advanced_reboot.runRebootTest`), the lookup raises `KeyError: None`
+    deep inside `allure_commons/reporter.py` and aborts the test even
+    though the underlying file was collected successfully. A missing
+    Allure attachment must never fail the test, so swallow any exception
+    here and just log a warning.
+    """
+    try:
+        allure.attach.file(filename, name, attachment_type)
+    except Exception as e:
+        logger.warning("Failed to attach file '%s' to Allure report (%s): %s",
+                       filename, type(e).__name__, e)
+
+
+def _safe_allure_attach(body, name, attachment_type):
+    """
+    Attach an in-memory body (string/bytes) to the Allure report, tolerating
+    failures. See `_safe_allure_attach_file` for the rationale - the same
+    `KeyError: None` race in `allure_commons/reporter.py` affects
+    `allure.attach()` when called from a non-pytest worker thread.
+    """
+    try:
+        allure.attach(body, name, attachment_type)
+    except Exception as e:
+        logger.warning("Failed to attach '%s' to Allure report (%s): %s",
+                       name, type(e).__name__, e)
+
+
 def ptf_collect(host, log_file, skip_pcap=False, dst_dir='./logs/ptf_collect/'):
     """
     Collect PTF log and pcap files from PTF container to sonic-mgmt container.
@@ -25,7 +59,7 @@ def ptf_collect(host, log_file, skip_pcap=False, dst_dir='./logs/ptf_collect/'):
     suffix = str(datetime.utcnow()).replace(' ', '.')
     filename_log = dst_dir + rename_prefix + '.' + suffix + '.log'
     host.fetch(src=log_file, dest=filename_log, flat=True, fail_on_missing=False)
-    allure.attach.file(filename_log, 'ptf_log: ' + filename_log, allure.attachment_type.TEXT)
+    _safe_allure_attach_file(filename_log, 'ptf_log: ' + filename_log, allure.attachment_type.TEXT)
     if skip_pcap:
         return
     pcap_file = filename_prefix + '.pcap'
@@ -37,7 +71,7 @@ def ptf_collect(host, log_file, skip_pcap=False, dst_dir='./logs/ptf_collect/'):
         # Copy compressed file from ptf to sonic-mgmt
         filename_pcap = dst_dir + rename_prefix + '.' + suffix + '.pcap.tar.gz'
         host.fetch(src=compressed_pcap_file, dest=filename_pcap, flat=True, fail_on_missing=False)
-        allure.attach.file(filename_pcap, 'ptf_pcap: ' + filename_pcap, allure.attachment_type.PCAP)
+        _safe_allure_attach_file(filename_pcap, 'ptf_pcap: ' + filename_pcap, allure.attachment_type.PCAP)
 
 
 def get_dut_type(host):
@@ -229,12 +263,14 @@ def ptf_runner(host, testdir, testname, platform_dir=None, params={},
             if log_file:
                 ptf_collect(host, log_file, dst_dir=ptf_collect_dir)
             if result:
-                allure.attach(
+                _safe_allure_attach(
                     json.dumps(result, indent=4, cls=result.encoder),
                     'ptf_console_result',
                     allure.attachment_type.TEXT
                 )
+            logger.info("collect ptf log and pcap files: Done")
         if module_ignore_errors:
+            logger.info("module_ignore_errors: {}".format(module_ignore_errors))
             if result["rc"] != 0:
                 return result
     except Exception:
@@ -250,11 +286,11 @@ def ptf_runner(host, testdir, testname, platform_dir=None, params={},
                 )
                 if ptf_log_tail and ptf_log_tail.get("rc") == 0 and ptf_log_tail.get("stdout"):
                     logger.error("PTF log tail for %s:\n%s", testname, ptf_log_tail["stdout"])
-                    allure.attach(ptf_log_tail["stdout"], 'ptf_log_tail', allure.attachment_type.TEXT)
+                    _safe_allure_attach(ptf_log_tail["stdout"], 'ptf_log_tail', allure.attachment_type.TEXT)
             except Exception as e:
                 logger.debug("Failed to fetch PTF log tail for diagnostics: %s", e)
         traceback_msg = traceback.format_exc()
-        allure.attach(traceback_msg, 'ptf_runner_exception_traceback', allure.attachment_type.TEXT)
+        _safe_allure_attach(traceback_msg, 'ptf_runner_exception_traceback', allure.attachment_type.TEXT)
         logger.error("Exception caught while executing case: {}. Error message: {}".format(testname, traceback_msg))
         raise
     return True
