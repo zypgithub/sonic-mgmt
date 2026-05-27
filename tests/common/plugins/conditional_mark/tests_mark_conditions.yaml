@@ -3054,9 +3054,21 @@ gnmi/test_gnmi_configdb.py::test_gnmi_configdb_polling_01:
     conditions:
       - "'bmc' in topo_type"
 
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_set_authenticate:
+  skip:
+    reason: "gNMI SetRequest on CONFIG_DB invokes org.SONiC.HostService.gcu DBus, not provided by BMC image"
+    conditions:
+      - "'bmc' in topo_type"
+
 gnmi/test_gnmi_configdb.py::test_gnmi_configdb_streaming_sample_01:
   skip:
     reason: "not applicable on BMC (no DEVICE_METADATA bgp_asn)"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_subscribe_authenticate:
+  skip:
+    reason: "Implicitly depends on cloudtype written by test_gnmi_configdb_set_authenticate, which is skipped/fails on BMC"
     conditions:
       - "'bmc' in topo_type"
 
@@ -3117,6 +3129,18 @@ gnmi/test_gnmic.py:
 gnmi/test_gnoi_killprocess.py:
   skip:
     reason: "Test noisy due to restart issue not relevant to GNOI. Disabling them to rewrite."
+
+gnmi/test_gnoi_os.py:
+  skip:
+    reason: "The SONiC.HostService is not provided by BMC image"
+    conditions:
+      - "'bmc' in topo_type"
+
+gnmi/test_gnoi_system_reboot.py:
+  skip:
+    reason: "The SONiC.HostService is not provided by BMC image"
+    conditions:
+      - "'bmc' in topo_type"
 
 gnmi/test_gnoi_system_reboot.py::test_gnoi_system_reboot_halt:
   skip:
