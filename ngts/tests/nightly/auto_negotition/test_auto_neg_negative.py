@@ -273,7 +273,7 @@ class TestAutoNegNegative(TestAutoNegBase):
             "Expecting to match all SAI errors in the log"
         assert len(result['unused_expected_regexp']) == 0, \
             ("Expecting to match and REGEXPs in the log, remaining regexps: {}"
-                .format(result['unused_expected_reg_exp']))
+                .format(result['unused_expected_regexp']))
 
     def check_if_interface_support_max_cr_type(self, port, conf_min_speed, max_type):
         """
