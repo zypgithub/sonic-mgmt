@@ -170,10 +170,11 @@ class ValidationTool:
                     result_obj.info = "The value of {field_name} is equal to '{expected_value}' while it " \
                                       "should not".format(field_name=field_name, expected_value=expected_value)
             else:
+                actual_value = output_dictionary[field_name]
                 if should_be_equal:
                     result_obj.result = False
-                    result_obj.info = "The value of {field_name} is not '{expected_value}'".format(
-                        field_name=field_name, expected_value=expected_value)
+                    result_obj.info = "The value of {field_name} is not '{expected_value}'. Got: '{actual_value}'".format(
+                        field_name=field_name, expected_value=expected_value, actual_value=actual_value)
                 else:
                     logging.info("The value of {field_name} is not '{expected_value}' as expected".format(
                         field_name=field_name, expected_value=expected_value))

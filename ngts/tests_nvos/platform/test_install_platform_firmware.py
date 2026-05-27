@@ -25,6 +25,7 @@ from ngts.tests_nvos.system.reboot_telemetry_helpers import (
 )
 from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
     assert_gnmi_firmware_version_matches_nvue,
+    canonicalize_fw_version,
     expand_nvue_key_to_gnmi_components,
 )
 
@@ -273,9 +274,23 @@ def validate_all_asics_have_same_info(platform):
                 assert asic_info == output_dictionary[asic], "ASICs are different"
 
 
+def _assert_actual_firmware_matches(output_dictionary, expected_fw):
+    # actual-firmware can come back with either dots or underscores depending on
+    # source (build metadata vs filename). Compare normalized forms.
+    assert expected_fw, f"expected FW version is empty/None: {expected_fw!r}"
+    assert "actual-firmware" in output_dictionary, (
+        f"'actual-firmware' field missing from output: keys={list(output_dictionary.keys())}"
+    )
+    reported = output_dictionary["actual-firmware"]
+    with allure.step(f"Verify the value of actual-firmware is equal to '{expected_fw}' as expected"):
+        assert canonicalize_fw_version(reported) == canonicalize_fw_version(expected_fw), (
+            f"actual-firmware mismatch: reported={reported!r}, expected={expected_fw!r}"
+        )
+
+
 def verify_firmware_with_platform_cmd(platform, actual_fw):
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.asic.show()).get_returned_value()
-    verify_field_value_in_output_for_each_asic(output_dictionary, "actual-firmware", actual_fw)
+    _assert_actual_firmware_matches(output_dictionary, actual_fw)
     asic_dictionary = get_asic_dict(platform)
     for asic in asic_dictionary:
-        verify_field_value_in_output_for_each_asic(asic_dictionary[asic], "actual-firmware", actual_fw)
+        _assert_actual_firmware_matches(asic_dictionary[asic], actual_fw)
