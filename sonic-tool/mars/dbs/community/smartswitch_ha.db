@@ -4,7 +4,7 @@
         <!-- parameters passed to setup steps commands-->
         <default_params_type> basic_setup_step_params </default_params_type>
         <DB>
-            <info> Smartswitch Tests </info>
+            <info> Smartswitch HA Tests </info>
             <owner> SONiC </owner>
             <group> SONiC </group>
 
@@ -46,7 +46,23 @@
     </global>
 
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/smartswitch-ha.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_steady_state.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_planned_shutdown.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_planned_swo.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_reconfigure.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_launch_with_no_peer.cases </cases>
     </test>
 
 

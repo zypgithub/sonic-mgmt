@@ -344,7 +344,12 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                          SONIC_MGMT_PATH=self.sonic_mgmt_path
                          )
         if is_smartswitch_test:
-            cmd += f" --dpu-pattern {','.join(dpu_duts)}"
+            ha_test_path = "tests/ha/"
+            if ha_test_path in test_script_fullpath:
+                # Currently the HA test only use dpu-0 of the DUTs, adding more DPUs will cause test failure
+                cmd += f" --dpu-pattern {self.dut_name_list[0]}-dpu-0,{self.dut_name_list[1]}-dpu-0"
+            else:
+                cmd += f" --dpu-pattern {','.join(dpu_duts)}"
         # Take the first epoint as just one is specified in *.setup file. Currently supported are: SONIC_MGMT or NGTS
         # Take the first player as just one is specified in *.setup file
         epoint = self.EPoints[0]
@@ -394,6 +399,9 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
     def convert_topos(self, is_smartswitch_test=False):
         # Convert the topology name to topology type(for example, t0-64 to t0)
         # and append type "any" for 'any' type in the topology mark
+        if self.sonic_topo == "t1-smartswitch-ha":
+            topos.append('t1-smartswitch-ha')
+            return
         testbed_type_index = 0
         topos = [self.sonic_topo.split('-')[testbed_type_index]]
         topos.append("any")

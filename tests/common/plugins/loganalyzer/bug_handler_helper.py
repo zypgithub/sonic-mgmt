@@ -26,7 +26,16 @@ PI_LINK = "https://app.powerbi.com/groups/9b79a1d8-7408-4848-90c5-9dd5dab8493d/r
 # inject dut hostname into log file name to avoid collision
 LOG_ANALYZER_LOG_FILE = '/tmp/loganalyzer-[{0}].log'
 KEY_IS_TEST_FUNCTION_FAILED = "is_test_function_failed"
-PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST = ["smart-switch-master", "master_rc", "master_rc_chamelleon", "master_spc6", "master_spc6_es", "master_rc_integration", "master_rc_trixie", "multi-asic", "master_rc_chameleon6"]
+PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST = ["smart-switch-master",
+                                               "master_rc",
+                                               "master_rc_chamelleon",
+                                               "master_spc6",
+                                               "master_spc6_es",
+                                               "master_rc_integration",
+                                               "master_rc_trixie",
+                                               "multi-asic",
+                                               "master_rc_chameleon6",
+                                               "master_ha_nv"]
 
 class BugHandler(ABC):
     @abstractmethod
@@ -205,7 +214,7 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None,
     # Use passed logger or fall back to module logger
     if logger is None:
         logger = logging.getLogger()
-    
+
     test_name = re.sub(r'[\\/\'"<>|]', '_', request.node.name)
     la_rm_issues = request.session.config.cache.get(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
     test_id = request.node.nodeid
@@ -512,29 +521,29 @@ def get_nvue_additional_info(duthost, request):
         # Populate nvue_info
         nvue_info['show_system'] = command_results.get("nv show system reboot history", {}).get('stdout', '')
         nvue_info['show_platform_firmware'] = command_results.get("nv show platform firmware", {}).get('stdout', '')
-        
+
         # Read executed commands from local file that was copied by list_of_executed_commands fixture
         try:
             from pathlib import Path
-            
+
             # Use predictable local path
             local_commands_dir = Path("/tmp/executed_commands")
-            
+
             # Try the fixed filename first
             local_file_path = local_commands_dir / "executed_commands.txt"
-            
+
             # If fixed filename doesn't exist, try hostname-based filename
             if not local_file_path.exists() and hasattr(duthost, 'hostname'):
                 hostname_based_path = local_commands_dir / f"executed_commands_{duthost.hostname}.txt"
                 if hostname_based_path.exists():
                     local_file_path = hostname_based_path
-            
+
             if local_file_path.exists():
                 commands_content = local_file_path.read_text().strip()
                 nvue_info['executed_commands'] = commands_content
             else:
                 nvue_info['executed_commands'] = f"Error: Local commands file not found at {local_file_path}"
-            
+
         except Exception as file_error:
             nvue_info['executed_commands'] = f"Error: Unable to read executed commands from local file - {str(file_error)}"
 
