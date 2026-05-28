@@ -550,7 +550,7 @@ def test_l1_raw_drop(duthost):
 
     try:
         table = get_raw_tables_output(duthost, "show what-just-happened poll layer-1")[0]
-        if not verify_l1_raw_drop_exists(table, port):
+        if not wait_until(6, 1, 0, verify_l1_raw_drop_exists, table, port):
             pytest.fail("Could not find L1 drop on WJH table.")
     finally:
         duthost.command("config interface startup {}".format(port))
