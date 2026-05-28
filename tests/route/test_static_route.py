@@ -703,19 +703,23 @@ def test_static_route_config_reload_with_traffic(rand_selected_dut, rand_unselec
             unselected_duthost.shell('config mux mode auto all')
             unselected_duthost.shell('config save -y')
 
-def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route):
+@pytest.mark.parametrize("ipv6", [False, True], ids=["ipv4", "ipv6"])
+def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route, tbinfo, ipv6):
 
-    def get_nexthop(duthost):
+    def get_nexthop(duthost, ipv6):
         """Get next hop from BGP neighbors
 
         Args:
             duthost (object): DUT object
+            ipv6 (bool): True if getting IPv6 nexthop
 
         Returns:
             str: Nexthop IP
         """
-
-        cmd = 'show ip bgp summary'
+        if ipv6:
+            cmd = 'show ipv6 bgp summary'
+        else:
+            cmd = 'show ip bgp summary'
         parse_result = duthost.show_and_parse(cmd)
         if 'neighbor' in parse_result[0]:
             return parse_result[0]['neighbor']
@@ -739,9 +743,15 @@ def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route):
         return re.findall(r"ROUTE_TABLE:([^|]+)", delta)
 
     """When adding N static routes, swss.rec delta must be exactly N non-empty lines of ROUTE_TABLE|SET matching prefixes."""
+    if not ipv6 and is_ipv6_only_topology(tbinfo):
+        pytest.skip("Will not program IPv4 static route on IPv6-only topology")
+
     duthost = rand_selected_dut
-    prefixes = ["1.1.{}.0/24".format(i) for i in range(1, 3)]
-    nexthop = get_nexthop(duthost)
+    if ipv6:
+        prefixes = [f"2000:1:{i}::/64" for i in range(1, 3)]
+    else:
+        prefixes = [f"1.1.{i}.0/24" for i in range(1, 3)]
+    nexthop = get_nexthop(duthost, ipv6)
     n = len(prefixes)
     wait_time = 3
 
