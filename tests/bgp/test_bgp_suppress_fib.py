@@ -30,7 +30,7 @@ from tests.common.helpers.constants import UPSTREAM_NEIGHBOR_MAP, DOWNSTREAM_ALL
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 pytestmark = [
-    pytest.mark.topology('t1', 't2'),
+    pytest.mark.topology('t1', 't2', 'lrh', 'urh'),
     pytest.mark.skip_check_dut_health
 ]
 
