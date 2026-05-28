@@ -15,7 +15,7 @@ try:
     from netmiko.ssh_exception import NetmikoAuthenticationException
 except ImportError:
     from netmiko.exceptions import NetmikoAuthenticationException
-from devts.infra.tools.topology_tools.nogaq import upload_data_to_noga
+from devts.infra.tools.topology_tools.nogaq import upload_data_to_noga, get_noga_resource_data
 from devts.infra.tools.general_constants.constants import NogaConstants
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
@@ -465,9 +465,17 @@ class DeployConnectionHelper:
     """Handle SSH connections and OS detection"""
 
     @staticmethod
-    def get_current_os_engine(dut_ip):
+    def get_current_os_engine(dut_ip, expected_cli_type=None):
         logger.info("Trying connect with SSH to switch")
+        preferred_nos = SSHConsts.CLI_TYPE_TO_NOS.get(expected_cli_type)
+        if preferred_nos:
+            engine = DeployConnectionHelper.attempt_connect_to_switch(dut_ip, preferred_nos, SSHConsts.SSH_CREDS_DICT[preferred_nos])
+            if engine:
+                logger.info(f"Current OS is {preferred_nos}")
+                return preferred_nos, engine
         for nos_name, creds in SSHConsts.SSH_CREDS_DICT.items():
+            if nos_name == preferred_nos:
+                continue
             engine = DeployConnectionHelper.attempt_connect_to_switch(dut_ip, nos_name, creds)
             if engine:
                 logger.info("Current OS is {}".format(nos_name))
@@ -477,10 +485,15 @@ class DeployConnectionHelper:
 
     @staticmethod
     def attempt_connect_to_switch(ip, nos_name, creds_dict):
+        """
+        Attempt to connect to a switch with the given credentials.
+        retried reduced from default 3 to 2 to avoid OpenSSH PerSourcePenalties.
+        """
         try:
             username = creds_dict.get('username')
             password = creds_dict.get('password')
             engine = LinuxSshEngine(ip, username=username, password=password)
+            engine._engine = engine.get_engine_with_retry(tries=2)
             engine.run_cmd("echo $?")
         except NetmikoAuthenticationException:
             logger.error(f"Login to with {nos_name} credentials has failed")
@@ -564,9 +577,26 @@ class DeployMultiNosHelper:
             future.result()
 
     @staticmethod
+    def _get_expected_noga_cli_type(dut_ip):
+        """
+        Read the expected current CLI_TYPE from Noga for a given DUT IP.
+        :param dut_ip: DUT IP
+        :return: CLI_TYPE
+        """
+        try:
+            noga_data = get_noga_resource_data(ip_address=dut_ip, use_cache=False)
+            cli_type_str = noga_data['attributes']['Topology Conn.']['CLI_TYPE']
+            return cli_type_str
+        except Exception as e:
+            logger.warning(
+                f"Could not fetch expected CLI_TYPE from Noga for {dut_ip}: {e}.")
+            return None
+
+    @staticmethod
     def do_multi_nos_pre_install(dut, target_cli_type, chip_type):
         dut_ip = dut['dut_ip']
-        current_os, engine = DeployConnectionHelper.get_current_os_engine(dut_ip)
+        noga_cli_type = DeployMultiNosHelper._get_expected_noga_cli_type(dut_ip)
+        current_os, engine = DeployConnectionHelper.get_current_os_engine(dut_ip, noga_cli_type)
         if engine:
             DeployMultiNosHelper.validate_sudo_config(engine, current_os)
             GeneralCliCommon(engine).uninstall_os_flow(current_os, target_cli_type, chip_type)

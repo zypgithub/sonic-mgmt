@@ -1851,6 +1851,12 @@ class SSHConsts:
     DVS_CREDS = {"username": os.getenv("DVS_ROOT_USER"), "password": os.getenv("DVS_ROOT_PASSWORD")}
     SSH_CREDS_DICT = {"SONiC": SONIC_CREDS, "Cumulus": CL_CREDS, "DVS": DVS_CREDS}
 
+    CLI_TYPE_TO_NOS = {
+        CliType.NVUE: "Cumulus",
+        CliType.SONIC: "SONiC",
+        CliType.DVS: "DVS",
+    }
+
 
 class DoroceConsts:
     BUFFER_CONFIGURATIONS_DICT = {'lossless_double_ipool': ['egress_lossless_pool',
