@@ -5742,8 +5742,10 @@ telemetry/test_telemetry_poll.py::test_poll_mode_default_route:
 telemetry/test_telemetry_srv6.py:
   skip:
     reason: 'SRv6 telemetry tests require routing, not available on BMC'
+    conditions_logical_operator: or
     conditions:
       - "'bmc' in topo_type"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/24941"
 
 telemetry/test_telemetry_srv6.py::test_poll_mode_srv6_sid_counters:
   skip:
