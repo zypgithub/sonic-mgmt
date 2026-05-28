@@ -291,15 +291,26 @@ def _verify_transceiver_fields(platform, transceiver_id, expected_module_status=
                                                               expected_value=expected_error_status).verify_result()
 
 
-def validate_gnmi_transceiver_physical_channel_fields(client, transceiver_id, module_status):
+def validate_gnmi_transceiver_physical_channel_fields(
+    client, transceiver_id, module_status, expected_field_set=None,
+):
     """Assert gnmic returns exactly the expected field-set under
     `components/component[name=<id>]/transceiver/physical-channels/channel[index=1]/`
     (no more, no fewer); names only, values are not checked.
 
     Inserted modules must return the full leaf-set; Removed modules must return nothing.
+
+    `expected_field_set` lets callers override the Inserted expectation per module type
+    (e.g. ELS vs OE vs SW physical-channels surface differs). When None, falls back to
+    `GnmiConstants.EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS` (the SW set), preserving
+    existing caller behavior. The Removed branch is unaffected by this argument.
     """
-    expected = (GnmiConstants.EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS
-                if module_status == PlatformConsts.INSERTED else set())
+    if module_status == PlatformConsts.INSERTED:
+        expected = (expected_field_set
+                    if expected_field_set is not None
+                    else GnmiConstants.EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS)
+    else:
+        expected = set()
     with allure.independent_step(f'Validate gNMI physical-channels field-set for {transceiver_id} ({module_status})'):
         container_path = (
             f'components/component[name={transceiver_id}]/transceiver/physical-channels/channel[index=1]'

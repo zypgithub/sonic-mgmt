@@ -64,7 +64,8 @@ class GnmicErr:
     RCV_ERROR = 'rcv error'
     RPC_ERROR = 'rpc error'
     ALL_ERRS = [GNMIC_NOT_INSTALLED, AUTH_FAIL, HANDSHAKE_FAIL, AUTH_SERVICE_UNAVAILABLE,
-                REQUEST_FAILED, NO_SUBSCRIBER_SLOT_AVAILABLE, LOCAL_RATE_LIMITED, RCV_ERROR, RPC_ERROR]
+                REQUEST_FAILED, NO_SUBSCRIBER_SLOT_AVAILABLE, LOCAL_RATE_LIMITED, RCV_ERROR, RPC_ERROR,
+                CERT_VERIFY_FAIL]
 
 
 class GrpcMsg:
@@ -207,3 +208,44 @@ class GnmiConstants:
         "state/tx-ad-eq-fault",
         "state/tx-failure",
     }
+
+    # Per-module-type leaf-sets for transceiver physical-channel fields.
+    # ELS = 22 leaves; OE = ELS plus 4 fields (26); SW = OE plus 1 field (27).
+    # Only Inserted modules are asserted in photonics tests.
+    # Path fragments below are used to compose the field sets.
+    _CHANNEL_DIAG_STATE_PATH = "channel-diag/state/"
+    _CHANNEL_STATE_PATH = "state/"
+
+    EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS_ELS = {
+        f"{_CHANNEL_DIAG_STATE_PATH}rx-cdr-lol",
+        f"{_CHANNEL_DIAG_STATE_PATH}rx-los",
+        f"{_CHANNEL_DIAG_STATE_PATH}rx-power-hi-al",
+        f"{_CHANNEL_DIAG_STATE_PATH}rx-power-hi-war",
+        f"{_CHANNEL_DIAG_STATE_PATH}rx-power-lo-al",
+        f"{_CHANNEL_DIAG_STATE_PATH}rx-power-lo-war",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-ad-eq-fault",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-bias-hi-al",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-bias-hi-war",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-bias-lo-al",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-bias-lo-war",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-cdr-lol",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-fault",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-los",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-power-hi-al",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-power-hi-war",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-power-lo-al",
+        f"{_CHANNEL_DIAG_STATE_PATH}tx-power-lo-war",
+        f"{_CHANNEL_STATE_PATH}rx-cdr-lol",
+        f"{_CHANNEL_STATE_PATH}rx-los",
+        f"{_CHANNEL_STATE_PATH}tx-ad-eq-fault",
+        f"{_CHANNEL_STATE_PATH}tx-failure",
+    }
+    EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS_OE = (
+        EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS_ELS |
+        {
+            "index",
+            f"{_CHANNEL_STATE_PATH}index",
+            f"{_CHANNEL_STATE_PATH}input-power/instant",
+            f"{_CHANNEL_STATE_PATH}output-power/instant",
+        }
+    )
