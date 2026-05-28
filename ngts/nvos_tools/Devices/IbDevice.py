@@ -2579,6 +2579,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             self.generate_tech_support: 165,
             'julietscaleout generate_tech_support': 165,
             'reboot with new user FW': 450 if is_bug_active(4854038) else 390,
+            'port goes up': 375,  # FIXME: SHAHAR DONT TAKE THIS CHANGE
         })
         if is_bug_active(4694678):
             power_cycle_increase_timeout = 60
