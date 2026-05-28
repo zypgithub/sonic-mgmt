@@ -3548,6 +3548,12 @@ high_frequency_telemetry/test_high_frequency_telemetry.py::test_hft_full_queue_c
     conditions:
       - "https://github.com/sonic-net/sonic-buildimage/issues/27372"
 
+high_frequency_telemetry/test_high_frequency_telemetry.py::test_hft_config_deletion_stream:
+  skip:
+    reason: "Skip due to https://github.com/sonic-net/sonic-mgmt/issues/24907 on sn6600_ld platform"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/24907 and platform in ['x86_64-nvidia_sn6600_ld-r0']"
+
 #######################################
 #####          http              #####
 #######################################
