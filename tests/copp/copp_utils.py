@@ -239,8 +239,8 @@ def restore_syncd(dut, nn_target_namespace):
 
 
 def _install_nano_bookworm(dut, creds, syncd_docker_name):
-    output = dut.command("docker exec {} bash -c '[ -d /usr/include/nanomsg ] || \
-        echo copp'".format(syncd_docker_name))
+    output = dut.command("docker exec {} bash -c '[ -d /usr/include/nanomsg ] \
+        && [ -f /opt/ptf_nn_agent.py ] && [ -f /opt/ptf/afpacket.py ] || echo copp'".format(syncd_docker_name))
 
     if output["stdout"] == "copp":
         http_proxy = creds.get('proxy_env', {}).get('http_proxy', '')
