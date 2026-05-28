@@ -1119,10 +1119,11 @@ platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
 
 platform_tests/api/test_watchdog.py:
   skip:
-    reason: "Simx doesn't support CPLD"
+    reason: "Simx doesn't support CPLD or Watchdog platform API is not implemented on BMC"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "'bmc' in topo_type"
 
 platform_tests/test_hw_watchdog.py:
   skip:
