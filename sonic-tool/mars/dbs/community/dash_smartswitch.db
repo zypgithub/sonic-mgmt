@@ -68,4 +68,7 @@
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_crm.cases </cases>
     </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_metering.cases </cases>
+    </test>
 </DBDEF>
