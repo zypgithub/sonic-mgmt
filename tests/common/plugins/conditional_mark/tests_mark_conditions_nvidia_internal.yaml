@@ -188,6 +188,12 @@ tests/nightly/secure:
     - "'r-gaur-04' in testbed or 'mtvr-gaur-02' in testbed or 'mtvr-gaur-03' in testbed"
     - "'sn4280' in platform"
 
+tests/nightly/secure/test_secure_corrupt_fw/test_secure_corrupt_fw.py:
+  xfail:
+    reason: "expected err msg was changed due to RM issue: https://redmine.mellanox.com/issues/5050981"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5050981"
+
 tests/nightly/p4/examples_application/p4_gtp_parser/test_gtp_parser.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3016336"
