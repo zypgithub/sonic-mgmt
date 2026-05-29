@@ -59,6 +59,7 @@ all:
           - dpu-1
           - t1-isolated-d28u1
           - t1-isolated-d56u2
+          - t1-isolated-d32u1s2
           - t1-isolated-v6-d56u2
           - t1-isolated-d56u1-lag
           - t1-isolated-v6-d56u1-lag

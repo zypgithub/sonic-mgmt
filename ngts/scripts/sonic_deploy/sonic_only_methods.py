@@ -179,7 +179,8 @@ class SonicInstallationSteps:
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
                 "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and
-                not dut_name.startswith('slm-') and not setup_name.endswith('-ha')):
+                not dut_name.startswith('slm-') and not setup_name.endswith('-ha') and
+                "r-bison-18" != dut_name and "r-bison-08" != dut_name):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
                                            exec_path=ansible_path, deploy_sequential=deploy_sequential)
@@ -632,6 +633,10 @@ class SonicInstallationSteps:
             hwskus = ['Mellanox-SN6600-C512S4', 'ACS-SN6600', 'Mellanox-SN6600-V448P16S2']
             if is_community(sonic_topo):
                 need_gen_mingraph = True
+        if ("r-bison-06" in setup_name or "r-bison-08" in setup_name or "r-bison-16" in setup_name or
+                "r-bison-18" in setup_name or "r-bison-20" in setup_name or "r-bison-22" in setup_name):
+            hwskus = ['Mellanox-SN5640-C512X2', 'Mellanox-SN5640-C508O1X2', 'Mellanox-SN5640-O128X2']
+            need_gen_mingraph = True
 
         for hwsku in hwskus:
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{hwsku}'):
@@ -682,6 +687,11 @@ class SonicInstallationSteps:
                 cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
                                         local_flags=False, platform_params=platform_params)
                 SonicInstallationSteps.enable_issu(cli.engine, platform_params)
+
+        # Disable IM on t1-isolated-d32u1s2 topo temporarily for hwsku Mellanox-SN5640-C508O1X2
+        # TODO: It should be removed after the software control supported.
+        if "t1-isolated-d32u1s2" in sonic_topo:
+            dut_engine.run_cmd("sudo cmis_host_mgmt.py --disable")
 
         # Community only steps
         if is_community(sonic_topo):
