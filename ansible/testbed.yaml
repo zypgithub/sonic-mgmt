@@ -14860,6 +14860,20 @@
   inv_name: lab
   comment: Mellanox MEC testbed
 
+- conf-name: slm-16-ptp-130
+  group-name: vm-t1
+  topo: ptp-130
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-16
+  ptf_ip: 10.220.184.168/23
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - slm-16
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
 - conf-name: slm-16-t1-isolated-d28u1
   group-name: vm-t1
   topo: t1-isolated-d28u1
