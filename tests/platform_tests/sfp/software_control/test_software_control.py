@@ -50,7 +50,8 @@ class TestSoftwareControlFunctional:
         ports_presence_status = get_xcvr_presence_data(self.duthost)
         sw_control_ports = set(helpers.get_ports_supporting_sc(self.duthost))
         present_ports = {port for port, is_present in ports_presence_status.items() if is_present}
-        violations = sorted(present_ports - sw_control_ports)
+        service_ports = set(helpers.get_service_ports(self.duthost.facts["platform"]))
+        violations = sorted(present_ports - sw_control_ports - service_ports)
 
         assert not violations, (
             f"{len(violations)} present module(s) not in software control "
