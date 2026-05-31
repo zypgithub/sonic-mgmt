@@ -591,4 +591,12 @@ tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_cmd_rotation_policy:
     reason: "Test should be supported on non-standalone systems - nmx-c should be in ok state"
     conditions:
       - "'sws-rtf2-rosalind-198' not in testbed"
+
+tests_nvos/system/test_system_nv_bridge.py::test_system_nv_bridge_primary_secondary:
+  skip:
+    reason: "Secondary IP address is required for primary/secondary cluster node configuration"
+    conditions_logical_operator: or
+    conditions:
+      - "'rosalind-simx-44' in testbed"
+      - "'rosalind-simx-46' in testbed"
 ########################## NVOS IGNORE END ##########################
