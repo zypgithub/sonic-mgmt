@@ -433,23 +433,27 @@ def rif_port_down(duthosts, enum_rand_one_per_hwsku_frontend_hostname, setup, fa
 
     fanout_neighbor, fanout_intf = fanout_switch_port_lookup(fanouthosts, duthost.hostname, rif_member_iface)
 
-    loganalyzer.expect_regex = [LOG_EXPECT_PORT_OPER_DOWN_RE.format(rif_member_iface)]
-    with loganalyzer as _:
-        fanout_neighbor.shutdown(fanout_intf)
-        # Add a delay to ensure loganalyzer can find a match in the log. Without this delay, there's a
-        # chance it might miss the matching log.
-        time.sleep(PORT_STATE_UPDATE_INTERNAL)
+    try:
+        loganalyzer.expect_regex = [LOG_EXPECT_PORT_OPER_DOWN_RE.format(rif_member_iface)]
+        with loganalyzer as _:
+            fanout_neighbor.shutdown(fanout_intf)
+            # Add a delay to ensure loganalyzer can find a match in the log. Without this delay, there's a
+            # chance it might miss the matching log.
+            time.sleep(PORT_STATE_UPDATE_INTERNAL)
 
-    time.sleep(1)
+        time.sleep(1)
 
-    yield ip_dst
+        yield ip_dst
 
-    loganalyzer.expect_regex = [LOG_EXPECT_PORT_OPER_UP_RE.format(rif_member_iface)]
-    with loganalyzer as _:
-        fanout_neighbor.no_shutdown(fanout_intf)
-        # Add a delay to ensure loganalyzer can find a match in the log. Without this delay, there's a
-        # chance it might miss the matching log.
-        time.sleep(PORT_STATE_UPDATE_INTERNAL)
+    finally:
+        # Always bring the port back up, even if the down-phase log analysis or the test itself failed.
+        # Otherwise the RIF link would stay administratively down after the test.
+        loganalyzer.expect_regex = [LOG_EXPECT_PORT_OPER_UP_RE.format(rif_member_iface)]
+        with loganalyzer as _:
+            fanout_neighbor.no_shutdown(fanout_intf)
+            # Add a delay to ensure loganalyzer can find a match in the log. Without this delay, there's a
+            # chance it might miss the matching log.
+            time.sleep(PORT_STATE_UPDATE_INTERNAL)
 
 
 @pytest.fixture(params=["port_channel_members", "vlan_members", "rif_members"])
