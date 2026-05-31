@@ -181,6 +181,15 @@ def test_rsyslog_multiple_servers_configuration(engines):
     finally:
         with allure.step("Cleanup syslog configurations"):
             system.syslog.servers.unset(apply=True)
+        with allure.step("Wait for rsyslog to become active after reconfiguration"):
+            # Reconfiguring syslog bounces rsyslogd. Give it up to 30s to stabilize back to
+            # 'active' so the loganalyzer teardown can place its end-marker (which requires a
+            # running rsyslog); otherwise the teardown can catch rsyslog mid-restart and fail.
+            end_time = time.time() + 30
+            while time.time() < end_time:
+                if engines.dut.run_cmd("systemctl is-active rsyslog").strip() == "active":
+                    break
+                time.sleep(5)
 
 
 @pytest.mark.system

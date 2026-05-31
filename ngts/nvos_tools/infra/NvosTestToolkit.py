@@ -237,7 +237,10 @@ class TestToolkit:
         """
         try:
             with allure.step("Get log analyzer marker"):
-                test_string = " start-LogAnalyzer-" if not test_string else f" start-LogAnalyzer-.*{test_string}"
+                # re.escape so a parametrized test_string (e.g. 'test_x[NVUE]') isn't interpreted
+                # as a regex character-class by zgrep
+                test_string = " start-LogAnalyzer-" if not test_string \
+                    else f" start-LogAnalyzer-.*{re.escape(test_string)}"
                 cmd = 'zgrep -h -a "{}" /var/log/syslog.* /var/log/syslog | tail -n 1'.format(test_string)
                 if use_sudo:
                     cmd = 'sudo ' + cmd
