@@ -147,14 +147,14 @@ def pytest_addoption(parser: pytest.Parser):
              "If unset, NVOS_FIXED_RANDOM_API is used. Default behavior is one random API per run.",
     )
     parser.addoption(
-        "--nvos-hub-ai-investigation",
+        "--no-nvos-hub-ai-investigation",
         action="store_true",
         default=False,
-        help="Enable NVOS Hub AI-investigation auto-queue on test failures. Off by default. "
-             "When on, every failing test fires a best-effort POST to the dashboard and a deep "
-             "investigation card is auto-generated; the Allure report gets a link to it. "
-             "Also enabled when env var NVOS_HUB_AI_INVESTIGATION is set to one of "
-             "1/true/yes/on.",
+        help="Disable NVOS Hub AI-investigation auto-queue on test failures. "
+             "ON by default: every failing test fires a best-effort POST to the dashboard "
+             "and a deep investigation card is auto-generated; the Allure report gets a "
+             "link to it. Pass this flag to opt out. Also disabled when env var "
+             "NVOS_HUB_AI_INVESTIGATION is set to one of 0/false/no/off.",
     )
 
 
