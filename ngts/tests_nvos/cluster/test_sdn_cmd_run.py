@@ -416,7 +416,7 @@ def test_sdn_cmd_rotation_policy(
     """
     cluster = _cluster_ready_for_sdn_cmd(setup_name, engines.dut)
     sdn = Sdn()
-    sdn_cmd_str = _get_sdn_cmd_command()
+    sdn_cmd_str = _get_sdn_cmd_command(exclude_help=True)
     try:
         with allure.step(f"Run sdn cmd with file option {ROTATION_POLICY_MAX_FILES_TO_KEEP + 5} times"):
             for _ in range(ROTATION_POLICY_MAX_FILES_TO_KEEP + 5):
@@ -516,14 +516,17 @@ def _non_free_gpu_list(gpu_info_list_stdout):
     return pairs
 
 
-def _get_sdn_cmd_command(is_set_cmd=False, *, standalone_system=True):
+def _get_sdn_cmd_command(is_set_cmd=False, *, standalone_system=True, exclude_help=False):
     """Return a randomly chosen get or set command string."""
     if is_set_cmd:
         return random.choice(
             SdnCmdConsts.SET_COMMAND_BASE_LIST
             if standalone_system
             else SdnCmdConsts.SET_COMMAND_NON_STANDALONE_LIST)
-    return random.choice(SdnCmdConsts.GET_COMMAND_LIST)
+    commands = SdnCmdConsts.GET_COMMAND_LIST
+    if exclude_help:
+        commands = [c for c in commands if c != SdnCmdConsts.HELP]
+    return random.choice(commands)
 
 
 def _cluster_ready_for_sdn_cmd(setup_name, dut_engine):
