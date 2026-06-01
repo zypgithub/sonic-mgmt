@@ -642,18 +642,30 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         self.configure_dhclient_if_simx()
 
-    def init_telemetry_keys(self):
+    def init_telemetry_keys(self, engine=None):
+        """
+        Generate the streaming-telemetry server/root certificates under
+        /etc/sonic/telemetry.
+
+        :param engine: SSH engine identifying the host the certificates are
+            generated on. Defaults to self.engine, i.e. the DUT this CLI object
+            is bound to (the switch/fanout in the normal post-installation flow).
+            Pass an explicit engine to target a different host -- e.g. a BMC
+            reached over a dedicated SSH engine to bmc_ip during the BMC-only
+            deploy flow, where the switch post-installation is skipped.
+        """
+        engine = engine or self.engine
         logger.info("Create telemetry directory")
-        self.engine.run_cmd(f"sudo mkdir {SonicConst.TELEMETRY_PATH}")
-        self.engine.run_cmd(f"sudo chmod 0755 {SonicConst.TELEMETRY_PATH}")
+        engine.run_cmd(f"sudo mkdir {SonicConst.TELEMETRY_PATH}")
+        engine.run_cmd(f"sudo chmod 0755 {SonicConst.TELEMETRY_PATH}")
         logger.info("Generate server cert using openssl.")
-        self.engine.run_cmd(f"sudo openssl req -x509 -sha256 -nodes -newkey rsa:2048 "
-                            f"-keyout {SonicConst.TELEMETRY_SERVER_KEY} -subj '/CN=ndastreamingservertest' "
-                            f"-out {SonicConst.TELEMETRY_SERVER_CER}")
+        engine.run_cmd(f"sudo openssl req -x509 -sha256 -nodes -newkey rsa:2048 "
+                       f"-keyout {SonicConst.TELEMETRY_SERVER_KEY} -subj '/CN=ndastreamingservertest' "
+                       f"-out {SonicConst.TELEMETRY_SERVER_CER}")
         logger.info("Generate dsmsroot cert using openssl")
-        self.engine.run_cmd(f"sudo openssl req -x509 -sha256 -nodes -newkey rsa:2048 "
-                            f"-keyout {SonicConst.TELEMETRY_DSMSROOT_KEY} -subj '/CN=ndastreamingclienttest' "
-                            f"-out {SonicConst.TELEMETRY_DSMSROOT_CER}")
+        engine.run_cmd(f"sudo openssl req -x509 -sha256 -nodes -newkey rsa:2048 "
+                       f"-keyout {SonicConst.TELEMETRY_DSMSROOT_KEY} -subj '/CN=ndastreamingclienttest' "
+                       f"-out {SonicConst.TELEMETRY_DSMSROOT_CER}")
 
     def deploy_sonic(self, image_path, is_skipping_migrating_package=False):
         tmp_target_path = '/home/admin/sonic-mellanox.bin'

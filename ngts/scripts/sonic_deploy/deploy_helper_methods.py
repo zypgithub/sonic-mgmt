@@ -9,6 +9,7 @@ import time
 import yaml
 
 import allure
+from retry.api import retry_call
 from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 try:
     from netmiko.ssh_exception import NetmikoAuthenticationException
@@ -1066,13 +1067,12 @@ class DeployBmcHelper:
             with allure.step('Verify BMC SSH login'):
                 DeployBmcHelper._verify_bmc_login(bmc_params)
 
-            with allure.step('Sync BMC clock via chrony'):
-                try:
-                    DeployBmcHelper._sync_bmc_clock(bmc_params)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to sync BMC clock on {dut_name}: {e}"
-                    )
+            # sshd comes up well before the SONiC stack after the install reboots.
+            # The config steps below run sonic-db-cli / config commands, so wait
+            # until CONFIG_DB (redis) is reachable and sonic-environment exists,
+            # otherwise they race the boot and fail ('Unable to connect to redis').
+            with allure.step('Wait for BMC SONiC DB to be ready'):
+                DeployBmcHelper._wait_bmc_sonic_db_ready(bmc_params)
 
             # workaround to update the router_type to NetworkBmc in the DEVICE_METADATA table
             # of the config_db
@@ -1105,6 +1105,19 @@ class DeployBmcHelper:
                     DeployBmcHelper._wait_bmc_login(serial_engine)
                 with allure.step('Acquire BMC IP via serial dhclient'):
                     DeployBmcHelper._acquire_bmc_ip_via_serial(serial_engine)
+
+            # Sync the BMC clock
+            with allure.step('Sync BMC clock via chrony'):
+                try:
+                    DeployBmcHelper._sync_bmc_clock(bmc_params)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to sync BMC clock on {dut_name}: {e}"
+                    )
+
+            # Generate telemetry certificates on BMC
+            with allure.step('Generate BMC telemetry certificates'):
+                DeployBmcHelper._init_telemetry_keys(context, bmc_params)
 
             logger.info(f"BMC installation succeeded on {dut_name}")
         finally:
@@ -1471,6 +1484,38 @@ class DeployBmcHelper:
         engine.run_cmd("uname -a")
 
     @staticmethod
+    def _wait_bmc_sonic_db_ready(bmc_params, tries=30, delay=10):
+        """
+        After the install reboots, sshd on the BMC comes up well before the
+        SONiC stack. The config steps that follow (DEVICE_METADATA type, ACLs,
+        feature disable) run sonic-db-cli / config commands and edit
+        /etc/sonic/sonic-environment, so wait until CONFIG_DB (redis) is
+        reachable and sonic-environment exists. Without this they race the boot
+        and fail with 'Unable to connect to redis' / sonic-environment missing.
+        """
+        db_errors = ("Unable to connect", "Invalid database name",
+                     "Connection refused", "doesn't exist")
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+
+        def _check():
+            db = engine.run_cmd("sonic-db-cli CONFIG_DB PING")
+            env = engine.run_cmd(
+                "test -f /etc/sonic/sonic-environment && echo OK || echo MISSING"
+            )
+            if not (all(err not in db for err in db_errors) and "OK" in env):
+                raise RuntimeError(
+                    f"BMC SONiC not ready yet (CONFIG_DB PING={db.strip()!r}, "
+                    f"sonic-environment={env.strip()!r})"
+                )
+            logger.info("BMC SONiC CONFIG_DB is ready")
+
+        retry_call(_check, tries=tries, delay=delay, logger=logger)
+
+    @staticmethod
     def _sync_bmc_clock(bmc_params):
         """
         Force a one-shot clock sync via SSH. Equivalent to running
@@ -1491,6 +1536,18 @@ class DeployBmcHelper:
         logger.info(
             f"BMC clock after sync:  {engine.run_cmd('date').strip()}"
         )
+
+    @staticmethod
+    def _init_telemetry_keys(context, bmc_params):
+        """
+        Generate telemetry cert on BMC
+        """
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+        context.primary_cli_obj.init_telemetry_keys(engine=engine)
 
     @staticmethod
     def _set_device_metadata_type(bmc_params):
