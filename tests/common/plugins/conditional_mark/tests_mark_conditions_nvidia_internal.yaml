@@ -1238,6 +1238,12 @@ restapi/:
     conditions:
     - "https://redmine.mellanox.com/issues/5044612 and 'sn6600_ld' in platform"
 
+restapi/test_restapi.py:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5057014"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5057014"
+
 restapi/test_restapi.py::test_create_interface_sad:
   xfail:
     reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4692207"
