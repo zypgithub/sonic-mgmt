@@ -8,7 +8,7 @@ from ngts.cli_wrappers.common.mac_clis_common import MacCliCommon
 from ngts.constants.constants import SflowConsts
 from ngts.helpers.sflow_helper import verify_sflow_configuration, verify_sflow_sample_agent_id, \
     kill_sflowtool_process, remove_tmp_sample_file, verify_sflow_sample_polling_interval, verify_flow_sample_received, \
-    verify_sflow_interface_configuration, get_agent_id_from_hsflowd
+    verify_sflow_interface_configuration, get_agent_id_from_hsflowd, wait_until_hsflowd_ready
 from tests.common.utilities import wait_until
 
 logger = logging.getLogger()
@@ -129,7 +129,8 @@ def basic_sflow_configuration_for_function(engines, cli_objects, interfaces):
         cli_obj.sflow.enable_sflow_interface(interfaces.dut_ha_1)
     with allure.step(f"Enable sflow interface {interfaces.dut_ha_2}"):
         cli_obj.sflow.enable_sflow_interface(interfaces.dut_ha_2)
-
+    with allure.step("Wait for hsflowd to be ready after sflow interface enabled"):
+        wait_until_hsflowd_ready(engines, [SflowConsts.COLLECTOR_0_IP, SflowConsts.COLLECTOR_1_IP])
     yield
 
     with allure.step(f"Delete collector {SflowConsts.COLLECTOR_0}"):
