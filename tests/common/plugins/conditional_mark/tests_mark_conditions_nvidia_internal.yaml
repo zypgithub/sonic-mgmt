@@ -742,6 +742,12 @@ platform_tests/test_auto_negotiation.py:
   skip:
     reason: "The auto negotiation is not supported on 202411 and greater releases"
 
+platform_tests/api/test_bmc.py::TestBMCSessionNonBMC::test_bmc_commands_on_non_bmc_switch:
+  xfail:
+    reason: "Behaviour change, xfail due to RM issue: https://redmine.mellanox.com/issues/5045807"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5045807"
+
 platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
   skip:
     reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4258556"
