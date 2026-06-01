@@ -230,6 +230,7 @@ class SonicImClis:
         @param: platform_params: platform_params fixture
         @param: chip_type: chip_type fixture
         @param: enable_im: flag for enable IM by default
+        @return: True if IM is enabled and required to reload config to apply IM configuration, False otherwise
         """
         with allure.step('Check if system supports IM'):
             sonic_branch = get_sonic_branch(topology_obj)
@@ -248,3 +249,5 @@ class SonicImClis:
                                                     logger.info(f'Configure IM at DUT')
                                                     self.upload_cmis_files(platform_params, chip_type)
                                                     self.enable_cmis_mgr_in_pmon_file(platform_params)
+                                                    return True
+            return False

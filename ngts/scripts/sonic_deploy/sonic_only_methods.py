@@ -985,8 +985,14 @@ class SonicInstallationSteps:
                                                     is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path=fw_pkg_path, cli=cli)
 
                 if not is_community(sonic_topo):
-                    cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
-                                             chip_type=chip_type, enable_im=True)
+                    required_reload_config = cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
+                                                                      chip_type=chip_type, enable_im=True)
+                    if required_reload_config:
+                        logger.info("IM is configured, but required to reload config to apply IM configuration")
+                        cli.cli_obj.general.reload_flow(
+                            ports_list=None, topology_obj=topology_obj, reload_force=True,
+                            platform_params=platform_params)
+
             with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
                 cli.engine.disconnect()
                 system_set_timezone(cli.engine, set_timezone)
