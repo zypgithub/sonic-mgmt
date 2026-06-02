@@ -15,11 +15,15 @@ TESTS_SCENARIO = "spcx_ra"
 @pytest.fixture(scope='module', autouse=True)
 def skip_test_conditionally(chip_type):
     skip_test_on_unsupported_chip_type(chip_type, "SPC4")
-    skip_test_on_unsupported_chip_type(chip_type, "SPC6")
     yield
 
 
-def get_conf_args(is_ipv6):
+def get_conf_args(is_ipv6, chip_type=None, is_cumulus=False):
+    """Build SPX-RA x8 configuration args.
+
+    SPC5 and non-Cumulus paths keep 100G shaper speed (kbps). SPC6 on Cumulus uses 200G
+    shaper speed and optional link_phy_speed for 8x mloop ports (same pattern as SRv6).
+    """
     conf_args = {"auto_buffer_mode": "False",
                  "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
                  "two_sided_ar": True,
@@ -34,11 +38,16 @@ def get_conf_args(is_ipv6):
                  "speed": "100000000",
                  "params": None
                  }
+    if (chip_type == "SPC6" and is_cumulus and
+            conf_args["split_left"] == 8 and conf_args["split_right"] == 8):
+        conf_args["speed"] = "200000000"
+        conf_args["link_phy_speed"] = "200G"
     return conf_args
 
 
-def apply_basic_setup_configuration(is_ipv6, players):
-    conf_args = get_conf_args(is_ipv6)
+def apply_basic_setup_configuration(is_ipv6, players, chip_type=None):
+    is_cumulus = players.get("dut", {}).get("is_cumulus", False)
+    conf_args = get_conf_args(is_ipv6, chip_type=chip_type, is_cumulus=is_cumulus)
     with allure.step('Save Players initial Configuration'):
         save_base_configuration(players)
     with allure.step("Apply Test configuration on all Players"):
@@ -46,10 +55,10 @@ def apply_basic_setup_configuration(is_ipv6, players):
 
 
 @pytest.fixture(scope='class')
-def basic_setup_configuration(request, players):
+def basic_setup_configuration(request, players, chip_type):
     is_ipv6 = request.param == InfraConst.IPV6
     try:
-        apply_basic_setup_configuration(is_ipv6, players)
+        apply_basic_setup_configuration(is_ipv6, players, chip_type=chip_type)
         yield is_ipv6
     except Exception as e:
         raise e
@@ -60,7 +69,8 @@ def basic_setup_configuration(request, players):
 
 @pytest.fixture(scope='function', autouse=False)
 def ibm_fixture(players, basic_setup_configuration, chip_type):
-    conf_args = get_conf_args(basic_setup_configuration)
+    is_cumulus = players.get("dut", {}).get("is_cumulus", False)
+    conf_args = get_conf_args(basic_setup_configuration, chip_type=chip_type, is_cumulus=is_cumulus)
     copied_conf_args = copy.deepcopy(conf_args)
     copied_conf_args["auto_buffer_mode"] = "True"
     with allure.step("Set auto buffer mode to True"):
