@@ -1156,6 +1156,12 @@ platform_tests/test_hw_watchdog.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/test_reload_config.py:
+  xfail:
+    reason: "Xfail on BMC due to https://redmine.mellanox.com/issues/5064616"
+    conditions:
+    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5064616"
+
 platform_tests/test_reload_config.py::test_reload_configuration:
   skip:
     reason: "Skipped due to Simx doesn't support due to QSFP eeprom emulation currently. Target POR 2023.Rel.2"
