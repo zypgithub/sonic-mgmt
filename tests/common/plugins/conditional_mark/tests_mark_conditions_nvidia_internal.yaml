@@ -72,6 +72,12 @@ tests/nightly/auto_negotition:
     - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4978794 and 'sn6600_ld' in platform"
 
+tests/nightly/auto_negotition/test_auto_neg_negative.py:
+  xfail:
+    reason: "missing expected syncd err log, tracked by RM issue: https://redmine.mellanox.com/issues/5064597"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5064597"
+
 tests/nightly/copp/test_copp.py::test_copp_policer[LLDP_Reboot]:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/2682609 on SIMX platform"
