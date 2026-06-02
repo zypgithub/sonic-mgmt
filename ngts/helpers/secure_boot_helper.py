@@ -183,6 +183,11 @@ class SonicSecureBootHelper(SecureBootHelper):
         image_name = http_image_path.split('/')[-1]
         local_image_file = '/tmp/' + image_name
         logger.info('Starting download sonic image via http')
+        try:
+            resolv_conf = self.serial_engine.run_cmd_and_get_output('cat /etc/resolv.conf')
+            logger.info(f"ONIE DNS info /etc/resolv.conf:{resolv_conf}")
+        except Exception as e:
+            logger.warning(f"Failed to read /etc/resolv.conf: {e}")
         download_image_cmd = f"wget -O {local_image_file} {http_image_path}"
         retry_call(self.serial_engine.run_cmd,
                    fargs=[download_image_cmd, "100%"],
