@@ -186,12 +186,6 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_even
     conditions:
     - "'simx' in platform"
 
-tests/show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sai_sdk_dump:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5056883"
-    conditions:
-    - "https://redmine.mellanox.com/issues/5056883"
-
 tests/nightly/secure:
   skip:
     reason: "Skipped on gaur and bobcat testbeds"
@@ -971,10 +965,11 @@ platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
 
 platform_tests/test_power_off_reboot.py:
   skip:
-    reason: "Simx doesn't support PDU"
+    reason: "Simx doesn't support PDU, Skip on r-bison-08 due to RM issue: https://redmine.mellanox.com/issues/5043524"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "https://redmine.mellanox.com/issues/5043524 and 'r-bison-08' in testbed"
 
 platform_tests/test_secure_upgrade.py:
   skip:
@@ -1332,6 +1327,12 @@ qos/test_buffer.py::test_port_admin_down:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
     conditions:
     - "https://redmine.mellanox.com/issues/4997273 and ('6810_ld_simx' in platform or 'sn6600_ld' in platform)"
+
+show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sai_sdk_dump:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5056883"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5056883"
 
 span/test_port_mirroring.py::test_mirroring_both:
   skip:
