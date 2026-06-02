@@ -703,12 +703,6 @@ iface_loopback_action/test_iface_loopback_action_wjh.py:
     conditions:
     - "'dualtor' in topo_name"
 
-ip/link_local/test_link_local_ip.py:
-  xfail:
-    reason: "the test has not adapted to dualtor setup"
-    conditions:
-    - "'dualtor' in topo_name and https://redmine.mellanox.com/issues/5057005"
-
 ip/test_mgmt_ipv6_only.py::test_ro_user_ipv6_only:
   skip:
     reason: "Skip at r-lionfish-13 as docker-ptf not starting at canonical setup"
