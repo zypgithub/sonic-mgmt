@@ -29,6 +29,7 @@ _REGRESSION_ALLURE_ENV = [
     ("traffic_host_ip", None),
     ("dut_type", None),
     ("setup_name", "--setup_name"),
+    ("mars_session_id", "--session_id"),
     ("traffic_ports", None),
     ("base_version", "--base_version"),
     ("release_name", "--release_name"),
