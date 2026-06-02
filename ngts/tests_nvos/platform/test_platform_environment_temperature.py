@@ -1,6 +1,8 @@
+import json
 import logging
 import pytest
 import random
+import re
 
 from retry import retry
 
@@ -25,7 +27,22 @@ THERMAL_PWM_PATH = '/var/run/hw-management/thermal/pwm1'
 HEALTH_STABILIZE_DELAY = 15
 TEMPERATURE_MARGIN_FACTOR = 1.05
 DEGREES_TO_MILLIDEGREES = 1000
-FAN_RAMP_UP_MIN_PCT = 20
+
+# pwm1 sysfs is 0-255 (255 == 100% duty).
+PWM_RAW_FULL_SCALE = 255
+# Allowed deviation (raw pwm1 units) between the observed PWM and the value the
+# platform thermal-control config predicts. Absorbs control-loop hysteresis and
+# integer PWM stepping (e.g. observed 188 vs predicted 189 for a PMIC at 110.25C).
+FAN_PWM_MATCH_TOLERANCE = 16
+# The platform's own thermal-control config: the authoritative per-platform map
+# of which sensors drive the fans (sensor_list) and over what temperature band
+# (dev_parameters). We read it from the DUT instead of hardcoding any per-switch
+# values, so the expected PWM is always aligned with the running platform.
+TC_CONFIG_PATH = '/var/run/hw-management/config/tc_config.json'
+# Fan-driving sensors polled faster than this are ASIC-FW-monitored (poll_time 3
+# in tc_config) and a per-sensor sysfs injection may not reach the fan loop, so
+# for them we assert only that the fans do not drop rather than an exact target.
+TC_MIN_INJECTABLE_POLL_SEC = 10
 
 
 # --- Temperature simulation helpers ---
@@ -83,23 +100,153 @@ def _read_pwm(engine):
         return None
 
 
-@retry(AssertionError, tries=12, delay=10)
-def _validate_fans_ramped_up(engine, baseline_pwm):
-    """Assert PWM rose at least FAN_RAMP_UP_MIN_PCT above baseline.
+def _read_fan_speeds(engine):
+    """Return a one-line 'fanN=RPM' summary of every fan tach reading (the actual
+    measured speed, distinct from the commanded pwm1 duty), or '' if unavailable.
+    Read in a single command (printf, no trailing newlines) to stay one log line.
+    """
+    try:
+        out = engine.run_cmd(
+            "for f in /var/run/hw-management/thermal/fan*_speed_get; do "
+            "[ -e \"$f\" ] && printf '%s=%s ' \"$(basename ${f%_speed_get})\" \"$(cat $f)\"; done"
+        )
+        return out.strip()
+    except Exception as e:
+        logger.warning(f"Could not read fan speeds: {e}")
+        return ""
 
-    Thermal control reacts slowly on some platforms (observed ~60-120s lag on
-    Crocodile), so this retries for up to ~2 minutes.
+
+def _read_tc_config(engine):
+    """Read the platform's hw-management thermal-control config from the DUT.
+
+    Returns the parsed dict, or None if the file is absent/unparseable (the fan
+    check then degrades to a simple 'fans do not drop' invariant).
+    """
+    try:
+        return json.loads(engine.run_cmd(f"cat {TC_CONFIG_PATH}"))
+    except Exception as e:
+        logger.warning(f"Could not read/parse {TC_CONFIG_PATH}: {e}")
+        return None
+
+
+def _sysfs_sensor_base(sensor_input_path):
+    """Reduce an inject path to the tc_config sensor base, e.g.
+    '/var/run/hw-management/thermal/voltmon3_temp1_input' -> 'voltmon3_temp1'.
+    """
+    base = sensor_input_path.rsplit('/', 1)[-1]
+    return base[:-len('_input')] if base.endswith('_input') else base
+
+
+def _tc_sensor_profile(tc_config, sysfs_base):
+    """Resolve, from the DUT's own tc_config, whether a sensor drives the fans
+    and over what band. Returns (is_fan_driving, band_params_or_None).
+
+    Fan-driving iff a sensor_list token is a PREFIX of the sysfs base name. The
+    prefix rule both groups (token 'cpu' -> 'cpu_pack'/'cpu_core0') and correctly
+    EXCLUDES sensors the TC does not watch, e.g. 'comex_voltmon1' (= PMIC-7) which
+    no sensor_list token prefixes, even though it resembles a voltmon.
+    """
+    sensor_list = tc_config.get('sensor_list', [])
+    is_fan_driving = any(sysfs_base.startswith(tok) for tok in sensor_list)
+    band = None
+    for pattern, params in tc_config.get('dev_parameters', {}).items():
+        if re.search(pattern, sysfs_base):
+            band = params
+            break
+    return is_fan_driving, band
+
+
+def _band_expected_pwm(band, temp_c):
+    """Predicted pwm1 (0-255) for a tc_config dev_parameters band at temp_c, via
+    its linear val_min->val_max / pwm_min->pwm_max ramp (clamped). val_min/val_max
+    are in thousandths of a degree and may carry a '!' (trend) prefix we strip.
+    """
+    def millideg(v):
+        return float(str(v).lstrip('!'))
+    t_min = millideg(band['val_min']) / 1000.0
+    t_max = millideg(band['val_max']) / 1000.0
+    pwm_min, pwm_max = band['pwm_min'], band['pwm_max']
+    if temp_c <= t_min:
+        duty = pwm_min
+    elif temp_c >= t_max:
+        duty = pwm_max
+    elif t_max <= t_min:
+        # Degenerate/zero-width band: guard the divide-by-zero. Unreachable in
+        # practice (a non-floor, non-ceiling temp_c needs t_min < t_max).
+        duty = pwm_min
+    else:
+        duty = pwm_min + (temp_c - t_min) / (t_max - t_min) * (pwm_max - pwm_min)
+    duty = max(min(duty, pwm_max), pwm_min)
+    return int(round(duty / 100.0 * PWM_RAW_FULL_SCALE))
+
+
+@retry(AssertionError, tries=12, delay=10)
+def _validate_fan_pwm_matches_expected(engine, baseline_pwm, sensor_name, sysfs_base,
+                                       injected_temp_c, tc_config):
+    """Assert fan PWM reaches the value the DUT's own thermal-control config predicts.
+
+    Fan pwm1 = max() across every fan-driving sensor, each a linear val_min->val_max
+    duty ramp (from tc_config dev_parameters). Injecting injected_temp_c raises only
+    the picked sensor, so the steady-state pwm1 must equal
+    max(baseline_pwm, band_demand(injected_temp_c)) within FAN_PWM_MATCH_TOLERANCE:
+      * if the sensor's demand exceeds the baseline, the fans must ramp up to it;
+      * if another sensor already holds the fans higher, pwm1 correctly stays put.
+    A pwm1 well below the predicted target on a fan-driving sensor we can inject
+    into is a candidate cooling-response bug, NOT a test tolerance to widen.
+
+    For sensors the TC does not watch (e.g. comex voltmon = PMIC-7, PSU, PCH) or
+    ASIC-FW-fast-poll sensors a sysfs injection may not reach, we only assert that
+    the fans do not drop. Thermal control reacts with a lag (~45-60s), so this
+    retries for up to ~2 minutes to let pwm1 settle.
     """
     if baseline_pwm is None:
         return
     current = _read_pwm(engine)
     assert current is not None, "Could not read current PWM"
-    threshold = baseline_pwm + max(10, int(baseline_pwm * FAN_RAMP_UP_MIN_PCT / 100))
-    assert current >= threshold, (
-        f"Expected fans to ramp up: baseline_pwm={baseline_pwm}, current={current}, "
-        f"threshold={threshold}"
+
+    is_fan_driving, band = _tc_sensor_profile(tc_config, sysfs_base) if tc_config else (False, None)
+    try:
+        poll_time_sec = int(band.get('poll_time', 0)) if band else 0
+    except (TypeError, ValueError):
+        poll_time_sec = 0  # tc_config values are sometimes strings
+    inject_reaches_fans = (band is not None and poll_time_sec >= TC_MIN_INJECTABLE_POLL_SEC)
+    predicted = _band_expected_pwm(band, injected_temp_c) if band else None
+    fan_rpm = _read_fan_speeds(engine)
+
+    # Always surface the comparison (logged on every retry poll), so the run shows
+    # exactly what the fans did vs what the platform thermal-control config predicts:
+    # commanded duty (pwm1), measured fan speeds (RPM), and the expected target.
+    logger.info(
+        f"Fan PWM check for {sensor_name} ({sysfs_base}): baseline_pwm={baseline_pwm}, "
+        f"current_pwm={current}, fan_rpm=[{fan_rpm}], injected_temp={injected_temp_c}C, "
+        f"expected_pwm={'~%.0f' % predicted if predicted is not None else 'n/a'} "
+        f"(fan_driving={is_fan_driving}, inject_reaches_fans={inject_reaches_fans}, "
+        f"mode={'EXPECTED-match' if (is_fan_driving and inject_reaches_fans) else 'no-drop'})"
     )
-    logger.info(f"Fan PWM increased: baseline={baseline_pwm} -> current={current}")
+
+    if not (is_fan_driving and inject_reaches_fans):
+        # Sensor does not drive the fan loop, or is FW-fast-poll, or no tc_config:
+        # only require the fans not to spin down. Log the prediction if we have one.
+        assert current >= baseline_pwm - FAN_PWM_MATCH_TOLERANCE, (
+            f"Fan PWM dropped while {sensor_name} fault active: "
+            f"baseline_pwm={baseline_pwm}, current={current}"
+        )
+        logger.info(f"{sensor_name} ({sysfs_base}): target not asserted "
+                    f"(fan_driving={is_fan_driving}, inject_reaches_fans={inject_reaches_fans}); "
+                    f"baseline={baseline_pwm} -> current={current}" +
+                    (f"; config predicts ~{predicted:.0f}" if predicted is not None else ""))
+        return
+
+    expected = max(baseline_pwm, predicted)
+    assert abs(current - expected) <= FAN_PWM_MATCH_TOLERANCE, (
+        f"Fan PWM does not match thermal-control config for {sensor_name} "
+        f"({sysfs_base}): baseline_pwm={baseline_pwm}, injected_temp={injected_temp_c}C, "
+        f"expected~{expected:.0f}, current={current} (tol={FAN_PWM_MATCH_TOLERANCE}). "
+        f"Candidate cooling-response bug, not a tolerance to widen."
+    )
+    logger.info(f"Fan PWM matches thermal-control config for {sensor_name} ({sysfs_base}): "
+                f"baseline={baseline_pwm} -> current={current} "
+                f"(expected~{expected:.0f} for {injected_temp_c}C)")
 
 
 # --- Temperature simulation test ---
@@ -121,7 +268,10 @@ def test_simulate_temperature_fault_high(engines, devices):
     3. Inject value = max * 1.05 (just above max threshold)
     4. Validate sensor state is 'failed', health is 'Not OK', sensor is in
        health issues
-    5. If devices.dut.fan_list is non-empty, validate fan PWM increased
+    5. If devices.dut.fan_list is non-empty, validate fan PWM reaches the value
+       the DUT's own thermal-control config (tc_config.json) predicts for the
+       injected temperature, but only for sensors the TC actually drives the fans
+       from; a pwm1 well below the predicted target is a candidate cooling bug
     6. Restore original symlink
     7. Validate sensor state is 'ok', health is 'OK', sensor not in health
        issues
@@ -133,8 +283,11 @@ def test_simulate_temperature_fault_high(engines, devices):
         sensor_name, sensor_data, sensor_input_path = _pick_sensor(engines.dut, devices)
         validate_health(system, HealthConsts.OK)
 
-    fault_value = int(float(sensor_data['max']) * DEGREES_TO_MILLIDEGREES * TEMPERATURE_MARGIN_FACTOR)
+    injected_temp_c = float(sensor_data['max']) * TEMPERATURE_MARGIN_FACTOR
+    fault_value = int(injected_temp_c * DEGREES_TO_MILLIDEGREES)
     has_fans = bool(devices.dut.fan_list)
+    sysfs_base = _sysfs_sensor_base(sensor_input_path)
+    tc_config = _read_tc_config(engines.dut) if has_fans else None
 
     with allure.step(f"Inject high temperature fault: value={fault_value}"):
         baseline_pwm = _read_pwm(engines.dut) if has_fans else None
@@ -145,10 +298,18 @@ def test_simulate_temperature_fault_high(engines, devices):
             validate_health(system, HealthConsts.NOT_OK)
             validate_health_issues(system, sensor_name, expected_present=True)
             if has_fans:
-                _validate_fans_ramped_up(engines.dut, baseline_pwm)
+                _validate_fan_pwm_matches_expected(
+                    engines.dut, baseline_pwm, sensor_name, sysfs_base,
+                    injected_temp_c, tc_config)
             else:
-                logger.info("Skipping fan ramp-up check: platform has no fans")
+                logger.info("Skipping fan PWM check: platform has no fans")
 
+    with allure.step(f"Validate recovery after restoring {sensor_name}"):
+        logger.info(f"Fault cleared and symlink restored for {sensor_name}; "
+                    f"validating sensor state 'ok', health 'OK', and no health issue")
         validate_sensor_state(temperature_show, sensor_name, 'ok')
         validate_health(system, HealthConsts.OK)
         validate_health_issues(system, sensor_name, expected_present=False)
+        if has_fans:
+            logger.info(f"Fan PWM after recovery: pwm1={_read_pwm(engines.dut)}, "
+                        f"fan_rpm=[{_read_fan_speeds(engines.dut)}]")
