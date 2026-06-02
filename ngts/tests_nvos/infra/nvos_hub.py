@@ -8,8 +8,11 @@ final report URL to the dashboard's allure-url endpoint for each queued
 failure so the entries get linked to the Allure run.
 
 All work is best-effort — failures here never affect test outcome. The
-feature is ON by default; pass `--no-nvos-hub-ai-investigation` (or set
-env var `NVOS_HUB_AI_INVESTIGATION` to one of `0/false/no/off`) to opt out.
+feature is ON by default for MARS regression runs only (`REGRESSION_TYPE`
+in `RegressionType.mars_types()`) and OFF for CI runs and local/manual
+runs. Opt in on any other run with `--nvos-hub-ai-investigation` (or
+`NVOS_HUB_AI_INVESTIGATION=1/true/yes/on`); force off anywhere with
+`NVOS_HUB_AI_INVESTIGATION=0/false/no/off`.
 """
 import datetime
 import json
@@ -21,6 +24,7 @@ import urllib.request
 
 import pytest
 
+from ngts.constants.constants import REGRESSION_TYPE_ENV_VAR, RegressionType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger(__name__)
@@ -108,18 +112,39 @@ def _is_hub_reachable():
 
 
 def is_enabled(config):
-    """On by default. Off when --no-nvos-hub-ai-investigation is passed
-    or when the NVOS_HUB_AI_INVESTIGATION env var is set to one of
-    0/false/no/off. Any other value of the env var (including unset)
-    leaves the feature on."""
+    """ON by default for MARS regression runs only (REGRESSION_TYPE in
+    RegressionType.mars_types(): regression, sonic_main, sonic_public,
+    sonic_dpu_build); OFF for CI runs and local/manual runs. Precedence
+    (first match wins):
+
+      1. Explicit off — NVOS_HUB_AI_INVESTIGATION env var set to one of
+         0/false/no/off. Wins everywhere, so a regression run can still
+         opt out.
+      2. Explicit on — --nvos-hub-ai-investigation flag, or the env var
+         set to one of 1/true/yes/on. Lets any run opt in.
+      3. Default — on iff this is a MARS regression run."""
+    env = os.environ.get('NVOS_HUB_AI_INVESTIGATION', '').strip().lower()
+
+    # 1. Explicit off (env only — there is no disable flag). Wins everywhere.
+    if env in ('0', 'false', 'no', 'off'):
+        return False
+
+    # 2. Explicit on.
     try:
-        if config.getoption('--no-nvos-hub-ai-investigation', default=False):
-            return False
+        if config.getoption('--nvos-hub-ai-investigation', default=False):
+            return True
     except (ValueError, AttributeError):
         pass
-    return os.environ.get('NVOS_HUB_AI_INVESTIGATION', '').strip().lower() not in (
-        '0', 'false', 'no', 'off',
-    )
+    if env in ('1', 'true', 'yes', 'on'):
+        return True
+
+    # 3. Default: on only for MARS regression runs. Read REGRESSION_TYPE off
+    # the environment (same source/pattern as
+    # helpers/pytest_items_filters._is_ci_run) rather than a fixture, so this
+    # is safe in the pytest_terminal_summary hook and on zero-collected-test
+    # runs. RegressionType is a StrEnum, so the raw env string matches its
+    # members directly (same as _is_ci_run's `... in RegressionType.ci_types()`).
+    return os.environ.get(REGRESSION_TYPE_ENV_VAR) in RegressionType.mars_types()
 
 
 def _post_queue_failure(payload):
@@ -291,7 +316,8 @@ def terminal_summary_impl(config):
     # project_id + report_id, then looks up the UID for each test in the
     # project's suites.json. We pass the same base URL for every entry of
     # this session.
-    for entry in _NVOS_HUB_POSTED_IDS:
+    # Iterate over a snapshot to avoid concurrent mutation by daemon workers.
+    for entry in tuple(_NVOS_HUB_POSTED_IDS):
         _post_allure_url(entry['id'], report_url)
 
     # Phase-2 bulk POST: tells the Hub the report is up and which tests
@@ -308,8 +334,9 @@ def nvos_hub_ai_investigation(request):
     Fire-and-forget POST with short timeout — best-effort, never affects test
     outcome. On success the worker logs `NVOS Hub accepted failure for AI
     investigation ...` so the runner output makes it obvious the Hub picked
-    up the failure and is working on it. Enabled by default; opt out with
-    --no-nvos-hub-ai-investigation or NVOS_HUB_AI_INVESTIGATION=0.
+    up the failure and is working on it. Enabled by default on MARS
+    regression runs only; opt in elsewhere with --nvos-hub-ai-investigation,
+    opt out anywhere with NVOS_HUB_AI_INVESTIGATION=0.
     """
     yield
 

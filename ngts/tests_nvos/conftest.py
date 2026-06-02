@@ -147,14 +147,18 @@ def pytest_addoption(parser: pytest.Parser):
              "If unset, NVOS_FIXED_RANDOM_API is used. Default behavior is one random API per run.",
     )
     parser.addoption(
-        "--no-nvos-hub-ai-investigation",
+        "--nvos-hub-ai-investigation",
         action="store_true",
         default=False,
-        help="Disable NVOS Hub AI-investigation auto-queue on test failures. "
-             "ON by default: every failing test fires a best-effort POST to the dashboard "
-             "and a deep investigation card is auto-generated; the Allure report gets a "
-             "link to it. Pass this flag to opt out. Also disabled when env var "
-             "NVOS_HUB_AI_INVESTIGATION is set to one of 0/false/no/off.",
+        help="Force-enable NVOS Hub AI-investigation auto-queue on test failures. "
+             "ON by default only for MARS regression runs (REGRESSION_TYPE in "
+             "RegressionType.mars_types(): regression, sonic_main, sonic_public, "
+             "sonic_dpu_build); OFF for CI runs and local/manual runs. Pass this flag (or set "
+             "env var NVOS_HUB_AI_INVESTIGATION to one of 1/true/yes/on) to opt in on any "
+             "other run. To force it off anywhere (including a regression run) set "
+             "NVOS_HUB_AI_INVESTIGATION to one of 0/false/no/off. When enabled, every failing "
+             "test fires a best-effort POST to the dashboard and a deep investigation card is "
+             "auto-generated; the Allure report gets a link to it.",
     )
 
 
