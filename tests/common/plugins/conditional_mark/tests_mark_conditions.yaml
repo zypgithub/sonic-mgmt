@@ -6050,6 +6050,13 @@ vxlan/test_vnet_decap.py::test_vnet_decap[inner_ipv6-outer_ipv4]:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/21780 and '-v6-' in topo_name and asic_type in ['mellanox']"
 
+vxlan/test_vxlan_decap_ttl.py::test_vxlan_decap_ttl\[v6-.*\]:
+  regex: true
+  skip:
+    reason: "IPv6 VXLAN tunnels are not supported on Mellanox Spectrum-1."
+    conditions:
+      - "asic_type in ['mellanox'] and asic_gen == 'spc1'"
+
 vxlan/test_vnet_route_leak.py:
   skip:
     reason: "Test skipped due to issue #8374"
