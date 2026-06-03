@@ -241,6 +241,7 @@ def test_show_nvl_interface_commands(engines, devices, random_api, has_loopbox, 
 
 
 @pytest.mark.interface
+@pytest.mark.simx
 @pytest.mark.nvl_ci
 def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_system):
     """
@@ -261,6 +262,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
 
     # Build toggleable_interface list based on what's actually available on the device
     toggleable_interface = []
+    is_mloop_simx = getattr(devices.dut, 'require_mloop_setup', False)
 
     # Check for FNM ports (internal fan-out modules)
     if (has_loopbox or not standalone_system) and devices.dut.nvl_fnm_ports:
@@ -275,7 +277,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
         logger.info(f"SW (trunk) ports available with transceivers: {len(present_transceivers)} transceivers")
 
     # Check for ACP ports (access ports)
-    if (has_loopbox or not standalone_system) and devices.dut.nvl_access_ports_list:
+    if (has_loopbox or not standalone_system or is_mloop_simx) and devices.dut.nvl_access_ports_list:
         toggleable_interface.append('acp')
         logger.info(f"ACP (access) ports available: {len(devices.dut.nvl_access_ports_list)} ports")
 
