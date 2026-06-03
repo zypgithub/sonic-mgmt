@@ -203,7 +203,7 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
 
 @pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.system
-@pytest.mark.timeout(6 * MINUTE)
+@pytest.mark.timeout(10 * MINUTE)
 def test_reboot_via_remote_reboot(engines, devices, topology_obj):
     """
     Test flow:

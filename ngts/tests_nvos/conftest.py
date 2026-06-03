@@ -7,6 +7,7 @@ import logging
 import os
 import random
 import smtplib
+import subprocess
 import time
 import json
 from email.mime.text import MIMEText
@@ -355,6 +356,79 @@ def track_serial_console(request, topology_obj, engines, devices):
         else:
             with allure.step('test passed. not attaching serial console log'):
                 pass
+
+
+def _reset_ansible_ssh_control_masters():
+    """Close ansible's ssh ControlMaster sockets so the next ansible task reconnects.
+
+    A reboot under test kills the remote sshd session, but ansible.cfg uses
+    'ControlMaster=auto -o ControlPersist=7200s' with a ~35-minute ServerAlive window
+    (ServerAliveInterval=30 * ServerAliveCountMax=70), so the local master socket keeps
+    multiplexing to the dead session and every subsequent ansible task (loganalyzer
+    analyze_logs, sysdumps, serial log analyzer) blocks until the pytest test timeout.
+    Rebuilding the host object does NOT help: ControlMaster=auto re-attaches to the same
+    dead master. We must drop the master itself.
+
+    ansible's default ControlPath is a hash ('%C'), so we cannot map a socket back to a
+    host; for a reboot test it is safe to close them all -- any unrelated master simply
+    reconnects on next use. 'ssh -O exit' only talks to the local control socket (no
+    network), so it cannot hang; we still bound it and fall back to removing the socket file.
+    """
+    cp_dir = os.path.join(os.environ.get("ANSIBLE_HOME", os.path.expanduser("~/.ansible")), "cp")
+    try:
+        sockets = [os.path.join(cp_dir, name) for name in os.listdir(cp_dir)]
+    except OSError:
+        sockets = []
+    closed = 0
+    for sock in sockets:
+        closed_this = False
+        try:
+            res = subprocess.run(["ssh", "-O", "exit", "-o", "ControlPath={}".format(sock), "none"],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10, check=False)
+            closed_this = res.returncode == 0
+        except (subprocess.TimeoutExpired, OSError):
+            closed_this = False
+        if not closed_this:
+            # ssh -O exit did not confirm a clean close (no/wedged master or timeout):
+            # remove the socket file so a fresh master is created on the next connect.
+            try:
+                os.unlink(sock)
+                closed_this = True
+            except OSError:
+                pass
+        if closed_this:
+            closed += 1
+    logging.info("Reset %d ansible ssh ControlMaster socket(s) under %s after reboot", closed, cp_dir)
+
+
+@pytest.fixture(autouse=True)
+def reset_ansible_connection_after_reboot(loganalyzer):
+    """Refresh the ansible ssh connection after any test that rebooted the DUT.
+
+    The NVOS 'duthosts' ansible engines are session-scoped (built once and reused), so
+    nothing re-establishes them after a per-test reboot. Combined with ansible's
+    persistent ControlMaster (see _reset_ansible_ssh_control_masters), the first ansible
+    consumer in teardown -- typically loganalyzer's analyze_logs, but also sysdumps /
+    serial log analyzer -- blocks on the dead master until the whole-test pytest timeout
+    fires (observed as 'Failed: Timeout >900.0s' on test_reboot_test).
+
+    Detection is automatic and marker-free: every reboot/reset/install flow sets the
+    process-wide flag pytest.dut_rebooted from DutUtilsTool (in wait_on_system_reboot and
+    the readiness waits wait_for_nvos/cumulus_to_become_functional). Here we read it in
+    teardown and, if a reboot happened, close the stale ControlMaster so the next ansible
+    task reconnects fresh. New reboot tests are covered with no @pytest.mark.reboot to
+    remember.
+
+    Depends on 'loganalyzer' purely for ordering: teardown is LIFO, so by setting up
+    after loganalyzer we guarantee this reset runs BEFORE loganalyzer's analyze_logs. The
+    reset itself is not gated on loganalyzer being enabled.
+    """
+    yield
+
+    if getattr(pytest, 'dut_rebooted', False):
+        pytest.dut_rebooted = False
+        with allure.step('Reset ansible ssh ControlMaster after reboot'):
+            _reset_ansible_ssh_control_masters()
 
 
 @pytest.fixture(scope='session')
