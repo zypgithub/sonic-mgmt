@@ -1015,6 +1015,12 @@ platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current[CPLD:
     conditions:
       - "https://redmine.mellanox.com/issues/4970573 and ('sn6600_ld' in platform or 'sn5810_ld' in platform)"
 
+platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current[FPGA:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5057332"
+    conditions:
+      - "https://redmine.mellanox.com/issues/5057332"
+
 platform_tests/fwutil/test_fwutil.py::test_fwutil_update_next:
   skip:
     reason: "There is no plan to cover this test flow as not in use"
