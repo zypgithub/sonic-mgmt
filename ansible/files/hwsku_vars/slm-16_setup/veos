@@ -11,6 +11,7 @@ all:
       vars:
         topologies:
           - t1-isolated-d28u1
+          - t1-isolated-d28u4
           - ptp-130
 
       children:
