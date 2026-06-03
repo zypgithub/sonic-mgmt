@@ -322,15 +322,6 @@ def check_dshell_ready(duthost):
     return True
 
 
-def _get_console_result_with_timeout(console_thread_res, timeout_sec):
-    """Safely get console thread result with timeout."""
-    try:
-        return console_thread_res.get(timeout=timeout_sec)
-    except Exception as err:
-        logger.warning(f'Failed to get console thread result: {err}')
-        return None
-
-
 @support_ignore_loganalyzer
 @synchronized_reboot
 def reboot(duthost, localhost, reboot_type='cold', delay=10,
@@ -424,14 +415,17 @@ def reboot(duthost, localhost, reboot_type='cold', delay=10,
     dut_console = None
     try:
         wait_for_startup(duthost, localhost, delay, timeout)
-        dut_console = _get_console_result_with_timeout(console_thread_res, timeout + wait_conlsole_connection)
+        try:
+            dut_console = console_thread_res.get()
+        except Exception as console_err:
+            logger.warning(f'Failed to get console thread result: {console_err}')
+            dut_console = None
 
     except Exception as err:
         if dut_console:
             dut_console.disconnect()
             logger.info('end: collect console log')
-        dut_console = _get_console_result_with_timeout(console_thread_res, timeout + wait_conlsole_connection)
-        logger.error('collecting console log thread result: {} on {}'.format(dut_console, hostname))
+        logger.error('collecting console log thread result: {} on {}'.format(console_thread_res.get(), hostname))
         pool.terminate()
         raise Exception(f"dut not start: {err}")
 
