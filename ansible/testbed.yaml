@@ -15157,3 +15157,16 @@
     - r-panther-91
   inv_name: lab
   comment: Community bringup - r-panther-91_setup
+
+- conf-name: sws-cham6s-4-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-sws-cham6s-4
+  ptf_ip: 10.215.13.196/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - sws-cham6s-4
+  comment: MEC01 canoncial testbed
