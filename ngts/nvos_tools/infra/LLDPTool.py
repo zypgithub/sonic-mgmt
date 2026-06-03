@@ -93,6 +93,20 @@ class LLDPTool:
                 ifconfig_output = LLDPTool._sudo_run(engine, f"ifconfig {mgmt_port}")
                 ValidationTool.verify_expected_output(ifconfig_output, 'UP').verify_result()
 
+    # ifconfig prints interface flags like "<UP,BROADCAST,RUNNING,MULTICAST>". The
+    # RUNNING flag reflects operational carrier (the link is actually up), whereas
+    # the UP flag only reflects the administrative state. lldpd transmits LLDP
+    # frames only on interfaces with carrier, so a port that is UP but not RUNNING
+    # (e.g. an unconnected secondary mgmt port such as eth1 on some testbeds)
+    # produces an empty outbound capture and a misleading "MAC not found" failure.
+    _ifconfig_running_re = re.compile(r'<[^>]*\bRUNNING\b[^>]*>')
+
+    @staticmethod
+    def is_mgmt_port_carrier_up(engine, interface):
+        """Return True if `interface` reports operational carrier (ifconfig RUNNING flag)."""
+        ifconfig_output = LLDPTool._sudo_run(engine, f"ifconfig {interface}")
+        return bool(LLDPTool._ifconfig_running_re.search(ifconfig_output))
+
     @staticmethod
     def finish_dump_lldp_packets(engine: LinuxSshEngine):
         with allure.step("Kill tcpdump instances"):
@@ -108,12 +122,8 @@ class LLDPTool:
     _bash_job_notification_re = re.compile(r'^\s*\[\d+\][+-]?\s+(Done|Terminated|Exit\s+\d+|Killed)\b.*$')
 
     @staticmethod
-    def get_lldp_frames(engine: LinuxSshEngine, interface="eth0", interval=30):
-        LLDPTool.start_dump_lldp_packets(engine, interface)
-        wait_sec = interval + 1
-        logging.info("Waiting %s seconds to capture LLDP frames on %s", wait_sec, interface)
-        time.sleep(wait_sec)
-        LLDPTool.finish_dump_lldp_packets(engine)
+    def _read_lldp_dump(engine):
+        """Read and clean the captured tcpdump output written by start_dump_lldp_packets."""
         with allure.step("Get lldp frames output"):
             # Use EngineAdapterTool so serial-engine outputs (tuple returns,
             # echoed command, shell prompt lines, embedded \r) are normalized
@@ -125,6 +135,38 @@ class LLDPTool:
                 if not LLDPTool._bash_job_notification_re.match(line)
             )
             return filtered.strip()
+
+    @staticmethod
+    def get_lldp_frames(engine: LinuxSshEngine, interface="eth0", interval=30, max_attempts=1):
+        """
+        Capture outbound LLDP frames on `interface` for `interval`+1 seconds and
+        return the cleaned tcpdump output.
+
+        lldpd transmits on a per-tx-interval cadence, so a single capture window can
+        race the transmitter and come back empty even when LLDP is healthy. When
+        `max_attempts` > 1 the capture is retried - only while the output is empty -
+        up to `max_attempts` times.
+
+        `max_attempts` defaults to 1 to preserve single-shot behavior for callers
+        that assert on an *empty* capture (negative tests) or that pass a large
+        tx-interval where re-capturing would be prohibitively slow.
+        """
+        output = ""
+        for attempt in range(1, max_attempts + 1):
+            with allure.step(f"Capture LLDP frames on {interface} (attempt {attempt}/{max_attempts})"):
+                LLDPTool.start_dump_lldp_packets(engine, interface)
+                wait_sec = interval + 1
+                logging.info("Waiting %s seconds to capture LLDP frames on %s (attempt %s/%s)",
+                             wait_sec, interface, attempt, max_attempts)
+                time.sleep(wait_sec)
+                LLDPTool.finish_dump_lldp_packets(engine)
+                output = LLDPTool._read_lldp_dump(engine)
+            if output:
+                return output
+            if attempt < max_attempts:
+                logging.warning("LLDP capture on %s was empty on attempt %s/%s; retrying",
+                                interface, attempt, max_attempts)
+        return output
 
     @staticmethod
     def parse_lldp_dump(lldp_dump):

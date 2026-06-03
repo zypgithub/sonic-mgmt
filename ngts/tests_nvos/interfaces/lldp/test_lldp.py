@@ -408,6 +408,19 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
         for interface_name in devices.dut.get_mgmt_ports():
             mgmt_interface = Port(name=interface_name)
             with allure.independent_step(f"Testing {interface_name}"):
+                # A port returned by get_mgmt_ports() is declared by the platform's
+                # device model as a working mgmt port, so it is expected to carry LLDP.
+                # lldpd transmits LLDP frames only on interfaces with operational
+                # carrier (ifconfig RUNNING); a declared mgmt port with no carrier is a
+                # real defect, not something to silently skip. If a port is
+                # intentionally disconnected on a platform, remove it from that
+                # platform's mgmt_ports list (see Devices/*.py) instead of tolerating
+                # it here.
+                assert LLDPTool.is_mgmt_port_carrier_up(serial_engine, interface_name), (
+                    f"{interface_name} is declared as a mgmt port but has no operational "
+                    f"carrier (ifconfig RUNNING); lldpd will not transmit LLDP on it. If "
+                    f"this port is intentionally disconnected on this platform, remove it from "
+                    f"the platform's mgmt_ports list instead of leaving it untested.")
                 try:
                     with allure.step("Get ip addresses"):
                         # Get IPv4 addresses
@@ -428,7 +441,11 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
 
                     with allure.step("Verify lldp frames do not contain management IP addresses and do contain interface MAC"):
                         LLDPTool.verify_mgmt_ports_are_up(engine=serial_engine, device=devices.dut)
-                        output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name)
+                        # Retry while the capture is empty: lldpd transmits on a
+                        # tx-interval cadence, so a single window can race the
+                        # transmitter and come back empty even when LLDP is healthy.
+                        output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name,
+                                                          max_attempts=3)
                         interface_link = OutputParsingTool.parse_json_str_to_dictionary(mgmt_interface.interface.link.show(dut_engine=serial_engine)).get_returned_value()
                         for ip_address in ip_addresses:
                             assert ip_address not in output, f"The {ip_address} is found in output"
