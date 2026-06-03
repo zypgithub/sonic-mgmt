@@ -1425,6 +1425,12 @@ mvrf/test_mgmtvrf.py::TestReboot::test_warmboot:
     conditions:
     - "https://redmine.mellanox.com/issues/5008193 and 'sn6600_ld' in platform"
 
+pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy:
+  xfail:
+    reason: "Test fails on SN2700/SN2700-A1 intermittently: https://redmine.mellanox.com/issues/5024713"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5024713 and 'sn2700' in platform"
+
 pfcwd/test_pfcwd_warm_reboot.py:
   skip:
     reason: "Warm-reboot not supported on sn6600_ld - RM https://redmine.mellanox.com/issues/5008193"
