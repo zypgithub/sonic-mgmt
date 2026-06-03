@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import pytest
 import requests
 from netmiko import ConnectHandler, ReadTimeout
 from paramiko.ssh_exception import AuthenticationException
@@ -125,6 +126,12 @@ class DutUtilsTool:
         Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
         The RebootParams object can be used to control some parameters. If omitted, default values are used.
         """
+        # A reboot tears down the remote sshd session; the session-scoped ansible
+        # ControlMaster stays alive (ControlPersist) and would block the next ansible
+        # task for minutes. Flag it so test teardown drops the stale master (see
+        # reset_ansible_connection_after_reboot). Reset/install paths that bypass this
+        # function are covered by the same flag set in the readiness waits below.
+        pytest.dut_rebooted = True
         if not isinstance(reboot_params, RebootParams):
             reboot_params = RebootParams()
         with allure.step("Waiting for switch shutdown after reload command"):
@@ -183,6 +190,10 @@ class DutUtilsTool:
 
     @staticmethod
     def wait_for_nvos_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10, /, *, throw_exception_on_unhealthy: bool = True):
+        # Readiness choke point reached after any reboot/reset/install, including paths
+        # that bypass wait_on_system_reboot (e.g. factory reset). Flag it so test teardown
+        # drops the stale ansible ControlMaster (see reset_ansible_connection_after_reboot).
+        pytest.dut_rebooted = True
         with allure.step('wait until the system is ready - check SYSTEM_STATE table'):
             with allure.step('wait for the system table to exist'):
                 wait_for_system_table_to_exist(engine)
@@ -222,6 +233,10 @@ class DutUtilsTool:
 
     @staticmethod
     def wait_for_cumulus_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10):
+        # Readiness choke point after reboot/reset/install on Cumulus/Eth DUTs (counterpart
+        # of wait_for_nvos_to_become_functional). Flag it so teardown refreshes the ansible
+        # connection (see reset_ansible_connection_after_reboot).
+        pytest.dut_rebooted = True
         with allure.step('wait until the CLI is up'):
             wait_until_cli_is_up(engine)
 

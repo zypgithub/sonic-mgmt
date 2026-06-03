@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger(__name__)
 REBOOT_OUTPUT_FIELDS = {"gentime", "reason", "reason-type", "user"}
@@ -161,6 +162,7 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
 
 @pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.system
+@pytest.mark.timeout(10 * MINUTE)
 def test_reboot_via_remote_reboot(engines, devices, topology_obj):
     """
     Test flow:
