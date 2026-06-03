@@ -7,6 +7,7 @@ import os
 import time
 import operator
 import re
+from retry.api import retry_call
 
 
 from ngts.helpers.new_hw_thermal_control_helper import TC_CONST, MockSensors, SENSOR_DATA, \
@@ -116,6 +117,11 @@ class TestNewTc:
             pytest.skip(f"Skip mock temperature for sensor {tested_sensors} as it is not supported in IM enabled setup")
 
         def mock_temp_and_check(file_path, temperature, initial_pwm):
+            def assert_temperature_file_exists():
+                assert mock_sensor.cli_object.general.stat(file_path)['exists'], \
+                    f"Temperature file {file_path} does not exist"
+
+            retry_call(assert_temperature_file_exists, exceptions=AssertionError, tries=3, delay=1)
             mock_sensor.mock_temperature(file_path, temperature)
             verify_pwd_and_rpm_are_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature,
                                                   initial_pwm=initial_pwm)
