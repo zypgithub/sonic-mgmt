@@ -1189,6 +1189,12 @@ sflow/test_sflow.py:
   skip:
     reason: "Sflow is not supported on 202411 and greater releases"
 
+layer1/test_port_error.py:
+  xfail:
+    reason: "Testcase xfailed due to RM issue #5066052, not supported on wolverine modules; slm-18 port64 with wolverine"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5066052 and 'sn6600_ld' in platform"
+
 qos/test_qos_sai_dual_tor.py:
   skip:
     reason: "test_qos_sai_dual_tor tests only support on Mellanox-SN4600C-C64 and Mellanox-SN2700-D48C8"
