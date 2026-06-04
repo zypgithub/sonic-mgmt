@@ -169,6 +169,7 @@ def _test_remarkable_logs(engine, testing, log_count, log_priority, threshold_fi
         engine.run_cmd("ls /var/log/remarkable_logs_1")
         system.log.rotate_logs()
         system.log.rotate_logs()
+        time.sleep(8)   # Pause to allow for log rotation completion; two consecutive rotations may delay rsyslog.service restart.
         engine.run_cmd("ls /var/log/remarkable_logs_1")
 
     with allure.step(f"configure rate, clean-time, logs-number and time-window for {testing}"):
