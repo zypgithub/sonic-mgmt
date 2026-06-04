@@ -3,17 +3,56 @@ import math
 import os
 import time
 from collections import namedtuple
-from typing import List, Dict
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
-    ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts, TcpDumpConsts
-from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
-                                                DocumentsConsts, RebootConsts, SystemConsts, SyslogConsts,
-                                                OperationTimeConsts)
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+
+from ngts.nvos_constants.constants_nvos import (
+    ActionConsts,
+    CableCartridgeConsts,
+    ChassisLocationConsts,
+    DatabaseConst,
+    DocumentsConsts,
+    FansConsts,
+    HealthConsts,
+    IbConsts,
+    MultiPlanarConsts,
+    NvosConst,
+    OperationTimeConsts,
+    PlatformConsts,
+    RebootConsts,
+    SSDConsts,
+    StatsConsts,
+    SyslogConsts,
+    SystemConsts,
+    TcpDumpConsts,
+)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
+from ngts.nvos_tools.Devices.SwitchCapabilities import NoPSUCapability, SwitchCapabilityHandler
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, InternalNvosConsts, PhyRecoveryConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.FilesTool import FilesTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.TrafficValidatorTool import TrafficErrorCounters
+from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_tools.system.Spdm import SPDMComponents
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tests_nvos.constants import (
+    FW_COMPONENT_ASIC,
+    FW_COMPONENT_BIOS,
+    FW_COMPONENT_BMC,
+    FW_COMPONENT_CPLD,
+    FW_COMPONENT_EROT,
+    FW_COMPONENT_FPGA,
+    FW_COMPONENT_SMA,
+    FW_COMPONENT_SSD,
+    MINUTE,
+)
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.tests_nvos.general.security.nmx_cert.constants import (
     ALTERNATE_CERTIFICATE,
@@ -23,26 +62,12 @@ from ngts.tests_nvos.general.security.nmx_cert.constants import (
     ENCRYPTION,
     Defaults,
 )
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, InternalNvosConsts, PhyRecoveryConsts
-from ngts.tests_nvos.system.gnmi.constants import GnmiConstants
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.infra.TrafficValidatorTool import TrafficErrorCounters
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.infra.ValidationTool import ExpectedString
-from ngts.nvos_tools.system.Spdm import SPDMComponents
-from ngts.nvos_tools.platform.Platform import Platform
-from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_COMPONENT_FPGA, FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA, FW_COMPONENT_SSD, FW_COMPONENT_ASIC
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.system.gnmi.constants import GnmiConstants
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
-from ngts.nvos_tools.infra.FilesTool import FilesTool
-from ngts.nvos_tools.Devices.SwitchCapabilities import SwitchCapabilityHandler, NoPSUCapability
 
 logger = logging.getLogger(__name__)
 
@@ -171,8 +196,7 @@ class IbSwitch(BaseSwitch):
         for key, value in output_dict.items():
             if value[IbInterfaceConsts.TYPE] == IbInterfaceConsts.IB_PORT_TYPE and expected_port_state not in \
                     value[IbInterfaceConsts.LINK][IbInterfaceConsts.DHCP_STATE].keys():
-                err_msg += "{} state is {}".format(key,
-                                                   value[IbInterfaceConsts.LINK][IbInterfaceConsts.DHCP_STATE].keys())
+                err_msg += f"{key} state is {value[IbInterfaceConsts.LINK][IbInterfaceConsts.DHCP_STATE].keys()}"
 
         return ResultObj(False, err_msg) if err_msg else ResultObj(True, "", "")
 
@@ -356,7 +380,7 @@ class IbSwitch(BaseSwitch):
         ))
         for deamon in NvosConst.DOCKER_PER_ASIC_LIST:
             for asic_num in range(0, self.asic_amount):
-                self.available_services.append('{deamon}@{asic_num}.service'.format(deamon=deamon, asic_num=asic_num))
+                self.available_services.append(f'{deamon}@{asic_num}.service')
 
     def _init_dependent_services(self):
         super()._init_dependent_services()
@@ -377,7 +401,7 @@ class IbSwitch(BaseSwitch):
         self.available_dockers.extend(('database', NvosConst.NV_GNMI_DOCKER, NvosConst.NV_UMF_DOCKER))  # TODO: Add lldp container check
         for deamon in NvosConst.DOCKER_PER_ASIC_LIST:
             for asic_num in range(0, self.asic_amount):
-                self.available_dockers.append("{deamon}{asic_num}".format(deamon=deamon, asic_num=asic_num))
+                self.available_dockers.append(f"{deamon}{asic_num}")
 
     def _init_constants(self):
         super()._init_constants()
@@ -595,8 +619,8 @@ class IbSwitch(BaseSwitch):
             "nv show fae system sto-debug"
         ]
 
-        self.memory_size: List[float] = [15.0]
-        self.supported_disk_list: List[SSDConsts.SSDType] = [
+        self.memory_size: list[float] = [15.0]
+        self.supported_disk_list: list[SSDConsts.SSDType] = [
             SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI,
             SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006
         ]
@@ -840,7 +864,7 @@ class GorillaSwitch(IbSwitch):
         self.transceiver_list = [f'sw{a + 1}' for a in range(32)]
         self.supports_tpm_testing = False
 
-    def get_mgmt_ports(self) -> List[str]:
+    def get_mgmt_ports(self) -> list[str]:
         return self.mgmt_ports
 
     def verify_sed_password(self, tpm_tool, sed_default_password=""):
@@ -890,7 +914,7 @@ class GorillaSwitchBF3(GorillaSwitch):
         self.core_count = 16
         self.asic_type = NvosConst.QTM2
 
-    def get_mgmt_ports(self) -> List[str]:
+    def get_mgmt_ports(self) -> list[str]:
         return self.mgmt_ports
 
     def _init_temperature(self):
@@ -964,10 +988,10 @@ class BlackMambaSwitch(IbSwitch):
             'ISSU CPU max downtime': 135,
         })
         self.memory_speed = 2667  # in MT/s
-        self.memory_size: List[float] = [30.73]
-        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
+        self.memory_size: list[float] = [30.73]
+        self.supported_disk_list: list[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
 
-    def get_mgmt_ports(self) -> List[str]:
+    def get_mgmt_ports(self) -> list[str]:
         return self.mgmt_ports
 
     def _init_fan_list(self):
@@ -1148,7 +1172,7 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
             'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1'
         ]
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_dgx_versions.json"
-        self.memory_size: List[float] = [31.17, 30.73]
+        self.memory_size: list[float] = [31.17, 30.73]
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
@@ -1302,7 +1326,7 @@ class CrocodileSwitch(IbSwitch):
                                                "nv show ib device ASIC4"])
         self.memory_speed = 2667  # in MT/s
 
-    def get_mgmt_ports(self) -> List[str]:
+    def get_mgmt_ports(self) -> list[str]:
         return self.mgmt_ports
 
     def _init_fan_list(self):
@@ -1518,10 +1542,10 @@ class NvLinkSwitch(IbSwitch):
             PhyRecoveryConsts.LAST_SERDES_EQ_RECOVERY_ATTEMPTS: 0
         }
 
-        self.memory_size: List[float] = [15.04]
-        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
+        self.memory_size: list[float] = [15.04]
+        self.supported_disk_list: list[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
 
-    def get_mgmt_ports(self) -> List[str]:
+    def get_mgmt_ports(self) -> list[str]:
         return self.mgmt_ports
 
 
@@ -1729,12 +1753,12 @@ class JulietSwitch(NvLinkSwitch):
         self.timeout_system_is_ready = 20 * MINUTE
         self.timeout_reboot_to_grub_menu = 5 * MINUTE
 
-    def get_spdm_components(self, setup_name: str) -> List[str]:
+    def get_spdm_components(self, setup_name: str) -> list[str]:
         """
         Get available SPDM components for this device type (setup-specific for Juliet).
         SPDM components include: ERoTs (BMC, CPU, FPGA, NVSwitch), MCU, etc.
         """
-        available_erots_per_juliet_number: Dict[str, List[str]] = {
+        available_erots_per_juliet_number: dict[str, list[str]] = {
             '68': [SPDMComponents.BMC],
             '121': SPDMComponents.ALL_SUPPORTED_COMPONENTS,
             '126': [SPDMComponents.BMC],
@@ -2116,7 +2140,7 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
             PlatformConsts.SYSTEM_TYPE: "N5100_LD",
             "asic-model": self.asic_type,
         })
-        self.memory_size: List[float] = [15.48]
+        self.memory_size: list[float] = [15.48]
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "FAN5/1", "FAN5/2", "FAN6/1", "FAN6/2"]
@@ -2422,7 +2446,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
     def __init__(self, asic_amount=4):
         super().__init__(asic_amount=asic_amount)
 
-    def get_spdm_components(self, setup_name: str) -> List[str]:
+    def get_spdm_components(self, setup_name: str) -> list[str]:
         """
         Get available SPDM components for Rosalind devices.
         Rosalind: BMC, CPU, MCUs (SMA), and 4 NVSwitches.
@@ -2836,9 +2860,15 @@ class RosalindChipless(RosalindSurrogateSwitch):
 
 
 class RosalindSwitch(RosalindSurrogateSwitch):
-
     def __init__(self, asic_amount=4):
         super().__init__(asic_amount=asic_amount)
+
+    def update_show_platform_output(self, platform_output):
+        part_number = (platform_output.get(PlatformConsts.FW_PART_NUMBER) or "").strip()
+        self.show_platform_output[PlatformConsts.ASIC_REVISION] = PlatformConsts.ROSALIND_ASIC_REVISION_BY_PART_NUMBER.get(
+            part_number,
+            PlatformConsts.ROSALIND_ASIC_REVISION_4,
+        )
 
     def _init_constants(self):
         super()._init_constants()
@@ -3021,8 +3051,8 @@ class RosalindSwitch(RosalindSurrogateSwitch):
                 PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET3: '0',
             }
         }
-        self.memory_size: List[float] = [30.77, 31.21]
-        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VTPM24GLXI160_BM11, SSDConsts.VTPM24GLXI160_BM12]
+        self.memory_size: list[float] = [30.77, 31.21]
+        self.supported_disk_list: list[SSDConsts.SSDType] = [SSDConsts.VTPM24GLXI160_BM11, SSDConsts.VTPM24GLXI160_BM12]
         self.access_port_speed = '328G'
 
         self.techsupport_etc_empty_files_to_ignore += ['gpu_telemetry_enable']
@@ -3058,9 +3088,9 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         After loading SM config on Rosalind, restart nv-bridge to recover connections.
         This should be called after SM config is installed.
         """
-        from ngts.tools.test_utils import allure_utils as allure
-        from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
         from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+        from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+        from ngts.tools.test_utils import allure_utils as allure
 
         # Only apply workaround if bug is active
         if is_bug_active(4910763):
@@ -3092,7 +3122,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
             "hardware-version": None,
             "model": ExpectedString(
                 regex="699-23809-0600-EB1|920-9K42W-00L6-GS0|920-9K42W-00L6-EB2|920-9K24W-00L6-ES1|"
-                      "920-9K42W-00L6-TS1|920-9K42W-00L6-TS2|920-9K42W-1313-TS3"),
+                      "920-9K42W-00L6-TS1|920-9K42W-00L6-TS2|920-9K42W-1313-TS3|920-9K42W-1313-TS4|920-9K42W-1313-TS5"),
         })  # TBD -- This is for OPN, need to replace with the real one once arrive.
 
 
@@ -3100,6 +3130,9 @@ class RosalindSwitch(RosalindSurrogateSwitch):
 
 
 class RosalindSimx(RosalindSwitch):
+
+    def update_show_platform_output(self, platform_output):
+        pass
 
     def __init__(self):
         super().__init__(asic_amount=4)
@@ -3113,6 +3146,7 @@ class RosalindSimx(RosalindSwitch):
         self.show_platform_output.update({
             "product-name": "N6100_LD",
             "asic-model": self.asic_type,
+            PlatformConsts.ASIC_REVISION: PlatformConsts.FW_ASIC_REVISION_VALUE,
         })
 
     def _init_temperature(self):
@@ -3225,6 +3259,9 @@ class RosalindRTF(RosalindSwitch):
 
 class PortiaSimx(RosalindSwitch):
 
+    def update_show_platform_output(self, platform_output):
+        pass
+
     def __init__(self):
         super().__init__(asic_amount=4)
         self.require_mloop_setup = True
@@ -3237,6 +3274,7 @@ class PortiaSimx(RosalindSwitch):
         self.show_platform_output.update({
             PlatformConsts.SYSTEM_TYPE: "N7170_LD",
             "asic-model": self.asic_type,
+            PlatformConsts.ASIC_REVISION: PlatformConsts.FW_ASIC_REVISION_VALUE,
         })
 
 

@@ -1,13 +1,11 @@
-import os
 import json
+import os
+import re
 from enum import Enum
 from pathlib import Path
-from tokenize import Double
-from typing import List, Literal, TypedDict
-import re
+from typing import TypedDict
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 
 class DatabaseConst:
@@ -1072,6 +1070,7 @@ class PlatformConsts:
     PLATFORM_HW = "hardware"
     PLATFORM_SW = "software"
     FW_ASIC = "ASIC"
+    FW_ASIC_REVISION_VALUE = "0x00A0"
     FW_BIOS = "BIOS"
     FW_CPLD = "CPLD"
     FW_SSD = "SSD"
@@ -1222,6 +1221,17 @@ class PlatformConsts:
     DISK_SIZE = 'disk-size'
     MEMORY = 'memory'
     DPC = "dpc"
+    ROSALIND_ASIC_REVISION_4 = "0x00A4"
+    ROSALIND_ASIC_REVISION_BY_PART_NUMBER = {
+        "699-23809-0600-EB1": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-GS0": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-EB2": FW_ASIC_REVISION_VALUE,
+        "920-9K24W-00L6-ES1": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-TS1": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-TS2": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-1313-TS3": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-1313-TS4": FW_ASIC_REVISION_VALUE,
+    }
 
 
 class ChassisLocationConsts:
@@ -1469,7 +1479,7 @@ class LowPowerConsts:
     PEC_DURATION: str = 'peq-duration'
     PEC_RECAL_PERIOD: str = 'peq-recal-period'
     PEC_RECAL_FORCE_PERIOD: str = 'peq-recal-force-period'
-    FAE_ALL_PARAMS: List[str] = [PEC_DURATION, PEC_RECAL_PERIOD, PEC_RECAL_FORCE_PERIOD]
+    FAE_ALL_PARAMS: list[str] = [PEC_DURATION, PEC_RECAL_PERIOD, PEC_RECAL_FORCE_PERIOD]
 
     class PecRecalPeriodForce(Enum):
         USE_AGREED_FUNCTION = 'use-agreed-function'
@@ -1487,7 +1497,7 @@ class LowPowerConsts:
 
     L1_TOTAL_ENTRIES: str = 'l1-total-entries'
     AVERAGE_LOCAL_FULL_BW_EXIT: str = 'average-local-full-bw-exit'
-    ALL_COUNTERS: List[str] = [L1_TOTAL_ENTRIES, AVERAGE_LOCAL_FULL_BW_EXIT]
+    ALL_COUNTERS: list[str] = [L1_TOTAL_ENTRIES, AVERAGE_LOCAL_FULL_BW_EXIT]
 
 
 class LinkTrainingConsts:
@@ -2094,8 +2104,8 @@ class HealthConsts:
     ISSUE = "issue"
     ISSUES = "issues"
     ASIC_HEALTH_ISSUE = "ASIC-HEALTH"
-    SUMMARY_REGEX_OK = "INFO {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX[0], OK)
-    SUMMARY_REGEX_NOT_OK = "ERROR {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX[0], NOT_OK)
+    SUMMARY_REGEX_OK = f"INFO {NvosConst.DATE_TIME_REGEX[0]} : Summary: {OK}"
+    SUMMARY_REGEX_NOT_OK = f"ERROR {NvosConst.DATE_TIME_REGEX[0]} : Summary: {NOT_OK}"
     ADD_STATUS_TO_SUMMARY_REGEX = NvosConst.DATE_TIME_REGEX[0] + " : Summary:.*"
     HEALTH_ISSUE_REGEX = "ERROR {time_regex} : {component}: (?:is )?{issue}"
     HEALTH_FIX_REGEX = "INFO {time_regex} : Cleared: {component}: (?:is )?{issue}"
@@ -2705,7 +2715,7 @@ class SecureConfig:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(SecureConfig, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._load_config()
         return cls._instance
 
@@ -2716,7 +2726,7 @@ class SecureConfig:
         # This is a placeholder - implement your preferred secure storage method
         config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
         if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
+            with open(config_path) as f:
                 cls._config = json.load(f)
 
     @classmethod
