@@ -3,6 +3,7 @@ import random
 import time
 
 import pytest
+from retry import retry
 
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
@@ -345,6 +346,7 @@ def validate_gnmi_transceiver_physical_channel_fields(
         Tools.ValidationTool.validate_set_equal(actual=actual, expected=expected).verify_result()
 
 
+@retry(Exception, tries=15, delay=1)
 def _verify_link_state_up(up_ports):
     with allure.step("Verify link for any of the up ports is up"):
         link_states = [

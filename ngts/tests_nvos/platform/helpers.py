@@ -11,6 +11,8 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, DelayedRecovery, InterfaceConsts
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.Fae import Fae
+import time
 
 logger = logging.getLogger()
 
@@ -36,6 +38,7 @@ def _pre_port_config(ports):
                     DelayedRecovery.DELAYED_RECOVERY_RETRY_TH, 200, apply=True, ask_for_confirmation=True
                 ).verify_result()
                 # fae.interface.link.phy_recovery.set("serdes-eq-mode", "enabled", apply=True), we need to add more configurations here - NVL and IB
+            time.sleep(5)
             with allure.step(f"run show fae interface link for {port}"):
                 show_ports_output.append(OutputParsingTool.parse_json_str_to_dictionary(fae.interface.link.show()).get_returned_value())
         return show_ports_output
