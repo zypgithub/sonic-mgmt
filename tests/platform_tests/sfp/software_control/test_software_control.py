@@ -110,6 +110,18 @@ class TestSoftwareControlFunctional:
         """
         @summary: Check that BER per Software Control module is not bigger than cable BER threshold
         """
+        for port in list(self.sc_port_list):
+            # Temporary workaround for RM 4798961; remove once the cable BER issue is fixed.
+            redis_output = helpers.transform_redis_transceiver_data(
+                self.duthost, "TRANSCEIVER_INFO", self.enum_frontend_asic_index, [port]
+            )
+            model = redis_output.get(port, {}).get(helpers.SC_REDIS_VENDOR_PM_KEY, "").strip()
+            if model in {"FCBN950QE2C06-MS", "FCBN950QE2C08-MS"}:
+                from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+                if is_redmine_issue_active([4798961])[0]:
+                    self.sc_port_list.remove(port)
+                    logger.warning(f"Exclude {port} from BER check due to active RM 4798961")
+
         mlxlink_ber_all_interfaces = helpers.get_mlxlink_ber_all_interfaces(self.duthost, self.sc_port_list)
         for port in self.sc_port_list:
             mlxlink_output = mlxlink_ber_all_interfaces[port]
