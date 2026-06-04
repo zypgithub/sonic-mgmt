@@ -1,5 +1,6 @@
 import copy
 import os
+import re
 from datetime import datetime
 from enum import StrEnum
 
@@ -1958,3 +1959,31 @@ class SimxCommunityConsts:
     FILES_TO_TEMPLATE = {'sonic_nvidia_devices.j2', 'sonic_nvidia_links.j2', 'fanout_port_config.ini', 'lab.j2', 'testbed.j2', 'inventory.j2'}
     # HwSKU -> simx_community platform subdir when different from filtered_platform (e.g. V448P16S2 uses SN6600_LD)
     HWSKU_PLATFORM_DIR_OVERRIDE = {"Mellanox-SN6600-V448P16S2": "SN6600_LD"}
+
+
+class TxSquelchConsts:
+    SAI_TX_SQUELCH_MODE_KV = "SAI_KEY_TX_SQUELCH_MODE"
+
+    SUPPORTED_HWSKUS = frozenset({
+        "Mellanox-SN5640-C448O16",
+        "Mellanox-SN5640-C512S2",
+        "Mellanox-SN6600_LD-P128C2",
+        "Mellanox-SN6600_LD-P64O128C2"
+    })
+
+    # KV mode values: 0=AUTO, 1=ENABLE, 2=DISABLE.
+    TX_SQUELCH_MODE_AUTO = "0"
+    TX_SQUELCH_MODE_ENABLE = "1"
+    TX_SQUELCH_MODE_DISABLE = "2"
+    ALL_TX_SQUELCH_MODES = [
+        TX_SQUELCH_MODE_ENABLE,
+        TX_SQUELCH_MODE_DISABLE,
+        TX_SQUELCH_MODE_AUTO
+    ]
+
+    # Expected SDK string per KV mode.
+    KV_TO_SQUELCH_STR = {
+        TX_SQUELCH_MODE_ENABLE: "enabled",
+        TX_SQUELCH_MODE_DISABLE: "disabled",
+        TX_SQUELCH_MODE_AUTO: "enabled"
+    }
