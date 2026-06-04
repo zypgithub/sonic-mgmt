@@ -28,6 +28,7 @@ logger = logging.getLogger()
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.nvos_ci
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 def test_show_platform_environment(engines, devices, random_api, output_format):
     """
@@ -57,6 +58,7 @@ def test_show_platform_environment(engines, devices, random_api, output_format):
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 def test_show_platform_environment_fan(engines, devices, random_api, output_format, skip_for_fanless_setup):
     """
@@ -120,6 +122,7 @@ def _test_specific_fan(fan, output_format, expected, output, platform):
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 def test_show_platform_environment_led(engines, devices, random_api):
     """
@@ -212,6 +215,7 @@ def test_set_platform_environment_led(engines, devices, random_api):
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 def test_show_platform_environment_psu(engines, devices, random_api):
     """
