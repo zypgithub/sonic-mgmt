@@ -620,21 +620,7 @@ dualtor_io/test_link_failure.py::test_active_link_down_downstream_active_soc[act
     conditions:
     - "https://redmine.mellanox.com/issues/4978928"
 
-dualtor_io.test_tor_failure.py::TestMultiBindingAcl::test_dest_ip_match_dropped.ipv4-ingress-uplink.*downlink-default-Vlan1000:
-  regex: true
-  xfail:
-    reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4978928"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4978928"
-
-dualtor_io.test_tor_failure.py::TestMultiBindingAcl::test_icmp_source_ip_match_dropped.ipv4-ingress-uplink.*downlink-default-Vlan1000:
-  regex: true
-  xfail:
-    reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4978928"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4978928"
-
-dualtor_io.test_tor_failure.py::TestMultiBindingAcl::test_l4_sport_match_dropped.ipv4-ingress-uplink.*downlink-default-Vlan1000:
+dualtor_io.test_tor_failure.py::TestMultiBindingAcl:
   regex: true
   xfail:
     reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4978928"
@@ -1220,6 +1206,12 @@ qos/test_lossless_bum_traffic_drop.py:
 vrf/:
   skip:
     reason: "VRF is not supported on 202411 and greater releases"
+
+decap/mellanox/test_ecn_mode.py:
+  xfail:
+    reason: "Xfail due to Redmine issue: https://redmine.mellanox.com/issues/5070515."
+    conditions:
+    - "https://redmine.mellanox.com/issues/5070515 and 'dualtor' in topo_name"
 
 decap/test_subnet_decap.py::test_vlan_subnet_decap:
   skip:
