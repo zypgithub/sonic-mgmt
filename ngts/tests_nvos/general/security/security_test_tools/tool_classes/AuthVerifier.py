@@ -1,7 +1,6 @@
 from __future__ import annotations
-
-import logging
 import os
+import logging
 import random
 import string
 from contextlib import contextmanager
@@ -15,7 +14,8 @@ from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder
+from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder, SshPassCmdBuilder
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
@@ -28,6 +28,7 @@ class AuthVerifier:
     def __init__(self, username, password, engines, topology_obj):
         self.api = ApiType.NVUE
         self._log = logger.getChild(self.__class__.__name__)
+        self.topology_obj = topology_obj
         self._log.info(f"Create proxy ssh engine for user: {username}")
         self.engine = LinuxSshEngine(engines.dut.ip, username, password)
 
@@ -152,6 +153,7 @@ class OpenApiAuthVerifier(AuthVerifier):
         # Don't call super().__init__ to avoid creating SSH connection that generates accounting logs
         self._log = logger.getChild(self.__class__.__name__)
         self.api = ApiType.OPENAPI
+        self.topology_obj = topology_obj
         self.username = username
         self.password = password
         self.engines = engines
@@ -284,15 +286,64 @@ class ScpAuthVerifier(AuthVerifier):
 
 class PKAAuthVerifier(AuthVerifier):
     def __init__(self, username, private_key_path, hostname, password=None, engines=None, topology_obj=None):
-        super().__init__(username, password, engines, topology_obj)
+        # Avoid AuthVerifier.__init__ creating an IPv4 LinuxSshEngine; PKA uses PexpectTool only.
+        self._log = logger.getChild(self.__class__.__name__)
+        self.api = ApiType.NVUE
+        self.topology_obj = topology_obj
+        self.engines = engines
+        self.engine = None
         self.username = username
         self.private_key_path = private_key_path
         self.hostname = hostname
+        self._dut_key_path = None
+
+    def _ensure_key_on_dut(self) -> str:
+        """Copy the private key to the DUT so PKA ssh can run from the DUT (for IPv6 targets)."""
+        if self._dut_key_path:
+            return self._dut_key_path
+        dut = self.engines.dut
+        remote_name = f'pka_{os.path.basename(self.private_key_path)}'
+        remote_path = f'/tmp/{remote_name}'
+        dut.copy_file(
+            source_file=self.private_key_path, file_system='/tmp',
+            dest_file=remote_name, direction='put',
+        )
+        dut.run_cmd(f'chmod 600 {remote_path}')
+        self._dut_key_path = remote_path
+        return remote_path
 
     def _spawn_pka_engine(self) -> None:
-        ssh_pka_connection_cmd = SshCmdBuilder(self.username, self.hostname).set_ssn().use_auth_key(self.private_key_path).build()
+        if IpTool.is_address_ipv6(self.hostname) and self.engines is not None:
+            # sonic-mgmt has no IPv6 route and DUT forbids TCP forwarding, so run the PKA
+            # ssh from the DUT against its own IPv6 mgmt address (reached over IPv4).
+            dut = self.engines.dut
+            remote_key = self._ensure_key_on_dut()
+            inner_cmd = (
+                SshCmdBuilder(self.username, self.hostname)
+                .set_ssn()
+                .ConnectTimeout(30)
+                .use_auth_key(remote_key)
+                .ForceTTY()
+                .build()
+            )
+            ssh_cmd = (
+                SshPassCmdBuilder(
+                    dut.username, dut.password, dut.ip,
+                    getattr(dut, 'ssh_port', 22), cmd_to_execute=inner_cmd,
+                )
+                .set_ssn()
+                .build()
+            )
+        else:
+            ssh_cmd = (
+                SshCmdBuilder(self.username, self.hostname)
+                .set_ssn()
+                .ConnectTimeout(30)
+                .use_auth_key(self.private_key_path)
+                .build()
+            )
         self.cleanup()
-        self.engine = PexpectTool(spawn_cmd=ssh_pka_connection_cmd)
+        self.engine = PexpectTool(spawn_cmd=ssh_cmd)
 
     def _authenticate(self, expect_success):
         with self._allure_step_expect_failure(f"SSH PKA authentication - {expect_success}", expect_success):
