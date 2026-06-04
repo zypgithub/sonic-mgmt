@@ -175,7 +175,7 @@ class SonicPortAliasMap():
                 inband_aliases.append(alias)
 
             add_port = False
-            if role in {"Ext"} or (role in ["Int", "Inb", "Rec"] and include_internal):
+            if role in {"Ext"} or (role in ["Int", "Inb", "Rec", "Dpc"] and include_internal):
                 add_port = True
                 aliases.append((alias, index))
                 portmap[name] = alias
