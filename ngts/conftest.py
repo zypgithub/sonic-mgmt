@@ -184,6 +184,9 @@ def pytest_addoption(parser):
     parser.addoption("--test_name", action="store", default=None,
                      help="a parameter for script check_and_store_sanitizer_dump.py, "
                           "will check for sanitizer failures and store dump under test name")
+    parser.addoption("--dpu_asan", action="store_true", default=False,
+                     help="a boolean parameter for script check_and_store_sanitizer_dump.py, "
+                          "indicates if DPU address sanitizer dumps should be checked")
     parser.addoption("--send_mail", action="store", default=False,
                      help="a boolean parameter for script check_and_store_sanitizer_dump.py, "
                           "will send mail with the sanitizer failures")

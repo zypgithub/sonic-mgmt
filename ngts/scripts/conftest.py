@@ -83,3 +83,13 @@ def dut_name(request):
     :return: dut name
     """
     return request.config.getoption('--dut_name')
+
+
+@pytest.fixture(scope='function')
+def dpu_asan(request):
+    """
+    Method for getting the dpu_asan boolean parameter for script check_and_store_sanitizer_dump.py.
+    :param request: pytest builtin
+    :return: True/False, True to check for DPU address sanitizer dumps.
+    """
+    return request.config.getoption('--dpu_asan')

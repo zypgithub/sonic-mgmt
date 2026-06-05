@@ -7,7 +7,6 @@ from devts.infra.tools.topology_tools.topology_setup_utils import get_all_setups
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
-from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.constants.constants import SonicConst
 from ngts.constants.performance_constants import PerfConsts

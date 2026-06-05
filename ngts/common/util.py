@@ -6,6 +6,7 @@ import socket
 import urllib
 import shlex
 from retry.api import retry
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 
 logger = logging.getLogger()
@@ -115,3 +116,19 @@ def download_file_to_dut(dut_engine, url, dest_file):
         raise Exception(f"Failed to download file to dut: {curl_result}")
 
     logger.info(f"Download file to dut: {url} succeeded")
+
+
+def get_dpu_engines(topology_obj):
+    dpu_engines = []
+    switch_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+    switch_engine = topology_obj.players['dut']['engine']
+    installed_dpu_indexes = get_specified_installed_dpu_indexes('dut', switch_name)
+    for index in installed_dpu_indexes:
+        dpu_ssh_port = 5021 + index
+        dpu_engine = LinuxSshEngine(ip=switch_engine.ip,
+                                    ssh_port=dpu_ssh_port,
+                                    username=switch_engine.username,
+                                    password=switch_engine.password)
+        dpu_engine.dut_name = switch_name + "-dpu-" + str(index)
+        dpu_engines.append(dpu_engine)
+    return dpu_engines

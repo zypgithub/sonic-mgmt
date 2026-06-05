@@ -3,9 +3,12 @@ import os
 import logging
 import pytest
 from ngts.constants.constants import PytestConst
-from ngts.helpers.sanitizer_helper import get_asan_apps, get_mail_address, disable_asan_apps,\
+from ngts.helpers.sanitizer_helper import get_asan_apps, get_mail_address, disable_asan_apps, \
     check_sanitizer_and_store_dump, aggregate_asan_and_send_mail
-
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import \
+    check_port_status_till_alive
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from ngts.common.util import get_dpu_engines
 
 logger = logging.getLogger()
 
@@ -34,20 +37,48 @@ def send_mail(request):
 
 
 @pytest.mark.disable_loganalyzer
-def test_sanitizer(topology_obj, cli_objects, dumps_folder, test_name, send_mail, setup_name):
-    dut_engine = topology_obj.players['dut']['engine']
-    asan_apps = get_asan_apps(topology_obj, cli_objects.dut)
+def test_sanitizer(topology_obj, cli_objects, dumps_folder, test_name, send_mail, setup_name, dpu_asan):
+    os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
+    switch_engine = topology_obj.players['dut']['engine']
+    if dpu_asan:
+        dut_engines = get_dpu_engines(topology_obj)
+    else:
+        dut_engines = [switch_engine]
+
+    asan_apps = [] if dpu_asan else get_asan_apps(topology_obj, cli_objects.dut)
     mail_address = get_mail_address()
-    if topology_obj.players['dut']['sanitizer'] or asan_apps:
-        os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
+    is_sanitizer = dut_engines[0].run_cmd("sonic-cfggen -y /etc/sonic/sonic_version.yml -v asan").strip() == "yes"
+
+    if dpu_asan:
+        if not is_sanitizer:
+            logger.info("Image doesn't include sanitizer - script is not checking for sanitizer dumps")
+            return
+    else:
+        if not is_sanitizer and not asan_apps:
+            logger.info("Image doesn't include sanitizer - script is not checking for sanitizer dumps")
+            return
+
+    if asan_apps:
         disable_asan_apps(cli_objects, asan_apps)
-        if topology_obj.players['dut']['sanitizer']:
-            with allure.step(f'Reboot DUT'):
-                dut_engine.reload([f'sudo reboot'])
-        with allure.step(f'Check sanitizer output after reboot/disable of asan apps'):
+
+    if is_sanitizer:
+        with allure.step('Reboot DUT'):
+            switch_engine.reload(['sudo reboot'])
+
+    if dpu_asan:
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(check_port_status_till_alive,
+                                True, dpu_engine.ip, dpu_engine.ssh_port,
+                                tries=30, delay=10): dpu_engine
+                for dpu_engine in dut_engines
+            }
+            for future in as_completed(futures):
+                future.result()
+
+    for dut_engine in dut_engines:
+        with allure.step('Check sanitizer output after reboot/disable of asan apps'):
             sanitizer_dump_path = check_sanitizer_and_store_dump(dut_engine, dumps_folder, test_name)
             if sanitizer_dump_path and send_mail:
                 with allure.step(f'Sending mail with the sanitizer failures to {mail_address}'):
                     aggregate_asan_and_send_mail(mail_address, sanitizer_dump_path, dumps_folder, setup_name)
-    else:
-        logger.info("Image doesn't include sanitizer - script is not checking for sanitizer dumps")
