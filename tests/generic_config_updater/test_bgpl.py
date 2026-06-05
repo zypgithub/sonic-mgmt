@@ -12,6 +12,7 @@ from tests.common.gu_utils import create_checkpoint, delete_checkpoint, rollback
 
 pytestmark = [
     pytest.mark.topology('t0', 't1', 'm0', 'mx', "m1", 't2', 'lrh', 'urh'),
+    pytest.mark.enable_monit_refresh,
 ]
 
 logger = logging.getLogger(__name__)
