@@ -1039,20 +1039,6 @@ class DeployBmcHelper:
             with allure.step('Wait for eMMC installation to finish'):
                 DeployBmcHelper._wait_emmc_write_done(serial_engine)
 
-            with allure.step('Reboot BMC into newly installed image'):
-                DeployBmcHelper._reboot_into_new_image(serial_engine)
-
-            # Workaround for the post-install console hang: the freshly
-            # installed image stalls right after 'hw-management-bmc-ready'
-            # and only completes its bring-up after an explicit power
-            # cycle. See _reboot_into_new_image() docstring.
-            # Tracked by Redmine #4992268 - drop this block once the bug is closed.
-            if is_redmine_issue_active([4992268])[0]:
-                with allure.step('Power-cycle BMC to recover from post-install hang'):
-                    context.primary_cli_obj.remote_reboot(
-                        context.topology_obj, dut_alias, wait_till_alive=False
-                    )
-
             # Workaround for BMC eth0 starting without a DHCP lease:
             # wait for the login prompt on serial, log in and run
             # 'dhclient' so SSH from sonic-mgmt becomes reachable.
@@ -1381,49 +1367,6 @@ class DeployBmcHelper:
             timeout=BmcDeployConstants.EMMC_WRITE_TIMEOUT,
             send_without_enter=True,
         )
-
-    @staticmethod
-    def _reboot_into_new_image(serial_engine):
-        """
-        After the install succeeds the installer drops to a busybox shell
-        instead of rebooting on its own. Wait for that shell prompt and
-        issue 'reboot -f' so the BMC restarts into the freshly installed
-        SONiC BMC image.
-
-        Workaround: due to a vendor-specific lazy-installation issue, the
-        first kernel boot stops responding right after the marker
-        'hw-management-bmc-ready' (serial becomes unresponsive and the
-        login prompt never appears) - hw-mgmt is working on a real fix,
-        tracked via the email '[bmc] Need execute additional power cycle
-        after install sonic-aspeed-arm64-emmc.img.gz'. So we wait for
-        that marker (or just give up after a generous timeout) and let
-        the caller issue an additional power cycle to recover.
-        """
-        serial_engine.run_cmd(
-            '',
-            expected_value=BmcDeployConstants.INSTALLER_SHELL_PROMPT,
-            timeout=BmcDeployConstants.INSTALLER_SHELL_TIMEOUT,
-            send_without_enter=True,
-        )
-        try:
-            serial_engine.run_cmd(
-                BmcDeployConstants.INSTALLER_REBOOT_CMD,
-                expected_value=BmcDeployConstants.BMC_POST_INSTALL_HANG_MARKER,
-                timeout=BmcDeployConstants.BMC_POST_INSTALL_HANG_TIMEOUT,
-            )
-            logger.info(
-                "Saw '%s' on serial after 'reboot -f'; the console is "
-                "expected to hang here until the workaround power cycle.",
-                BmcDeployConstants.BMC_POST_INSTALL_HANG_MARKER,
-            )
-        except Exception as e:
-            # Even if we never observed the marker we still want to power
-            # cycle - a stuck console looks the same either way.
-            logger.warning(
-                "Did not observe '%s' on serial after 'reboot -f': %s. "
-                "Will still issue the workaround power cycle.",
-                BmcDeployConstants.BMC_POST_INSTALL_HANG_MARKER, e,
-            )
 
     @staticmethod
     def _wait_bmc_login(serial_engine):

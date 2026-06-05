@@ -1468,10 +1468,7 @@ class BmcDeployConstants:
 
     # Marker parameter
     EMMC_WRITE_DONE_MARKER = "U-Boot environment updated"
-    INSTALLER_SHELL_PROMPT = "/tmp #"
-    INSTALLER_REBOOT_CMD = "reboot -f"
     BMC_LOGIN_PROMPT = "login:"
-    BMC_POST_INSTALL_HANG_MARKER = "hw-management-bmc-ready"
 
     # Post-install SSH credentials (verify login + chrony clock sync).
     BMC_SONIC_OS_USERNAME = os.getenv("SONIC_SWITCH_USER")
@@ -1499,9 +1496,7 @@ class BmcDeployConstants:
     TFTP_DOWNLOAD_TIMEOUT = 900        # time to download the FIT image via TFTP
     TFTP_DOWNLOAD_RETRY_LIMIT = 3      # retries when TFTP fails (e.g. ARP retry exceeded)
     EMMC_WRITE_TIMEOUT = 1800          # time for the eMMC write to finish
-    INSTALLER_SHELL_TIMEOUT = 120      # time to reach the busybox shell after install
     BMC_BOOT_TIMEOUT = 600             # time for the BMC to come up and present login prompt
-    BMC_POST_INSTALL_HANG_TIMEOUT = 600  # time to see hw-management-bmc-ready before triggering the workaround power cycle
     BMC_SERIAL_LOGIN_TIMEOUT = 60      # time for each step of the serial login dialogue (user / password / shell)
     BMC_DHCLIENT_TIMEOUT = 120         # time for 'dhclient' to obtain a DHCP lease via serial
     BMC_CHRONY_SETTLE_SECONDS = 5      # wait after starting chrony before forcing 'chronyc -a makestep'
