@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"/><title>__TITLE__</title>
+<style>
+  html, body { margin: 0; min-height: 0; box-sizing: border-box; }
+  body {
+    padding: 10px 52px 10px 12px;
+    font: 15px/1.5 ui-monospace, system-ui, sans-serif;
+  }
+  #cursor-copy-fab {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: rgba(246, 248, 250, 0.97);
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(31, 35, 40, 0.12);
+  }
+  #cursor-copy-btn {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 4px;
+    color: #57606a;
+  }
+  #cursor-copy-btn:hover { color: #0969da; }
+  #cursor-copy-status { font: 14px/1.2 system-ui, sans-serif; color: #1a7f37; max-width: 170px; }
+  #cursor-prompt-pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+  }
+</style></head>
+<body>
+  <div id="cursor-copy-fab">
+    <button type="button" id="cursor-copy-btn" title="Copy to clipboard" aria-label="Copy">📋</button>
+    <span id="cursor-copy-status"></span>
+  </div>
+  <pre id="cursor-prompt-pre"></pre>
+  <script>
+  (function() {
+    var KEY = __JS_CURSOR_KEY__;
+    var BUNDLE_KEY = __JS_BUNDLE_KEY__;
+    var LOAD_MSG = __JS_LOAD_MSG__;
+    var BASE = __JS_BASE__;
+    var DEMO_MODE = __JS_DEMO_MODE__;
+    var RESOLVE = __JS_RESOLVE_PATH__;
+    var TEST_NODEID = __JS_NODEID__;
+    var TEST_NAME = __JS_TEST_NAME__;
+    var pre = document.getElementById("cursor-prompt-pre");
+    function shrinkWrapCursorViewport() {
+      try {
+        if (window.__sonicMgmtShrinkWrap) window.__sonicMgmtShrinkWrap();
+        if (window.scheduleShrinkWrap) window.scheduleShrinkWrap();
+      } catch (eGrow) {}
+    }
+    window.__sonicMgmtPreferredHeight = function(contentH) {
+      contentH = contentH || 0;
+      var vh = window.innerHeight || document.documentElement.clientHeight || 640;
+      var floor = Math.min(Math.max(Math.floor(vh * 0.45), 220), 420);
+      var pre = document.getElementById("cursor-prompt-pre");
+      var preBottom = pre ? pre.getBoundingClientRect().bottom + window.pageYOffset + 12 : 0;
+      var target = Math.max(preBottom, floor);
+      if (contentH > 0) return Math.max(contentH, Math.min(target, preBottom || target));
+      return target;
+    };
+    var btn = document.getElementById("cursor-copy-btn");
+    var st = document.getElementById("cursor-copy-status");
+    function normalizeResolverBase(base) {
+      var b = String(base || "").trim().replace(/\/+$/, "");
+      if (!b) return "";
+      var pageProto = "";
+      try { pageProto = String(window.location.protocol || ""); } catch (e0) {}
+      if (pageProto === "https:" && b.indexOf("http://") === 0) {
+        var host = "";
+        try { host = new URL(b).hostname || ""; } catch (e1) {}
+        if (host !== "127.0.0.1" && host !== "localhost") {
+          b = "https://" + b.substring("http://".length);
+        }
+      }
+      return b;
+    }
+    var ROOT = normalizeResolverBase(BASE);
+    try { sessionStorage.removeItem(BUNDLE_KEY); } catch (eClrBundle) {}
+    function deriveModelInputPath(pathOut) {
+      var s = pathOut != null ? String(pathOut).trim().replace(/\\/g, "/") : "";
+      if (!s.endsWith("agent_output.json")) return "";
+      var ix = s.lastIndexOf("/");
+      if (ix < 0) return "";
+      return s.slice(0, ix) + "/agent_input/model_input.json";
+    }
+    function numberedPromptParamOverrideHelp() {
+      var rows = [
+        ["failed_test_log", "failed-run log path or excerpt for this test"],
+        ["passed_test_log", "passing-run log path or excerpt if available"],
+        ["syslog_dir", "syslog / dump log directory for this run"],
+        ["exception_message", "exception text and stack context"]
+      ];
+      var lines = [];
+      for (var ri = 0; ri < rows.length; ri++)
+        lines.push("  " + (ri + 1) + ". " + rows[ri][0] + " — " + rows[ri][1]);
+      return lines.join("\\n");
+    }
+    function buildCursorPromptPlain(j, pathOut, pathIn) {
+      j = j || {};
+      var rawName = j.test_name != null ? j.test_name : j.testName;
+      var fromJson = (rawName != null && String(rawName).trim()) ? String(rawName).trim() : "";
+      var nodeid = (TEST_NODEID && String(TEST_NODEID).trim()) ? String(TEST_NODEID).trim() : "";
+      var pyShort = (TEST_NAME && String(TEST_NAME).trim()) ? String(TEST_NAME).trim() : "";
+      if (!pyShort && nodeid) {
+        var segs = nodeid.split("::");
+        pyShort = segs.length > 1 ? segs[segs.length - 1] : nodeid;
+      }
+      var testLabel = fromJson || pyShort || "—";
+      var outP = pathOut != null && String(pathOut).trim() ? String(pathOut).trim() : "—";
+      var inP = pathIn != null && String(pathIn).trim() ? String(pathIn).trim() : "";
+      if (!inP) inP = deriveModelInputPath(outP);
+      if (!inP) inP = "—";
+      var numbered = numberedPromptParamOverrideHelp();
+      return (
+        "Please help analyze this SONiC management test failure (sonic-mgmt / pytest) for the test " +
+        testLabel +
+        ".\\n\\n" +
+        "The information for the failure can be found in this json file:\\n  " +
+        inP +
+        "\\n\\nUnder the key `prompt_param_overrides`, the main inputs are:\\n" +
+        numbered +
+        "\\n\\nIn addition, here is the output of my agent analysis " +
+        outP +
+        ":\\n"
+      );
+    }
+    function unwrapForPromptLite(root, depth) {
+      depth = depth || 0;
+      if (depth > 8 || !root || typeof root !== "object" || Array.isArray(root)) return {};
+      if (root.test_name != null && String(root.test_name).trim()) return root;
+      if (root.testName != null && String(root.testName).trim()) return root;
+      if (root.verdict != null && String(root.verdict).trim()) return root;
+      if (root.data != null && typeof root.data === "object" && !Array.isArray(root.data)) {
+        var inner = unwrapForPromptLite(root.data, depth + 1);
+        if (inner && (inner.test_name != null || inner.testName != null || inner.verdict != null))
+          return inner;
+      }
+      if (typeof root.data === "string") {
+        var t = root.data.trim();
+        if (t.charAt(0) === "{") {
+          try {
+            var p = JSON.parse(t);
+            return unwrapForPromptLite(p, depth + 1);
+          } catch (eS) {}
+        }
+      }
+      if (root.result != null && typeof root.result === "object" && !Array.isArray(root.result))
+        return unwrapForPromptLite(root.result, depth + 1);
+      return {};
+    }
+    function applyText(t) {
+      if (!pre) return;
+      pre.textContent = t != null && String(t) !== "" ? String(t) : LOAD_MSG;
+      window.__cursorPromptPlain = pre.textContent;
+      shrinkWrapCursorViewport();
+    }
+    function readResolverBundle() {
+      try {
+        var raw = sessionStorage.getItem(BUNDLE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (eR) {
+        return null;
+      }
+    }
+    function writeResolverBundle(data) {
+      try {
+        if (data && data.ok === true) sessionStorage.setItem(BUNDLE_KEY, JSON.stringify(data));
+      } catch (eW) {}
+    }
+    function applyDataToPrompt(data) {
+      var j = {};
+      if (data.text !== undefined && data.text !== null && String(data.text) !== "") {
+        try {
+          var root = JSON.parse(String(data.text));
+          if (typeof root === "string") {
+            var ts = root.trim();
+            if (ts.charAt(0) === "{" || ts.charAt(0) === "[") {
+              try { root = JSON.parse(ts); } catch (e1) {}
+            }
+          }
+          j = unwrapForPromptLite(root, 0);
+        } catch (e2) { j = {}; }
+      }
+      var t = buildCursorPromptPlain(j, data.path, data.path_agent_input);
+      try { sessionStorage.setItem(KEY, t); } catch (e3) {}
+      applyText(t);
+    }
+    function loadPromptFromResolver() {
+      if (st) st.textContent = "";
+      applyText(LOAD_MSG);
+      var u = "";
+      if (DEMO_MODE) u = "http://demo/allure/local";
+      try { if (!u && window.top && window.top !== window) u = String(window.top.location.href); } catch (eT) {}
+      if (!u) { try { u = document.referrer || ""; } catch (eR2) {} }
+      if (!u) {
+        applyText("Open this attachment from inside the Allure report so the resolver receives the Allure page URL.");
+        return;
+      }
+      if (!ROOT) {
+        applyText("Resolver base URL is not configured.");
+        return;
+      }
+      var rq = "allure_url=" + encodeURIComponent(u);
+      fetch(ROOT + RESOLVE + "?" + rq, { credentials: "omit" })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data || data.ok === false) {
+            applyText("Resolver returned no analysis for this Allure URL yet (or error).");
+            return;
+          }
+          writeResolverBundle(data);
+          applyDataToPrompt(data);
+          shrinkWrapCursorViewport();
+        })
+        .catch(function(e4) {
+          applyText(
+            "Could not reach the resolver: " +
+              e4 +
+              " (CORS, TLS, or firewall). Check resolver host reachability."
+          );
+        });
+    }
+    function legacyCopy() {
+      if (!pre) return;
+      pre.focus();
+      var r = document.createRange();
+      r.selectNodeContents(pre);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+      try { if (document.execCommand("copy")) { if (st) st.textContent = "Copied"; return; } } catch (e1) {}
+      if (st) st.textContent = "Select text, Ctrl+C";
+    }
+    if (btn) {
+      btn.addEventListener("click", function() {
+        if (st) st.textContent = "";
+        var plain = window.__cursorPromptPlain || "";
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(plain).then(
+            function() { if (st) st.textContent = "Copied"; },
+            legacyCopy
+          );
+        } else legacyCopy();
+      });
+    }
+    loadPromptFromResolver();
+  })();
+  </script>
+</body>
+</html>

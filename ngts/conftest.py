@@ -146,6 +146,7 @@ pytest_plugins = (
     'ngts.tools.ports_modifier',
     'tests.common.plugins.random_seed',
     'tests.common.plugins.cli_coverage',
+    'tests.common.plugins.allure_wrapper.ai_rca.per_test_analysis_attachment',
 )
 
 
