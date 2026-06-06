@@ -984,11 +984,11 @@ platform_tests/cli/test_show_platform.py::test_show_platform_pcieinfo:
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4490249 and 'sn4280' in platform"
+    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5071127"
   skip:
     reason: "Test is not meaningful to run on simx platform since  SimX just inherit the pcie info from the host"
     conditions:
     - "'simx' in platform"
-    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5071127"
 
 platform_tests/test_cpu_memory_usage.py:
   skip:
