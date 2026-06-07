@@ -750,6 +750,15 @@ def attach_baseline_to_failed_results(
     if not baseline:
         return 0
 
+    mappings_doc = load_mappings()
+    # Index open baseline bugs by redmine_id for fast status lookup when
+    # applying curated mappings. Only open bugs should trigger attribution.
+    baseline_open_by_id: dict = {
+        b["redmine_id"]: b
+        for b in (baseline.get("bugs") or [])
+        if b.get("status_kind") == "open" and b.get("redmine_id")
+    }
+
     bugs_by_test: dict = {}
     # tests_index_sorted lets us do prefix-with-underscore match: a baseline
     # entry "test_system_issu" should match the failing test
@@ -791,6 +800,39 @@ def attach_baseline_to_failed_results(
             (lbl.get("name"), lbl.get("value"))
             for lbl in result.get("labels", []) or []
         }
+
+        # Curated mappings take priority over baseline scoring. If the test has
+        # an explicit entry in known_bugs_mappings.json, attach it and skip the
+        # baseline candidate search entirely for this result.
+        details_pre = result.get("statusDetails") or {}
+        msg_pre = details_pre.get("message") or ""
+        curated = find_mapping_for_failure(
+            result.get("name", ""), msg_pre, setup_name or "",
+            mappings_doc=mappings_doc,
+        )
+        if curated:
+            rid = curated[0].get("redmine_id")
+            if rid and rid not in baseline_open_by_id:
+                # Bug is closed/resolved — fall through to baseline scoring
+                # so the test gets [No known bug] rather than a stale link.
+                curated = []
+        if curated:
+            bug_link = _mapping_bug_link(curated[0])
+            if bug_link and bug_link.get("url") not in existing_urls:
+                result.setdefault("links", []).append(bug_link)
+                for tag in _mapping_tags(curated[0]):
+                    if ("tag", tag) not in existing_labels:
+                        result.setdefault("labels", []).append(
+                            {"name": "tag", "value": tag}
+                        )
+                        existing_labels.add(("tag", tag))
+                attached += 1
+                try:
+                    with open(path, "w") as fh:
+                        json.dump(result, fh)
+                except OSError:
+                    pass
+            continue
 
         # Collect all plausible matches with a score, then attach ONLY the
         # highest-scoring one. Multi-bug attribution per failure produced too
