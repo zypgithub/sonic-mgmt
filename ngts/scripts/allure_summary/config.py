@@ -18,7 +18,13 @@ ALLURE_BASE_URL = "https://allure.nvidia.com/allure-docker-service"
 HTTP_TIMEOUT = 60
 SSL_VERIFY = False
 
-# NVIDIA LLM Gateway Configuration
+# NVIDIA Enterprise Inference Hub Configuration
+# Documentation: https://confluence.nvidia.com/pages/viewpage.action?spaceKey=ITBU&title=Getting+Started+-+Enterprise+Inference+Hub
+# Self-service: https://inference.nvidia.com (generate API key under Profile > Key Management)
+INFERENCE_HUB_URL = "https://inference-api.nvidia.com/v1"
+INFERENCE_HUB_DEFAULT_MODEL = "azure/openai/gpt-5.4-mini"
+
+# Legacy LLM Gateway Configuration (requires onboarding via service request)
 # Documentation: https://confluence.nvidia.com/display/LLMSVC/NVIDIA+LLM+Gateway
 LLM_GATEWAY_URL = "https://prod.api.nvidia.com/llm/v1/azure"
 LLM_OAUTH_TOKEN_URL = "https://prod.api.nvidia.com/oauth/api/v1/ssa/default/token"

@@ -384,8 +384,58 @@ def render_test_issues_section(
     """
 
 
-def render_footer() -> str:
-    """Render the email footer."""
+def render_no_new_failures_message(summary: ReportSummary) -> str:
+    """Render a positive message when there are no new failures."""
+    new_failures = [t for t in summary.failed_tests if t.is_new_failure]
+
+    # Defensive: don't render the "all tests passed" banner when the
+    # report reports zero tests. That's almost always allure-docker-service
+    # still indexing widgets, not a real all-pass run. Caller should have
+    # caught this via summary.error, but suppress here as well in case a
+    # downstream code path bypasses the retry.
+    if summary.total == 0:
+        return ""
+
+    # Also check if there are any failures at all
+    if not summary.failed_tests:
+        return """
+    <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #f0fff4, #dcfce7);
+                border-radius: 12px; border: 2px solid #22c55e; text-align: center;">
+        <span style="font-size: 32px;">🎉</span>
+        <p style="color: #166534; font-size: 18px; font-weight: 700; margin: 10px 0 5px 0;">
+            All Tests Passed!
+        </p>
+        <p style="color: #15803d; font-size: 14px; margin: 0;">
+            No failures detected in this test run.
+        </p>
+    </div>
+    """
+
+    if new_failures:
+        return ""  # There are new failures, don't show this message
+
+    return """
+    <div style="margin: 20px 0; padding: 16px; background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+                border-radius: 10px; border: 2px solid #10b981; text-align: center;">
+        <span style="font-size: 28px;">✅</span>
+        <p style="color: #065f46; font-size: 17px; font-weight: 700; margin: 10px 0 5px 0;">
+            No New Regressions!
+        </p>
+        <p style="color: #047857; font-size: 13px; margin: 0;">
+            All failures are pre-existing or flaky tests - no action needed for this build.
+        </p>
+    </div>
+    """
+
+
+def render_footer(ai_available: bool = False) -> str:
+    """Render the email footer with AI status."""
+    ai_badge = ""
+    if ai_available:
+        ai_badge = '<span style="background: #48bb78; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-right: 8px;">🤖 AI-Powered</span>'
+    else:
+        ai_badge = '<span style="background: #718096; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-right: 8px;">📊 Heuristic</span>'
+
     return f"""
     <div style="text-align: center; color: {Colors.TEXT_SECONDARY}; font-size: 12px;
                 margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">

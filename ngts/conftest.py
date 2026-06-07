@@ -39,6 +39,7 @@ from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_
 from ngts.tools.infra import get_topology_from_noga
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.scripts.allure_summary.bug_marker import apply_bug_markers, finalize_bug_categories
 from ngts.scripts.sonic_deploy.sonic_only_methods import detect_asic_count, SonicInstallationSteps
 
 from ngts.ngts_types import CleanUpT
@@ -103,6 +104,30 @@ def pytest_collection(session: pytest.Session):
 
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_BRANCH_NAME, branch)
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_IMAGE_TYPE, image)
+
+
+def pytest_collection_modifyitems(config, items):
+    # Promote @pytest.mark.bug(redmine=...) into native Allure issue links and
+    # a "known_bug" tag, so the report shows a clickable Redmine link on each
+    # failing test and the tag is filterable in the Allure UI - same UI
+    # control as the existing "flaky" chip.
+    apply_bug_markers(items)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # After all tests have written their result JSONs, stamp a sentinel into
+    # failed-test messages and emit categories.json so the Allure dashboard
+    # gets a "Failures caused by open bugs" bucket alongside flaky/new-failed.
+    alluredir = getattr(session.config.option, "allure_report_dir", None)
+    if alluredir:
+        # Pass setup_name so setup_filters on platform-specific bugs are
+        # honored. Without it, a taipan-only bug whose error_pattern hits
+        # a crocodile failure's statusMessage would attach incorrectly.
+        try:
+            setup_name = session.config.getoption("--setup_name", default=None)
+        except Exception:
+            setup_name = None
+        finalize_bug_categories(alluredir, setup_name=setup_name)
 
 
 pytest_plugins = (
