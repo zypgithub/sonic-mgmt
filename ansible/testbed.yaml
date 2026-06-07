@@ -15192,6 +15192,31 @@
   inv_name: lab
   comment: Mellanox MEC testbed
 
+- conf-name: slm-233-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-233
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-113-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-113
+  comment: Mellanox MEC testbed
 
 - conf-name: mtvr-panther-05-t0
   group-name: vm-t1
@@ -15234,16 +15259,3 @@
     - mtvr-panther-05
   inv_name: lab
   comment: Community bringup - mtvr-panther-05_setup
-
-- conf-name: slm-113-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-     - slm-113
-  comment: Mellanox MEC testbed
