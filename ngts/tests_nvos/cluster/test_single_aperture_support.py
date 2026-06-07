@@ -17,7 +17,10 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 logger = logging.getLogger()
 
 # Error message constants for tray maintenance state tests
-ERR_NMX_RESOURCE_BAD = "NMX_ST_RESOURCE_BAD"
+# NMX-C reports a non-existent/out-of-range tray id as NMX_ST_BADPARAM
+# (it does not return a distinct "not found" code), so this is the expected
+# error for any invalid tray-id failure.
+ERR_NMX_TRAY_ID_BADPARAM = "NMX_ST_BADPARAM"
 ERR_INVALID_TRAY_ID = "is not a 'sdn-tray-id'"
 
 
@@ -124,7 +127,7 @@ def test_error_flow_single_aperture_support(engines, devices, random_api, get_ch
 
         with allure.step("Verify bad flow commands for single aperture support"):
             with allure.independent_step("Attempt with non-existent slot (999)"):
-                sdn.trays.action_update_maintenance_state(tray_id='999').verify_result(should_succeed=False, expected_value=ERR_NMX_RESOURCE_BAD)
+                sdn.trays.action_update_maintenance_state(tray_id='999').verify_result(should_succeed=False, expected_value=ERR_NMX_TRAY_ID_BADPARAM)
 
             with allure.independent_step("Attempt with negative slot (-1)"):
                 sdn.trays.action_update_maintenance_state(tray_id='-1').verify_result(should_succeed=False, expected_value=ERR_INVALID_TRAY_ID)
@@ -133,7 +136,7 @@ def test_error_flow_single_aperture_support(engines, devices, random_api, get_ch
                 sdn.trays.action_update_maintenance_state(tray_id=f"{chassis_sn}.aaa").verify_result(should_succeed=False, expected_value=ERR_INVALID_TRAY_ID)
 
             with allure.independent_step("Attempt with chassis SN without slot"):
-                sdn.trays.action_update_maintenance_state(tray_id=chassis_sn).verify_result(should_succeed=False, expected_value=ERR_NMX_RESOURCE_BAD)
+                sdn.trays.action_update_maintenance_state(tray_id=chassis_sn).verify_result(should_succeed=False, expected_value=ERR_NMX_TRAY_ID_BADPARAM)
 
             with allure.independent_step("Attempt with a invalid format of the slot number (.1)"):
                 sdn.trays.action_update_maintenance_state(tray_id='.1').verify_result(should_succeed=False, expected_value=ERR_INVALID_TRAY_ID)

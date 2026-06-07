@@ -928,6 +928,17 @@ class ClusterTools:
         else:
             sm_config = sm_generated_file_name = sm_path = sm_original_content = None
 
+        # WA for Bug SW #5074056: changes in fm_config are not picked up without restarting
+        # nmx-controller. Restart the app after loading both fm and sm configs.
+        if redmine_helpers.is_bug_active(5074056):
+            with allure.step("WA for Bug 5074056: Restart nmx-controller after loading configs"):
+                logger.info("Stopping nmx-controller app")
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_stop_cluster_app(engine=engine)
+                time.sleep(5)
+                logger.info("Starting nmx-controller app")
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_start_cluster_app(engine=engine)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up', engine=engine)
+
         ClusterTools.validate_cluster_enabled(cluster, engine=engine)
 
         yield

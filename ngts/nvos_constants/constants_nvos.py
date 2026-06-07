@@ -2227,7 +2227,6 @@ class StatsConsts:
     MAX_ROWS_TO_SCAN = 300
     CONST_HEADER_ROWS = 8
     BIG_FILE_NUM_OF_LINES = 600026
-
     TEMP_MIN = 15  # [Celsius]
     TEMP_MAX = 90  # [Celsius]
     MGMT_INT_MIN = 0  # [Bytes/sec]

@@ -2907,7 +2907,9 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         # Rosalind-RTF needs FM config edits (fm_config_edits needed)
         self.sdn_fm_config_edits = [
             "sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=vr_nvl8r1_c2g4_rtf_topology' {file}",
-            "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=vr_nvl8r1_c2g4_rtf_topology' | sudo tee -a {file}"
+            "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=vr_nvl8r1_c2g4_rtf_topology' | sudo tee -a {file}",
+            "sudo sed -i '/^PVT_MNNVL_SKIP_SINGLE_CHASSIS_SN_VALIDATION=/c\\PVT_MNNVL_SKIP_SINGLE_CHASSIS_SN_VALIDATION=1' {file}",
+            "sudo grep -q '^PVT_MNNVL_SKIP_SINGLE_CHASSIS_SN_VALIDATION=' {file} || echo 'PVT_MNNVL_SKIP_SINGLE_CHASSIS_SN_VALIDATION=1' | sudo tee -a {file}"
         ]
         # Rosalind ONLY edits SM config (and only when cluster is enabled, not loopbox-dependent)
         self.sdn_sm_config_edits = [
