@@ -290,7 +290,7 @@ def test_system_snmp_redis_crash(engines, topology_obj):
         with allure.step('Write value to snmp community via redis cli'):
             redis_cli_output = Tools.DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="",
                                                                     db_name=DatabaseConst.CONFIG_DB_NAME,
-                                                                    db_config="'SNMP_COMMUNITY\\|qwerty12'",
+                                                                    db_config="SNMP_COMMUNITY|qwerty12",
                                                                     param="TYPE", value="aa")
             assert redis_cli_output != 0, "Redis command failed"
 

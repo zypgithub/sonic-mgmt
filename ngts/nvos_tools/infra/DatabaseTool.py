@@ -26,15 +26,16 @@ class DatabaseTool:
         return engine.run_cmd(cmd)
 
     @staticmethod
-    def sonic_db_cli_hset(engine, asic, db_name, db_config, param, value):
+    def sonic_db_cli_hset(engine, asic, db_name, db_config, param, value, force=False):
         asic = f"-n {asic} " if asic else ""
-        # sanity before hset: refuse to hset if the table
-        # doesn't already exist, to avoid creating a new table.
-        exists_cmd = f'sonic-db-cli {asic}{db_name} exists "{db_config}"'
-        logging.info(f'Running {exists_cmd}')
-        exists_output = engine.run_cmd(exists_cmd)
-        if str(exists_output).strip() != "1":
-            raise ValueError(f'Refusing to hset on {db_name}: table "{db_config}" does not exist ')
+        if not force:
+            # sanity before hset: refuse to hset if the table
+            # doesn't already exist, to avoid creating a new table.
+            exists_cmd = f'sonic-db-cli {asic}{db_name} exists "{db_config}"'
+            logging.info(f'Running {exists_cmd}')
+            exists_output = engine.run_cmd(exists_cmd)
+            if str(exists_output).strip() != "1":
+                raise ValueError(f'Refusing to hset on {db_name}: table "{db_config}" does not exist ')
         cmd = f'sonic-db-cli {asic}{db_name} hset "{db_config}" "{param}" "{value}"'
         logging.info(f'Running {cmd}')
         return engine.run_cmd(cmd)
