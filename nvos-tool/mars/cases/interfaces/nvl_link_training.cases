@@ -22,7 +22,7 @@
       <params>
           <static_args>
             --setup_name [[conf:extra_info.setup_name]]
-            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_link_training
+            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_fae_link_training
             --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts
             -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
             --release_name=[[conf:extra_info.release_name]]
@@ -39,13 +39,13 @@
 
   <case>
     <name> nvl6 link training fail action test </name>
-    <info> Test FEC measure fail action lifecycle and behavior on NVL6 QTM4 devices </info>
+    <info> Test FEC measure fail action set with the same value on both linked ports on NVL6 QTM4 devices </info>
     <tout> 10800 </tout>
     <cmd>
       <params>
           <static_args>
             --setup_name [[conf:extra_info.setup_name]]
-            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_link_training_negotiation
+            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_fae_link_training_fail_action
             --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts
             -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
             --release_name=[[conf:extra_info.release_name]]
@@ -61,14 +61,14 @@
   </case>
 
   <case>
-    <name> nvl6 link training fail action link state test </name>
-    <info> Test link state per fec-measure fail-action when FEC measure is forced to fail on NVL6 QTM4 devices </info>
+    <name> nvl6 link training negotiation test </name>
+    <info> Test FEC measure cross-port negotiation (fail-action and fec-measure-mode mismatch) on NVL6 QTM4 devices </info>
     <tout> 10800 </tout>
     <cmd>
       <params>
           <static_args>
             --setup_name [[conf:extra_info.setup_name]]
-            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_link_training_fail_action
+            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_fae_link_training_negotiation
             --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts
             -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
             --release_name=[[conf:extra_info.release_name]]
@@ -84,14 +84,14 @@
   </case>
 
   <case>
-    <name> nvl6 link training force fail test </name>
-    <info> Test fec-measure force-fail configuration lifecycle on NVL6 QTM4 devices </info>
+    <name> nvl6 link training force max iterations test </name>
+    <info> Test force-max-iterations configuration lifecycle on NVL6 QTM4 devices </info>
     <tout> 10800 </tout>
     <cmd>
       <params>
           <static_args>
             --setup_name [[conf:extra_info.setup_name]]
-            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_link_training_force_fail
+            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_link_training_force_max_iterations
             --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts
             -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
             --release_name=[[conf:extra_info.release_name]]

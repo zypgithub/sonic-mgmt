@@ -1516,7 +1516,7 @@ class LinkTrainingConsts:
         def operational(cls):
             return [cls.ENABLED.value, cls.DISABLED.value]
 
-    FEC_MEASURE_MODE_OPERATIONAL_DEFAULT = FecMeasureMode.DISABLED
+    FEC_MEASURE_MODE_OPERATIONAL_DEFAULT = FecMeasureMode.ENABLED
     FEC_MEASURE_MODE_APPLIED_DEFAULT = FecMeasureMode.FW_DEFAULT
 
     FEC_MEASURE_FAIL_ACTION: str = 'fec-measure-fail-action'
@@ -1545,23 +1545,18 @@ class LinkTrainingConsts:
         FecMeasureFailAction.GOTO_DISABLE.value: 3,
     }
 
-    FEC_MEASURE_FORCE_FAIL: str = 'fec-measure-force-fail'
+    FORCE_MAX_ITERATIONS: str = 'force-max-iterations'
 
-    class FecMeasureForceFail(Enum):
+    class ForceMaxIterations(Enum):
         DISABLED = 'disabled'
-        UNTIL_LAST_ITERATION = 'until-last-iteration'
-        ALL_ITERATIONS = 'all-iterations'
+        ENABLED = 'enabled'
 
         @classmethod
         def all(cls):
             return [member.value for member in cls]
 
-        @classmethod
-        def operational(cls):
-            return [cls.DISABLED.value, cls.UNTIL_LAST_ITERATION.value, cls.ALL_ITERATIONS.value]
-
-    FEC_MEASURE_FORCE_FAIL_OPERATIONAL_DEFAULT = FecMeasureForceFail.DISABLED
-    FEC_MEASURE_FORCE_FAIL_APPLIED_DEFAULT = FecMeasureForceFail.DISABLED
+    FORCE_MAX_ITERATIONS_OPERATIONAL_DEFAULT = ForceMaxIterations.DISABLED
+    FORCE_MAX_ITERATIONS_APPLIED_DEFAULT = ForceMaxIterations.DISABLED
 
 
 class ImageConsts:

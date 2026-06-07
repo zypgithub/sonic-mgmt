@@ -1,4 +1,5 @@
 import random
+import re
 import time
 from weakref import finalize
 
@@ -7,8 +8,23 @@ import logging
 from retry.api import retry_call
 
 from ngts.constants.constants import GnmiConsts
-from ngts.nvos_constants.constants_nvos import ApiType, MultiPlanarConsts, NvosConst, OutputFormat
-from ngts.tests_nvos.interfaces.nvl_port.helpers import validate_ports_state_and_speed, toggle_port_state, show_interface_and_validate, skip_if_no_trunk_links, skip_if_no_access_links
+from ngts.nvos_constants.constants_nvos import (
+    ApiType,
+    LinkTrainingConsts,
+    MultiPlanarConsts,
+    NvosConst,
+    OutputFormat,
+)
+from ngts.tests_nvos.interfaces.nvl_port.helpers import (
+    validate_ports_state_and_speed,
+    toggle_port_state,
+    show_interface_and_validate,
+    skip_if_no_trunk_links,
+    skip_if_no_access_links,
+    skip_if_fec_measure_not_supported,
+)
+from ngts.tests_nvos.helpers.interfaces import interface_helpers
+from ngts.tests_nvos.helpers.interfaces.nvl_port.nvl6 import link_training_helpers
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.Fae import Fae
@@ -23,7 +39,7 @@ from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
 from ngts.tools.test_utils.allure_utils import step as allure_step
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, InternalNvosConsts, NvlInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports, summarize_switch_ports
 from ngts.tests_nvos.constants import MINUTE
@@ -333,6 +349,90 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
     finally:
         if not port_init_state_restored:
             toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name, devices)
+
+
+def _extract_link_up_ms(raw_value):
+    digits = re.sub(r'[^0-9]', '', str(raw_value))
+    assert digits, (
+        f"time-to-link-up value is {raw_value!r} - expected a value containing digits because "
+        f"the field holds the link-up duration in milliseconds once the link comes up"
+    )
+    return int(digits)
+
+
+def _verify_time_to_link_up(port, expected_max_seconds):
+    interface_helpers.wait_and_verify_link([port], timeout=expected_max_seconds)
+    output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+        port.interface.link.show()).get_returned_value()
+    actual_ms = _extract_link_up_ms(output_dictionary[IbInterfaceConsts.LINK_TO_LINK_UP])
+    expected_max_ms = expected_max_seconds * 1000
+    assert 0 < actual_ms < expected_max_ms, (
+        f"time-to-link-up on port {port.name} value is {actual_ms}ms - expected a positive value "
+        f"below {expected_max_ms}ms ({expected_max_seconds}s) because that is the max link-up time "
+        f"for the current fec-measure-mode/force-max-iterations state"
+    )
+
+
+@pytest.mark.interface
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_time_to_link_up(devices, test_api, register_cleanup):
+    """Validate the time-to-link-up link-show field on an ACP port across the three link-up states.
+
+    time-to-link-up is updated after the link changes to up and holds how long link-up took,
+    reported in milliseconds. The measured value must stay below the max link-up time, which
+    depends on the link-training configuration:
+        - default (fec-measure-mode=disabled): < 90s
+        - fec-measure-mode=enabled + force-max-iterations=disabled: < 180s
+        - fec-measure-mode=enabled + force-max-iterations=enabled: < 375s
+
+    Steps (single random ACP port, checked sequentially):
+        1. Default: set fec-measure-mode=disabled, verify time-to-link-up < 90s.
+        2. Set fec-measure-mode=enabled, force-max-iterations=disabled, verify < 180s.
+        3. Set force-max-iterations=enabled, verify < 375s.
+    """
+    skip_if_fec_measure_not_supported(devices)
+
+    TestToolkit.tested_api = test_api
+
+    selected_port = Tools.RandomizationTool.select_random_port(
+        requested_ports_state=NvosConsts.LINK_STATE_UP,
+        interface_type=NvlInterfaceConsts.ACP_PORT_TYPE
+    ).get_returned_value()
+    fae = Fae(port_name=selected_port.name)
+    TestToolkit.update_tested_ports([selected_port])
+
+    register_cleanup(lambda: link_training_helpers.cleanup_link_training(devices, (fae,)))
+
+    with allure_step("Default state: fec-measure-mode=disabled, verify time-to-link-up"):
+        fae.interface.link.link_training.set(
+            op_param_name=LinkTrainingConsts.FEC_MEASURE_MODE,
+            op_param_value=LinkTrainingConsts.FecMeasureMode.DISABLED.value,
+            apply=True,
+            ask_for_confirmation=True,
+        ).verify_result()
+        _verify_time_to_link_up(selected_port, InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_DISABLED)
+
+    with allure_step("fec-measure-mode=enabled, force-max-iterations=disabled, verify time-to-link-up"):
+        fae.interface.link.link_training.set(
+            op_param_name=LinkTrainingConsts.FEC_MEASURE_MODE,
+            op_param_value=LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+            apply=True,
+            ask_for_confirmation=True,
+        ).verify_result()
+        selected_port.interface.link.link_training.set(
+            op_param_name=LinkTrainingConsts.FORCE_MAX_ITERATIONS,
+            op_param_value=LinkTrainingConsts.ForceMaxIterations.DISABLED.value,
+            apply=True,
+            ask_for_confirmation=True,
+        ).verify_result()
+        _verify_time_to_link_up(selected_port, InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED)
+
+    with allure_step("force-max-iterations=enabled, verify time-to-link-up"):
+        selected_port.interface.link.link_training.set(
+            op_param_name=LinkTrainingConsts.FORCE_MAX_ITERATIONS,
+            op_param_value=LinkTrainingConsts.ForceMaxIterations.ENABLED.value,
+            apply=True, ask_for_confirmation=True).verify_result()
+        _verify_time_to_link_up(selected_port, InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED)
 
 
 @pytest.mark.interface

@@ -2604,7 +2604,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             self.generate_tech_support: 165,
             'julietscaleout generate_tech_support': 165,
             'reboot with new user FW': 450 if is_bug_active(4854038) else 390,
-            InternalNvosConsts.ACP_PORT_GOES_UP: InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_DISABLED,
+            InternalNvosConsts.ACP_PORT_GOES_UP: InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED,
         })
         if is_bug_active(4694678):
             power_cycle_increase_timeout = 60

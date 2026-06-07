@@ -91,6 +91,11 @@ class Interface(BaseComponent):
                         "'{state}'".format(port=self.port_obj.name, state=logical_state)
                     result_obj.result = False
 
+            allure.attach(
+                body=f"It took port {self.port_obj.name} {timeout - timer} seconds to reach state {state}",
+                name=f"{self.port_obj.name} link-up time",
+                attachment_type=allure.attachment_type.TEXT,
+            )
             return result_obj
 
     @retry(Exception, tries=10, delay=5)

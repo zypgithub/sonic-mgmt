@@ -8,8 +8,8 @@ class InternalNvosConsts:
     DEFAULT_TIMEOUT = 120  # Non-ACP ports (FNM/SW)
     NVL5_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 60  # NVL5 ACP ports with LTX enabled
     NVL5_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 30  # NVL5 ACP ports with LTX (fec-measure-mode) disabled
-    NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 375  # NVL6 ACP ports with LTX enabled
-    NVL6_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 120  # NVL6 ACP ports with LTX (fec-measure-mode) disabled
+    NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 375  # NVL6 ACP ports with fec-measure-mode enabled
+    NVL6_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 90  # NVL6 ACP ports with fec-measure-mode disabled
     ACP_PORT_GOES_UP = 'acp port goes up'
     IB_TRAFFIC_SENDER_INTERFACE = "h1p1"
     IB_TRAFFIC_RECEIVER_INTERFACE = "h2p1"
@@ -94,6 +94,7 @@ class IbInterfaceConsts:
     LINK_MTU = "mtu"
     LINK_VL_ADMIN_CAPABILITIES = "vl-capabilities"
     LINK_OPERATIONAL_VLS = "op-vls"
+    LINK_TO_LINK_UP = "time-to-link-up"
     LINK_IB_SUBNET = "ib-subnet"
     LINK_STATS = "counters"
     LINK_STATS_CARRIER_TRANSITION = "carrier-transitions"

@@ -5,7 +5,7 @@ import logging
 
 from retry.api import retry_call
 
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, JulietNonScaleoutSwitch, RosalindSurrogateSwitch
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, JulietNonScaleoutSwitch, RosalindSurrogateSwitch, RosalindSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -111,6 +111,12 @@ def is_nvl_device(devices: DevicesT) -> bool:
     return is_qtm3_device(devices) or is_qtm4_device(devices)
 
 
+def skip_if_fec_measure_not_supported(devices: DevicesT) -> None:
+    if isinstance(devices.dut, RosalindSwitch) and devices.dut.asic_type in [NvosConst.QTM4, NvosConst.NVL6]:
+        return
+    pytest.skip("fec-measure-mode is not supported on this device (requires QTM4/NVL6 Rosalind)")
+
+
 EXPECTED_LINK_DIAGNOSTIC_STATUS = {'0': {'status': 'No issue was observed'}}
 
 
@@ -124,26 +130,51 @@ def verify_link_diagnostic(ports: list[Port]) -> None:
 
 
 def get_linked_ports_pair(devices: DevicesT, engines: EnginesT) -> tuple[str, str]:
-    switches_list = IbnetdiscoverTool.run_ibnetdiscover(engines)
     with allure.step("Get a pair of linked port names"):
-        random_switch = random.choice(switches_list)
-        num_of_ports_in_switch = min(len(random_switch['ports']) - 1, 72)  # Last port is FNM port
-        valid_access_ports = [p for p in random_switch['ports'] if 1 <= p['port_num'] <= num_of_ports_in_switch]
-        assert valid_access_ports, f"No valid access ports (1-{num_of_ports_in_switch}) found in switch {random_switch['switch_guid']}"
-        src_port = random.choice(valid_access_ports)
-        remote_switch_guid = src_port['remote_switch_guid']
-        remote_port_num = src_port['remote_port_num']
+        # Select an up acp port; its link partner is necessarily up too, so only
+        # the source needs to be picked by state.
+        src_name = select_random_nvl_port_name(devices, prefix='acp')
 
-        remote_switch = next((switch for switch in switches_list if switch['switch_guid'] == remote_switch_guid), None)
-        assert remote_switch is not None, f"Remote switch {remote_switch_guid} not found in {switches_list}"
-        remote_port = next((port for port in remote_switch['ports'] if port['port_num'] == remote_port_num), None)
-        assert remote_port is not None, f"Remote port {remote_port_num} not found in {remote_switch['ports']}"
-        acp_port_src_name = f"acp{src_port['port_num'] + (num_of_ports_in_switch * (random_switch['order'] - 1))}"
-        assert acp_port_src_name in devices.dut.nvl_access_ports_list, f"Source port {acp_port_src_name} not found in {devices.dut.nvl_access_ports_list}"
-        acp_port_dst_name = f"acp{remote_port['port_num'] + (num_of_ports_in_switch * (remote_switch['order'] - 1))}"
-        assert acp_port_dst_name in devices.dut.nvl_access_ports_list, f"Destination port {acp_port_dst_name} not found in {devices.dut.nvl_access_ports_list}"
-        logger.info(f"Linked ports pair: {acp_port_src_name} <-> {acp_port_dst_name}")
-        return (acp_port_src_name, acp_port_dst_name)
+        # Build acp_name -> remote_acp_name from the topology. ibnetdiscover only lists
+        # ports that currently have a link, so the relation already excludes down ports.
+        # ibnetdiscover omits unlinked ports, so len(ports) varies per run and would
+        # corrupt the index. Access ports are port_num 1..ports_per_switch; the trailing
+        # XDR ports (73, 74) are inter-switch links. The global acp index is
+        # acp{port_num + ports_per_switch * (order - 1)} to match nvl_access_ports_list.
+        switches_list = IbnetdiscoverTool.run_ibnetdiscover(engines)
+        assert switches_list, "ibnetdiscover returned no switches - expected the IB topology to be discoverable"
+        ports_per_switch = len(devices.dut.nvl_access_ports_list) // len(switches_list)
+        acp_name_by_switch_port: dict[tuple[str, int], str] = {}
+        for switch in switches_list:
+            for port in switch['ports']:
+                if 1 <= port['port_num'] <= ports_per_switch:
+                    acp_name = f"acp{port['port_num'] + (ports_per_switch * (switch['order'] - 1))}"
+                    acp_name_by_switch_port[(switch['switch_guid'], port['port_num'])] = acp_name
+
+        remote_by_acp: dict[str, str] = {}
+        for switch in switches_list:
+            for port in switch['ports']:
+                src = acp_name_by_switch_port.get((switch['switch_guid'], port['port_num']))
+                dst = acp_name_by_switch_port.get((port['remote_switch_guid'], port['remote_port_num']))
+                if src is not None and dst is not None:
+                    remote_by_acp[src] = dst
+
+        assert src_name in remote_by_acp, (
+            f"Selected up port {src_name} value is not in the ibnetdiscover topology "
+            f"{list(remote_by_acp)} - expected the up acp port to have a discovered link partner"
+        )
+        dst_name = remote_by_acp[src_name]
+
+        assert src_name in devices.dut.nvl_access_ports_list, (
+            f"Source port {src_name} value is not in {devices.dut.nvl_access_ports_list} "
+            f"- expected a valid access port name"
+        )
+        assert dst_name in devices.dut.nvl_access_ports_list, (
+            f"Destination port {dst_name} value is not in {devices.dut.nvl_access_ports_list} "
+            f"- expected a valid access port name"
+        )
+        logger.info("Linked ports pair: %s <-> %s", src_name, dst_name)
+        return (src_name, dst_name)
 
 
 def setup_nvl_speed(devices, exclude_speeds=None, required=False):
