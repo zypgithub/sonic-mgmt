@@ -1478,6 +1478,24 @@ fib/test_fib.py::test_nvgre_hash[ipv6:
     conditions:
     - "https://redmine.mellanox.com/issues/5046042 and 'sn6600_ld' in platform"
 
+bgp/test_bgp_slb.py::test_bgp_slb_neighbor_persistence_across_advanced_reboot[fast:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/5042499 on sn6600_LD platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5042499 and 'sn6600_ld' in platform"
+
+bgp/test_bgp_slb.py::test_bgp_slb_neighbor_persistence_across_advanced_reboot[warm:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/5008193 on sn6600_LD platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5008193 and 'sn6600_ld' in platform"
+
+system_health/test_system_health.py::test_service_checker_with_process_exit:
+  xfail:
+    reason: "Xfail due to RM issue: https://redmine.mellanox.com/issues/4988548"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4988548"
+
 ########################## IGNORE WARM REBOOT ON SN6600_LD START ##########################
 arp/test_wr_arp.py:
   skip:
