@@ -1,11 +1,11 @@
 import logging
+import shlex
 import subprocess
 import time
-from types import SimpleNamespace
 from typing import Tuple
 
 import ngts.tools.test_utils.allure_utils as allure
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner, EngineCmdRunner
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode
 
@@ -25,11 +25,11 @@ class GnmiClient:
         if engine is None:
             self.cmd_runner = CmdRunner('GnmiClient', self.cmd_time, print_outputs)
         else:
-            def _run_cmd_in_process(cmd, *args, **kwargs):
-                out = engine.run_cmd(cmd, validate=False)
-                return out, '', None
-
-            self.cmd_runner = SimpleNamespace(run_cmd_in_process=_run_cmd_in_process)
+            # Run gnmic on the given engine (e.g. the sonic-mgmt host) instead of the local test
+            # player. EngineCmdRunner mirrors CmdRunner (separate stdout/stderr, per-command
+            # timeout, keep-alive sessions), so error markers on stderr and streaming subscribes
+            # behave the same as when running locally.
+            self.cmd_runner = EngineCmdRunner(engine, 'GnmiClient', self.cmd_time, print_outputs)
 
         if verify_tools_installed:
             with allure.step('verify gnmic installed on player'):
@@ -168,8 +168,7 @@ class GnmiClient:
     def gnmic_subscribe_ib_router(self, mode: str, username: str = '', password: str = '',
                                   skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                                   cmd_time=None, keep_session_alive: bool = False, wait_till_done: bool = False, full_path: str = None
-                                  ) -> \
-            Tuple[str, str, float, subprocess.Popen]:
+                                  ) -> Tuple[str, str]:
         path = full_path if full_path else ''
         out, err, duration, proc = self.gnmic_subscribe(f'ib-router', path, mode, True,
                                                         username, password, skip_cert_verify, cacert, debug_mode, cmd_time,
@@ -194,24 +193,40 @@ class GnmiClient:
                                                         debug_mode, cmd_time, keep_session_alive, wait_till_done)
         return out, err, duration, proc
 
+    def compose_gnmic_cmd(self, gnmi_op: str, skip_cert_verify: bool = False, cacert: str = '',
+                          debug_mode: bool = True, username: str = '', password: str = '') -> str:
+        """
+        Build the gnmic command string for a given operation, without running it.
+
+        Kept separate from execution so the same composition can be reused outside the single-call
+        flow (e.g. wrapping the command in a remote loop for the rate-limit flood), keeping a single
+        source of truth for how gnmic invocations are constructed.
+        """
+        debug_mode = debug_mode and not skip_cert_verify
+        username = username or self.username
+        password = password or self.password
+
+        if skip_cert_verify:
+            cert_flag = '--skip-verify'
+        else:
+            cacert_to_use = cacert or self.cacert
+            assert cacert_to_use, 'cacert path was not specified'
+            cert_flag = f'--tls-ca {shlex.quote(cacert_to_use)}'
+
+        # Quote the leaf values (host/user/password) so spaces or special shell characters cannot
+        # break the command or be reinterpreted by the shell, including when this string is in a
+        # remote bash -c loop. gnmi_op is intentionally left unquoted: it is a composed fragment that
+        # already carries its own quoting (e.g. --prefix '...'), so quoting it as one token would
+        # corrupt it.
+        return (f"gnmic -a {shlex.quote(self.server_host)} --port {self.server_port} {cert_flag} "
+                f"-u {shlex.quote(username)} -p {shlex.quote(password)} {gnmi_op}") + (" -d" if debug_mode else "")
+
     def _run_gnmic_op(self, gnmi_op: str, skip_cert_verify: bool, cacert: str, debug_mode: bool, cmd_time,
                       username: str = '', password: str = '', keep_session_alive: bool = False,
                       wait_till_done: bool = False) -> Tuple[
             str, str, int, subprocess.Popen]:
-        debug_mode = debug_mode and not skip_cert_verify
         with allure.step('compose the gnmic command'):
-            username = username or self.username
-            password = password or self.password
-
-            if skip_cert_verify:
-                cert_flag = '--skip-verify'
-            else:
-                cacert_to_use = cacert or self.cacert
-                assert cacert_to_use, 'cacert path was not specified'
-                cert_flag = f'--tls-ca {cacert_to_use}'
-
-            gnmic_cmd = (f"gnmic -a {self.server_host} --port {self.server_port} {cert_flag} "
-                         f"-u {username} -p {password} {gnmi_op}") + (" -d" if debug_mode else "")
+            gnmic_cmd = self.compose_gnmic_cmd(gnmi_op, skip_cert_verify, cacert, debug_mode, username, password)
         with allure.step('run gnmic command in process'):
             start_time = time.time()
             out, err, proc = self.cmd_runner.run_cmd_in_process(gnmic_cmd, keep_session_alive, wait_till_done, cmd_time)
@@ -232,11 +247,12 @@ class GnmiClient:
             else:
                 cacert_to_use = cacert or self.cacert
                 assert cacert_to_use, 'cacert path was not specified'
-                cert_flag = f'-cacert {cacert_to_use}'
+                cert_flag = f'-cacert {shlex.quote(cacert_to_use)}'
 
             host = f'[{self.server_host}]' if IpTool.is_address_ipv6(self.server_host) else self.server_host
-            grpcurl_cmd = (f"grpcurl {cert_flag} -H username:{username} -H password:{password} "
-                           f"{host}:{self.server_port} {grpcurl_op}")
+            grpcurl_cmd = (f"grpcurl {cert_flag} -H {shlex.quote(f'username:{username}')} "
+                           f"-H {shlex.quote(f'password:{password}')} "
+                           f"{shlex.quote(host)}:{self.server_port} {grpcurl_op}")
         with allure.step('run grpcurl command in process'):
             return self.cmd_runner.run_cmd_in_process(grpcurl_cmd, cmd_timeout=cmd_time)
 
@@ -258,7 +274,10 @@ class GnmicCmdBuilder:
     def build(self) -> str:
         self.options.strip()
         self.operation.strip()
-        return GnmicCmdBuilder.CMD_TEMPLATE.format(host=self.host, port=self.port, opts=self.options, op=self.operation).strip()
+        # Quote the host so an IPv6 literal or any special character cannot break the command; the
+        # credential/cert options are quoted as they are added (see user_creds/ca/cert).
+        host = shlex.quote(self.host) if self.host else self.host
+        return GnmicCmdBuilder.CMD_TEMPLATE.format(host=host, port=self.port, opts=self.options, op=self.operation).strip()
 
     def address(self, address: str) -> 'GnmicCmdBuilder':
         self.host = address
@@ -269,7 +288,7 @@ class GnmicCmdBuilder:
         return self
 
     def user_creds(self, username: str, password: str) -> 'GnmicCmdBuilder':
-        self.options += f" -u {username} -p {password}"
+        self.options += f" -u {shlex.quote(username)} -p {shlex.quote(password)}"
         return self
 
     def skip_verify(self) -> 'GnmicCmdBuilder':
@@ -277,11 +296,11 @@ class GnmicCmdBuilder:
         return self
 
     def ca(self, cacert_path: str) -> 'GnmicCmdBuilder':
-        self.options += f' --tls-ca {cacert_path}'
+        self.options += f' --tls-ca {shlex.quote(cacert_path)}'
         return self
 
     def cert(self, key_path: str, public_path: str) -> 'GnmicCmdBuilder':
-        self.options += f' --tls-key {key_path} --tls-cert {public_path}'
+        self.options += f' --tls-key {shlex.quote(key_path)} --tls-cert {shlex.quote(public_path)}'
         return self
 
     def subscribe(self, prefix: str = '', path: str = '', mode: str = '', target: str = DEFAULT_TARGET) -> 'GnmicCmdBuilder':
