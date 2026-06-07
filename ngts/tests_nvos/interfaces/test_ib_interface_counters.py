@@ -106,11 +106,9 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
 
     with allure.step("Get a random active port"):
         selected_port, = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
-        match = re.match(r'([a-zA-Z]+)(\d+)', selected_port.name)
-        assert match, "Unable to find the port number: no match found"
-
-        selected_port_name = match.group(1)
-        selected_port_number = int(match.group(2))
+        selected_port_number = selected_port.port_number
+        port_prefix = selected_port.asic_letter or ""
+        selected_port_name = f"sw{port_prefix}"
         logger.info(f"Port Name: {selected_port_name}, Port Number: {selected_port_number}")
 
     file_name, user_name, ssh_connection = create_new_user(engines.dut)
@@ -120,10 +118,14 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
 
     with allure.step("Get valid port numbers and local ports from device model"):
         device = devices.dut
-        sw_port_re = re.compile(r'sw(\d+)p(\d+)$')
-        sw_matches = [sw_port_re.match(name) for name in device.interface_list]
-        all_port_numbers = sorted({int(m.group(1)) for m in sw_matches if m})
-        valid_local_ports = sorted({int(m.group(2)) for m in sw_matches if m})
+        parsed_ports = []
+        for name in device.interface_list:
+            try:
+                parsed_ports.append(Port.parse_port_name(name))
+            except ValueError:
+                pass
+        all_port_numbers = sorted({p[1] for p in parsed_ports})
+        valid_local_ports = sorted({p[2] for p in parsed_ports})
         logger.info(f"Device port numbers: {all_port_numbers[0]}-{all_port_numbers[-1]}, "
                     f"local ports: {valid_local_ports}")
 
@@ -141,7 +143,6 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
              first_range_last_point) = randoms
         p_number = random.choice(valid_local_ports)
         random_port = f'{selected_port_name}{random_port}p{p_number}'
-        port_prefix = selected_port_name.replace("sw", "")
 
     with allure.step("Run clear counters"):
         with allure.independent_step("Run clear counters using range for p1 or p2 only"):

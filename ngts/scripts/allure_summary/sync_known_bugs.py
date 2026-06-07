@@ -95,7 +95,12 @@ ASSERTION_RES = [
     re.compile(r"\bExpected\s+([^\n]{6,160})\s+but got\b"),
     re.compile(r"\b(?:Missing|Unexpected)\s+(?:fields?|keys?|element|file)s?:?\s*([^\n]{4,160})"),
     re.compile(r"KeyError:\s*[\"']([^\"'\n]{2,80})[\"']"),
-    re.compile(r"raise\s+(\w+Error)\(['\"]([^'\"\n]{6,200})['\"]"),
+    # Capture the MESSAGE, not the exception class - the class name is
+    # non-capturing on purpose. A bug's "Recommended Fix" snippet like
+    # `raise ValueError('Invalid file name')` must yield the message, never
+    # the bare token "ValueError" (which substring-matches every unrelated
+    # failure that raises a ValueError).
+    re.compile(r"raise\s+\w+Error\(['\"]([^'\"\n]{6,200})['\"]"),
     re.compile(r"missing\s+['\"]([^'\"\n]{2,80})['\"]"),
     # README convention: bug filers add "Error pattern: <verbatim phrase>"
     # to a bug description to teach the matcher. A '*' is treated as the
@@ -120,6 +125,20 @@ NOISE_TOKENS = {
     "up", "down", "ok", "fail", "failed", "error", "warning",
     "test_path", "test_id", "test_name",
 }
+
+# Bare exception class names are never useful as standalone error_patterns -
+# "ValueError" / "KeyError" substring-match every unrelated failure that
+# raises that exception. They leak in from bug "Recommended Fix" code
+# snippets (e.g. `raise ValueError('...')`). Dropped in add() alongside
+# NOISE_TOKENS as an extra guard on top of the message-capturing regex.
+GENERIC_EXCEPTION_TOKENS = {t.lower() for t in {
+    "Exception", "BaseException", "ValueError", "KeyError", "TypeError",
+    "IndexError", "AttributeError", "RuntimeError", "AssertionError",
+    "OSError", "IOError", "ImportError", "LookupError", "NameError",
+    "NotImplementedError", "TimeoutError", "ConnectionError",
+    "FileNotFoundError", "PermissionError", "StopIteration",
+    "ZeroDivisionError", "OverflowError", "RecursionError", "SystemError",
+}}
 
 
 def strip_html(text: str) -> str:
@@ -299,7 +318,7 @@ def extract_error_patterns(kind: str, subject: str, plain_desc: str) -> list[str
             return
         # Filter generic / too-short tokens that would over-match
         low = pat.lower().strip("'\"")
-        if low in NOISE_TOKENS:
+        if low in NOISE_TOKENS or low in GENERIC_EXCEPTION_TOKENS:
             return
         if 3 <= len(pat) <= 240:
             patterns.append(pat)

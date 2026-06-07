@@ -228,7 +228,8 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             logger.info("ACL baseline captured for %d default ACL object(s)", len(json_acl_rules))
 
         with allure.step("Save control-plane ACL bindings baseline (nv show system control-plane acl)"):
-            cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(dut_engine=engines.dut)
+            cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(
+                dut_engine=engines.dut, mangle_state=acl_persist_mangle_state)
             logger.info("Control-plane ACL bindings captured: %s", cp_acl_bindings)
 
         logger.info("After replacing configuration file, system may ask for new password. Restoring password:")
