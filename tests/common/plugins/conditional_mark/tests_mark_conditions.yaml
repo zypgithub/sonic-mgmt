@@ -714,6 +714,12 @@ bgp/test_traffic_shift_sup.py:
     conditions:
       - "'t2_single_node' in topo_name"
 
+bgp/test_bgp_vnet.py:
+  xfail:
+    reason: "Testcase expected to fail due to issue https://github.com/sonic-net/sonic-mgmt/issues/25167 on sn5640"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/25167 and platform in ['x86_64-nvidia_sn5640-r0']"
+
 bmp/:
   skip:
     reason: "https://github.com/sonic-net/sonic-buildimage/issues/23777"
