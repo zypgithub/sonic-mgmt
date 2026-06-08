@@ -1069,18 +1069,8 @@ class DeployBmcHelper:
             with allure.step('Wait for eMMC installation to finish'):
                 DeployBmcHelper._wait_emmc_write_done(serial_engine)
 
-            # Workaround for BMC eth0 starting without a DHCP lease:
-            # wait for the login prompt on serial, log in and run
-            # 'dhclient' so SSH from sonic-mgmt becomes reachable.
-            # See _acquire_bmc_ip_via_serial() docstring.
-            # Tracked by Redmine #5016565 - drop this block once the bug is closed.
-            if is_redmine_issue_active([5016565])[0]:
-                with allure.step('Wait for BMC login prompt on serial'):
-                    DeployBmcHelper._wait_bmc_login(serial_engine)
-                with allure.step('Acquire BMC IP via serial dhclient'):
-                    DeployBmcHelper._acquire_bmc_ip_via_serial(serial_engine)
-
             with allure.step('Verify BMC SSH login'):
+                DeployBmcHelper._wait_bmc_login(serial_engine)
                 DeployBmcHelper._verify_bmc_login(bmc_params)
 
             # sshd comes up well before the SONiC stack after the install reboots.
@@ -1110,17 +1100,7 @@ class DeployBmcHelper:
                 context.primary_cli_obj.remote_reboot(
                     context.topology_obj, dut_alias, wait_till_alive=False
                 )
-
-            # Workaround for BMC eth0 starting without a DHCP lease:
-            # wait for the login prompt on serial, log in and run
-            # 'dhclient' so SSH from sonic-mgmt becomes reachable.
-            # See _acquire_bmc_ip_via_serial() docstring.
-            # Tracked by Redmine #5016565 - drop this block once the bug is closed.
-            if is_redmine_issue_active([5016565])[0]:
-                with allure.step('Wait for BMC login prompt on serial'):
-                    DeployBmcHelper._wait_bmc_login(serial_engine)
-                with allure.step('Acquire BMC IP via serial dhclient'):
-                    DeployBmcHelper._acquire_bmc_ip_via_serial(serial_engine)
+                DeployBmcHelper._wait_bmc_login(serial_engine)
 
             # Sync the BMC clock
             with allure.step('Sync BMC clock via chrony'):
@@ -1407,45 +1387,6 @@ class DeployBmcHelper:
             timeout=BmcDeployConstants.BMC_BOOT_TIMEOUT,
             send_without_enter=True,
         )
-
-    @staticmethod
-    def _acquire_bmc_ip_via_serial(serial_engine):
-        """
-        Workaround: after a successful install + power cycle the BMC
-        SONiC image boots normally but eth0 starts without an IP - the
-        DHCP client never fires (vendor-side issue, hw-mgmt is tracking
-        it). Without an IP, sonic-mgmt cannot SSH to verify the install,
-        so we drive the serial console: log in as admin, run
-        'sudo dhclient -v eth0' and wait for 'bound to <ip>'. After this
-        runs the SSH-based verification step succeeds.
-        See email 'BMC does not get the IP address' (2026-05-06/07).
-        """
-        serial_engine.run_cmd(
-            BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            expected_value=BmcDeployConstants.BMC_PASSWORD_PROMPT,
-            timeout=BmcDeployConstants.BMC_SERIAL_LOGIN_TIMEOUT,
-        )
-        serial_engine.run_cmd(
-            BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-            expected_value=BmcDeployConstants.BMC_SHELL_PROMPT,
-            timeout=BmcDeployConstants.BMC_SERIAL_LOGIN_TIMEOUT,
-        )
-        serial_engine.run_cmd(
-            BmcDeployConstants.BMC_DHCLIENT_CMD,
-            expected_value=BmcDeployConstants.BMC_DHCLIENT_SUCCESS_MARKER,
-            timeout=BmcDeployConstants.BMC_DHCLIENT_TIMEOUT,
-        )
-        # Drain back to the shell prompt before returning so the next
-        # caller is not racing dhclient's trailing output.
-        try:
-            serial_engine.run_cmd(
-                '',
-                expected_value=BmcDeployConstants.BMC_SHELL_PROMPT,
-                timeout=BmcDeployConstants.BMC_SERIAL_LOGIN_TIMEOUT,
-                send_without_enter=True,
-            )
-        except Exception:
-            pass
 
     @staticmethod
     def _verify_bmc_login(bmc_params):

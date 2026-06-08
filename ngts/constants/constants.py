@@ -1482,13 +1482,6 @@ class BmcDeployConstants:
     # AST2700-A1 is moved to OpenBMC-only.
     SONIC_BMC_SUPPORTED_HW_TYPES = ('AST2700-A1', 'AST2700-A2')
 
-    # Workaround: after the post-install boot the BMC SONiC image starts
-    # cleanly but its eth0 has no DHCP lease
-    BMC_SHELL_PROMPT = r":~\$"
-    BMC_PASSWORD_PROMPT = "[Pp]assword:"
-    BMC_DHCLIENT_CMD = "sudo dhclient -v eth0"
-    BMC_DHCLIENT_SUCCESS_MARKER = "bound to"
-
     # Timeouts (seconds).
     UBOOT_PROMPT_TIMEOUT = 120         # time to interrupt autoboot and reach U-Boot prompt
     DHCP_TIMEOUT = 60                  # one DHCP attempt timeout
@@ -1497,8 +1490,6 @@ class BmcDeployConstants:
     TFTP_DOWNLOAD_RETRY_LIMIT = 3      # retries when TFTP fails (e.g. ARP retry exceeded)
     EMMC_WRITE_TIMEOUT = 1800          # time for the eMMC write to finish
     BMC_BOOT_TIMEOUT = 600             # time for the BMC to come up and present login prompt
-    BMC_SERIAL_LOGIN_TIMEOUT = 60      # time for each step of the serial login dialogue (user / password / shell)
-    BMC_DHCLIENT_TIMEOUT = 120         # time for 'dhclient' to obtain a DHCP lease via serial
     BMC_CHRONY_SETTLE_SECONDS = 5      # wait after starting chrony before forcing 'chronyc -a makestep'
 
 
