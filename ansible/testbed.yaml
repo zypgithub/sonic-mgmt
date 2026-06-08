@@ -10639,7 +10639,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: rfit-nos-vrt-mec-80-089-ptf-any
+- conf-name: fit-nos-vrt-mec-80-089-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -10653,7 +10653,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: rfit-nos-vrt-mec-80-088-ptf-any
+- conf-name: fit-nos-vrt-mec-80-088-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
