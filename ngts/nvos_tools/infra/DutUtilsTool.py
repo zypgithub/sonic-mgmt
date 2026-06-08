@@ -146,6 +146,16 @@ class DutUtilsTool:
 
         with allure.step("Waiting for system to reboot and become available"):
             dut_engine: LinuxSshEngine = reboot_params.recovery_engine or engine
+
+            # Attach to the serial console BEFORE the port-up wait. "System is ready" is a
+            # one-shot banner printed *before* the mgmt IP/port becomes reachable sometimes, so attaching
+            # serial only after the port-up wait races against (and loses to) it. Connecting now
+            # lets the pexpect buffer accumulate the banner while we poll the port.
+            serial_engine = None
+            if wait_for_nvos and reboot_params.topology_obj:
+                with allure.step('get serial engine (before port-up wait)'):
+                    serial_engine = ConnectionTool.create_serial_engine(reboot_params.topology_obj,
+                                                                        enter_serial_context=True)
             with allure.step("Waiting for switch to be ready"):
                 with allure.step('wait for switch reachable/ping'):
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
@@ -153,12 +163,15 @@ class DutUtilsTool:
                     with allure.step('wait for System is ready in serial'):
                         if reboot_params.system_is_ready_timeout:
                             DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine,
                                                                          wait_timeout=reboot_params.system_is_ready_timeout)
                         elif device:
                             DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine,
                                                                          wait_timeout=device.timeout_system_is_ready)
                         else:
-                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj)
+                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine)
                         if reboot_params.track_boot_intervals:
                             InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE)
                 if not wait_for_nvos:
