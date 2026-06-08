@@ -1570,6 +1570,12 @@ platform_tests/test_cont_warm_reboot.py::test_continuous_reboot:
     conditions:
     - "https://redmine.mellanox.com/issues/5008193 and 'sn6600_ld' in platform"
 
+platform_tests/test_liquid_cooling_leakage_detection.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5076108"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5076108"
+
 route/test_static_route.py::test_static_route_warmboot:
   skip:
     reason: "Warm-reboot not supported on sn6600_ld - RM https://redmine.mellanox.com/issues/5008193"
