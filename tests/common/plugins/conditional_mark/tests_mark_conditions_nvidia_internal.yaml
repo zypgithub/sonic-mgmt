@@ -487,6 +487,13 @@ autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-
     conditions:
     - "https://redmine.mellanox.com/issues/3587377"
 
+autorestart.test_container_autorestart.py::test_containers_autorestart\[.*-bgp\]:
+  regex: true
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5075468"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5075468"
+
 bgp/test_bgp_bbr.py::test_bbr_enabled_dut_asn_in_aspath:
   xfail:
     reason: "Testcase expected to fail due to RM issue https://redmine.mellanox.com/issues/4989648"
