@@ -2159,8 +2159,8 @@
 
 # NVOS: Expected logs
 - Errors_list:
-    - '.*WARNING cpu_memory_container_checker: Memory usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
-    - '.*WARNING cpu_memory_container_checker: CPU usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
+    - '.*WARNING cpu_memory_container_checker: .*Memory usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
+    - '.*WARNING cpu_memory_container_checker: .*CPU usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/test_cpu_memory_monitoring.py
