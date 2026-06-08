@@ -5,6 +5,9 @@ import time
 
 import pytest
 
+from ngts.ngts_types import DevicesT, EnginesT
+from ngts.nvos_tools.Devices.IbDevice import PortiaSimx
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.IbnetdiscoverTool import IbnetdiscoverTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
@@ -26,20 +29,42 @@ RE_MF0_DESC = re.compile(r'MF0;[^:]+:\S+/U\d+')
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _get_fnm_interfaces(engines):
+def _is_fae_interface_up(port_data):
+    """Return True when FAE interface JSON reports link state up."""
+    link_data = port_data.get('link', {})
+    link_state = link_data.get(IbInterfaceConsts.LINK_STATE)
+
+    if isinstance(link_state, dict):
+        return NvosConsts.LINK_STATE_UP in link_state
+    if isinstance(link_state, str):
+        return link_state.lower() == NvosConsts.LINK_STATE_UP
+
+    return (
+        link_data.get(IbInterfaceConsts.LINK_LOGICAL_PORT_STATE) ==
+        IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE and
+        link_data.get(IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE) ==
+        IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP
+    )
+
+
+def _get_fnm_interfaces(engines, devices):
     """Return sorted list of FNM port names from 'nv show fae interface -o json'."""
     output = engines.dut.run_cmd(NV_SHOW_FAE_INTERFACE_JSON)
     try:
         data = json.loads(output)
     except (json.JSONDecodeError, TypeError):
-        logger.warning(f"Could not parse JSON from 'nv show fae interface': {output}")
+        logger.warning("Could not parse JSON from 'nv show fae interface': %s", output)
         return []
 
     fnm_ports = []
+    skip_down_ports = isinstance(devices.dut, PortiaSimx)
     for port_name, port_data in data.items():
         if isinstance(port_data, dict):
             port_type = port_data.get('type', '')
             if port_type == 'fnm' or (not port_type and port_name.startswith('fnm')):
+                if skip_down_ports and not _is_fae_interface_up(port_data):
+                    logger.info("Skipping down Portia SIMX FNM port %s: %s", port_name, port_data.get('link', {}))
+                    continue
                 fnm_ports.append(port_name)
     return sorted(fnm_ports)
 
@@ -55,7 +80,7 @@ def _get_ib_port(engines, port_name):
             return int(value)
     except (json.JSONDecodeError, TypeError, ValueError):
         pass
-    logger.warning(f"Could not extract ib-port for {port_name} from: {output}")
+    logger.warning("Could not extract ib-port for %s from: %s", port_name, output)
     return None
 
 
@@ -66,7 +91,12 @@ def _smpquery_nd(engines, dr_path_str):
         if 'Connection timed out' not in output:
             return output
         if attempt < SMPQUERY_RETRIES - 1:
-            logger.warning(f"smpquery timed out for DR path {dr_path_str}, retrying ({attempt + 1}/{SMPQUERY_RETRIES - 1})")
+            logger.warning(
+                "smpquery timed out for DR path %s, retrying (%s/%s)",
+                dr_path_str,
+                attempt + 1,
+                SMPQUERY_RETRIES - 1,
+            )
             time.sleep(SMPQUERY_RETRY_DELAY_S)
     return output
 
@@ -94,7 +124,7 @@ def test_ibnetdiscover(engines, devices, setup_name):
     """
     with allure.step("Run ibnetdiscover and parse topology"):
         switches = IbnetdiscoverTool.run_ibnetdiscover(engines)
-        logger.info(f"Discovered {len(switches)} switch(es)")
+        logger.info("Discovered %s switch(es)", len(switches))
 
     with allure.step("Verify at least one switch was discovered"):
         assert switches, "IbnetdiscoverTool returned no switches"
@@ -141,10 +171,7 @@ def test_ibnetdiscover(engines, devices, setup_name):
 
     with allure.step("Log topology summary"):
         for sw in switches:
-            logger.info(
-                f"  U{sw['order']} guid={sw['switch_guid']} "
-                f"connections={len(sw['ports'])}"
-            )
+            logger.info("  U%s guid=%s connections=%s", sw['order'], sw['switch_guid'], len(sw['ports']))
 
 
 @pytest.mark.air
@@ -152,7 +179,7 @@ def test_ibnetdiscover(engines, devices, setup_name):
 @pytest.mark.air_ci
 @pytest.mark.air_sanity
 @pytest.mark.timeout(10 * MINUTE, func_only=True)
-def test_smpquery_nd_per_fnm_port(engines, devices):
+def test_smpquery_nd_per_fnm_port(engines: EnginesT, devices: DevicesT):
     """
     For each FNM interface on the switch:
       1. Retrieve its ib-port number via 'nv show fae interface <port> -o json'.
@@ -164,12 +191,12 @@ def test_smpquery_nd_per_fnm_port(engines, devices):
     with allure.step("Discover switches via ibnetdiscover"):
         switches = IbnetdiscoverTool.run_ibnetdiscover(engines)
         num_switches = len(switches)
-        logger.info(f"Discovered {num_switches} switch(es)")
+        logger.info("Discovered %s switch(es)", num_switches)
         assert num_switches > 0, "No switches discovered via ibnetdiscover"
 
     with allure.step("Discover FNM interfaces via 'nv show fae interface'"):
-        fnm_ports = _get_fnm_interfaces(engines)
-        logger.info(f"Found FNM ports: {fnm_ports}")
+        fnm_ports = _get_fnm_interfaces(engines, devices)
+        logger.info("Found FNM ports: %s", fnm_ports)
         assert fnm_ports, "No FNM interfaces found in 'nv show fae interface' output"
 
     for port_name in fnm_ports:
@@ -179,7 +206,7 @@ def test_smpquery_nd_per_fnm_port(engines, devices):
                 ib_port = _get_ib_port(engines, port_name)
                 assert ib_port is not None, \
                     f"Could not determine ib-port for interface {port_name}"
-                logger.info(f"  {port_name} -> ib-port {ib_port}")
+                logger.info("  %s -> ib-port %s", port_name, ib_port)
 
             visited = []
 
@@ -189,7 +216,7 @@ def test_smpquery_nd_per_fnm_port(engines, devices):
 
                     with allure.step(f"smpquery nd -D {dr_path}"):
                         output = _smpquery_nd(engines, dr_path)
-                        logger.info(f"    [{dr_path}] -> {output.strip()}")
+                        logger.info("    [%s] -> %s", dr_path, output.strip())
 
                         assert 'Connection timed out' not in output, \
                             f"smpquery timed out for DR path {dr_path}:\n{output}"
@@ -205,7 +232,7 @@ def test_smpquery_nd_per_fnm_port(engines, devices):
 
                         # Ring closed: back to the first hop's switch
                         if visited and desc == visited[0]:
-                            logger.info(f"  Ring closed after {hops} hops (back to '{desc}')")
+                            logger.info("  Ring closed after %s hops (back to '%s')", hops, desc)
                             break
 
                         visited.append(desc)
@@ -224,4 +251,4 @@ def test_smpquery_nd_per_fnm_port(engines, devices):
                 assert u_numbers == expected, \
                     f"Expected switches {expected}, found {u_numbers} in ring: {visited}"
 
-            logger.info(f"  {port_name}: ring = {' -> '.join(visited)}")
+            logger.info("  %s: ring = %s", port_name, " -> ".join(visited))
