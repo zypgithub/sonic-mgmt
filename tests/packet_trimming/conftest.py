@@ -303,8 +303,9 @@ def setup_srv6(duthost, request, rand_selected_dut, upstream_links, peer_links, 
     )
     logger.info(f"Added static route {SRV6_ROUTE_PREFIX} -> {nexthop} via {egress_intf}")
 
-    # Install ingress ACL on the egress physical port to drop decap SRv6 packets coming back from the neighbor
-    configure_srv6_loop_break_acl(rand_selected_dut, test_params['egress_ports'][0]['dut_members'])
+    # Install ingress ACL on the egress logical interface (PortChannel or physical Ethernet)
+    # to drop decap SRv6 packets coming back from the neighbor.
+    configure_srv6_loop_break_acl(rand_selected_dut, test_params['egress_ports'][0]['name'])
 
     yield dscp_mode
 

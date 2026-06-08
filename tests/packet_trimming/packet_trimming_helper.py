@@ -842,6 +842,9 @@ def fill_egress_buffer(duthost, ptfadapter, port_id, buffer_size, target_queue, 
             # Not critical if we've already sent most packets
 
     logger.info(f"Buffer filling completed, sent {total_sent_packets} packets")
+    sleep_time = TRIMMING_COUNTER_INTERVAL / 1000 + 1
+    logger.info(f"Waiting {sleep_time} seconds for the counter to be updated")
+    time.sleep(sleep_time)
 
     # Check queue counters after filling
     for interface in interfaces:
@@ -1568,7 +1571,7 @@ def cleanup_trimming_acl(duthost):
 
 def configure_srv6_loop_break_acl(duthost, egress_ports):
     """
-    Add an ingress ACL on the SRv6 egress physical interface(s) to drop packets bounced
+    Add an ingress ACL on the SRv6 egress interface(s) to drop packets bounced
     back from the neighbor whose destination falls in SRV6_ROUTE_PREFIX. Without this
     filter, the DUT keeps re-forwarding bounced packets out the same interface, forming a
     DUT<->neighbor L3 ping-pong loop until hlim hits zero (~32 bounces per packet).
@@ -1577,15 +1580,15 @@ def configure_srv6_loop_break_acl(duthost, egress_ports):
     test, and on this port's ingress side no legitimate traffic should carry such a
     destination (the legitimate flow is PTF -> DUT -> neighbor, not the reverse).
 
-    The ACL is bound to physical port(s) (e.g. PortChannel members), not the PortChannel
-    name itself, to keep the table type's BIND_POINTS=["PORT"] consistent and avoid the
-    PortChannel-bind-mismatch failure mode.
+    The ACL is bound to the logical egress interface(s), i.e. the PortChannel or the
+    physical Ethernet.
 
     Args:
         duthost: DUT host object
-        egress_ports (list[str] or str): Physical port name(s) to bind the ACL to as
-            ingress. Accepts a single port string or a list. For a PortChannel egress,
-            pass the channel members (e.g. test_params['egress_ports'][0]['dut_members']).
+        egress_ports (list[str] or str): Logical egress interface name(s) to bind the ACL
+            to as ingress. Accepts a single name or a list. For a PortChannel egress, pass
+            the PortChannel name (e.g. test_params['egress_ports'][0]['name']), not its
+            members.
     """
     if isinstance(egress_ports, str):
         ports_list = [egress_ports]
@@ -1617,7 +1620,8 @@ def configure_srv6_loop_break_acl(duthost, egress_ports):
                     "COUNTER"
                 ],
                 "BIND_POINTS": [
-                    "PORT"
+                    "PORT",
+                    "PORTCHANNEL"
                 ],
                 "MATCHES": [
                     "DST_IPV6"
