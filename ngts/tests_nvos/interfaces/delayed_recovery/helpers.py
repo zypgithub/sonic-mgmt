@@ -5,6 +5,8 @@ from ngts.nvos_tools.infra import NvosTestToolkit as TestToolkit
 import ngts.nvos_tools.infra.Tools as Tools
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.interfaces.nvl_port import helpers as nvl_helpers
+from ngts.ngts_types import DevicesT, EnginesT
 
 
 def apply_config():
@@ -73,10 +75,11 @@ def delayed_recovery_expected(applied, operational):
     }
 
 
-def get_connected_ports(device):
+def get_connected_ports(devices: DevicesT, engines: EnginesT):
     with allure.step("find connected ports"):
-        if device.switch_type.lower() == "nvl":
-            selected_port = Fae(port_name="acp288")
-            selected_peer_port = Fae(port_name="acp215")
+        if devices.dut.switch_type.lower() == "nvl":
+            selected_port, selected_peer_port = (
+                Fae(port_name=port) for port in nvl_helpers.get_linked_ports_pair(devices, engines)
+            )
 
         return selected_port, selected_peer_port

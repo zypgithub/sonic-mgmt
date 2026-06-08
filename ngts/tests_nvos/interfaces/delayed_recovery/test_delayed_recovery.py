@@ -67,6 +67,7 @@ def test_delayed_recovery_default_values(engines, devices, topology_obj):
                 logger.info("No down port was found")
                 return
 
+            selected_port = selected_port.get_returned_value()
             with allure.independent_step(f"Verify default values for {selected_port.name}"):
                 expected_output = {
                     DelayedRecovery.DELAYED_RECOVERY_LOSS_TH_FORCE: DelayedRecovery.DELAYED_RECOVERY_DEFAULT_FORCE_LOSS_TH,
@@ -84,7 +85,7 @@ def test_delayed_recovery_set_unset_values(engines, devices, topology_obj, regis
         2. verify no-force delayed recovery scenarios
     """
     with allure.step("get connected ports (peer ports)"):
-        selected_port, selected_peer_port = get_connected_ports(devices.dut)
+        selected_port, selected_peer_port = get_connected_ports(devices, engines)
         delayed_recovery_ports = (selected_port, selected_peer_port)
         register_cleanup(lambda: unset_delayed_recovery(delayed_recovery_ports))
 
@@ -200,7 +201,7 @@ def test_delayed_recovery_forced_values(engines, devices, topology_obj, register
         3. verify forced operational values on both ports
     """
     with allure.step("get connected ports (peer ports)"):
-        selected_port, selected_peer_port = get_connected_ports(devices.dut)
+        selected_port, selected_peer_port = get_connected_ports(devices, engines)
         delayed_recovery_ports = (selected_port, selected_peer_port)
         register_cleanup(lambda: unset_delayed_recovery(delayed_recovery_ports))
 
