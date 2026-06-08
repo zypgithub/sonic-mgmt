@@ -61,6 +61,14 @@ def validate_ports_state_and_speed(speed, expected_ports: list, prefix: str, sta
     ValidationTool.validate_subset_in_superset(expected_ports, actual_ports).verify_result()
 
 
+def validate_ports_state(expected_ports: list, prefix: str, state=ib_consts.NvosConsts.LINK_STATE_UP):
+    port_requirements = PortRequirements()
+    port_requirements.set_port_state(state)
+    actual_ports = [port.name for port in Port.get_list_of_ports(port_requirements_object=port_requirements) if port.name.startswith(prefix)]
+
+    ValidationTool.validate_subset_in_superset(expected_ports, actual_ports).verify_result()
+
+
 def select_random_nvl_port_name(devices, prefix=None):
     with allure.step(f"Select {devices.dut.nvl_port_type} port in up state"):
         port_names = [port.name for port in

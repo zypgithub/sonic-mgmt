@@ -4,6 +4,9 @@ import pytest
 import logging
 from retry.api import retry_call
 
+import time
+import re
+
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
 from ngts.nvos_tools.infra.Fae import Fae
@@ -18,6 +21,7 @@ from ngts.tests_nvos.interfaces.nvl_port.helpers import (
     select_random_nvl_port_name,
     skip_if_no_access_links,
     skip_if_no_trunk_links,
+    validate_ports_state
 )
 from ngts.tests_nvos.interfaces.nvl_port.phy_recovery_helpers import (
     PHY_RECOVERY_HIGHER_TIMEOUT_MAX,
@@ -105,6 +109,7 @@ def test_phy_recovery_counters(engines, devices, random_api):
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
+@pytest.mark.timeout(15 * MINUTE)
 def test_phy_recovery_attributes(devices, random_api):
     """
     @summary:
@@ -119,15 +124,14 @@ def test_phy_recovery_attributes(devices, random_api):
     6. Pick a random attribute, set and verify.
     """
 
-    recovery_status_enabled = False
     attribute_changed = False
-    speed_info_bulk = None
-    speed_info_duplex = None
+    preset_mode_changed = False
+
+    port_names = getattr(devices.dut, 'nvl_access_ports_list', [])
+    fae_port_names = Fae(port_name=summarize_switch_ports(port_names))
+    prefix = re.match(r'[a-zA-Z]+', port_names[0]).group() if port_names else 'acp'
 
     try:
-        with allure.step("Set access ports off 400G (phy recovery not supported at 400G)"):
-            speed_info_bulk = setup_nvl_speed_for_phy_recovery(devices, required=True)
-
         with allure.step("Select a port for test"):
             port_result = RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP)
             if not port_result.result:
@@ -140,29 +144,71 @@ def test_phy_recovery_attributes(devices, random_api):
             default_values = devices.dut.default_phy_recovery_attributes
             _validate_default_values(port_output, default_values)
 
-        with allure.step(f"Set {PhyRecoveryConsts.RECOVERY_STATUS} to {PhyRecoveryConsts.ENABLED}"):
-            selected_port.port.interface.link.phy_recovery.set(PhyRecoveryConsts.RECOVERY_STATUS, PhyRecoveryConsts.ENABLED, apply=True, ask_for_confirmation=True).verify_result()
-            recovery_status_enabled = True
-
-        with allure.step("Set speed to duplex"):
-            speed_info_duplex = setup_nvl_speed_for_phy_recovery(
-                devices, exclude_speeds=['200G'], required=True,
+        with allure.step("Set step-2 preset-mode to full-duplex"):
+            preset_mode_path = [PhyRecoveryConsts.STEP_2, PhyRecoveryConsts.PRESENT_MODE]
+            _set_phy_recovery_attribute(
+                fae_port_names.port.interface.link.phy_recovery,
+                preset_mode_path,
+                PhyRecoveryConsts.PRESENT_MODE,
+                PhyRecoveryConsts.FULL_DUPLEX,
+                apply=True,
+                ask_for_confirmation=True,
+            ).verify_result()
+            time.sleep(30)
+            retry_call(
+                validate_ports_state,
+                [port_names, prefix, NvosConsts.LINK_STATE_UP],
+                exceptions=AssertionError, tries=13, delay=30
             )
-
-        with allure.step("Select a random mutable attribute"):
-            random_path_list, random_attribute, new_value = _get_random_attribute_and_value(port_output, PhyRecoveryConsts.phy_recovery_attributes_options)
-
-        with allure.step(f"Set {random_attribute} to {new_value} and verify"):
-            if random_path_list[0] == random_attribute:
-                selected_port.port.interface.link.phy_recovery.set(random_attribute, str(new_value), apply=True, ask_for_confirmation=True).verify_result()
-            else:
-                selected_port.port.interface.link.phy_recovery.set(random_path_list[0], [random_attribute, str(new_value)], apply=True, ask_for_confirmation=True).verify_result()
             retry_call(
                 _verify_attribute,
-                [selected_port, random_path_list, random_attribute, str(new_value)],
-                exceptions=AssertionError,
-                tries=3,
-                delay=30,
+                [selected_port, preset_mode_path, PhyRecoveryConsts.PRESENT_MODE, PhyRecoveryConsts.FULL_DUPLEX],
+                exceptions=AssertionError, tries=5, delay=5
+            )
+            preset_mode_changed = True
+
+        with allure.step("Select a random mutable attribute"):
+            port_output = OutputParsingTool.parse_json_str_to_dictionary(
+                selected_port.port.interface.link.phy_recovery.show()).get_returned_value()
+            random_path_list, random_attribute, current_value, new_lower_value, new_higher_value = _get_random_attribute_and_value(devices, port_output,
+                                                                                                                                   PhyRecoveryConsts.phy_recovery_mutable_attributes,
+                                                                                                                                   PhyRecoveryConsts.phy_recovery_attributes_options)
+
+        with allure.step(f"Set {random_attribute} to {new_lower_value} on {selected_port.port.name} and verify value did not change"):
+            _set_phy_recovery_attribute(
+                selected_port.port.interface.link.phy_recovery,
+                random_path_list, random_attribute, new_lower_value,
+                apply=True, ask_for_confirmation=True,
+            ).verify_result()
+            with allure.step("Verify value did not change"):
+                time.sleep(30)
+                retry_call(
+                    validate_ports_state,
+                    [port_names, prefix, NvosConsts.LINK_STATE_UP],
+                    exceptions=AssertionError, tries=13, delay=30
+                )
+                retry_call(
+                    _verify_attribute,
+                    [selected_port, random_path_list, random_attribute, str(current_value)],
+                    exceptions=AssertionError, tries=5, delay=5
+                )
+
+        with allure.step(f"Set {random_attribute} to {new_higher_value} on all ports and verify"):
+            _set_phy_recovery_attribute(
+                fae_port_names.port.interface.link.phy_recovery,
+                random_path_list, random_attribute, new_higher_value,
+                apply=True, ask_for_confirmation=True,
+            ).verify_result()
+            time.sleep(30)
+            retry_call(
+                validate_ports_state,
+                [port_names, prefix, NvosConsts.LINK_STATE_UP],
+                exceptions=AssertionError, tries=13, delay=30
+            )
+            retry_call(
+                _verify_attribute,
+                [selected_port, random_path_list, random_attribute, str(new_higher_value)],
+                exceptions=AssertionError, tries=5, delay=5
             )
             attribute_changed = True
 
@@ -174,14 +220,22 @@ def test_phy_recovery_attributes(devices, random_api):
                 previous_value = port_output[random_path_list[0]][random_attribute]
 
             with allure.step(f"Set {random_attribute} to {previous_value}"):
-                selected_port.port.interface.link.phy_recovery.set(random_path_list[0], [random_attribute, previous_value], apply=True, ask_for_confirmation=True)
+                _set_phy_recovery_attribute(
+                    fae_port_names.port.interface.link.phy_recovery,
+                    random_path_list, random_attribute, previous_value,
+                    apply=True, ask_for_confirmation=True,
+                )
 
-        restore_nvl_speed(speed_info_duplex)
-        restore_nvl_speed(speed_info_bulk)
-
-        if recovery_status_enabled:
-            with allure.step(f"Unset {PhyRecoveryConsts.RECOVERY_STATUS}"):
-                selected_port.port.interface.link.phy_recovery.unset(PhyRecoveryConsts.RECOVERY_STATUS, apply=True, ask_for_confirmation=True).verify_result()
+        if preset_mode_changed:
+            with allure.step(f"Restore step-2 {PhyRecoveryConsts.PRESENT_MODE} to default"):
+                _set_phy_recovery_attribute(
+                    fae_port_names.port.interface.link.phy_recovery,
+                    preset_mode_path,
+                    PhyRecoveryConsts.PRESENT_MODE,
+                    devices.dut.default_phy_recovery_attributes[PhyRecoveryConsts.STEP_2][PhyRecoveryConsts.PRESENT_MODE],
+                    apply=True,
+                    ask_for_confirmation=True,
+                )
 
 
 @pytest.mark.interface
@@ -459,6 +513,13 @@ def _verify_link_state(selected_port, expected_link_state):
     assert port_state.get(expected_link_state) is not None, f"Link state is {port_state} but expected {expected_link_state}"
 
 
+def _set_phy_recovery_attribute(phy_recovery, path_list, attribute, value, **kwargs):
+    """Set a phy-recovery leaf via NVUE (``nv set ... step-N <attr> <value>``)."""
+    if len(path_list) == 1 and path_list[0] == attribute:
+        return phy_recovery.set(attribute, value, **kwargs)
+    return phy_recovery.set(path_list[0], [attribute, str(value)], **kwargs)
+
+
 def _verify_attribute(selected_port, path, attribute, expected_value):
     port_output = OutputParsingTool.parse_json_str_to_dictionary(
         selected_port.port.interface.link.phy_recovery.show()).get_returned_value()
@@ -490,13 +551,14 @@ def _flatten_attributes(d, parent_path=None):
     return flat_list
 
 
-def _get_random_attribute_and_value(attributes_dict, options_dict):
+def _get_random_attribute_and_value(devices, attributes_dict, mutable_attributes_dict, options_dict):
     """
     Chooses a random leaf attribute that has options defined, and selects
     a new random valid value for it.
 
     Args:
         attributes_dict (dict): The nested dictionary of current attributes.
+        mutable_attributes_dict (dict) : The attributes that ate mutable.
         options_dict (dict): The dictionary containing valid options for each key.
     """
     # 1. Get all leaf attributes with their full path
@@ -505,7 +567,7 @@ def _get_random_attribute_and_value(attributes_dict, options_dict):
     # 2. Filter attributes to include only those present in the options dictionary
     valid_attributes = [
         (path, key) for path, key in all_leaf_attributes
-        if key in options_dict
+        if key in options_dict and key in mutable_attributes_dict
     ]
 
     # 3. Choose a random attribute (path, key) from the valid list
@@ -513,6 +575,18 @@ def _get_random_attribute_and_value(attributes_dict, options_dict):
 
     # 4. Get the possible options and select a random new value
     possible_values = options_dict[attribute_key]
-    new_value = random.choice(possible_values)
+    if random_path_list[0] == attribute_key:
+        current_value = attributes_dict[attribute_key]
+    else:
+        current_value = attributes_dict[random_path_list[0]][attribute_key]
+    default_int = int(current_value)
+    lower_candidates = [value for value in possible_values if value < default_int]
+    higher_candidates = [value for value in possible_values if value > default_int]
+    if not lower_candidates:
+        lower_candidates = [default_int]
+    if not higher_candidates:
+        higher_candidates = [default_int]
+    new_lower_value = random.choice(lower_candidates)
+    new_higher_value = random.choice(higher_candidates)
 
-    return random_path_list, attribute_key, new_value
+    return random_path_list, attribute_key, current_value, new_lower_value, new_higher_value

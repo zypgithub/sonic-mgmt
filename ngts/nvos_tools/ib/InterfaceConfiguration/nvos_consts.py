@@ -227,6 +227,7 @@ class PhyRecoveryConsts:
     DISABLED = 'disabled'
     FW_DEFAULT = 'fw-default'
     AUTO = 'auto'
+    FULL_DUPLEX = 'full-duplex'
 
     # NVL6 attributes
     LINK_DOWN_TIMEOUT = 'link-down-timeout'
@@ -296,6 +297,16 @@ class PhyRecoveryConsts:
         STATE_67_TO_68_TIME_PRESET3: list(range(0, 65536)),
         STATE_60_TO_LINKUP_TIMEOUT: list(range(0, 65536)),
     }
+
+    phy_recovery_mutable_attributes = [
+        PEQ_NUMBER_OF_RETRY_PRESET3,
+        STATE_60_TIMEOUT,
+        STATE_61_TIMEOUT,
+        STATE_62_TIMEOUT,
+        STATE_65_TO_66_TIME_PRESET3,
+        STATE_66_TO_67_TIME_PRESET3,
+        STATE_67_TO_68_TIME_PRESET3
+    ]
 
     class SerdesEQMode(Enum):
         ENABLED = 'enabled'
