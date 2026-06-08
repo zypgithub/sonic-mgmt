@@ -896,6 +896,79 @@ def attach_baseline_to_failed_results(
     return attached
 
 
+def attach_mappings_to_failed_results(
+    alluredir: str,
+    setup_name: Optional[str] = None,
+    mappings_doc: Optional[dict] = None,
+) -> int:
+    """Apply hand-curated known_bugs_mappings.json entries to failed/broken results.
+
+    Walks every *-result.json in alluredir; for each broken/failed test that
+    matches a mappings entry (test_name + error_msg substring + system_type),
+    injects a Redmine issue link and known_bug tag directly into the result
+    JSON so stamp_known_bug_sentinels picks it up as a known bug.
+
+    Returns the number of results patched.
+    """
+    if mappings_doc is None:
+        mappings_doc = load_mappings()
+    if not mappings_doc:
+        return 0
+
+    patched = 0
+    for path in glob.glob(os.path.join(alluredir, "*-result.json")):
+        try:
+            with open(path) as fh:
+                result = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if result.get("status") not in ("failed", "broken"):
+            continue
+
+        test_name = result.get("name", "")
+        status_details = result.get("statusDetails") or {}
+        error_message = status_details.get("message") or result.get("statusMessage") or ""
+
+        matches = find_mapping_for_failure(
+            test_name=test_name,
+            error_message=error_message,
+            setup_name=setup_name or "",
+            mappings_doc=mappings_doc,
+        )
+        if not matches:
+            continue
+
+        mapping = matches[0]
+        redmine_id = mapping.get("redmine_id")
+        if not redmine_id:
+            continue
+
+        url = REDMINE_ISSUE_URL.format(id=redmine_id)
+        existing_urls = {lnk.get("url") for lnk in result.get("links", []) or []}
+        if url in existing_urls:
+            continue
+
+        result.setdefault("links", []).append({
+            "name": f"Redmine #{redmine_id}",
+            "url": url,
+            "type": "issue",
+        })
+        tag_value = f"{KNOWN_BUG_TAG_PREFIX_REDMINE}{redmine_id}"
+        existing_tags = {(l.get("name"), l.get("value")) for l in result.get("labels", []) or []}
+        if ("tag", tag_value) not in existing_tags:
+            result.setdefault("labels", []).append({"name": "tag", "value": tag_value})
+        if ("tag", KNOWN_BUG_TAG) not in existing_tags:
+            result.setdefault("labels", []).append({"name": "tag", "value": KNOWN_BUG_TAG})
+
+        try:
+            with open(path, "w") as fh:
+                json.dump(result, fh)
+            patched += 1
+        except OSError:
+            pass
+    return patched
+
+
 def finalize_bug_categories(alluredir: str,
                             baseline: Optional[dict] = None,
                             setup_name: Optional[str] = None) -> None:
@@ -913,12 +986,13 @@ def finalize_bug_categories(alluredir: str,
         if baseline is None:
             baseline = load_baseline()
         baseline_attached = attach_baseline_to_failed_results(alluredir, baseline, setup_name=setup_name)
+        mappings_attached = attach_mappings_to_failed_results(alluredir, setup_name=setup_name)
         counts = stamp_known_bug_sentinels(alluredir)
         wrote = write_categories_json(alluredir)
         _log.info(
-            "bug_marker: baseline log_analyzer attachments=%d; "
+            "bug_marker: baseline attachments=%d; mappings attachments=%d; "
             "stamped %d known-bug + %d unknown failures; categories.json %s",
-            baseline_attached, counts["known"], counts["unknown"],
+            baseline_attached, mappings_attached, counts["known"], counts["unknown"],
             "written" if wrote else "unchanged",
         )
     except Exception:
