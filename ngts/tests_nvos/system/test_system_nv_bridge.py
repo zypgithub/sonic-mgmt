@@ -63,8 +63,7 @@ def test_system_nv_bridge_default_fields_values(engines, devices, nv_command, ra
             cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER, op_param_value=engines.dut.ip, apply=True)
 
         with allure.step("Verify nv bridge output"):
-            eth0_ip = Port('eth0').interface.ipv4.get_primary_ip_address(dut_engine=engines.dut)
-            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, heart_beat=SystemConsts.NV_BRIDGE_HEALTH_OK, connections=eth0_ip, local_host=True, dut_engine=engines.dut)
+            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, heart_beat=SystemConsts.NV_BRIDGE_HEALTH_OK, connections=engines.dut.ip, local_host=True, dut_engine=engines.dut)
 
             with allure.step("Check system logs"):
                 TestToolkit.tested_api = ApiType.NVUE
@@ -299,9 +298,8 @@ def test_system_nv_bridge_state_file(engines, nv_command, test_api):
                                                   apply=True, dut_engine=engines.dut)
 
         with allure.step("Wait for nv-bridge to be configured"):
-            eth0_ip = Port('eth0').interface.ipv4.get_primary_ip_address(dut_engine=engines.dut)
             _verify_nv_bridge_output(nv_command.system.nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED,
-                                     dut_engine=engines.dut, connections=eth0_ip,
+                                     dut_engine=engines.dut, connections=engines.dut.ip,
                                      local_host=True)
             show_data = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.nv_bridge.show()).get_returned_value()
 
