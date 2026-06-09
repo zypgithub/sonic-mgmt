@@ -57,12 +57,12 @@ def _get_fnm_interfaces(engines, devices):
         return []
 
     fnm_ports = []
-    skip_down_ports = isinstance(devices.dut, PortiaSimx)
+    is_portia_simx = isinstance(devices.dut, PortiaSimx)
     for port_name, port_data in data.items():
         if isinstance(port_data, dict):
             port_type = port_data.get('type', '')
             if port_type == 'fnm' or (not port_type and port_name.startswith('fnm')):
-                if skip_down_ports and not _is_fae_interface_up(port_data):
+                if is_portia_simx and not _is_fae_interface_up(port_data):
                     logger.info("Skipping down Portia SIMX FNM port %s: %s", port_name, port_data.get('link', {}))
                     continue
                 fnm_ports.append(port_name)
