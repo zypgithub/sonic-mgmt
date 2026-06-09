@@ -166,8 +166,8 @@ def handle_backend_acl(duthost, tbinfo):
 
 
 def base_verification(discard_group, pkt, ptfadapter, duthosts, asic_index, ports_info,     # noqa: F811
-                      tx_dut_ports=None, skip_counter_check=False, drop_information=None,   # noqa: F811
-                      weak_server=False):                                                    # noqa: F811
+                      tx_dut_ports=None, skip_counter_check=False, drop_information=None,  # noqa: F811
+                      weak_server=False):  # noqa: F811
     """
     Base test function for verification of L2 or L3 packet drops. Verification type depends on 'discard_group' value.
     Supported 'discard_group' values: 'L2', 'L3', 'ACL', 'NO_DROPS'
