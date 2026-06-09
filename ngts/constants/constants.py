@@ -1957,7 +1957,7 @@ class WJHConsts:
 
 
 class FanoutVersionConsts:
-    EXPECTED_MLNX_VERSION = ["3.10.4206", "3.10.4302"]
+    EXPECTED_MLNX_VERSION = ["3.10.4206", "3.10.4302", "3.10.4602"]
     EXPECTED_SONIC_VERSION_LIST = ["202511_RC.119-8bde1a082_Internal", "202511_RC.129-48da86131_Internal", "202605_RC.48-89ab9327d9_Internal"]
 
 
