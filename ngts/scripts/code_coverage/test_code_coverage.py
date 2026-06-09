@@ -114,7 +114,7 @@ def extract_c_coverage_for_nvos(
             engines.dut.run_cmd('sudo docker ps')
 
     with allure.step(f'Run {NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}'):
-        engines.dut.run_cmd(f'{NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}')
+        engines.dut.run_cmd(f'sudo {NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}')
         time.sleep(2)
 
     with allure.step(f"Copy coverage files from {NvosConsts.COVERAGE_OUTPUT_ON_SWITCH} to {c_dest}"):
