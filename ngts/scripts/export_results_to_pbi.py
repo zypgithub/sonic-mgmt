@@ -10,16 +10,15 @@ import requests
 import retry
 
 FILE_PATH = Path(__file__).resolve()
+_PATH_TO_UPLOAD_URL = Path("/auto/sw_system_project/NVOS_INFRA/verification_files/")
 sonic_mgmt_path = FILE_PATH.parents[len(FILE_PATH.parts) - FILE_PATH.parts.index('ngts') - 1]
 sys.path.append(str(sonic_mgmt_path))
 
-from ngts.scripts.pbi.helper import _PATH_TO_UPLOAD_URL
-
-from ngts.constants.constants import InfraConst
-from ngts.nvos_constants.constants_nvos import TopologyConsts
-from ngts.constants.constants import CliType, DbConstants
-from ngts.tools.mars_test_cases_results.Connect_to_MSSQL import ConnectMSSQL
-from ngts.scripts.pbi.helper import Args, TestResult, Summary, LABug, Parser, LaHelper, DataBaseHelper
+from ngts.constants.constants import CliType, DbConstants, InfraConst  # noqa: E402
+from ngts.nvos_constants.constants_nvos import TopologyConsts  # noqa: E402
+from ngts.scripts.pbi import la_helpers, parser_helpers, database_helpers  # noqa: E402
+from ngts.scripts.pbi.models import Args, LABug, Summary, TestResult  # noqa: E402
+from ngts.tools.mars_test_cases_results.Connect_to_MSSQL import ConnectMSSQL  # noqa: E402
 
 logger = logging.getLogger(Path(__file__).stem if __name__ == "__main__" else __name__)
 
@@ -41,8 +40,8 @@ def _parse_args() -> Args:
     )
     parser.add_argument('--setup_name', dest='setup_name', help='Setup name')
     parser.add_argument('--session_id', default="", dest='session_id', help='Session id')
-    parser.add_argument('--target-version', type=Parser.parse_version, default="", dest='target_version', help='Target version')
-    parser.add_argument('--tarball', type=Parser.parse_branch_name, default="", dest='branch', help='Tarball')
+    parser.add_argument('--target-version', type=parser_helpers.parse_version, default="", dest='target_version', help='Target version')
+    parser.add_argument('--tarball', type=parser_helpers.parse_branch_name, default="", dest='branch', help='Tarball')
     parser.add_argument('--dut_hwsku', default="", dest='dut_hwsku', help='Switch Type')
 
     return parser.parse_args(namespace=Args())
@@ -62,13 +61,13 @@ def insert_data_to_pbi_db(args: Args, parsed_results: list[TestResult], summary:
         logger.info("Connection to DB was completed successfully")
 
         logger.info("Insert results to test_analytics DB")
-        DataBaseHelper.insert_test_analytics_data_to_pbi_db(args, mssql_connection_obj, parsed_results)
+        database_helpers.insert_test_analytics_data_to_pbi_db(args, mssql_connection_obj, parsed_results)
 
         logger.info("Insert results to regression_matrix DB")
-        DataBaseHelper.insert_regression_matrix_data_to_pbi_db(args, mssql_connection_obj, summary)
+        database_helpers.insert_regression_matrix_data_to_pbi_db(args, mssql_connection_obj, summary)
 
         logger.info("Insert results to loganalyzer_bug DB")
-        LaHelper.insert_loganalyzer_bugs_data_to_pbi_db(args, mssql_connection_obj, loganalyzer_bugs_summary)
+        database_helpers.insert_loganalyzer_bugs_data_to_pbi_db(args, mssql_connection_obj, loganalyzer_bugs_summary)
 
     finally:
         if mssql_connection_obj:
@@ -88,13 +87,13 @@ def summarize_results_and_upload(report_url: str, args: Args) -> None:
         suites_data = suites_resp.json()
 
         logger.info("Parse run results:")
-        parsed_results = Parser.parse_suites(suites_data, base_url, [], [])
+        parsed_results = parser_helpers.parse_suites(suites_data, base_url, [], [])
 
         logger.info("Summarize run's results:")
         summary = Summary.summarize_test_run(parsed_results, report_url)
 
         logger.info("Parse loganalyzer bugs:")
-        loganalyzer_bugs_summary = LaHelper.parse_loganalyzer_bugs(parsed_results, base_url)
+        loganalyzer_bugs_summary = la_helpers.parse_loganalyzer_bugs(parsed_results, base_url)
 
         insert_data_to_pbi_db(args, parsed_results, summary, loganalyzer_bugs_summary)
     except Exception as e:
