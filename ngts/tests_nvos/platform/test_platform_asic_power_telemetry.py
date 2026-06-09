@@ -1,15 +1,18 @@
 import logging
+
 import pytest
 
-from ngts.nvos_constants.constants_nvos import PlatformConsts, DatabaseConst, PowerCappingConsts
 from ngts.constants.constants import GnmiConsts
-from ngts.nvos_tools.infra.Tools import Tools
+from ngts.ngts_types import DevicesT
+from ngts.nvos_constants.constants_nvos import DatabaseConst, PlatformConsts, PowerCappingConsts
+from ngts.nvos_tools.Devices.IbDevice import RosalindSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.helpers import run_gnmi_client_and_parse_output
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -88,7 +91,7 @@ def test_platform_asic_power_telemetry_default_fields_values(random_api, devices
 
 @pytest.mark.platform
 @pytest.mark.power_telemetry
-def test_platform_asic_power_telemetry_counters_updates(engines, random_api, devices, nv_command, wrong_shunt_resistor_system):
+def test_platform_asic_power_telemetry_counters_updates(engines, random_api, devices: DevicesT, nv_command, wrong_shunt_resistor_system):
     """
     Validate ASIC Power Telemetry feature counters updates.
         Test flow:
@@ -106,7 +109,7 @@ def test_platform_asic_power_telemetry_counters_updates(engines, random_api, dev
     with allure.step("Get random ASIC"):
         random_asic = RandomizationTool.select_random_value(devices.dut.asic_numbers).get_returned_value()
 
-        if _check_hw_mgmt_rev(engines):
+        if _check_hw_mgmt_rev(engines) and not isinstance(devices.dut, RosalindSwitch):
             with allure.step("Get output from NVUE counters command, wait 5 seconds, check counters changed"):
                 with allure.step("Get output from NVUE command before reboot"):
                     counters_before_sleep = _get_power_temetry_counters(nv_command.platform, random_asic)
