@@ -1687,6 +1687,9 @@ class ResultUploaderConst:
     UPLOADER_SCRIPT_RELATIVE_PATH = "test_reporting/report_uploader.py"
     COMMUNITY_DBS_RELATIVE_PATH = "sonic-tool/mars/dbs/community"
     MSFT_PLATFORMS = ["4600C", "4700", "2700"]
+    # Setups whose Noga names do not follow the sonic_<codename>_<host> convention
+    # and would be dropped by filter_canonical_setups. List them here to keep them
+    NON_STANDARD_NAMED_SETUPS = ["sonic_slm-chipless-2700a1-146"]
     MARS_RELEASE = "/auto/sw_tools/Internal/MARS/mars_apps/RELEASE/4_3_3/bin/"
     QUERY_SESSIONS_SCRIPT = os.path.join(MARS_RELEASE, "save_delete_sessions_query.py")
     SAVE_SESSIONS_SCRIPT = os.path.join(MARS_RELEASE, "save_delete_sessions.py")

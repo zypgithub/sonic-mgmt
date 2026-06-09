@@ -295,7 +295,11 @@ class ReleaseResultsUploader:
             test_name = df.loc[i, "test name"]
             old_hostname = df.loc[i, "host"]
             platform = df.loc[i, "platform"]
-            commercial_name = re.search(r"x86_64-\w*_(\w+\d{4}\w*)-.*", platform).group(1)
+            # Extract the commercial model name from the platform string. Switch
+            # platforms are x86_64 and BMC platforms are arm64; both are supported:
+            #   x86_64-nvidia_sn5640-r0            -> sn5640
+            #   arm64-aspeed_nvidia_ast2700_bmc-r0 -> ast2700_bmc
+            commercial_name = re.search(r"(?:x86_64|arm64)-\w*_(\w+\d{4}\w*)-.*", platform).group(1)
             new_hostname = self.get_new_hostname(old_hostname, commercial_name)
             df = self.update_commercials_in_columns(df, i, old_hostname, new_hostname)
             message = df.loc[i, "message"]
@@ -980,6 +984,10 @@ class ReleaseResultsUploader:
     @staticmethod
     def get_host_setup_name(host, setups_list):
         host_setup_name = None
+        # BMC DUTs are reported with a "-bmc" suffix (e.g. slm-chipless-2700a1-146-bmc),
+        # but the Noga setup is named after the switch (e.g. sonic_slm-chipless-2700a1-146),
+        # so strip the suffix before matching the host against setup names.
+        normalized_host = host[:-len("-bmc")] if host.endswith("-bmc") else host
         for setup_name in setups_list:
             if setup_name == "sonic-dual-tor-leopard":
                 if host in ["r-leopard-70", "r-leopard-72"]:
@@ -989,7 +997,7 @@ class ReleaseResultsUploader:
                 if host in ["r-leopard-91", "r-leopard-93"]:
                     host_setup_name = setup_name
                     break
-            elif host in setup_name:
+            elif normalized_host in setup_name:
                 host_setup_name = setup_name
                 break
         return host_setup_name
