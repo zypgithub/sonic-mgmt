@@ -62,7 +62,6 @@ def render_failure_analysis_html(
         "__JS_SETUP__": json.dumps((setup_name or "").strip()),
         "__JS_SESSION__": json.dumps((session_id or "").strip()),
         "__JS_NODEID__": json.dumps((test_nodeid or "").strip()),
-        "__JS_CURSOR_KEY__": json.dumps(cursor_prompt_session_storage_key(test_nodeid)),
         "__JS_BUNDLE_KEY__": json.dumps(resolver_result_session_storage_key(test_nodeid)),
         "___SONIC_MGMT_RM_INJECT_STMT___": get_rm_inject_stmt(),
     }

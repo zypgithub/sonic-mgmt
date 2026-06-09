@@ -2,15 +2,15 @@
 """
 HTTPS server for AI regression RCA in Allure (pytest client stubs in ``tests/common/plugins/allure_wrapper/ai_rca/``).
 
-Maps each Allure report URL to agent JSON via MISQL (``misql_pbi_connect.lookup_agent_by_allure_url``),
+Maps each Allure report URL to agent JSON via ``allure_agent_lookup.lookup_agent_by_allure_url``,
 and records analysis Like/Dislike feedback.
 Contract must match ``resolver_contract.ALLURE_JSON_RESOLVER_SERVER_BASE`` and ``ALLURE_JSON_RESOLVER_RESOLVE_PATH``:
 
-* ``GET /resolve?allure_url=<url-encoded>`` — looks up ``allure_url_2test`` in
-  ``mars_regression_agent_results``, then returns JSON text:
-  ``{"ok": true, "path": "/auto/.../*_agent_output.json", "text": "...", "path_agent_input": "...", "agent_input": ...}``
-  (``agent_input`` is ``model_input`` from SQL when present). Or ``{"ok": false, "reason": "agent_not_analyzed"}``
-  when there is no row (not cached). Successful lookups with a path are cached in memory per process.
+* ``GET /resolve?allure_url=<url-encoded>`` — calls BI ``/allure-url-to-agent-full-path``,
+  fetches agent output from fit69, then returns:
+  ``{"ok": true, "path": "/auto/.../*_agent_output.json", "text": "...", "path_agent_input": "..."}``.
+  Or ``{"ok": false, "reason": "agent_not_analyzed"}`` on miss (not cached).
+  Successful lookups with a path are cached in memory per process.
 
 * ``POST /analysis_feedback`` — Like/Dislike from the Allure HTML attachment (must match
   ``resolver_contract.ALLURE_ANALYSIS_FEEDBACK_PATH``).
@@ -61,7 +61,7 @@ for _p in (_AI_RCA_DIR, _TESTS_AI_RCA):
     if _p.is_dir() and str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from misql_pbi_connect import lookup_agent_by_allure_url, strip_fit69_url_prefix
+from allure_agent_lookup import lookup_agent_by_allure_url, strip_fit69_url_prefix
 import attachment_templates
 from resolver_contract import (
     ALLURE_ATTACHMENT_CURSOR_PATH,
@@ -86,8 +86,8 @@ DEFAULT_SSL_CERT_FILE = "/root/certification/new_rm_digicert.crt"
 DEFAULT_SSL_KEY_FILE = "/root/certification/rm_allure_new.key"
 
 DEFAULT_ANALYSIS_FEEDBACK_PATH = "/analysis_feedback"
-# In-memory cache: allure_url -> (agent_full_path, agent_input); only successful path lookups.
-_RESOLVE_MISQL_CACHE: Dict[str, Tuple[str, Any]] = {}
+# In-memory cache: allure_url -> agent_full_path; only successful path lookups.
+_RESOLVE_LOOKUP_CACHE: Dict[str, str] = {}
 DEFAULT_ANALYSIS_FEEDBACK_AGGREGATE_JSON = "/tmp/allure_analysis_feedback_by_url.json"
 FEEDBACK_BODY_MAX_BYTES = 262144
 FEEDBACK_FIELD_MAX_LEN = 8192
@@ -360,32 +360,32 @@ def _merge_feedback_aggregate(
     return True, "", ck
 
 
-def _resolve_agent_from_misql(allure_url: str) -> Tuple[Optional[str], Any, str]:
-    """
-    Return (agent_full_path, agent_input, reason).
-    ``agent_input`` is ``model_input`` from SQL. Both paths are ``None`` on miss (reason set).
-    """
+def _resolve_agent_path_for_allure_url(allure_url: str) -> Tuple[Optional[str], str]:
+    """Return (agent_full_path, reason). ``agent_full_path`` is ``None`` on miss (reason set)."""
     target_raw = (allure_url or "").strip()
     if not target_raw:
-        return None, None, "invalid_allure_url"
+        return None, "invalid_allure_url"
 
-    if target_raw in _RESOLVE_MISQL_CACHE:
-        cached_path, cached_input = _RESOLVE_MISQL_CACHE[target_raw]
-        _resolve_debug("misql cache HIT url=%r path=%r" % (target_raw[:RESOLVE_DEBUG_MAX_URL], cached_path))
-        return cached_path, cached_input, ""
+    if target_raw in _RESOLVE_LOOKUP_CACHE:
+        cached_path = _RESOLVE_LOOKUP_CACHE[target_raw]
+        _resolve_debug("lookup cache HIT url=%r path=%r" % (target_raw[:RESOLVE_DEBUG_MAX_URL], cached_path))
+        return cached_path, ""
 
     try:
-        agent_path, agent_input = lookup_agent_by_allure_url(target_raw)
+        agent_path = lookup_agent_by_allure_url(target_raw)
     except Exception as e:
-        return None, None, f"misql_error:{e}"
+        return None, f"lookup_error:{e}"
 
     if not agent_path:
-        _resolve_debug("misql cache SKIP (no row) url=%r" % target_raw[:RESOLVE_DEBUG_MAX_URL])
-        return None, None, "agent_not_analyzed"
+        _resolve_debug("lookup cache SKIP (no path) url=%r" % target_raw[:RESOLVE_DEBUG_MAX_URL])
+        return None, "agent_not_analyzed"
 
-    _RESOLVE_MISQL_CACHE[target_raw] = (agent_path, agent_input)
-    _resolve_debug("misql cache STORE url=%r (cache_size=%d)" % (target_raw[:RESOLVE_DEBUG_MAX_URL], len(_RESOLVE_MISQL_CACHE)))
-    return agent_path, agent_input, ""
+    _RESOLVE_LOOKUP_CACHE[target_raw] = agent_path
+    _resolve_debug(
+        "lookup cache STORE url=%r (cache_size=%d)"
+        % (target_raw[:RESOLVE_DEBUG_MAX_URL], len(_RESOLVE_LOOKUP_CACHE))
+    )
+    return agent_path, ""
 
 
 def _cors_headers(handler: BaseHTTPRequestHandler) -> Dict[str, str]:
@@ -517,11 +517,8 @@ class AiRcaAllureHandler(BaseHTTPRequestHandler):
             if _mock_resolve_enabled() or _is_demo_allure_url(allure_url):
                 self._json(200, _resolve_mock_response(allure_url))
                 return
-            mapped_path, agent_input, reason = _resolve_agent_from_misql(allure_url)
-            _resolve_debug(
-                "misql -> mapped_path=%r agent_input=%s reason=%r"
-                % (mapped_path, "set" if agent_input is not None else "none", reason)
-            )
+            mapped_path, reason = _resolve_agent_path_for_allure_url(allure_url)
+            _resolve_debug("lookup -> mapped_path=%r reason=%r" % (mapped_path, reason))
             if not mapped_path:
                 out_err: Dict[str, Any] = {"ok": False, "reason": reason or "agent_not_analyzed"}
                 if reason == "agent_not_analyzed":
@@ -548,8 +545,6 @@ class AiRcaAllureHandler(BaseHTTPRequestHandler):
             paired_input = _paired_agent_input_path(resolved_path)
             if paired_input:
                 out["path_agent_input"] = paired_input
-            if agent_input is not None:
-                out["agent_input"] = agent_input
             _resolve_debug(
                 "resolve success text_len=%s keys=%s"
                 % (len(text or ""), list(out.keys()))

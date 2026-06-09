@@ -95,26 +95,7 @@
     }
     var ROOT = normalizeResolverBase(BASE);
     try { sessionStorage.removeItem(BUNDLE_KEY); } catch (eClrBundle) {}
-    function deriveModelInputPath(pathOut) {
-      var s = pathOut != null ? String(pathOut).trim().replace(/\\/g, "/") : "";
-      if (!s.endsWith("agent_output.json")) return "";
-      var ix = s.lastIndexOf("/");
-      if (ix < 0) return "";
-      return s.slice(0, ix) + "/agent_input/model_input.json";
-    }
-    function numberedPromptParamOverrideHelp() {
-      var rows = [
-        ["failed_test_log", "failed-run log path or excerpt for this test"],
-        ["passed_test_log", "passing-run log path or excerpt if available"],
-        ["syslog_dir", "syslog / dump log directory for this run"],
-        ["exception_message", "exception text and stack context"]
-      ];
-      var lines = [];
-      for (var ri = 0; ri < rows.length; ri++)
-        lines.push("  " + (ri + 1) + ". " + rows[ri][0] + " — " + rows[ri][1]);
-      return lines.join("\\n");
-    }
-    function buildCursorPromptPlain(j, pathOut, pathIn) {
+    function buildCursorPromptPlain(j, pathOut, pathIn, allureUrl) {
       j = j || {};
       var rawName = j.test_name != null ? j.test_name : j.testName;
       var fromJson = (rawName != null && String(rawName).trim()) ? String(rawName).trim() : "";
@@ -126,21 +107,17 @@
       }
       var testLabel = fromJson || pyShort || "—";
       var outP = pathOut != null && String(pathOut).trim() ? String(pathOut).trim() : "—";
-      var inP = pathIn != null && String(pathIn).trim() ? String(pathIn).trim() : "";
-      if (!inP) inP = deriveModelInputPath(outP);
-      if (!inP) inP = "—";
-      var numbered = numberedPromptParamOverrideHelp();
+      var allureP = allureUrl != null && String(allureUrl).trim() ? String(allureUrl).trim() : "—";
       return (
         "Please help analyze this SONiC management test failure (sonic-mgmt / pytest) for the test " +
         testLabel +
-        ".\\n\\n" +
-        "The information for the failure can be found in this json file:\\n  " +
-        inP +
-        "\\n\\nUnder the key `prompt_param_overrides`, the main inputs are:\\n" +
-        numbered +
-        "\\n\\nIn addition, here is the output of my agent analysis " +
+        ".\n\n" +
+        "The Allure report URL (the same allure url as this page) is:\n  " +
+        allureP +
+        "\n\n" +
+        "The agent analysis output is in this json file:\n  " +
         outP +
-        ":\\n"
+        "\n"
       );
     }
     function unwrapForPromptLite(root, depth) {
@@ -187,7 +164,7 @@
         if (data && data.ok === true) sessionStorage.setItem(BUNDLE_KEY, JSON.stringify(data));
       } catch (eW) {}
     }
-    function applyDataToPrompt(data) {
+    function applyDataToPrompt(data, allureUrl) {
       var j = {};
       if (data.text !== undefined && data.text !== null && String(data.text) !== "") {
         try {
@@ -201,7 +178,7 @@
           j = unwrapForPromptLite(root, 0);
         } catch (e2) { j = {}; }
       }
-      var t = buildCursorPromptPlain(j, data.path, data.path_agent_input);
+      var t = buildCursorPromptPlain(j, data.path, data.path_agent_input, allureUrl);
       try { sessionStorage.setItem(KEY, t); } catch (e3) {}
       applyText(t);
     }
@@ -229,7 +206,7 @@
             return;
           }
           writeResolverBundle(data);
-          applyDataToPrompt(data);
+          applyDataToPrompt(data, u);
           shrinkWrapCursorViewport();
         })
         .catch(function(e4) {

@@ -27,12 +27,13 @@ _pick_python() {
     "${PYTHON_BIN:-}" \
     /root/open_rm_auto/venv/bin/python3 \
     /root/open_rm_auto/venv/bin/python \
-    python3.11 python3.10 python3.9 python3.8 python3.7 python3; do
+    /usr/bin/python3.13 /usr/bin/python3.12 /usr/bin/python3.11 /usr/bin/python3.10 /usr/bin/python3.9 /usr/bin/python3.8 /usr/bin/python3.7 \
+    python3.13 python3.12 python3.11 python3.10 python3.9 python3.8 python3.7 python3; do
     [[ -z "${cand}" ]] && continue
-    if command -v "${cand}" >/dev/null 2>&1 || [[ -x "${cand}" ]]; then
+    if [[ -x "${cand}" ]] || command -v "${cand}" >/dev/null 2>&1; then
       if ver="$("${cand}" -c 'import sys; print("{}.{}".format(sys.version_info[0], sys.version_info[1]))' 2>/dev/null)"; then
         case "${ver}" in
-          3.6|3.7|3.8|3.9|3.10|3.11|3.12|3.13)
+          3.7|3.8|3.9|3.10|3.11|3.12|3.13)
             echo "${cand}"
             return 0
             ;;
@@ -43,9 +44,22 @@ _pick_python() {
   return 1
 }
 
+_python_version_hint() {
+  local p ver
+  for p in /root/open_rm_auto/venv/bin/python3 python3; do
+    if [[ -x "${p}" ]] || command -v "${p}" >/dev/null 2>&1; then
+      ver="$("${p}" -V 2>&1 || true)"
+      echo "  ${p}: ${ver}" >&2
+    fi
+  done
+}
+
 PYTHON="$(_pick_python || true)"
 if [[ -z "${PYTHON}" ]]; then
-  echo "Need Python 3.6+ on this host (set PYTHON_BIN=/path/to/python3)." >&2
+  echo "Need Python 3.7+ (default python3 on this host is too old)." >&2
+  _python_version_hint
+  echo "Find one with: ls -1 /usr/bin/python3* 2>/dev/null; command -v python3.8 python3.9 python3.11" >&2
+  echo "Then: PYTHON_BIN=/usr/bin/python3.12 ./run_server_prod.sh" >&2
   exit 1
 fi
 

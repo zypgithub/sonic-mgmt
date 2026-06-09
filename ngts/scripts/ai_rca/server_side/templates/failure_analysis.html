@@ -26,8 +26,8 @@
   .analysis-collapsible { margin:0 0 14px 0; padding:10px 12px; border:1px solid #d0d7de; border-radius:8px; background:#fafbfc; }
   .analysis-collapsible-sum { cursor:pointer; font-weight:600; color:#1a1a2e; font-size:16px; }
   .analysis-collapsible-body { margin-top:12px; font-size:15px; line-height:1.55; color:#24292f; }
-  /* Only Exception analysis: less empty space before the following section */
-  .analysis-collapsible.analysis-collapsible-exception { margin-bottom: 4px; }
+  /* Exception analysis is first: extra gap before Failure summary */
+  .analysis-collapsible.analysis-collapsible-exception { margin-bottom: 24px; }
   .analysis-subsec { margin:0 0 14px 0; }
   .analysis-subsec:last-child { margin-bottom:0; }
   .analysis-ul { margin:6px 0 0 18px; padding:0; }
@@ -234,7 +234,7 @@
       var lines = [];
       lines.push("Test: " + allurClick2RmResolveTestDisplayName());
       if (node) lines.push("Pytest node id: " + node);
-      var desc = lines.join("\\n");
+      var desc = lines.join("\n");
       var agentAnalysis = null;
       try {
         var bundle = readResolverBundle();
@@ -251,7 +251,7 @@
           if (rp) lines.push("Agent output path: " + rp);
         }
       } catch (eB) {}
-      desc = lines.join("\\n");
+      desc = lines.join("\n");
       return {
         report_url: reportUrl,
         setup_name: setup || "???",
@@ -296,55 +296,6 @@
     var feedbackRevealed = false;
     var feedbackLocked = false;
 
-    function deriveModelInputPath(pathOut) {
-      var s = pathOut != null ? String(pathOut).trim().replace(/\\/g, "/") : "";
-      if (!s.endsWith("agent_output.json")) return "";
-      var ix = s.lastIndexOf("/");
-      if (ix < 0) return "";
-      return s.slice(0, ix) + "/agent_input/model_input.json";
-    }
-    function numberedPromptParamOverrideHelp() {
-      var rows = [
-        ["failed_test_log", "failed-run log path or excerpt for this test"],
-        ["passed_test_log", "passing-run log path or excerpt if available"],
-        ["syslog_dir", "syslog / dump log directory for this run"],
-        ["exception_message", "exception text and stack context"]
-      ];
-      var lines = [];
-      for (var ri = 0; ri < rows.length; ri++)
-        lines.push("  " + (ri + 1) + ". " + rows[ri][0] + " — " + rows[ri][1]);
-      return lines.join("\\n");
-    }
-    function buildCursorPromptPlain(j, pathOut, pathIn) {
-      j = j || {};
-      var rawName = j.test_name != null ? j.test_name : j.testName;
-      var fromJson = (rawName != null && String(rawName).trim()) ? String(rawName).trim() : "";
-      var nodeid = (TEST_NODEID && String(TEST_NODEID).trim()) ? String(TEST_NODEID).trim() : "";
-      var pyShort = "";
-      if (nodeid) {
-        var segs = nodeid.split("::");
-        pyShort = segs.length > 1 ? segs[segs.length - 1] : nodeid;
-      }
-      var testLabel = fromJson || pyShort || "—";
-      var outP = pathOut != null && String(pathOut).trim() ? String(pathOut).trim() : "—";
-      var inP = pathIn != null && String(pathIn).trim() ? String(pathIn).trim() : "";
-      if (!inP) inP = deriveModelInputPath(outP);
-      if (!inP) inP = "—";
-      var numbered = numberedPromptParamOverrideHelp();
-      return (
-        "Please help analyze this SONiC management test failure (sonic-mgmt / pytest) for the test " +
-        testLabel +
-        ".\\n\\n" +
-        "The information for the failure can be found in this json file:\\n  " +
-        inP +
-        "\\n\\nUnder the key `prompt_param_overrides`, the main inputs are:\\n" +
-        numbered +
-        "\\n\\nIn addition, here is the output of my agent analysis " +
-        outP +
-        ":\\n"
-      );
-    }
-    var CURSOR_KEY = __JS_CURSOR_KEY__;
     var BUNDLE_KEY = __JS_BUNDLE_KEY__;
     function readResolverBundle() {
       try {
@@ -377,11 +328,6 @@
       } catch (eEid) {}
     }
     try { sessionStorage.removeItem(BUNDLE_KEY); } catch (eClrBundle) {}
-    function persistCursorPromptPlain(j, pathOut, pathIn) {
-      try {
-        sessionStorage.setItem(CURSOR_KEY, buildCursorPromptPlain(j, pathOut, pathIn));
-      } catch (e0) {}
-    }
 
     function revealFeedback() {
       if (feedbackRevealed || !FEEDBACK_ROOT) return;
@@ -729,7 +675,7 @@
       if (nestR) return { inner: nestR, envelope: root };
       return { inner: root, envelope: null };
     }
-    /** After . / ? / ! + optional quotes + spaces, insert \\n if that sentence is at least minLen chars (readability). */
+    /** After . / ? / ! + optional quotes + spaces, insert newline if that sentence is at least minLen chars (readability). */
     function addNewlinesAfterLongSentences(s, minLen) {
       minLen = typeof minLen === "number" ? minLen : 90;
       if (!s || s.length < minLen) return s;
@@ -744,7 +690,7 @@
         if (i + 1 - sentStart < minLen) continue;
         while (j < s.length && s.charAt(j) === " ") j++;
         out.push(s.slice(sentStart, i + 1));
-        out.push("\\n");
+        out.push("\n");
         sentStart = j;
         i = j - 1;
       }
@@ -767,7 +713,7 @@
         last = m.index + m[0].length;
       }
       out += annotatePathsAndTimestampsEsc(s.slice(last));
-      return out.replace(/\\r?\\n/g, "<br/>");
+      return out.replace(/\r?\n/g, "<br/>");
     }
     /** Backtick-wrapped spans render bold; plain text also bolds '...' literals (see formatPlain...). */
     function formatAnalysisInline(s) {
@@ -786,10 +732,10 @@
         }
         var bt2 = str.indexOf("`", bt + 1);
         if (bt2 === -1) {
-          out += annotatePathsAndTimestampsEsc(str.slice(bt)).replace(/\\r?\\n/g, "<br/>");
+          out += annotatePathsAndTimestampsEsc(str.slice(bt)).replace(/\r?\n/g, "<br/>");
           break;
         }
-        out += "<strong>" + annotatePathsAndTimestampsEsc(str.slice(bt + 1, bt2)).replace(/\\r?\\n/g, "<br/>") + "</strong>";
+        out += "<strong>" + annotatePathsAndTimestampsEsc(str.slice(bt + 1, bt2)).replace(/\r?\n/g, "<br/>") + "</strong>";
         i = bt2 + 1;
       }
       return out;
@@ -801,25 +747,6 @@
       var cls = "analysis-collapsible" + (extraClass ? " " + extraClass : "");
       return '<details class="' + cls + '"><summary class="analysis-collapsible-sum">' +
         escHtml(title) + '</summary><div class="analysis-collapsible-body">' + innerHtml + "</div></details>";
-    }
-    function formatStringListBlock(title, arr, useInline, emptyNote) {
-      if (!Array.isArray(arr) || !arr.length) {
-        var note = emptyNote != null && String(emptyNote).trim() ? String(emptyNote).trim() : "";
-        if (!note) return "";
-        return (
-          '<div class="analysis-subsec"><strong>' +
-          escHtml(title) +
-          '</strong><p style="margin:6px 0 0 0;color:#555;font-style:italic">' +
-          escHtml(note) +
-          "</p></div>"
-        );
-      }
-      var lis = "";
-      for (var i = 0; i < arr.length; i++) {
-        var s = arr[i] != null ? String(arr[i]) : "";
-        lis += "<li>" + (useInline ? formatAnalysisInline(s) : escHtml(s)) + "</li>";
-      }
-      return '<div class="analysis-subsec"><strong>' + escHtml(title) + '</strong><ul class="analysis-ul">' + lis + "</ul></div>";
     }
     function formatKvTable(o) {
       if (!o || typeof o !== "object") return "";
@@ -865,6 +792,30 @@
     }
     function formatAnalysisJson(j) {
       var parts = [];
+      var exa = j.exception_analysis || j.exceptionAnalysis;
+      if (exa && typeof exa === "object") {
+        var exLines = [];
+        if (exa.exception_type != null && String(exa.exception_type).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Exception type:</strong> ' +
+            formatAnalysisInline(String(exa.exception_type)) + "</div>");
+        if (exa.message != null && String(exa.message).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Message:</strong> ' +
+            formatAnalysisInline(String(exa.message)) + "</div>");
+        if (exa.assertion != null && String(exa.assertion).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Assertion:</strong> ' +
+            formatAnalysisInline(String(exa.assertion)) + "</div>");
+        if (exa.failing_function != null && String(exa.failing_function).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Failing function:</strong> ' +
+            formatAnalysisInline(String(exa.failing_function)) + "</div>");
+        if (exa.embedded_data != null && String(exa.embedded_data).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Embedded data:</strong> ' +
+            formatAnalysisInline(String(exa.embedded_data)) + "</div>");
+        if (exa.initial_hypothesis != null && String(exa.initial_hypothesis).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Initial hypothesis:</strong> ' +
+            formatAnalysisInline(String(exa.initial_hypothesis)) + "</div>");
+        if (exLines.length)
+          parts.push(analysisCollapsible("Exception analysis", exLines.join(""), "analysis-collapsible-exception"));
+      }
       var tla = j.test_log_analysis || j.testLogAnalysis;
       if (!tla || typeof tla !== "object" || Array.isArray(tla)) tla = null;
       var summaryInner = "";
@@ -954,87 +905,6 @@
         }
         parts.push(analysisCollapsible("Evidence log", evParts.join("")));
       }
-      var exa = j.exception_analysis || j.exceptionAnalysis;
-      if (exa && typeof exa === "object") {
-        var exLines = [];
-        if (exa.exception_type != null && String(exa.exception_type).trim())
-          exLines.push('<div style="margin-bottom:8px"><strong>Exception type:</strong> ' +
-            formatAnalysisInline(String(exa.exception_type)) + "</div>");
-        if (exa.message != null && String(exa.message).trim())
-          exLines.push('<div style="margin-bottom:8px"><strong>Message:</strong> ' +
-            formatAnalysisInline(String(exa.message)) + "</div>");
-        if (exa.assertion != null && String(exa.assertion).trim())
-          exLines.push('<div style="margin-bottom:8px"><strong>Assertion:</strong> ' +
-            formatAnalysisInline(String(exa.assertion)) + "</div>");
-        if (exa.failing_function != null && String(exa.failing_function).trim())
-          exLines.push('<div style="margin-bottom:8px"><strong>Failing function:</strong> ' +
-            formatAnalysisInline(String(exa.failing_function)) + "</div>");
-        if (exa.embedded_data != null && String(exa.embedded_data).trim())
-          exLines.push('<div style="margin-bottom:8px"><strong>Embedded data:</strong> ' +
-            formatAnalysisInline(String(exa.embedded_data)) + "</div>");
-        if (exa.initial_hypothesis != null && String(exa.initial_hypothesis).trim())
-          exLines.push('<div style="margin-bottom:8px"><strong>Initial hypothesis:</strong> ' +
-            formatAnalysisInline(String(exa.initial_hypothesis)) + "</div>");
-        if (exLines.length)
-          parts.push(analysisCollapsible("Exception analysis", exLines.join(""), "analysis-collapsible-exception"));
-      }
-      var bl = j.baseline_comparison || j.baselineComparison;
-      if (bl && typeof bl === "object") {
-        var miss = bl.missing_in_fail != null ? bl.missing_in_fail : bl.missingInFail;
-        var unexp = bl.unexpected_in_fail != null ? bl.unexpected_in_fail : bl.unexpectedInFail;
-        if (!Array.isArray(miss)) miss = [];
-        if (!Array.isArray(unexp)) unexp = [];
-        var blBlocks = [];
-        var cfgDiff = bl.config_version_differences != null ? bl.config_version_differences : bl.configVersionDifferences;
-        if (Array.isArray(cfgDiff) && cfgDiff.length) {
-          blBlocks.push(
-            formatStringListBlock("Config / version differences noted in the comparison", cfgDiff, true, "")
-          );
-        }
-        blBlocks.push(
-          formatStringListBlock(
-            "Operations present in the passing log but missing from the failing log",
-            miss,
-            true,
-            "(No entries — nothing from the passing log was listed as missing in the failing log.)"
-          )
-        );
-        blBlocks.push(
-          formatStringListBlock(
-            "Messages that appear only in the failing log",
-            unexp,
-            true,
-            "(No entries — nothing was listed as appearing only in the failing log.)"
-          )
-        );
-        parts.push(analysisCollapsible("Comparison of passing vs failing run logs", blBlocks.join("")));
-      }
-      var slf = j.system_level_findings || j.systemLevelFindings;
-      var crit = slf && typeof slf === "object" ? (slf.critical_events || slf.criticalEvents) : null;
-      if (Array.isArray(crit) && crit.length) {
-        var crParts = [];
-        for (var ri = 0; ri < crit.length; ri++) {
-          var ce = crit[ri] || {};
-          var cts = ce.timestamp != null ? String(ce.timestamp) : "";
-          var csf = ce.source_file != null ? String(ce.source_file) : "";
-          var cln = ce.line_number;
-          var sev = ce.severity != null ? String(ce.severity) : "";
-          var msg = ce.message != null ? String(ce.message) : "";
-          var cor = ce.correlation != null ? String(ce.correlation) : "";
-          var clnStr = cln !== null && cln !== undefined && String(cln).trim() !== "" ? escHtml(String(cln)) : "—";
-          crParts.push(
-            '<div class="evidence-item">' +
-            '<span class="analysis-ts-col">' + escHtml(cts) + "</span> · " +
-            annotatePathsAndTimestampsEsc(csf) +
-            " · line " + clnStr +
-            (sev ? ' · <strong>' + escHtml(sev) + "</strong>" : "") +
-            '<div style="margin-top:8px">' + formatAnalysisInline(msg) + "</div>" +
-            (cor ? '<div style="margin-top:8px;color:#444"><em>Correlation:</em> ' + formatAnalysisInline(cor) + "</div>" : "") +
-            "</div>"
-          );
-        }
-        parts.push(analysisCollapsible("Critical events from syslog", crParts.join("")));
-      }
       if (!parts.length && j && typeof j === "object") {
         var metaRows = "";
         if (j.verdict != null && String(j.verdict).trim())
@@ -1060,7 +930,7 @@
       if (!parts.length) return null;
       return '<div id="analysis-formatted">' + parts.join("") + "</div>";
     }
-    function showJsonText(txt, pathOut, pathIn) {
+    function showJsonText(txt) {
       if (!txt) return;
       try {
         var root = JSON.parse(txt);
@@ -1079,11 +949,9 @@
           out.innerHTML = formatted;
         else
           out.innerHTML = '<p style="color:#666;margin:0">No structured analysis sections found in this payload.</p>';
-        persistCursorPromptPlain(j, pathOut, pathIn);
         shrinkWrapAttachmentViewport();
       } catch (e) {
         out.textContent = txt;
-        persistCursorPromptPlain({}, pathOut, pathIn);
         shrinkWrapAttachmentViewport();
       }
     }
@@ -1103,7 +971,7 @@
         return;
       }
       if (data.text !== undefined && data.text !== null && String(data.text) !== "") {
-        showJsonText(String(data.text), data.path, data.path_agent_input);
+        showJsonText(String(data.text));
         revealFeedback();
         return;
       }
@@ -1113,7 +981,6 @@
         out.innerHTML =
           "<p style=margin:0;color:#444>Analysis JSON is not available for this Allure URL yet. " +
           "Use the <strong>Cursor analysis prompt</strong> attachment for resolver paths and the draft prompt.</p>";
-        persistCursorPromptPlain({}, data.path, data.path_agent_input);
         shrinkWrapAttachmentViewport();
       }
     }

@@ -68,7 +68,7 @@ def attach_agent_analysis_for_node(node: pytest.Node, config: pytest.Config) -> 
             session_id=_config_getoption(config, "--session_id"),
             test_nodeid=node.nodeid,
         )
-        # aa.attach_cursor_prompt_html(node.nodeid) #TODO enable when cursor analysis prompt is desired
+        aa.attach_cursor_prompt_html(node.nodeid)
     except Exception:
         logger.exception("Per-test analysis attachment failed for %s", node.nodeid)
 

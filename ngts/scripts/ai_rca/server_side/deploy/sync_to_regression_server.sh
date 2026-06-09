@@ -45,7 +45,7 @@ mkdir -p \
   "${STAGING}/demo/fixtures"
 
 cp "${SERVER_SRC}/allure_resolver_server.py" \
-   "${SERVER_SRC}/misql_pbi_connect.py" \
+   "${SERVER_SRC}/allure_agent_lookup.py" \
    "${TESTS_AI_RCA}/resolver_contract.py" \
    "${SERVER_SRC}/attachment_templates.py" \
    "${SERVER_SRC}/embedded_rm_modal_loader.py" \

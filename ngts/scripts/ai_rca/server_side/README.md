@@ -27,7 +27,7 @@ python3 -m pytest ngts/scripts/ai_rca/demo/ \
 
 - Pytest only writes small stub attachments into `/tmp/allure-demo-agent-analysis`.
 - When you open **Failure analysis** / **Cursor analysis prompt** in the browser, JavaScript **fetches** HTML from **`https://rm-via-allure.nvidia.com:9999`**.
-- Demo sets `ALLURE_ATTACHMENT_DEMO=1` → stubs pass `demo=1` → `/resolve?allure_url=http://demo/allure/local` returns **mock agent JSON** from the server (no real Allure URL or MISQL row needed).
+- Demo sets `ALLURE_ATTACHMENT_DEMO=1` → stubs pass `demo=1` → `/resolve?allure_url=http://demo/allure/local` returns **mock agent JSON** from the server (no real Allure URL or BI lookup needed).
 
 To use a **local** resolver instead:
 
@@ -103,6 +103,8 @@ cd /root/regression_ai_allure_attachment/src
 ./run_server_prod.sh
 ```
 
+Use **`src/`** (deploy target), not the parent directory. Requires **Python 3.7+** — `python3` alone may be 3.6; use e.g. `PYTHON_BIN=/usr/bin/python3.8 ./run_server_prod.sh`.
+
 TLS defaults (see `deploy/ssl.env.example`):
 
 - `/root/certification/new_rm_digicert.crt`
@@ -140,7 +142,7 @@ Split **client** (pytest) and **server** (resolver):
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  ai_rca/server_side (ngts/scripts/ai_rca/server_side/)                  │
 │    allure_resolver_server.py   — HTTPS API                              │
-│    misql_pbi_connect.py        — Allure URL → agent JSON path (MISQL)   │
+│    allure_agent_lookup.py      — Allure URL → agent path (BI HTTP API)  │
 │    attachment_templates.py     — render failure_analysis / cursor HTML  │
 │    embedded_rm_modal_loader.py — bundle AllurClick2RM JS                │
 │    resolver_contract.py        — shared URLs/constants                  │
@@ -149,7 +151,7 @@ Split **client** (pytest) and **server** (resolver):
                                 │
               ┌─────────────────┴─────────────────┐
               ▼                                   ▼
-     MISQL / agent JSON on fit69          AllurClick2RM plugin_files
+     BI API → agent path on fit69          AllurClick2RM plugin_files
      (/auto/.../agent_output.json)        (bug report modal JS)
 ```
 
@@ -166,7 +168,7 @@ Split **client** (pytest) and **server** (resolver):
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `GET` | `/resolve?allure_url=…` | Map Allure URL → agent JSON (MISQL); demo URL → mock JSON |
+| `GET` | `/resolve?allure_url=…` | Map Allure URL → agent JSON (BI API + fit69 fetch); demo URL → mock JSON |
 | `GET` | `/attachment/failure?…` | Full Failure analysis HTML |
 | `GET` | `/attachment/cursor?…` | Full Cursor prompt HTML |
 | `POST` | `/analysis_feedback` | Like/dislike + comment |
@@ -177,13 +179,14 @@ Override for workers or demo: `ALLURE_JSON_RESOLVER_SERVER_BASE`.
 
 ### Real regression runs
 
-Pytest attaches the same stubs. In a real Allure report, the browser sends the **actual Allure page URL** to `/resolve`. The server looks up `allure_url_2test` in MISQL and returns agent output JSON. No `demo=1` unless `ALLURE_ATTACHMENT_DEMO=1`.
+Pytest attaches the same stubs. In a real Allure report, the browser sends the **actual Allure page URL** to `/resolve`. The server calls the MARS BI API (`/allure-url-to-agent-full-path`), fetches agent output from fit69, and returns JSON. No `demo=1` unless `ALLURE_ATTACHMENT_DEMO=1`.
 
 ### Environment variables (common)
 
 | Variable | Default | Used by |
 |----------|---------|---------|
 | `ALLURE_JSON_RESOLVER_SERVER_BASE` | `https://rm-via-allure.nvidia.com:9999` | Stubs + server |
+| `RESOLVE_DEBUG` | unset | `/resolve` debug lines on stderr |
 | `ALLURE_ATTACHMENT_DEMO` | unset (demo sets `1`) | Adds `demo=1` to stub fetch URL |
 | `RESOLVE_DEV_HTTP` | unset | Local server: HTTP instead of TLS |
 | `RESOLVE_MOCK` | unset | Local server: mock all `/resolve` |
