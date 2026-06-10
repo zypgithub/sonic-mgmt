@@ -34,6 +34,11 @@ def test_firmware_install_same_version(devices: DevicesT, random_api: str, test_
         Test flow:
             1.Select a random component on device
             2. Fetch and install same firmware version on component without using 'skip-version-check' option
+
+        Known limitations:
+            - CPLD: skipped when Bug #4800718 is active
+            - SSD: skipped when Bug #4998785 is active — SSD pkg reports "package does not support upgrade
+              for the current SSD FW version" instead of the expected "Same image already installed" message
     """
 
     with allure.step("Select a random component to test"):
@@ -42,6 +47,10 @@ def test_firmware_install_same_version(devices: DevicesT, random_api: str, test_
 
     if component == constants.FW_COMPONENT_CPLD and redmine_helpers.is_bug_active(4800718):
         pytest.skip("Bug #4800718 is active - skipping CPLD firmware install same version test")
+
+    if component == constants.FW_COMPONENT_SSD and redmine_helpers.is_bug_active(4998785):
+        pytest.skip("Bug #4998785 is active - SSD pkg does not support upgrade for current SSD FW version, "
+                    "skipping SSD firmware install same version test")
 
     with allure.step("Install same fw version without using 'skip-version-check' option"):
         result = install_same_firmware_version(devices=devices,

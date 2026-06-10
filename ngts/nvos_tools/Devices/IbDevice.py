@@ -1097,7 +1097,13 @@ class BlackMambaSwitch(IbSwitch):
 
     def _init_ib_speeds(self):
         super()._init_ib_speeds()
-        self.supported_ib_speeds = ('sdr', 'hdr', 'ndr', 'xdr')  # BlackMamba supports all speeds including XDR
+        # BlackMamba traffic ports are wired with XDR-only optical modules (e.g. 980-9IAS0-00XM0N,
+        # rated IB-XDR). Although the ASIC advertises supported-ib-speed sdr,hdr,ndr,xdr, the installed
+        # optics cannot train a link at the lower generations: setting a lower ib-speed leaves the port
+        # stuck Down with PHY reason Cable_was_unplugged. So only 'xdr' is actually configurable here, and
+        # test_ib_interface_speed skips via the len(supported_ib_speeds) <= 1 guard (same as Taipan).
+        # See Redmine #4940283 (supported-ib-speed advertises speeds that cannot be configured).
+        self.supported_ib_speeds = ('xdr',)
         self.supported_fnm_ib_speeds = ('sdr', 'hdr', 'ndr', 'xdr')  # BlackMamba FNM also supports XDR
         self.supported_internal_fnm_ib_speeds = ('sdr', 'hdr')  # Internal FNM has fewer speeds
 
