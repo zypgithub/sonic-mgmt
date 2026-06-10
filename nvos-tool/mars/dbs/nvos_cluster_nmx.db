@@ -51,6 +51,9 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/cluster/sdn_maintenance_state.cases </cases>
 	</test>
     <test>
+        <cases> sonic-mgmt/nvos-tool/mars/cases/cluster/tray_admin_state.cases </cases>
+    </test>
+    <test>
         <cases> sonic-mgmt/nvos-tool/mars/cases/cluster/sdn_cmd.cases </cases>
     </test>
     <test>

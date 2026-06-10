@@ -1,6 +1,7 @@
 import pytest
 import logging
 import pexpect
+import random
 import time
 
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
@@ -18,6 +19,7 @@ from ngts.nvos_constants.constants_nvos import OutputFormat, ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.nmx.Sdn import Sdn
+from ngts.nvos_tools.Devices.IbDevice import RosalindSwitch
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from retry.api import retry_call
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
@@ -74,6 +76,19 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
                 logger.info("After reboot, empty partition should persist, but GPU added to it with no-reroute should be deleted")
                 uuid, location, _, partition_to_remove_from = ClusterTools.create_empty_partition_and_add_gpu(sdn, 'no-reroute', engine=engines.dut)
 
+        tray_state_set = False
+        if not standalone_system and isinstance(devices.dut, RosalindSwitch):
+            with allure.step("Set tray maintenance-state to non-default before reboot"):
+                trays_output = OutputParsingTool.parse_show_output_to_dict(sdn.trays.show()).get_returned_value()
+                tray_ids = list(trays_output.keys())
+                if tray_ids:
+                    selected_tray = tray_ids[0]
+                    tray_non_default = random.choice(['down', 'diag'])
+                    sdn.trays.action_update_maintenance_state(
+                        tray_id=selected_tray, maintenance_state=tray_non_default).verify_result()
+                    tray_state_set = True
+                    logger.info(f"Set tray {selected_tray} to '{tray_non_default}' before reboot")
+
         with allure.step('Run nv action reboot system'):
             result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot)
 
@@ -108,6 +123,17 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
             actual_numeric = DscpValueSelector.get_numeric_value(actual_dscp)
             assert actual_numeric == dscp_numeric, \
                 f"DSCP should persist ({dscp_value}/{dscp_numeric}) after reboot, got {actual_dscp}"
+
+        if tray_state_set:
+            with allure.step(f"Verify tray {selected_tray} maintenance-state persisted after reboot"):
+                tray_output = OutputParsingTool.parse_show_output_to_dict(
+                    sdn.trays.tray[selected_tray].show()).get_returned_value()
+                actual_tray_state = tray_output.get(ClusterConsts.MAINTENANCE_STATE)
+                assert actual_tray_state == tray_non_default, (
+                    f"Tray {selected_tray}: expected '{tray_non_default}' after reboot, got '{actual_tray_state}'")
+
+            with allure.step(f"Restore tray {selected_tray} to default"):
+                sdn.trays.action_restore_maintenance_state(tray_id=selected_tray).verify_result()
 
         if not standalone_system:
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from paramiko import SSHClient, AutoAddPolicy
+import concurrent.futures
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from collections import defaultdict
 import functools
 import inspect
@@ -779,35 +780,72 @@ class ClusterTools:
                 assert not files, f"Expected to get empty output, but instead received {files}"
 
     @staticmethod
-    def reboot_compute_nodes_gpus(setup_name: str) -> None:
-        if setup_name in list(Configurations.compute_nodes_per_system.keys()):
-            for node in Configurations.compute_nodes_per_system[setup_name]:
-                # we moved from LinuxSshEngine to paramiko SSHClient because LinuxSshEngine is using netmiko under the hood,
-                # and it causes an SSH race between this client and the engine dut client and makes the operation get stuck.
-                with SSHClient() as client:
-                    client.set_missing_host_key_policy(AutoAddPolicy())
-                    kwargs = {"hostname": node['ip_address'], "username": node['username'], "password": node['password']}
-                    logger.info(f"Connecting to {node['ip_address']!r} with username {node['username']!r}")
-                    client.connect(**kwargs, look_for_keys=False, allow_agent=False, timeout=60)
+    def _reset_single_compute_node_gpu(node):
+        """Run nvidia-smi -r on one compute node. Each node gets its own SSH connection,
+        so this is safe to run concurrently across nodes."""
+        ip_address = node['ip_address']
+        username = node['username']
+        password = node['password']
+        new_engine = LinuxSshEngine(ip_address, username, password)
+        # sudo password is fed via stdin in the same command: `sudo -S` reads it from
+        # stdin and `-p ''` suppresses the prompt, so it does not depend on a
+        # 'password:' prompt appearing in time.
+        #
+        # Do NOT use run_cmd() here. run_cmd relies on Netmiko prompt auto-detection,
+        # but these compute nodes have a *dynamic* prompt with a live timestamp
+        # ("[HH:MM:SS] nvidia@host ~ $"). nvidia-smi -r takes tens of seconds; by the
+        # time it finishes the shell redraws the prompt with a different timestamp, so
+        # the captured prompt never matches again and the read blocks until read_timeout
+        # (~hours) -> the "stuck" hang. The DUT (static NVOS prompt) is unaffected.
+        #
+        # Instead, emit a fixed sentinel and wait for that explicitly. The quotes keep
+        # the sentinel out of the echoed command line, so we match the real output and
+        # not the command echo.
+        reset_cmd = (f"printf '%s\\n' '{password}' | sudo -S -p '' nvidia-smi -r ; "
+                     f"echo GPU__RESET__\"DONE\"")
+        logger.info("GPU reset (nvidia-smi -r) starting on %s", ip_address)
+        output = new_engine.send_cmd_with_retry(reset_cmd, timeout=300, retries=2,
+                                                auto_find_prompt=False,
+                                                expected_string='GPU__RESET__DONE')
+        # Log the real nvidia-smi -r output (e.g. "GPU 0000...:81:00.0 was successfully
+        # reset.\n... All done."). Strip the sentinel line so the log shows only the
+        # command's own output.
+        clean_output = "\n".join(
+            line for line in (output or "").splitlines()
+            if "GPU__RESET__DONE" not in line).strip()
+        logger.info("GPU reset (nvidia-smi -r) output on %s:\n%s", ip_address, clean_output)
+        logger.info("GPU reset (nvidia-smi -r) finished on %s", ip_address)
 
-                    logger.info(f"Executing sudo command: {(cmd := f"echo {node['password']} | sudo -S -p '' nvidia-smi -r")!r}")
-                    _, stdout, stderr = client.exec_command(cmd, get_pty=True)   # get_pty=True is important for many sudo configurations
-
-                    logger.info("Receiving exit code")
-                    exit_code = stdout.channel.recv_exit_status()
-
-                    logger.info("Reading stdout/stderr")
-                    out = stdout.read().decode(errors="replace").rstrip()
-                    err = stderr.read().decode(errors="replace").rstrip()
-
-                    assert exit_code == 0, f"Failed to execute sudo command: {err}"  # not sure if we need to raise an exception here
-                    if err.strip():
-                        logger.warning(f"nvidia-smi -r output: {err}")
-
-                    logger.info(f"nvidia-smi -r output: {out}")
-
-            logger.debug("Sleeping for 10 seconds after rebooting GPUs")
-            time.sleep(10)
+    @staticmethod
+    def reboot_compute_nodes_gpus(setup_name):
+        nodes = Configurations.compute_nodes_per_system.get(setup_name)
+        if not nodes:
+            return
+        # Reset every compute host in PARALLEL. A single nvidia-smi -r takes ~2 min; doing
+        # them sequentially across N hosts, multiplied by the 3-4 reset points in the tray
+        # test, blew past the pytest function timeout and aborted the test mid-reset into its
+        # finally/cleanup block (which then issued an invalid `nv action restore` on a tray
+        # still 'down' -> NMX_ST_BADPARAM). Each node uses its own SSH connection, so the
+        # resets are independent; running them concurrently makes wall time ~= one host.
+        errors = {}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(nodes)) as executor:
+            future_to_ip = {
+                executor.submit(ClusterTools._reset_single_compute_node_gpu, node):
+                    node['ip_address']
+                for node in nodes
+            }
+            for future in concurrent.futures.as_completed(future_to_ip):
+                ip = future_to_ip[future]
+                try:
+                    future.result()
+                except Exception as exc:  # noqa: BLE001 - aggregate per-host failures
+                    errors[ip] = exc
+                    logger.error("GPU reset failed on %s: %s", ip, exc)
+        if errors:
+            raise RuntimeError(
+                "nvidia-smi -r failed on compute node(s): " +
+                ", ".join(f"{ip} ({err})" for ip, err in errors.items()))
+        time.sleep(10)
 
     @staticmethod
     def edit_config_file(path, edit_commands, engine):
@@ -900,6 +938,17 @@ class ClusterTools:
     @staticmethod
     def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engine, dut_engines, has_loopbox, setup_name,
                                                        standalone_system, is_simx=False):
+        def get_generated_file_info(config_type):
+            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
+                config_type].action_generate_sdn().get_returned_value()
+            file_name = ClusterTools().get_generated_sdn_file(output, 'config')
+            output_dict = OutputParsingTool.parse_show_output_to_dict(
+                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[config_type].files.show(
+                    output_format=output_format),
+                output_format=output_format).get_returned_value()
+            path = output_dict[file_name]['path']
+            return file_name, path
+
         output_format = OutputFormat.json
 
         # Device-specific: Run pre-cluster setup if needed (e.g., Rosalind)

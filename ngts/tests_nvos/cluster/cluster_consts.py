@@ -32,6 +32,8 @@ class ClusterConsts:
     UNDEFINED_STATE_ERR_MSG_NVUE = "'undefined' is not one of ['enabled', 'disabled']"
     UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
+    CLUSTER_NOT_ENABLED_ERR = 'cluster is not enabled'
+
     RESET_FACTORY_CLUSTER_DISABLED_NVUE = 'Error: Action failed with the following issue:\n  cluster is not enabled'
 
     RESET_FACTORY_NMX_CONN_DISABLED_NVUE = 'Error: Action failed with the following issue:\n  gRPC connection is down'

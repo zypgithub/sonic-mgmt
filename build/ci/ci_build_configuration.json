@@ -231,16 +231,16 @@
           "out_of_mail": true
         },
         {
-          "name": "Allocate setup QTM3",
+          "name": "Allocate setup QTM4",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "container": "mini-mars:POD_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM4",
           "parameters": {
-            "queue_id": "devops_nvos_ci_qtm3",
+            "queue_id": "devops_nvos_ci_qtm4",
             "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "NVOS_CHIPSIM_SONIC_MGMT_QTM3",
-            "setup_var": "NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP",
-            "device_var": "SWITCH_SUNBIRD",
+            "setup_type": "NVOS_CHIPSIM_SONIC_MGMT_QTM4",
+            "setup_var": "NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP",
+            "device_var": "SWITCH_ROSALIND",
             "setup_requirements": "group_name:Sagi,sub_group:CI,setup_status:enable"
           },
           "skip": "${SKIP_NVOS_BAT}",
@@ -434,18 +434,18 @@
           "out_of_mail": false
         },
         {
-          "name": "Deploy QTM3",
+          "name": "Deploy QTM4",
           "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
           "category": "BAT",
-          "container": "mini-mars:POD_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM4",
           "parameters": {
             "row": "CHIPSIM",
-            "column": "QTM3",
-            "test_name": "QTM3",
+            "column": "QTM4",
+            "test_name": "QTM4",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}",
-            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}/",
+            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}",
+            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}/",
             "target_version": "${NVOS_BIN}",
             "base_version": "${NVOS_BIN}",
             "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
@@ -458,18 +458,18 @@
           "out_of_mail": false
         },
         {
-          "name": "Test QTM3",
+          "name": "Test QTM4",
           "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
           "category": "BAT",
-          "container": "mini-mars:POD_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM4",
           "parameters": {
             "row": "CHIPSIM",
-            "column": "QTM3",
-            "test_name": "QTM3",
+            "column": "QTM4",
+            "test_name": "QTM4",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}",
-            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}/",
+            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}",
+            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}/",
             "target_version": "${NVOS_BIN}",
             "base_version": "${NVOS_BIN}",
             "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
@@ -521,12 +521,12 @@
           "out_of_mail": true
         },
         {
-          "name": "Free QTM3 setup",
+          "name": "Free QTM4 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "container": "mini-mars:POD_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM4",
           "parameters": {
-            "setup_name": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}"
+            "setup_name": "${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}"
           },
           "skip": false,
           "finally": true,
@@ -556,7 +556,7 @@
           "category": "Create Tests Matrix",
           "node": "SONIC_LITE",
           "parameters": {
-            "COL_ORDER": "SPC,SPC3,SPC4,SPC5,SPC3/BF3,QTM3",
+            "COL_ORDER": "SPC,SPC3,SPC4,SPC5,SPC6,SPC6S,SPC3/BF3,QTM4",
             "EXPECTED_RESULTS": [
               {
                 "ETH": [
@@ -601,7 +601,7 @@
               {
                 "CHIPSIM": [
                   {
-                    "QTM3": [
+                    "QTM4": [
                       "deploy",
                       "test"
                     ]

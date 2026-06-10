@@ -247,6 +247,22 @@ class OpenApiClusterCli(OpenApiBaseCli):
         )
 
     @staticmethod
+    def action_restore_sdn_trays_maintenance_state(engine, path, tray_id=''):
+        resource_path = path + '/' + tray_id if tray_id else path
+        return OpenApiClusterCli.action(
+            action_str=ActionType.RESTORE.replace('@', ''),
+            resource_path=resource_path,
+            main_param=None,
+            flags=ClusterConsts.MAINTENANCE_STATE,
+            additional_params={},
+            engine=engine,
+            reboot_params=None,
+            send_user_confirmation=None,
+            expected_output='',
+            device=None,
+        )
+
+    @staticmethod
     def show_file(engine, file='', exit_cmd=''):
         # Not used simply return path to file
         return ""

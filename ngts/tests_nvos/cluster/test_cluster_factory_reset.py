@@ -21,6 +21,7 @@ from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, 
     verify_the_setup_is_functional, get_current_time, KEEP_ONLY_FILES
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.Devices.IbDevice import RosalindSwitch
 
 logger = logging.getLogger()
 
@@ -61,6 +62,19 @@ def test_cluster_default_factory_reset(engines, dut_engines, devices, test_api, 
             logger.info(f"Setting DSCP to {dscp_value} (numeric: {dscp_numeric}) before factory reset")
             cluster.set(op_param_name=ClusterConsts.DSCP_MARKING_FIELD,
                         op_param_value=dscp_value, apply=True)
+
+        tray_state_set = False
+        if not standalone_system and isinstance(devices.dut, RosalindSwitch):
+            with allure.step("Set tray maintenance-state to non-default before factory reset"):
+                trays_output = OutputParsingTool.parse_show_output_to_dict(sdn.trays.show()).get_returned_value()
+                tray_ids = list(trays_output.keys())
+                if tray_ids:
+                    selected_tray = tray_ids[0]
+                    tray_non_default = random.choice(['down', 'diag'])
+                    sdn.trays.action_update_maintenance_state(
+                        tray_id=selected_tray, maintenance_state=tray_non_default).verify_result()
+                    tray_state_set = True
+                    logger.info(f"Set tray {selected_tray} to '{tray_non_default}' before factory reset")
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
@@ -111,6 +125,14 @@ def test_cluster_default_factory_reset(engines, dut_engines, devices, test_api, 
             assert actual_numeric == ClusterConsts.DSCP_DEFAULT_VALUE, \
                 f"DSCP should be default ({ClusterConsts.DSCP_DEFAULT_VALUE}) after factory reset, " \
                 f"got {actual_dscp} ({actual_numeric})"
+
+        if tray_state_set:
+            with allure.step(f"Verify tray {selected_tray} maintenance-state reset to default after factory reset"):
+                tray_output = OutputParsingTool.parse_show_output_to_dict(
+                    sdn.trays.tray[selected_tray].show()).get_returned_value()
+                actual_tray_state = tray_output.get(ClusterConsts.MAINTENANCE_STATE)
+                assert actual_tray_state == 'up', (
+                    f"Tray {selected_tray}: expected 'up' after factory reset, got '{actual_tray_state}'")
 
     finally:
         if interface_wa_called:

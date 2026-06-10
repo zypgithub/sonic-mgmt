@@ -171,20 +171,19 @@ class NvueClusterCli(NvueBaseCli):
         )
 
     @staticmethod
-    @check_output
-    def action_import_rbac_file(engine, resource_path, remote_url):
-        path = resource_path.replace('/', ' ').strip()
-        cmd = f"nv action import {path} {remote_url}"
-        logging.info(f"Running '{cmd}' on dut using NVUE")
-        return engine.run_cmd(cmd)
-
-    @staticmethod
-    @check_output
-    def action_delete_rbac_file(engine, resource_path):
-        path = resource_path.replace('/', ' ').strip()
-        cmd = f"nv action delete {path}"
-        logging.info(f"Running '{cmd}' on dut using NVUE")
-        return engine.run_cmd(cmd)
+    def action_restore_sdn_trays_maintenance_state(engine, path, tray_id=''):
+        return NvueClusterCli.action(
+            action_str=ActionType.RESTORE.replace('@', ''),
+            resource_path=path,
+            main_param=(ClusterConsts.MAINTENANCE_STATE, tray_id),
+            flags=ClusterConsts.MAINTENANCE_STATE,
+            additional_params={},
+            engine=engine,
+            reboot_params=None,
+            send_user_confirmation=None,
+            expected_output='',
+            device=None,
+        )
 
     @staticmethod
     @check_output
