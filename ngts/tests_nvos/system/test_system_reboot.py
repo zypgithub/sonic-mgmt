@@ -66,7 +66,7 @@ def test_reboot_command(engines, devices, test_name, topology_obj):
 
         with allure.independent_step("Check system reboot reason output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
-            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, ["gentime", "reason", "user"]).verify_result()
+            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, ["gentime", "reason", "reason-type", "user"]).verify_result()
 
         with allure.independent_step("Verify NVUE and gNMI reboot telemetry after reboot"):
             verify_reboot_telemetry_after_reboot(

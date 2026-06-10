@@ -1281,7 +1281,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines, reset_health
 
 def validate_system_event(system, latest_event_id, events_to_search):
     events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '')).get_returned_value()
-    newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
+    newer_events = [events[event]['text'] for event in list(events) if int(event) > int(latest_event_id)]
     assert bool(set(events_to_search) & set(newer_events)), "None of events:{} found in events".format(events_to_search)
 
 

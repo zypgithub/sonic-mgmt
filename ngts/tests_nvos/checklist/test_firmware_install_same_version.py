@@ -68,7 +68,6 @@ def test_firmware_install_same_version_skip_check(devices: DevicesT, random_api:
 
     with allure.step("Select a random component to test"):
         component = select_random_component(devices)
-        component = 'erot'
         platform_component = getattr(Platform().firmware, component)
 
     with allure.step("Install same fw version while using 'skip-version-check' option"):
