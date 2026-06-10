@@ -12402,6 +12402,20 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: portia-chipsim-87-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - portia-chipsim-87
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: nvos-chipsim-64-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -12637,6 +12651,20 @@
   vm_base: VM0000
   dut:
     - portia-chipsim-86
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: portia-chipsim-87-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - portia-chipsim-87
   inv_name: lab
   comment: Mellanox MTR testbed
 

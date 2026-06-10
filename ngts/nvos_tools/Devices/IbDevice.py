@@ -3562,8 +3562,14 @@ class PortiaSimx(RosalindSwitch):
             PlatformConsts.SYSTEM_TYPE: "N7170_LD",
             "asic-model": self.asic_type,
         })
-        expected_firmware_components = [PlatformConsts.FW_ASIC, PlatformConsts.FW_BIOS, PlatformConsts.FW_SSD, PlatformConsts.FW_BMC, "transceiver"]
-        self.constants.firmware = expected_firmware_components
+        expected_firmware_components = [
+            PlatformConsts.FW_ASIC,
+            PlatformConsts.FW_BIOS,
+            PlatformConsts.FW_SSD,
+            PlatformConsts.FW_BMC,
+            "transceiver",
+        ]
+        self.constants.firmware[:] = expected_firmware_components
         self.cpld_amount = 2
         self._extend_firmware_by_cpld_amount()
         self.sma_amount = 2
