@@ -1,4 +1,5 @@
 from functools import partial
+import contextlib
 import logging
 import pytest
 import retry
@@ -41,7 +42,6 @@ def _ztp_cleanup(engines: EnginesT) -> None:
     yield
     System().ztp.action_abort_ztp().verify_result()
     engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-    # _run_system_ztp_with_empty_config(engines, system)  # TODO: check if we need this one
 
 
 @pytest.mark.ztp
@@ -59,7 +59,8 @@ def test_show_ztp_command(engines: EnginesT, serial_engine: PexpectSerialEngine)
     system = System(None)
     _run_system_ztp_with_empty_config(engines, system)
 
-    _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
+    with allure.step("Wait until ztp values fields changed"):
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
     with allure.step("Run nv show system log command and check ztp logs inside"):
         show_output = system.log.file.show_log(param="| grep ztp")
@@ -77,7 +78,8 @@ def test_show_ztp_command(engines: EnginesT, serial_engine: PexpectSerialEngine)
         NvueGeneralCli.apply_config(engines.dut)
         NvueGeneralCli.save_config(engines.dut)
 
-    _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_AFTER_CONFIG_SAVE_VALUES)
+    with allure.step("Wait until ztp values fields changed"):
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_AFTER_CONFIG_SAVE_VALUES)
 
     with allure.step("Run nv set system ztp config-save enabled"):
         system.ztp.set('config-save', 'enabled').verify_result(True)
@@ -95,7 +97,8 @@ def test_show_ztp_command(engines: EnginesT, serial_engine: PexpectSerialEngine)
 
     _run_system_ztp_with_empty_config(engines, system)
 
-    _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
+    with allure.step("Wait until ztp values fields changed"):
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
 
 @pytest.mark.ztp
@@ -437,6 +440,7 @@ def test_ztp_nmx_negative(
         _download_file_and_run_ztp(file=SystemConsts.NMX_POSITIVE_JSON, **shared_kwargs)
 
     with allure.step("Download ztp nmx not exist file"):
+        _run_system_ztp_with_empty_config(engines, system)
         _download_file_and_run_ztp(file=SystemConsts.NMX_NOT_EXIST_FILE_JSON, **shared_kwargs)
 
     with allure.step("Start cluster"):
@@ -446,13 +450,13 @@ def test_ztp_nmx_negative(
             ClusterTools.validate_cluster_enabled(cluster)
 
     with allure.step("Download ztp nmx json, with incorrect commands inside"):
-        _download_file_and_run_ztp(file=SystemConsts.NMX_BAD_COMMANDS, **shared_kwargs)
+        _download_file_and_run_ztp(file=SystemConsts.NMX_BAD_COMMANDS, **shared_kwargs, run_ztp=False)
 
     with allure.step("Disable nmx controller and run positive ztp"):
         ClusterTools.stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
 
         with allure.step("Download ztp nmx positive, when nmx controller disabled"):
-            _download_file_and_run_ztp(file=SystemConsts.NMX_POSITIVE_JSON, **shared_kwargs)
+            _download_file_and_run_ztp(file=SystemConsts.NMX_POSITIVE_JSON, **shared_kwargs, run_ztp=False)
 
         with allure.step("Enable nmx controller"):
             ClusterTools.start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox, standalone_system)
@@ -461,6 +465,7 @@ def test_ztp_nmx_negative(
         ClusterTools.stop_app(cluster, ClusterConsts.NMX_TELEMETRY)
 
         with allure.step("Download ztp nmx positive, when nmx controller disabled"):
+            _run_system_ztp_with_empty_config(engines, system)
             _download_file_and_run_ztp(file=SystemConsts.NMX_POSITIVE_JSON, **shared_kwargs)
 
 
@@ -487,6 +492,7 @@ def test_ztp_nmx_positive(engines: EnginesT, devices: DevicesT, setup_name: str,
         ClusterTools.start_cluster(cluster, setup_name, devices=devices)
 
     with allure.step("Download ztp nmx positive command list, cluster enabled"):
+        # _run_system_ztp_with_empty_config(engines, system)
         _download_file_and_run_ztp(
             engines,
             system,
@@ -494,6 +500,7 @@ def test_ztp_nmx_positive(engines: EnginesT, devices: DevicesT, setup_name: str,
             '1-nmx-commands-list',
             SystemConsts.ZTP_STATUS_SUCCESS,
             SystemConsts.ZTP_STATUS_SUCCESS,
+            run_ztp=False,
         )
 
         with allure.step("Verify log level of apps changed"):
@@ -531,13 +538,13 @@ def test_ztp_provisioning_script_negative(engines: EnginesT):
         _download_file_and_run_ztp(file=SystemConsts.SCRIPT_INTERACTIVE, **shared_kwargs)
 
     with allure.step("Download negative provisioning script"):
-        _download_file_and_run_ztp(file=SystemConsts.SCRIPT_NEGATIVE, **shared_kwargs)
+        _download_file_and_run_ztp(file=SystemConsts.SCRIPT_NEGATIVE, **shared_kwargs, run_ztp=False)
 
     with allure.step("Download provisioning with bad extension"):
-        _download_file_and_run_ztp(file=SystemConsts.SCRIPT_BAD_FILE, **shared_kwargs)
+        _download_file_and_run_ztp(file=SystemConsts.SCRIPT_BAD_FILE, **shared_kwargs, run_ztp=False)
 
     with allure.step("Download provisioning script with loop and timeout"):
-        _download_file_and_run_ztp(file=SystemConsts.SCRIPT_LOOP_TIMEOUT, **shared_kwargs)
+        _download_file_and_run_ztp(file=SystemConsts.SCRIPT_LOOP_TIMEOUT, **shared_kwargs, run_ztp=False)
 
 
 @pytest.mark.ztp
@@ -557,6 +564,8 @@ def test_ztp_provisioning_script_positive(engines: EnginesT):
 
     with allure.step("Running positive ztp provisioning script"):
         _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_POSITIVE, '01-provisioning-script')
+
+    _run_system_ztp_with_empty_config(engines, system)
 
     with allure.step("Download provisioning python script"):
         _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_POSITIVE_PYTHON, '01-provisioning-script')
@@ -628,9 +637,15 @@ def _download_file_and_run_ztp(
     step: str = '',
     step_status_code: SystemConsts = SystemConsts.ZTP_STATUS_SUCCESS,
     ztp_status_code: SystemConsts = SystemConsts.ZTP_STATUS_SUCCESS,
+    run_ztp: bool = True,
 ) -> None:
     with allure.step("Download json file"):
         _download_ztp_json_config(engines, file)
+
+    run_ztp_step = allure.step("Run nv action run system ztp") if run_ztp else contextlib.nullcontext()
+    with run_ztp_step:
+        if run_ztp:
+            system.ztp.action_run_ztp().verify_result()
 
         with allure.step("Check ztp status"):
             _wait_until_ztp_step_status(system, step, step_status_code)
@@ -660,16 +675,29 @@ def _wait_until_ztp_status(system: System, ztp_status: str = '') -> None:
     with allure.step("Waiting for ztp status changed to status {}".format(ztp_status)):
         ztp_output = system.ztp.parse_show()
         allure.attach("ztp-output.json", ztp_output)
+        assert 'status' in ztp_output, f"'status' not in ztp output: {ztp_output}"
         assert ztp_output['status'] == ztp_status, f'ztp status not changed to {ztp_status}'
 
 
 def _wait_until_ztp_step_status(system: System, ztp_step: str = '', ztp_status: str = '', tries: int = 30, delay: int = 2) -> None:
-    @retry.retry(Exception, tries=tries, delay=delay)
+    @retry.retry(AssertionError, tries=tries, delay=delay)
     def _retry_decorator(system_obj: System, ztp_step_name: str = '', ztp_status_name: str = ''):
         with allure.step("Waiting for ztp status changed to status {}".format(ztp_status_name)):
             ztp_output = system_obj.ztp.parse_show()
-            assert ztp_output['stage'][ztp_step_name]['status'] == ztp_status_name, \
-                f'ztp status not changed to {ztp_status_name}'
+            allure.attach("ztp-output.json", ztp_output)
+            assert 'stage' in ztp_output, f"'stage' not in ztp output: {ztp_output}"
+            assert ztp_step_name in ztp_output['stage'], f"{ztp_step_name!r} not in ztp output: {ztp_output['stage']}"
+            assert 'status' in ztp_output['stage'][ztp_step_name], f"'status' not in ztp output: {ztp_output['stage'][ztp_step_name]}"
+
+            current_status = ztp_output['stage'][ztp_step_name]['status']
+            final_statuses = (SystemConsts.ZTP_STATUS_SUCCESS, SystemConsts.ZTP_STATUS_FAILED)
+
+            if current_status in final_statuses and current_status != ztp_status_name:
+                # Stop retrying: final ZTP states will not change anymore.
+                raise RuntimeError(f'expected ztp status is {ztp_status_name!r}, but got {current_status!r}')
+
+            assert current_status == ztp_status_name, f'ztp status not changed to {ztp_status_name}'
+
     _retry_decorator(system, ztp_step, ztp_status)
 
 
@@ -695,7 +723,6 @@ def _wait_until_ztp_values_fields_changed(
             allure.attach("ztp-output.json", system_ztp_output)
 
         with allure.step("Verify default values and fields"):
-            ValidationTool.validate_fields_values_in_output(ztp_output_fields, ztp_output_values,
-                                                            system_ztp_output).verify_result()
+            ValidationTool.validate_fields_values_in_output(ztp_step_name, ztp_status_name, system_ztp_output).verify_result()
 
     _retry_decorator(system, ztp_output_fields, ztp_output_values)
