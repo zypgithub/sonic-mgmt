@@ -57,7 +57,8 @@ def pytest_collection_modifyitems(session, config, items):
                                       PlatformTypesConstants.PLATFORM_LEOPARD: 116,
                                       PlatformTypesConstants.PLATFORM_LEOPARD_DC: 116,
                                       PlatformTypesConstants.PLATFORM_MOOSE: 244,
-                                      PlatformTypesConstants.PLATFORM_GAUR: 244
+                                      PlatformTypesConstants.PLATFORM_GAUR: 244,
+                                      PlatformTypesConstants.PLATFORM_CHAMELEON_SINGLE_LD: 504,
                                       }
 
         setup_name = session.config.option.setup_name
@@ -247,9 +248,18 @@ def generate_config_db(config_db, engine, expected_num_of_ports, platform, dut_h
     nonsplitable_ports = get_nonsplitable_ports(platform, topology, physical_dut_ports)
     target_ports = {}
     # Add ports connected from DUT to hosts
+    if platform == PlatformTypesConstants.PLATFORM_CHAMELEON_SINGLE_LD:
+        port_speed = "200000"
+        # Remove the port connected to server, which is not connected to host A and B
+        physical_dut_ports.pop("Ethernet4")
+        # Remove service ports
+        physical_dut_ports.pop("Ethernet512")
+        physical_dut_ports.pop("Ethernet513")
+
     for port in dut_host_ports:
         target_ports[port] = config_db['PORT'][port]
-        physical_dut_ports.pop(port)
+        if port in physical_dut_ports:
+            physical_dut_ports.pop(port)
 
     aliases_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
     added_ports_counter = len(target_ports)
