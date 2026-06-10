@@ -403,6 +403,8 @@ def test_system_stats_performance(engines: EnginesT, devices: DevicesT, test_api
 
         with allure.step("Create category internal file with old samples"):
             file_path = StatsConsts.OLD_SAMPLES_PATH + name + '.csv'
+            if not os.path.isfile(file_path):
+                raise FileNotFoundError(f"Old samples file: {file_path} does not exist.")
             player_engine.upload_file_using_scp(dest_username=devices.dut.default_username,
                                                 dest_password=devices.dut.default_password,
                                                 dest_folder=StatsConsts.INTERNAL_PATH,
@@ -651,6 +653,8 @@ def test_validate_tech_support_with_max_size(engines: EnginesT, devices: Devices
             for category in category_list:
                 file_name = category + '.csv'
                 file_path = StatsConsts.MAX_SIZE_FILE_PATH + file_name
+                if not os.path.isfile(file_path):
+                    raise FileNotFoundError(f"Old samples file: {file_path} does not exist.")
                 player_engine.upload_file_using_scp(dest_username=devices.dut.default_username,
                                                     dest_password=devices.dut.default_password,
                                                     dest_folder=StatsConsts.INTERNAL_PATH,
@@ -749,6 +753,8 @@ def test_system_stats_invalid_values(engines: EnginesT, devices: DevicesT, test_
         with allure.step("Validate upload system stats file to invalid URL"):
             file_name = 'stats_cpu_gorilla-154_20230702_145940.csv'
             file_path = StatsConsts.GENERATED_FILE_PATH + file_name
+            if not os.path.isfile(file_path):
+                raise FileNotFoundError(f"Old samples file: {file_path} does not exist.")
             player.upload_file_using_scp(dest_username=devices.dut.default_username,
                                          dest_password=devices.dut.default_password,
                                          dest_folder=StatsConsts.INTERNAL_PATH,
