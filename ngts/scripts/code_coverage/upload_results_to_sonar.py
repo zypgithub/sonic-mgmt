@@ -59,6 +59,7 @@ def test_upload_results_to_sonar(target_version: str, results_path: Path) -> Non
                 general_job_params
                 .project("NVOS-Python")
                 .coverage_folder(python_results_path)
+                .exclude_file_path(f"{NvosConsts.DEST_PATH}/exclude_lists/coverage_python_exclude.conf")
                 .build()
             )
             client.trigger_with_query(python_job_name, python_job_params)
