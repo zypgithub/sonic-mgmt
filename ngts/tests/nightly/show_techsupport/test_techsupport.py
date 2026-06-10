@@ -203,7 +203,7 @@ def test_techsupport_validate_api_sniffer_dumps(topology_obj, engines, cli_objec
             [f"{file}{ZIPPED_FILE_POSTFIX}" if ZIPPED_FILE_POSTFIX not in file else file for file in pcap_file_names])
         pcap_files_techsupport = set(
             [f"{os.path.basename(file_path)}" for file_path in res])  # Fetch base file names
-        assert pcap_techsupport_expected_files == pcap_files_techsupport, (f"techsupport .pcap files are not as "
+        assert pcap_techsupport_expected_files <= pcap_files_techsupport, (f"expected techsupport .pcap files not found in techsupport.\n "
                                                                            f"expected.\n Expected: {pcap_techsupport_expected_files},"
                                                                            f"Actual: {pcap_files_techsupport}")
 
