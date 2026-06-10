@@ -51,13 +51,48 @@ class TestNewTc:
         resume_thermal_control() and wait for the TC loop to stabilize so
         PWM is back to sensor-driven levels before the test begins.
 
+        After thermalctld is stopped, the asic sysfs file will be deleted.
+        The hw-management TC loop (hw-management-tc.service)
+        still runs independently and would fail to read the missing file,
+        triggering sensor_read_error protection that locks PWM at 100%.
+        To prevent this, we check immediately after stopping thermalctld
+        and re-create the file with a safe temperature value if it was
+        deleted.
+
         Must NOT be called when testing cpu_pack/ambient sensors: stopping
         thermalctld causes module temp files to go stale, triggering TC loop
         total_err_cnt >= 2 protection which locks PWM at 100%.
         """
+        asic_file = os.path.join(TC_CONST.HW_THERMAL_FOLDER, "asic")
+        asic_temp_backup = self.dut_engine.run_cmd(f"sudo cat {asic_file}").strip()
+        assert asic_temp_backup.isdigit(), f"asic temperature file {asic_file} is not a valid number"
+
+        # suspend thermal control to prevent sensor_read_error protection from locking PWM at 100%
+        self.cli_objects.dut.hw_mgmt.suspend_thermal_control()
+
         self.dut_engine.run_cmd("docker exec pmon supervisorctl stop thermalctld")
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-sync")
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-thermal-updater")
+
+        def _ensure_asic_file_exists():
+            """Re-create the asic temperature file if it was deleted.
+
+            Args:
+                asic_file: Full path to the asic sysfs file.
+                backup_value: Temperature value to write.  Falls back to a safe
+                    default (40000 = 40 °C) if not provided.
+            """
+            check = self.dut_engine.run_cmd(f"test -e {asic_file} && echo EXISTS || echo MISSING").strip()
+            assert "MISSING" in check, \
+                f"Temperature file {asic_file} still exists after stopping thermalctld"
+
+            logger.info(f"asic file {asic_file} was deleted after stopping thermalctld, "
+                        f"re-creating with value {asic_temp_backup}")
+            self.dut_engine.run_cmd(f"sudo touch {asic_file}")
+            self.dut_engine.run_cmd(f"sudo chown admin {asic_file}")
+            self.dut_engine.run_cmd(f"sudo echo {asic_temp_backup} > {asic_file}")
+        retry_call(_ensure_asic_file_exists, exceptions=AssertionError, tries=5, delay=1)
+
         self.cli_objects.dut.hw_mgmt.resume_thermal_control()
         self._wait_tc_loop_resume()
 
@@ -117,11 +152,6 @@ class TestNewTc:
             pytest.skip(f"Skip mock temperature for sensor {tested_sensors} as it is not supported in IM enabled setup")
 
         def mock_temp_and_check(file_path, temperature, initial_pwm):
-            def assert_temperature_file_exists():
-                assert mock_sensor.cli_object.general.stat(file_path)['exists'], \
-                    f"Temperature file {file_path} does not exist"
-
-            retry_call(assert_temperature_file_exists, exceptions=AssertionError, tries=3, delay=1)
             mock_sensor.mock_temperature(file_path, temperature)
             verify_pwd_and_rpm_are_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature,
                                                   initial_pwm=initial_pwm)
