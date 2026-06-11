@@ -807,6 +807,12 @@ fdb/test_fdb.py::test_fdb:
     conditions:
     - "https://redmine.mellanox.com/issues/5046577 and 'sn6600_ld' in platform"
 
+cacl/test_cacl_application.py::test_cacl_application_nondualtor:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5048947 on sn4280"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5048947 and 'sn4280' in platform"
+
 generic_config_updater/test_dynamic_acl.py::test_gcu_acl_forward_rule_removal:
   skip:
     reason: "skip for IPv6-only topologies"
