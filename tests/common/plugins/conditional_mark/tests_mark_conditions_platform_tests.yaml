@@ -19,6 +19,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_components:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_fan_drawers:
   skip:
@@ -27,6 +28,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_fan_drawers:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_my_slot:
   skip:
@@ -35,6 +37,13 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_my_slot:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_get_name:
+  skip:
+    reason: "The EEPROM info is burned by the vendor, so this case is not suitable for BMC"
+    conditions:
+      - "'bmc' in topo_type"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_presence:
   skip:
@@ -43,6 +52,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_presence:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_revision:
   xfail:
@@ -66,6 +76,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_status:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_supervisor_slot:
   skip:
@@ -74,6 +85,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_supervisor_slot:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_thermal_manager:
   skip:
@@ -102,6 +114,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_status_led:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
   xfail:
     reason: "Testcase consistently fails, raised issue to track"
     conditions:
@@ -150,6 +163,7 @@ platform_tests/api/test_chassis_fans.py::TestChassisFans::test_get_model:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_chassis_fans.py::TestChassisFans::test_get_serial:
   #Fan tray serial numbers cannot be retrieved through software in cisco platform
@@ -181,6 +195,7 @@ platform_tests/api/test_chassis_fans.py::TestChassisFans::test_set_fans_speed:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
   xfail:
     reason: "Testcase consistently fails, raised issue to track"
     conditions:
@@ -197,6 +212,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_available_firmw
     conditions:
       - "asic_type in ['mellanox', 'vs'] or platform in ['armhf-nokia_ixs7215_52x-r0']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_description:
   skip:
@@ -205,6 +221,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_description:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_firmware_update_notification:
   skip:
@@ -213,6 +230,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_firmware_update
     conditions:
       - "asic_type in ['mellanox', 'vs'] or platform in ['armhf-nokia_ixs7215_52x-r0']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_firmware_version:
   skip:
@@ -221,6 +239,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_firmware_versio
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_model:
   skip:
@@ -229,6 +248,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_model:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_name:
   skip:
@@ -237,6 +257,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_name:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_position_in_parent:
   skip:
@@ -245,6 +266,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_position_in_par
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_presence:
   skip:
@@ -253,6 +275,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_presence:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_serial:
   skip:
@@ -261,6 +284,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_serial:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_get_status:
   skip:
@@ -269,6 +293,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_get_status:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_install_firmware:
   skip:
@@ -277,6 +302,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_install_firmware:
     conditions:
       - "asic_type in ['mellanox', 'vs'] or ('sw_to3200k' in hwsku)"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_is_replaceable:
   skip:
@@ -285,6 +311,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_is_replaceable:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_component.py::TestComponentApi::test_update_firmware:
   skip:
@@ -293,6 +320,7 @@ platform_tests/api/test_component.py::TestComponentApi::test_update_firmware:
     conditions:
       - "asic_type in ['mellanox', 'vs'] or platform in ['armhf-nokia_ixs7215_52x-r0']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 #######################################
 #####   api/test_fan_drawer.py    #####
@@ -310,6 +338,7 @@ platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_get_maximum_consum
     conditions:
       - "asic_type in ['mellanox', 'vs'] or platform in ['armhf-nokia_ixs7215_52x-r0']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
   xfail:
     reason: "Testcase consistently fails, raised issue to track"
     conditions:
@@ -323,6 +352,7 @@ platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_get_model:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_get_serial:
   #Fan tray serial numbers cannot be retrieved through software in cisco platform
@@ -341,6 +371,7 @@ platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_get_status:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_set_fan_drawers_led:
   skip:
@@ -349,6 +380,7 @@ platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_set_fan_drawers_le
     conditions:
       - "asic_type in ['mellanox', 'vs'] or platform in ['armhf-nokia_ixs7215_52x-r0']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 #######################################
 ##### api/test_fan_drawer_fans.py #####
@@ -367,6 +399,7 @@ platform_tests/api/test_fan_drawer_fans.py::TestFanDrawerFans::test_get_model:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_fan_drawer_fans.py::TestFanDrawerFans::test_get_serial:
   #Fan tray serial numbers cannot be retrieved through software in cisco platform
@@ -393,6 +426,7 @@ platform_tests/api/test_fan_drawer_fans.py::TestFanDrawerFans::test_set_fans_spe
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
   xfail:
     reason: "Testcase consistently fails, raised issue to track"
     conditions:
@@ -468,6 +502,7 @@ platform_tests/api/test_psu.py::TestPsuApi::test_fans:
       - "asic_type in ['mellanox', 'vs']"
       - "platform in ['x86_64-cel_e1031-r0'] and https://github.com/sonic-net/sonic-buildimage/issues/18229"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_psu.py::TestPsuApi::test_get_model:
   skip:
@@ -506,6 +541,7 @@ platform_tests/api/test_psu.py::TestPsuApi::test_get_status:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_psu.py::TestPsuApi::test_led:
   skip:
@@ -580,6 +616,7 @@ platform_tests/api/test_psu_fans.py::TestPsuFans::test_get_fans_target_speed:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
   xfail:
     reason: "Test case has issue on the t0-isolated-d256u256s2 topo."
     conditions:
@@ -592,6 +629,7 @@ platform_tests/api/test_psu_fans.py::TestPsuFans::test_get_model:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_psu_fans.py::TestPsuFans::test_get_presence:
   xfail:
@@ -606,6 +644,7 @@ platform_tests/api/test_psu_fans.py::TestPsuFans::test_get_serial:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_psu_fans.py::TestPsuFans::test_set_fans_led:
   skip:
@@ -627,6 +666,7 @@ platform_tests/api/test_psu_fans.py::TestPsuFans::test_set_fans_speed:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 #######################################
 #####        api/test_sfp.py      #####
@@ -645,6 +685,7 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_error_description:
     conditions:
       - "asic_type in ['nvidia-bluefield', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
   xfail:
     reason: "Platform API 'get_error_description' not implemented. Or test case has issue on the t0-isolated-d256u256s2 topo."
     conditions_logical_operator: or
@@ -659,6 +700,7 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_model:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_name:
   skip:
@@ -667,6 +709,7 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_name:
     conditions:
       - "asic_type in ['mellanox', 'nvidia-bluefield', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_position_in_parent:
   skip:
@@ -675,6 +718,7 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_position_in_parent:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_presence:
   xfail:
@@ -689,6 +733,7 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_reset_status:
     conditions:
       - "asic_type in ['mellanox', 'nvidia-bluefield', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_rx_los:
   skip:
@@ -721,6 +766,7 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_status:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_temperature:
   skip:
@@ -770,6 +816,7 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_tx_fault:
     conditions:
       - "asic_type in ['mellanox', 'vs'] or (asic_type in ['cisco-8000'] and release in ['202012'])"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_tx_power:
   skip:
@@ -834,6 +881,7 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_thermals:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_tx_disable:
   skip:
@@ -862,6 +910,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_high_critical_thres
       - "asic_type in ['vs'] or platform in ['armhf-nokia_ixs7215_52x-r0']"
       - "is_multi_asic==True and release in ['201911']"
       - "'simx' in platform"
+      - "'bmc' in topo_type"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_high_threshold:
   skip:
@@ -871,6 +920,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_high_threshold:
       - "asic_type in ['vs']"
       - "is_multi_asic==True and release in ['201911']"
       - "'simx' in platform"
+      - "'bmc' in topo_type"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_low_critical_threshold:
   skip:
@@ -879,6 +929,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_low_critical_thresh
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'bmc' in topo_type"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_low_threshold:
   skip:
@@ -887,6 +938,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_low_threshold:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'bmc' in topo_type"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_maximum_recorded:
   skip:
@@ -895,6 +947,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_maximum_recorded:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_minimum_recorded:
   skip:
@@ -903,6 +956,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_minimum_recorded:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_model:
   # Hardware components that we use for our sensors does not have IDPROM to store model and serial number details.
@@ -914,6 +968,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_model:
        - "asic_type in ['mellanox', 'cisco-8000', 'vs']"
        - "is_multi_asic==True and release in ['201911']"
        - "platform.startswith('arm64-c8220tg_48a_o')"
+       - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_presence:
   skip:
@@ -922,6 +977,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_presence:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_serial:
   # Hardware components that we use for our sensors does not have IDPROM to store model and serial number details.
@@ -933,6 +989,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_serial:
        - "asic_type in ['mellanox', 'cisco-8000', 'vs']"
        - "is_multi_asic==True and release in ['201911']"
        - "platform.startswith('arm64-c8220tg_48a_o')"
+       - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_status:
   skip:
@@ -941,6 +998,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_status:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_temperature:
   skip:
@@ -957,6 +1015,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_set_high_threshold:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
   xfail:
     reason: "Testcase consistently fails, raised issue to track"
     conditions:
@@ -970,6 +1029,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_set_low_threshold:
     conditions:
       - "asic_type in ['mellanox', 'vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'aspeed_nvidia' in platform"
   xfail:
     reason: "Testcase consistently fails, raised issue to track"
     conditions:
