@@ -1212,6 +1212,36 @@ platform_tests/link_flap/test_cont_link_flap.py::TestContLinkFlap::test_cont_lin
     conditions:
     - "https://redmine.mellanox.com/issues/4702703"
 
+smartswitch/platform_tests/test_platform_dpu.py::test_pcie_link:
+  skip:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/5075817"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5075817"
+
+smartswitch/platform_tests/test_platform_dpu.py::test_restart_pmon:
+  skip:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/5075817"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5075817"
+
+smartswitch/platform_tests/test_platform_dpu.py::test_system_health_state:
+  skip:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/5075817"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5075817"
+
+smartswitch/platform_tests/test_platform_dpu.py::test_system_health_summary:
+  skip:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/5075817"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5075817"
+
+smartswitch/platform_tests/test_reload_dpu.py:
+  skip:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/5075817"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5075817"
+
 process_monitoring/test_critical_process_monitoring.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3464488 and standalone dpu platform"
