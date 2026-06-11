@@ -24,7 +24,8 @@ from tests.common.utilities import is_ipv6_only_topology
 logger = logging.getLogger(__name__)
 
 pytestmark = [
-    pytest.mark.topology('t0', 't1')
+    pytest.mark.topology('t0', 't1'),
+    pytest.mark.disable_memory_utilization
 ]
 
 DEFAULT_MAPPING_TYPE = "AZURE"
@@ -626,7 +627,7 @@ class TestQoSSaiDSCPQueueMapping_IPIP_Base():
                 from infra.tools.redmine.redmine_api import is_redmine_issue_active
                 if not ("sn6600_ld" in rand_selected_dut.facts.get("platform", "") and is_redmine_issue_active([5008193])[0]):
                     reboot(duthost, localhost, reboot_type="warm", safe_reboot=True, check_intf_up_ports=True,
-                           wait_warmboot_finalizer=True)
+                           wait_warmboot_finalizer=True, ignore_loganalyzer=loganalyzer)
 
             with allure.step("Run test after warm-reboot"):
                 self._run_test(ptfadapter, duthost, tbinfo, test_params, inner_dst_ip_list, dut_qos_maps_module,
