@@ -2,12 +2,14 @@
 import csv
 import json
 import logging
+import os
+import shutil
 from collections import defaultdict
 
 import allure
 import pytest
 
-from ngts.constants.constants import SonicConst, SonicDeployConstants
+from ngts.constants.constants import MarsConstants, SonicConst, SonicDeployConstants
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 from ngts.scripts.test_rpc_check_and_set_topology import run_testbed_cli_script
 
@@ -101,11 +103,19 @@ def update_config_db(dut_engine, csv_port_config, passive_ports, is_smartswitch=
     dut_engine.run_cmd(f'sudo mv /tmp/{SonicConst.CONFIG_DB_JSON} {SonicConst.CONFIG_DB_JSON_PATH}', validate=True)
 
 
+def cleanup_facts_cache(reason):
+    cache_path = os.path.join(MarsConstants.SONIC_MGMT_DIR, "tests", "_cache")
+    logger.info(f"Cleanup facts cache {reason}: {cache_path}")
+    shutil.rmtree(cache_path, ignore_errors=True)
+
+
 @allure.title('Deploy L2 mode')
 def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
     """
     This test will deploy l2 mode on the dut
     """
+
+    cleanup_facts_cache("before L2 mode switch")
 
     dut_name = cli_objects.dut.chassis.get_hostname()
     is_smartswitch = 'bobcat' in dut_name
@@ -147,3 +157,5 @@ def test_restore_default_mode(cli_objects, engines, sonic_topo, topology_obj, wo
             topology_obj.players[dut['dut_alias']]['engine'].disconnect()
             general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
             general_cli_obj.save_configuration()
+
+    cleanup_facts_cache("after restoring default mode")
