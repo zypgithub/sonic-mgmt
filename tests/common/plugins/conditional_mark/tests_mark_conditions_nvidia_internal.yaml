@@ -1322,6 +1322,12 @@ restapi/test_restapi.py::test_create_interface_sad:
     conditions:
     - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
 
+restapi/test_restapi_client_cert_auth.py::test_client_cert_subject_name_matching:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5057014"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5057014"
+
 tacacs/test_authorization.py::test_fallback_to_local_authorization_with_config_reload:
   xfail:
     reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4692207"
