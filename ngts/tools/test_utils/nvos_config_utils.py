@@ -1,5 +1,5 @@
 import logging
-
+import time
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts, ConfState
 from ngts.nvos_tools.infra import ExceptionTool
@@ -140,6 +140,7 @@ def clear_conf(engine, device, config_yml, root_dir, version=""):
                             output = NvueGeneralCli.apply_config(engine=engine, option='-y', verify_execution=True)
                             allure.attach("Apply output", output)
                             assert ConfState.APPLIED in output, "Failed to apply config"
+                            time.sleep(5)
                         with allure.step("Save config"):
                             output = NvueGeneralCli.save_config(engine)
                             allure.attach("Save output", output)

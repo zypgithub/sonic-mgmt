@@ -344,12 +344,12 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
         logger.info(f"Bug Handler Output: {bug_handler_output}")
         try:
             bug_handler_file_result = json.loads(bug_handler_output.message)
-        except json.JSONDecodeError as e:
-            raise Exception(f"Failed to parse bug handler output as JSON.\n"
-                            f"Command: {bug_handler_cmd}\n"
-                            f"Output: {bug_handler_output.message}\n"
-                            f"Stderr: {bug_handler_output.stderr}\n"
-                            f"RC: {bug_handler_output.returncode}") from e
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse bug handler output as JSON.\n"
+                         f"Command: {bug_handler_cmd}\n"
+                         f"Output: {bug_handler_output.message}\n"
+                         f"Stderr: {bug_handler_output.stderr}\n"
+                         f"RC: {bug_handler_output.returncode}")
 
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
