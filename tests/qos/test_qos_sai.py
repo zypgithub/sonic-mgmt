@@ -1313,6 +1313,7 @@ class TestQosSai(QosSaiBase):
             testParams["pkts_num_margin"] = qosConfig["lossy_queue_1"]["pkts_num_margin"]
 
         self.set_test_params_descriptor_size(dutQosConfig, testParams)
+
         duthost = get_src_dst_asic_and_duts["src_dut"]
 
         if enable_lossy_pg_headroom:
@@ -2761,3 +2762,7 @@ class TestQosSai(QosSaiBase):
             self.check_and_set_ecn_status(duthost, qosConfig, 'on')
         elif ecn == "ecn_5":
             self.check_and_set_ecn_status(duthost, qosConfig, 'off')
+
+    def set_test_params_descriptor_size(self, dutQosConfig, testParams):
+        if 'descriptor_size' in dutQosConfig["param"]:
+            testParams["descriptor_size"] = dutQosConfig["param"]["descriptor_size"]

@@ -4978,6 +4978,7 @@ class LossyQueueTest(sai_base_test.ThriftInterfaceDataPlane):
         descriptor_size = int(self.test_params.get('descriptor_size', 0))
         dut_asic = self.test_params["dut_asic"]
         update_COUNTER_MARGIN(dut_asic)
+        descriptor_size = int(self.test_params.get('descriptor_size', 0))
 
         # get counter names to query
         ingress_counters, egress_counters = get_counter_names(sonic_version)
