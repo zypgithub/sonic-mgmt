@@ -665,7 +665,7 @@ def _validate_fnm_port_speeds_and_lanes(port_name, port_obj, expected_speeds, ex
         logger.info(f"{port_type} port {port_name} supported-lanes: {lanes_str} (no validation - expected value not provided)")
 
 
-def _test_port_state_change_with_speeds(selected_port, expected_speeds_set):
+def _test_port_state_change_with_speeds(selected_port, expected_speeds_set, test_name, devices):
     """Test that supported speeds remain visible during port state changes"""
     # Get original port state
     original_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
@@ -676,11 +676,7 @@ def _test_port_state_change_with_speeds(selected_port, expected_speeds_set):
     try:
         # Set port to down state
         with allure_step(f"Set {selected_port.name} to down state"):
-            selected_port.interface.link.state.set(
-                op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True, ask_for_confirmation=True
-            ).verify_result()
-            # Poll for state change (up to 30 seconds, check every 2s)
-            selected_port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_DOWN, timeout=30, sleep_time=2).verify_result()
+            toggle_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name, devices)
 
         # Verify port is down and supported speeds are still visible
         with allure_step("Verify port is down and supported speeds still visible"):
@@ -704,18 +700,14 @@ def _test_port_state_change_with_speeds(selected_port, expected_speeds_set):
         # Always restore original port state
         if original_state and original_state != "down":
             with allure_step(f"Restore {selected_port.name} to original state"):
-                selected_port.interface.link.state.set(
-                    op_param_name=original_state, apply=True, ask_for_confirmation=True
-                ).verify_result()
-                # Poll for state change (up to 30 seconds, check every 2s)
-                selected_port.interface.wait_for_port_state(state=original_state, timeout=30, sleep_time=2).verify_result()
+                toggle_port_state(selected_port, original_state, test_name, devices)
                 logger.info(f"Restored {selected_port.name} to original state: {original_state}")
 
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-def test_nvl_supported_speeds_validation(engines, devices, random_api, has_loopbox, standalone_system):
+def test_nvl_supported_speeds_validation(test_name, engines, devices, random_api, has_loopbox, standalone_system):
     """
     Validate supported-speed field matches expected device supported speeds
 
@@ -768,7 +760,7 @@ def test_nvl_supported_speeds_validation(engines, devices, random_api, has_loopb
 
     with allure_step("Test supported speeds visibility with port state changes"):
         expected_speeds_set = set(expected_supported_speeds)
-        _test_port_state_change_with_speeds(selected_port, expected_speeds_set)
+        _test_port_state_change_with_speeds(selected_port, expected_speeds_set, test_name, devices)
 
     # Test FNM ports (regular Port command)
     with allure_step("Validate supported speeds and lanes on FNM ports"):
