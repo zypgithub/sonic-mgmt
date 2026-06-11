@@ -65,5 +65,8 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_launch_with_no_peer.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_dpu_power_down.cases </cases>
+    </test>
 
 </DBDEF>
