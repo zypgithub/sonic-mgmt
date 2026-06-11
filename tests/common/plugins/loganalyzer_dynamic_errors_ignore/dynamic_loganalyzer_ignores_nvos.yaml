@@ -2352,4 +2352,12 @@
     - Affected_test_cases:
         - tests_nvos/cluster/test_nmx_package.py::test_nmx_package_good_flow
 
+# nv-bridge connection teardown warnings during cluster encryption config changes
+- Errors_list:
+    - '.*WARNING nv-bridge#nv-bridge.*ConnectionLivenessMonitor: connection .* reached disconnection threshold.*'
+    - '.*WARNING nv-bridge#nv-bridge.*ServerConnections\.remove_connection.*Failed to remove connection for session_id:.*is not registered'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/nv_bridge/test_nv_bridge_encryption.py::test_bridge_cluster_encryption_set
+
 
