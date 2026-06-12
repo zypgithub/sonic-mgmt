@@ -797,9 +797,11 @@ platform_tests/api/test_pdb.py::TestPdbApi::test_get_name:
 
 platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
   skip:
-    reason: "The test is not supported on the bluefield DPU."
+    reason: "The test is not supported on the bluefield DPU. Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5065673"
+    conditions_logical_operator: or
     conditions:
     - "'nvda_bf' in platform"
+    - "https://redmine.mellanox.com/issues/5065673"
 
 fdb/test_fdb.py::test_fdb:
   skip:
