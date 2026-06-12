@@ -857,6 +857,10 @@ def fill_egress_buffer(duthost, ptfadapter, port_id, buffer_size, target_queue, 
     if total_sent_packets == 0:
         raise RuntimeError("Buffer fill failed: 0 packets sent")
 
+    # Fail fast when nothing was sent so the buffer never gets filled
+    if total_sent_packets == 0:
+        raise RuntimeError("Buffer fill failed: 0 packets sent")
+
     # Check queue counters after filling
     for interface in interfaces:
         logger.info(f"Queue counters after filling for {interface}:")
