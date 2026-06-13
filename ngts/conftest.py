@@ -967,8 +967,10 @@ def setups_list():
 
 
 @pytest.fixture()
-def show_setup_versions(topology_obj):
+def show_setup_versions(topology_obj, request):
     cli_objs: dict[str, SonicGeneralCliDefault] = get_dut_cli_objs_from_topo_obj(topology_obj)
+
+    nos_replacement_pending = bool(request.config.getoption('--target_cli_type'))
 
     def _attach_setup_versions():
         clis: dict[str, SonicGeneralCliDefault] = cli_objs
@@ -982,7 +984,10 @@ def show_setup_versions(topology_obj):
         except Exception:
             logger.info('could not get setup versions')
 
-    _attach_setup_versions()
+    if nos_replacement_pending:
+        logger.info("Skipping pre-install setup versions: NOS replacement in progress")
+    else:
+        _attach_setup_versions()
     yield
     _attach_setup_versions()
 
