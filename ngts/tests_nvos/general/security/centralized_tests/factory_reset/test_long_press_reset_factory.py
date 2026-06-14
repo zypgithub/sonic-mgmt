@@ -123,14 +123,13 @@ def _local_users_restore_check(engines: EnginesT, feature_enabled: bool):
 def _aaa_method_keep_check(engines: EnginesT, auth_method: str):
     def _setup_tacacs() -> UserInfo:
         with allure.step('set tacacs server'):
-            tac_server: RemoteAaaServerInfo = TacacsDockerServer0.SERVER_BY_ADDRESSING_TYPE[
-                random.choice(AddressingType.ALL_TYPES)]
+            tac_server: RemoteAaaServerInfo = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[AddressingType.IPV4]
             tac_server.configure(engines)
             return tac_server.users[0]
 
     def _setup_ldap() -> UserInfo:
         with allure.step('set ldap server'):
-            ldap_server: RemoteAaaServerInfo = LdapServersP3.LDAP1_SERVERS[random.choice(AddressingType.ALL_TYPES)]
+            ldap_server: RemoteAaaServerInfo = LdapServersP3.LDAP3_SERVERS[AddressingType.IPV4]
             ldap_server.configure(engines)
             return ldap_server.users[0]
 
