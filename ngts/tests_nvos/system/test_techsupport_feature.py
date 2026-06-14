@@ -451,7 +451,7 @@ def validate_sx_core_modules_in_dump_nvos(engine, dump_folder_path):
         2. Collect module directory names from the DUT (ground truth)
         3. Collect module directory names from the techsupport dump
         4. log module counts between DUT and dump for diagnostics
-        5. Assert every DUT module exists in the dump (DUT_module_set ⊆ dump_module_set)
+        5. Assert every dump module exists in the dut ( dump_module_set ⊆ DUT_module_set )
         6. Assert no zero-byte files under sx_core/asic0/module* in the dump
     :param engine: NVOS SSH engine (engines.dut)
     :param dump_folder_path: path to folder which has extracted dump file content
@@ -498,12 +498,13 @@ def validate_sx_core_modules_in_dump_nvos(engine, dump_folder_path):
             'sudo find {} -path "*/sx_core/asic0/module*" -type f -empty 2>/dev/null || true'.format(dump_folder_path))
         logger.info('empty_files_output: ' + str(empty_files_output.strip()))
 
-    with allure.step('Validate all DUT modules exist in dump'):
-        missing_modules = dut_modules - dump_modules
-        assert not missing_modules, \
-            ('sx_core modules missing from techsupport dump: {}. '
-             'The save_sx_core_files function in generate_dump may not be collecting '
-             'all modules from {}/module*.'.format(sorted(missing_modules), SX_CORE_SYSFS_PATH))
+    with allure.step('Validate all dump modules exist in dut'):
+        missing_modules = []  # missing modules from dump collector
+        for module_name in dump_modules:
+            if module_name not in dut_modules:
+                missing_modules.append(module_name)
+        assert missing_modules == [], \
+            f"sx_core modules in techsupport dump but not on DUT: {missing_modules} not found in dump modules  {dump_modules}"
 
     with allure.step('Validate no empty files in collected module data'):
         # Search for zero-byte files anywhere inside the module subtree, including nested
