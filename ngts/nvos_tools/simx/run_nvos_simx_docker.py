@@ -57,7 +57,7 @@ def start_simx_docker(target_version, dut_engine, server_engine, devices, path_t
                       chip='', platform=None, chipsim_version=None, custom_flags=None,
                       chipsim_extra_args=None, pelican_tag=None, cable_script=None, chipsim_force=False):
     image_type = "--nos-image" if ".bin" in target_version else "--simulator-image"
-    cmd = f"sudo {path_to_chipsim_script} --ip {dut_engine.ip} {image_type} {target_version}"
+    cmd = f"{path_to_chipsim_script} --ip {dut_engine.ip} {image_type} {target_version}"
     if chip:
         cmd += f" --chip {chip}"
     if platform:
