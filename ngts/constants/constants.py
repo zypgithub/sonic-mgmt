@@ -1458,7 +1458,7 @@ class BmcDeployConstants:
     UBOOT_PROMPT = "=> "
     UBOOT_AUTOBOOT_HINT = "Hit any key to stop autoboot"
     UBOOT_LOAD_ADDR = "0x432000000"
-    UBOOT_BOOTCONF_DEFAULT = "sonic-ast2700-nvidia-spc6-a1-bmc"
+    UBOOT_BOOTCONF_DEFAULT = "sonic-ast2700-nvidia-spc6-bmc"
     UBOOT_BOOTARGS_TAILS = (
         'console=ttyS12,115200n8 earlycon=uart8250,mmio32,0x14c33b00 ',
         'root=/dev/ram0 rw ',
