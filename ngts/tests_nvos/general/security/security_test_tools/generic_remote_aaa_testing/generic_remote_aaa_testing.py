@@ -308,7 +308,7 @@ def generic_aaa_test_auth(
         remote_aaa_obj.enable(apply=True, verify_res=False)
         RemoteAaaServerInfo.update_active_aaa_server(item, server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     if test_param:
         assert test_param_update_func, 'test_param_update_func function was not specified!'
@@ -318,7 +318,8 @@ def generic_aaa_test_auth(
                     with allure.step(f'Update test param: {param}'):
                         test_param_update_func(engines, item, server, server_resource, param)
                         if remote_aaa_type == RemoteAaaType.LDAP:
-                            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
+                            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
+
                     with allure.step('Test auth'):
                         security_test_utils.verify_auth_mediums(test_flow, engines, topology_obj, True, False,
                                                                 server, UserRole.ALL_ROLES, [local_adminuser], skip_auth_mediums=skip_auth_mediums)
@@ -449,11 +450,11 @@ def generic_aaa_test_priority(
         worse_server = server1
         RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     while True:
         with allure.step('Wait for configuration to be fully applied'):
-            wait_for_ldap_nvued_restart_workaround(
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(
                 test_item=item,
                 engine_to_use=engines.dut,
                 username=best_server.users[0].username,
@@ -487,7 +488,7 @@ def generic_aaa_test_priority(
             worse_server, best_server = best_server, worse_server
             RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
             if remote_aaa_type == RemoteAaaType.LDAP:
-                nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
+                nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
 
 def generic_aaa_test_server_unreachable(
@@ -562,7 +563,7 @@ def generic_aaa_test_server_unreachable(
     with allure.step(f'Enable {remote_aaa_type}'):
         remote_aaa_obj.enable(apply=True)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step('Verify auth - success only with local user'):
         verify_auth(test_flow, engines, topology_obj,
@@ -573,7 +574,7 @@ def generic_aaa_test_server_unreachable(
         worse_server.configure(engines, set_explicit_priority=True, apply=True)
         RemoteAaaServerInfo.update_active_aaa_server(item, worse_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step('Verify auth – success only with worse server user'):
         verify_auth(test_flow, engines, topology_obj,
@@ -595,7 +596,7 @@ def generic_aaa_test_server_unreachable(
         best_server.make_reachable(engines, apply=True)
         RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step('Verify auth – success only with best server user'):
         verify_auth(test_flow, engines, topology_obj,
@@ -666,7 +667,7 @@ def generic_aaa_test_auth_error(
         remote_aaa_obj.enable(apply=True, verify_res=False)
         RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step('Verify auth fail with users not from best server'):
         verify_auth(test_flow, engines, topology_obj, bad_flow_users=[worse_server.users[0], local_adminuser],

@@ -1,3 +1,4 @@
+import sys
 import urllib.parse
 import logging
 import base64
@@ -6,7 +7,6 @@ import random
 import string
 import pytest
 import time
-import os
 
 from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 
@@ -18,7 +18,9 @@ from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.tests_nvos.general.security import conftest as security_conftest  # TODO: we should't import stuff from conftest directly
 from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+
+from ngts.ngts_types import DevicesT
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime, SubDuration
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -45,6 +47,8 @@ from ngts.tests_nvos.system.helpers import (
     verify_acl_rules_preserved,
     verify_control_plane_acl_bindings,
 )
+from ngts.nvos_constants.constants_nvos import OperationTimeConsts
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import ping_server
 
 from ngts.tests_nvos.constants import MINUTE
 
@@ -59,6 +63,42 @@ PATH_TO_IMAGE_TEMPLATE = "{}/amd64/"
 
 BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}.bin"
 BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}/amd64/{base_image}"
+
+
+def _assert_dut_can_reach_sonic_mgmt_ipv6(dut_engine, sonic_mgmt_ipv6_addr):
+    ipv6_addr = sonic_mgmt_ipv6_addr.strip("[]")
+    if not IpTool.is_address_ipv6(ipv6_addr):
+        raise AssertionError(f"Invalid sonic-mgmt IPv6 address for image fetch precheck: {sonic_mgmt_ipv6_addr}")
+
+    with allure.step(f"Check DUT IPv6 connectivity to sonic-mgmt {ipv6_addr}"):
+        is_reachable = ping_server(ipv6_addr, count=3, timeout=2, dut_engine=dut_engine)
+        assert is_reachable, f"DUT cannot reach sonic-mgmt IPv6 address {ipv6_addr}; not running IPv6 image fetch."
+
+
+def _delete_existing_image_files(system, image_names):
+    image_names = sorted(set(image_names))
+    if not image_names:
+        logger.info("No fetched image files were recorded for cleanup")
+        return
+
+    existing_files = system.image.files.get_files()
+    files_to_delete = [image_name for image_name in image_names if image_name in existing_files]
+    missing_files = sorted(set(image_names) - set(files_to_delete))
+    if missing_files:
+        logger.info("Skipping cleanup for image files that are already missing: %s", missing_files)
+    if not files_to_delete:
+        logger.info("No recorded fetched image files still exist on the DUT")
+        return
+
+    delete_result = system.image.files.delete_files(files_to_delete)
+    if not delete_result and "File not found" in delete_result.info:
+        logger.warning(
+            "Ignoring cleanup file-not-found result for image files: %s\n%s",
+            files_to_delete,
+            delete_result.info,
+        )
+        return
+    delete_result.verify_result()
 
 
 @pytest.fixture(scope='function', autouse=True)
@@ -164,6 +204,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     json_acl_rules = None
     cp_acl_bindings = None
     acl_persist_mangle_state = None
+    include_mtu_testing = getattr(devices.dut, 'supports_mtu_testing', False)
 
     if not downgrade_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
@@ -172,9 +213,11 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     system = System()
     verify_current_version(original_version, system, devices.dut)
     has_active_ports = InterfaceConfigurationTool.has_active_ports(devices.dut)
-    logger.info(f"Active ports available for MTU testing: {has_active_ports}")
 
-    original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
+    if include_mtu_testing:
+        logger.info(f"Active ports available for MTU testing: {has_active_ports}")
+
+    original_images, _, original_image_partition, _, fetched_image = \
         get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
     fetched_image_file = system.image.files.file_name[fetched_image]
 
@@ -195,9 +238,10 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
 
         with allure.step('install the fetched image (after renamed back to original name)'):
             install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image,
-                                     partition_id=partition_id_for_new_image,
                                      original_images=original_images, system=system, release_name=release_name,
-                                     test_name='test_downgrade_upgrade')
+                                     test_name='test_downgrade_upgrade',
+                                     devices=devices,
+                                     operation_label=OperationTimeConsts.IMAGE_DOWNGRADE)
             verify_system_image_gnmi_matches_nvue(engines, devices, system)
 
             with allure.step('uninstall orig version'):
@@ -213,10 +257,10 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         with allure.step('Get config file and path for target version'):
             config_file_path, config_filename = devices.dut.get_test_config_file_by_version(original_version)
 
-        TestToolkit.tested_api = ApiType.NVUE
-        mtu_info, _ = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
-            config_filename, config_file_path, engines, devices, system, scp_host_creds, engines.dut,
-            include_mtu_testing=has_active_ports and not ib_router, verify_result=True)
+        with TestToolkit.force_api(ApiType.NVUE):
+            mtu_info, _ = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
+                config_filename, config_file_path, engines, devices, system, scp_host_creds, engines.dut,
+                include_mtu_testing=include_mtu_testing and has_active_ports and not ib_router, verify_result=True)
 
         # ACL + control-plane baseline after config is applied on downgraded image (before upgrade to target)
         with allure.step("Add ACL/control-plane configs for persistence checks (before baseline capture)"):
@@ -236,28 +280,42 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         engines.dut.disconnect()
         engines.dut.run_cmd("true")
 
-        TestToolkit.tested_api = random_api
         run_pre_upgrade_steps(topology_obj, engines, ib_router)
 
     finally:
-        with allure.step(f"Run upgrade: {target_version_realpath}"):
-            test_upgrade.fetch_install_img(system, target_version_realpath, engines)
-        with allure.step('Run curl via ipv6, customer bug #4318552'):
-            test_checklist_ipv6.send_open_api_request(dut_ipv6_addr, engines.dut)
-        target_fetched_image = target_version_realpath.split('/')[-1]
+        target_fetched_image = None
+        upgrade_succeeded = False
+        try:
+            with (allure.step(f"Run upgrade: {target_version_realpath}")):
+                _, _, _, _, target_fetched_image = \
+                    get_image_data_and_fetch_base_image(system, target_version_realpath)
+                install_image_and_verify(orig_engine=TestToolkit.engines.dut,
+                                         image_name=target_fetched_image,
+                                         original_images=original_images, system=system,
+                                         release_name=release_name,
+                                         test_name='test_downgrade_upgrade',
+                                         devices=devices,
+                                         operation_label=OperationTimeConsts.IMAGE_UPGRADE)
+                upgrade_succeeded = True
 
-        with allure.step('Verify configuration preserved after upgrade and cleanup'):
+            with allure.step('Verify configuration preserved after upgrade'):
+                run_post_upgrade_cheks(topology_obj, engines, ib_router)
+        finally:
+            with allure.step('cleanup test'):
+                cleanup_test(
+                    system, original_images, original_image_partition,
+                    [f for f in dict.fromkeys([fetched_image, target_fetched_image]) if f],
+                    config_file_path=config_file_path if upgrade_succeeded else '',
+                    orig_engine=orig_engine,
+                    target_version_realpath=target_version_realpath,
+                    release_name=release_name,
+                    test_name='test_downgrade_upgrade',
+                    devices=devices,
+                )
 
-            run_post_upgrade_cheks(topology_obj, engines, ib_router)
-
-            with allure.independent_step('cleanup test'):
-                cleanup_test(system, original_images, original_image_partition,
-                             [fetched_image, target_fetched_image],
-                             config_file_path=config_file_path, orig_engine=orig_engine,
-                             target_version_realpath=target_version_realpath)
-
-            with allure.independent_step('Verify MTU preserved after upgrade'):
-                InterfaceConfigurationTool.verify_and_cleanup_mtu(mtu_info)
+            if upgrade_succeeded and include_mtu_testing:
+                with allure.step('Verify MTU preserved after upgrade'):
+                    InterfaceConfigurationTool.verify_and_cleanup_mtu(mtu_info)
 
             if json_acl_rules is not None:
                 with allure.independent_step('Verify default ACL JSON preserved after upgrade (nv show acl)'):
@@ -383,7 +441,7 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
     with allure.step("Get an available image file"):
         _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
         image_path = downgrade_version_realpath
-        images_name = []
+        images_name = {image_name}
         image_file = system.image.files.file_name[image_name]
 
     try:
@@ -393,13 +451,15 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
                 scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
                                                               ip=player.ip, path=image_path)
                 system.image.action_fetch(scp_path, base_url='').verify_result()
-                images_name.append(image_name)
+                images_name.add(image_name)
 
             if IpTool.is_dhcp_client6_has_lease(engines.dut):
                 with allure.independent_step("Fetch the same image again using ipv6 address"):
-                    scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
-                                                                  ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
-                    system.image.action_fetch(scp_path, base_url='').verify_result()
+                    _assert_dut_can_reach_sonic_mgmt_ipv6(engines.dut, sonic_mgmt_ipv6_addr)
+                    ipv6_scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                                       ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
+                    system.image.action_fetch(ipv6_scp_path, base_url='').verify_result()
+                    scp_path = ipv6_scp_path
 
             with allure.independent_step("Fetch an image that does not exist"):
                 system.image.action_fetch(scp_path + rand_name, base_url='').verify_result(False)
@@ -444,7 +504,7 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
                         player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
     finally:
         with allure.step("Delete all images that have been fetch during the test"):
-            system.image.files.delete_files(images_name).verify_result()
+            _delete_existing_image_files(system, images_name)
 
 
 @pytest.mark.checklist
@@ -476,7 +536,7 @@ def test_install_multiple_images(release_name, test_name, random_api, original_v
 
     verify_current_version(original_version, system, devices.dut)
 
-    original_images, original_image, original_image_partition, partition_id_for_new_image, image_files = \
+    original_images, original_image, original_image_partition, _, image_files = \
         get_image_data_and_fetch_random_image_files(release_name, system, 1)
 
     with allure.step("Verify fetched images are shown in the show command"):
@@ -497,8 +557,8 @@ def test_install_multiple_images(release_name, test_name, random_api, original_v
     try:
         with allure.step("Install the first image"):
             orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-            install_image_and_verify(orig_engine, BASE_IMAGE_VERSION_TO_INSTALL, partition_id_for_new_image,
-                                     original_images, system, test_name)
+            install_image_and_verify(orig_engine, BASE_IMAGE_VERSION_TO_INSTALL,
+                                     original_images, system, release_name, test_name, devices=devices)
             verify_system_image_gnmi_matches_nvue(engines, devices, system)
         with allure.step("Test partitions available capacity"):
             nvos_general_utils.check_partitions_capacity(allowed_limit=60)
@@ -547,8 +607,8 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
     try:
         with allure.step("Install image and verify"):
             orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-            install_image_and_verify(orig_engine, fetched_image, partition_id_for_new_image, original_images, system,
-                                     release_name, test_name)
+            install_image_and_verify(orig_engine, fetched_image, original_images, system,
+                                     release_name, test_name, devices=devices)
 
             with allure.step("Set the original image to be booted next and verify"):
                 system.image.boot_next_and_verify(original_image_partition)
@@ -916,6 +976,9 @@ def install_image_and_verify(
     system: System,
     release_name: str,
     test_name: str = '',
+    devices: DevicesT | None = None,
+    *,
+    operation_label: str = OperationTimeConsts.IMAGE_INSTALL,
 ) -> None:
     with allure.step("Installing image {}".format(image_name)):
         new_engine = LinuxSshEngine(
@@ -929,12 +992,21 @@ def install_image_and_verify(
             engine_connect_retries=orig_engine.engine_connect_retries,
             is_on_air=orig_engine.is_on_air,
         )
-        res_obj, _ = OperationTime.save_duration('image install', '', test_name,
-                                                 system.image.files.file_name[image_name].action_file_install_with_reboot,
-                                                 expected_str=SystemConsts.REBOOT_RESPONSE_MESSAGES,
-                                                 force=True, recovery_engine=new_engine
-                                                 )
+        with OperationTime.capture_sub_durations() as sub_durations:
+            res_obj, _ = OperationTime.save_duration(operation_label, '', test_name,
+                                                     system.image.files.file_name[image_name].action_file_install_with_reboot,
+                                                     expected_str=SystemConsts.REBOOT_RESPONSE_MESSAGES,
+                                                     force=True, recovery_engine=new_engine
+                                                     )
         res_obj.verify_result()
+
+        operation_duration = sub_durations.get(SubDuration.OPERATION)
+        if operation_duration is not None and devices is not None:
+            # Threshold key is the canonical one registered by device classes
+            # (e.g. IbSwitch._init_expected_operation_durations)
+            OperationTime.verify_operation_time(
+                operation_duration, OperationTimeConsts.IMAGE_INSTALL_OPERATION_ROW, devices
+            ).verify_result()
 
     with allure.step('replace dut engine'):
         TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
@@ -946,6 +1018,7 @@ def install_image_and_verify(
         image_name = normalize_image_name(image_name)
         res_obj = ValidationTool.verify_expected_output(system.image.show(), ImageConsts.BUILD_ID)
         res_obj.ignore_result()
+        _, _, partition_id, _ = get_image_data(system)
         if res_obj.result:  # temp solution until 3000 GA
             with allure.step(f"Verify image was installed properly on {partition_id}"):
                 assert image_output[partition_id][ImageConsts.BUILD_ID] == image_name, \
@@ -1023,22 +1096,88 @@ def _extract_leaf_paths(d, prefix=""):
     return paths
 
 
-def cleanup_test(system, original_images, original_image_partition, fetched_image_files, config_file_path='', orig_engine=None, target_version_realpath=''):
+def _get_running_image(system):
+    images = system.image.get_image_field_values()
+    res_obj = ValidationTool.verify_expected_output(system.image.show(), ImageConsts.BUILD_ID)
+    res_obj.ignore_result()
+    if res_obj.result:
+        current_partition = ImageConsts.PARTITION + images[ImageConsts.CURRENT_IMG]
+        return normalize_image_name(images[current_partition][ImageConsts.BUILD_ID])
+    return normalize_image_name(images[ImageConsts.CURRENT_IMG])
+
+
+def _restore_original_image(
+    system,
+    original_images,
+    original_image_partition,
+    orig_engine=None,
+    target_version_realpath='',
+    release_name='',
+    test_name='',
+    devices=None,
+):
+    expected_image = normalize_image_name(original_images[original_image_partition][ImageConsts.BUILD_ID])
+    if _get_running_image(system) == expected_image:
+        logger.info("DUT already running original image (%s), skipping restore", expected_image)
+        return
+
+    if target_version_realpath:
+        image_name = target_version_realpath.split("/")[-1]
+        with allure.step(f"Install original image {image_name} to restore pre-test state"):
+            fetched_files = system.image.files.get_files() or {}
+            if image_name not in fetched_files:
+                system.image.action_fetch(path=target_version_realpath).verify_result()
+            install_image_and_verify(
+                orig_engine=orig_engine or TestToolkit.engines.dut,
+                image_name=image_name,
+                original_images=original_images,
+                system=system,
+                release_name=release_name,
+                test_name=test_name,
+                devices=devices,
+                operation_label=OperationTimeConsts.IMAGE_UPGRADE,
+            )
+        return
+
+    with allure.step("Set the original image to be booted next and verify"):
+        system.image.boot_next_and_verify(original_image_partition)
+
+    with allure.step("Reboot the system"):
+        system.action_reboot(reboot_params=RebootParams(recovery_engine=orig_engine))
+
+    with allure.step('restore original dut engine'):
+        TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
+
+
+def cleanup_test(
+    system,
+    original_images,
+    original_image_partition,
+    fetched_image_files,
+    config_file_path='',
+    orig_engine=None,
+    target_version_realpath='',
+    release_name='',
+    test_name='',
+    devices=None,
+):
     with allure.step("Cleanup step"):
         configuration_diff = {}
-        if not target_version_realpath:
-            with allure.step("Set the original image to be booted next and verify"):
-                system.image.boot_next_and_verify(original_image_partition)
-
-            with allure.step("Reboot the system"):
-                system.action_reboot(reboot_params=RebootParams(recovery_engine=orig_engine))
-
-            with allure.step('restore original dut engine'):
-                TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
+        restore_error = None
+        try:
+            _restore_original_image(
+                system, original_images, original_image_partition,
+                orig_engine=orig_engine, target_version_realpath=target_version_realpath,
+                release_name=release_name, test_name=test_name, devices=devices,
+            )
+        except Exception as e:
+            logger.exception("Image restore failed during cleanup")
+            restore_error = e
 
         if config_file_path:
             with allure.step('Verify configuration was preserved after upgrade'):
-                configuration_diff = NvosInstallationSteps.verify_config_after_upgrade(config_file_path, TestToolkit.engines.dut)
+                configuration_diff = NvosInstallationSteps.verify_config_after_upgrade(
+                    config_file_path, TestToolkit.engines.dut)
 
         with allure.step("Uninstall unused images and verify"):
             try:
@@ -1048,8 +1187,12 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
                 logger.info("No image to uninstall")
 
         with allure.step("Delete all images that have been fetch during the test and verify"):
-            system.image.files.delete_files(fetched_image_files).verify_result()
-            system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
+            _delete_existing_image_files(system, fetched_image_files)
+            system.image.files.verify_show_files_output(unexpected_files=sorted(set(fetched_image_files)))
+
+        # Restore failed: surface it, unless a test exception is already propagating (don't mask it)
+        if restore_error is not None and sys.exc_info()[0] is None:
+            raise restore_error
 
         if configuration_diff:
             import json

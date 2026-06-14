@@ -3,6 +3,7 @@ import os
 
 from typing import Dict, Iterable, Tuple, Union
 
+from ngts.ngts_types import OperationalAppliedT
 from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.base_cli import BaseCli
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
@@ -81,12 +82,31 @@ class BaseComponent:
         else:
             return result_obj
 
-    def parse_show(self, op_param="", dut_engine=None, should_succeed=True, exempted_err_msgs=None):
+    def parse_show(self, op_param="", dut_engine=None, should_succeed=True, rev=ConfState.OPERATIONAL, exempted_err_msgs=None):
         with allure.step('Parse show for {}'.format(self.get_resource_path())):
             output = self.show(
-                op_param, OutputFormat.json, dut_engine, should_succeed, exempted_err_msgs=exempted_err_msgs
+                op_param, OutputFormat.json, dut_engine, should_succeed, rev=rev, exempted_err_msgs=exempted_err_msgs
             )
             return OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
+
+    def parse_show_operational_applied(
+        self,
+        op_param: str = "",
+        dut_engine=None,
+        should_succeed: bool = True,
+    ) -> OperationalAppliedT:
+        """Run `parse_show` for both `operational` and `applied` revs and return them keyed by rev."""
+        with allure.step(f"Parse show operational+applied for {self.get_resource_path()}"):
+            return {
+                ConfState.OPERATIONAL: self.parse_show(
+                    op_param=op_param, dut_engine=dut_engine,
+                    should_succeed=should_succeed, rev=ConfState.OPERATIONAL,
+                ),
+                ConfState.APPLIED: self.parse_show(
+                    op_param=op_param, dut_engine=dut_engine,
+                    should_succeed=should_succeed, rev=ConfState.APPLIED,
+                ),
+            }
 
     def _set(self, param_name, param_value, expected_str='', apply=False, ask_for_confirmation=False, dut_engine=None,
              client_certs_after_apply: CertInfo = None, check_engine_connectivity: bool = True,
@@ -131,7 +151,6 @@ class BaseComponent:
                         # Check if this is an expected disconnection (EOF, connection closed, etc.)
                         exception_str = str(e).lower()
                         if 'eof' in exception_str and 'eof' in expected_str:
-                            from ngts.nvos_tools.infra.ResultObject import ResultObj
                             logger.info(f"Session disconnected as expected: {e}")
                             result_obj = ResultObj(True, f"Session disconnected as expected: {e}")
                         else:

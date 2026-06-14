@@ -225,8 +225,27 @@ class TokenSigningCommands:
 class DebugFwPatterns:
     """Pre-compiled regex patterns for firmware version extraction."""
 
-    # Pattern to extract version from filename: debug_fw_41_2018_0220.bin -> groups (41, 2018, 0220)
-    VERSION_FROM_FILENAME = re.compile(r'debug_fw_(\d+)_(\d+)_(\d+)')
+    # Pattern to extract version from filename: debug_fw_41_2018_0220.bin or debug_fw_41_2018_0526_004.bin
+    VERSION_FROM_FILENAME = re.compile(r'debug_fw_(\d+)_(\d+)_(\d+)(?:_(\d+))?')
 
-    # Pattern to extract version with underscores: debug_fw_41_2018_0220.bin -> "41_2018_0220"
-    VERSION_WITH_UNDERSCORES = re.compile(r'debug_fw_(\d+_\d+_\d+)')
+    # Pattern to extract version with underscores: "41_2018_0220" or "41_2018_0526_004"
+    VERSION_WITH_UNDERSCORES = re.compile(r'debug_fw_(\d+_\d+_\d+(?:_\d+)?)')
+
+    @staticmethod
+    def version_name_from_filename(bin_filename):
+        """Reconstruct the CLI-reported debug FW version from the filename.
+
+        Debug FW reports two formats:
+          3 segments (no hotfix) -> dots, e.g. "debug_fw_41_2018_250.bin" -> "41.2018.250"
+          4 segments (hotfix)    -> underscores + dash before hotfix,
+                                    e.g. "debug_fw_41_2018_0526_004.bin" -> "41_2018_0526-004"
+
+        Returns None if the filename doesn't match the expected pattern.
+        """
+        match = DebugFwPatterns.VERSION_FROM_FILENAME.search(bin_filename)
+        if not match:
+            return None
+        groups = [g for g in match.groups() if g]
+        if len(groups) == 4:
+            return f"{groups[0]}_{groups[1]}_{groups[2]}-{groups[3]}"
+        return '.'.join(groups)

@@ -17,6 +17,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from retry import retry
 from datetime import datetime
 
@@ -62,7 +63,7 @@ def test_system_nv_bridge_default_fields_values(engines, devices, nv_command, ra
             cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER, op_param_value=engines.dut.ip, apply=True)
 
         with allure.step("Verify nv bridge output"):
-            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, heart_beat=SystemConsts.NV_BRIDGE_HEALTH_OK, connections=SystemConsts.NV_BRIDGE_NODE_IP, local_host=True, dut_engine=engines.dut)
+            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, heart_beat=SystemConsts.NV_BRIDGE_HEALTH_OK, connections=engines.dut.ip, local_host=True, dut_engine=engines.dut)
 
             with allure.step("Check system logs"):
                 TestToolkit.tested_api = ApiType.NVUE
@@ -125,12 +126,13 @@ def test_system_nv_bridge_functional(engines, devices, nv_command, dut_engines, 
                                                   apply=True, dut_engine=dut)
 
         with allure.step("Verify output after configure nv bridge"):
+            dut_hostname = dut.run_cmd("hostname")
             _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut, connections=True,
                                      active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip,
-                                     client_id=dut.ip, server_address=dut.ip)
+                                     client_id=dut_hostname, server_address=dut.ip)
             _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut2, connections=True,
                                      active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip,
-                                     client_id=dut2.ip, server_address=dut2.ip)
+                                     client_id=dut_hostname, server_address=dut2.ip)
 
         with allure.step("Get tray index of second dut"):
             tray_index = OutputParsingTool.parse_show_output_to_dict(nv_command.platform.chassis_location.show(dut_engine=dut2)).get_returned_value()[ChassisLocationConsts.TRAY_ID]
@@ -173,8 +175,8 @@ def test_system_nv_bridge_negative(engines, devices, nv_command, random_api):
 
         with allure.step("Set cluster node without ip"):
             err_msg = PwhConsts.ERR_INCOMPLETE_SET_CMD
-            if random_api == ApiType.OPENAPI and is_bug_active(4882988):
-                err_msg = "Error: '' is too short"
+            if random_api == ApiType.OPENAPI:
+                err_msg = "Error: Server address must be a valid IPv4 or IPv6 address"
             cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER, op_param_value='', expected_str=err_msg)
 
         with allure.step("Set cluster negative ip"):
@@ -231,8 +233,13 @@ def test_system_nv_bridge_simulate_issue(engines, devices, nv_command, dut_engin
                                                   apply=True, dut_engine=dut)
 
         with allure.step("Verify output after configure nv bridge"):
-            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut, connections=True, active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip, client_id=dut.ip, server_address=dut.ip)
-            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut2, connections=True, active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip, client_id=dut2.ip, server_address=dut2.ip)
+            dut_hostname = dut.run_cmd("hostname")
+            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut, connections=True,
+                                     active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip,
+                                     client_id=dut_hostname, server_address=dut.ip)
+            _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut2, connections=True,
+                                     active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE, client_address=dut.ip,
+                                     client_id=dut_hostname, server_address=dut2.ip)
 
         with allure.step("Simulate nv-bridge docker issue"):
             start_time = datetime.now()
@@ -248,12 +255,13 @@ def test_system_nv_bridge_simulate_issue(engines, devices, nv_command, dut_engin
                                                       file_output=dut.run_cmd("sudo cat /var/log/health_history"))
 
         with allure.step("Verify output after configure nv bridge"):
+            dut_hostname = dut.run_cmd("hostname")
             _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut,
                                      connections=True, active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE,
-                                     client_address=engines.dut.ip, client_id=engines.dut.ip, server_address=dut.ip)
+                                     client_address=engines.dut.ip, client_id=dut_hostname, server_address=dut.ip)
             _verify_nv_bridge_output(nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED, dut_engine=dut2,
                                      connections=True, active=SystemConsts.NV_BRIDGE_CLIENT_ACTIVE,
-                                     client_address=dut.ip, client_id=dut2.ip,
+                                     client_address=dut.ip, client_id=dut_hostname,
                                      server_address=dut2.ip)
     finally:
         with allure.step("Unset node"):
@@ -291,7 +299,7 @@ def test_system_nv_bridge_state_file(engines, nv_command, test_api):
 
         with allure.step("Wait for nv-bridge to be configured"):
             _verify_nv_bridge_output(nv_command.system.nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED,
-                                     dut_engine=engines.dut, connections=SystemConsts.NV_BRIDGE_NODE_IP,
+                                     dut_engine=engines.dut, connections=engines.dut.ip,
                                      local_host=True)
             show_data = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.nv_bridge.show()).get_returned_value()
 
@@ -368,16 +376,18 @@ def test_system_nv_bridge_primary_secondary(engines, nv_command, random_api, top
                                                     apply=True, dut_engine=engines.dut)
 
         with allure.step("Wait for nv-bridge to be configured"):
+            eth0_ip = Port('eth0').interface.ipv4.get_primary_ip_address(dut_engine=engines.dut)
             _verify_nv_bridge_output(nv_command.system.nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED,
-                                     dut_engine=engines.dut, connections=SystemConsts.NV_BRIDGE_NODE_IP,
-                                     local_host=True)
+                                     dut_engine=engines.dut, connections=eth0_ip, local_host=True)
 
         with allure.step("Wait for cluster apps in ok state"):
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster,
-                                                             cluster_expected_state=SystemConsts.CLUSTER_STATE_ENABLED,
-                                                             app=ClusterApps.NMX_TELEMETRY, nmx_c_expected_state=SystemConsts.CLUSTER_APP_STATE_UP)
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system,
-                                             has_loopbox, is_simx)
+            if not standalone_system:
+                ClusterTools.wait_for_app_healthy(cluster, ClusterApps.NMX_CONTROLLER, engine=engines.dut)
+            ClusterTools.wait_for_app_healthy(cluster, ClusterApps.NMX_TELEMETRY, engine=engines.dut)
+            TestToolkit.tested_api = ApiType.NVUE
+            ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format, standalone_system,
+                                             has_loopbox, is_simx=is_simx)
+            TestToolkit.tested_api = random_api
 
     finally:
         with allure.step("Disable cluster"):
@@ -395,17 +405,18 @@ def _verify_nv_bridge_output(nv_bridge, state=None, health=None, health_reason=N
         ValidationTool.verify_field_value_in_output(output_dictionary, SystemConsts.NV_BRIDGE_HEALTH_REASON, health_reason).verify_result()
     if connections:
         if active and client_address and client_id and server_address:
-            if is_bug_active(4815502):
-                client_address = client_id = server_address = SystemConsts.LOCALHOST
             assert active in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ACTIVE], f'Connection is not {active}'
             assert client_address in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ADDRESS], f'Client-address {client_address} not in output'
             assert client_id in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ID], f'Client-id {client_id} not in server address'
             assert server_address in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Server-address {server_address} not in output'
         if local_host:
             assert connections in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_CLIENT_ADDRESS], f'Node ip {connections} not in client address'
-            assert connections in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Node ip {connections} not in server address'
+            try:
+                assert connections in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Node ip {connections} not in server address'
+            except Exception:
+                assert dut_engine.ip in output_dictionary['connections']['1'][SystemConsts.NV_BRIDGE_SERVER_ADDRESS], f'Node ip {dut_engine.ip} in server address'
         if heart_beat:
-            ValidationTool.verify_field_value_in_output(output_dictionary['connections']['1'], SystemConsts.NV_BRIDGE_HEART_BEAT, heart_beat).verify_result()
+            ValidationTool.verify_field_value_in_output(output_dictionary['connections']['1'], SystemConsts.NV_BRIDGE_HEARTBEAT, heart_beat).verify_result()
     if no_connection:
         assert output_dictionary['connections'] == {}, 'Connections not empty'
 

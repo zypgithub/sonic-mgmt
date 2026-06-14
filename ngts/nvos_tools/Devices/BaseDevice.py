@@ -1,13 +1,22 @@
 import logging
 import os
 import time
-from abc import abstractmethod, ABCMeta, ABC
+from abc import ABC, ABCMeta, abstractmethod
 from collections import namedtuple
-from typing import Tuple, List
 
 from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import DatabaseConst, FansConsts, NvosConst, PlatformConsts, SystemConsts, \
-    DiskConsts, DateTimeConsts, CumulusConsts, ActionConsts, RebootConsts
+from ngts.nvos_constants.constants_nvos import (
+    ActionConsts,
+    CumulusConsts,
+    DatabaseConst,
+    DateTimeConsts,
+    DiskConsts,
+    FansConsts,
+    NvosConst,
+    PlatformConsts,
+    RebootConsts,
+    SystemConsts,
+)
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
@@ -15,8 +24,8 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.constants import SecurityConsts
-from ngts.tools.test_utils.nvos_general_utils import get_version_info
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
 logger = logging.getLogger()
 
@@ -172,7 +181,7 @@ class BaseDevice(ABC):
     def get_ib_ports_num(self):
         pass
 
-    def get_spdm_components(self, setup_name: str) -> List[str]:
+    def get_spdm_components(self, setup_name: str) -> list[str]:
         """
         Get available SPDM components (ERoTs, MCU, etc.) for this device type.
         Override in subclasses to define device-specific SPDM components.
@@ -183,7 +192,7 @@ class BaseDevice(ABC):
         self.cur_mgmt_port_name = name
         self.cur_mgmt_port_ip = ip
 
-    def get_mgmt_ports(self) -> List[str]:
+    def get_mgmt_ports(self) -> list[str]:
         return None
 
     def get_admins_group(self):
@@ -192,10 +201,14 @@ class BaseDevice(ABC):
     def get_default_nvue_config(self, dut_engine=None):
         return {}
 
+    def update_show_platform_output(self, platform_output):
+        """Update expected nv show platform values before validation."""
+        return None
+
     def get_default_password_by_version(self, version: str):
         return self.default_password
 
-    def get_test_config_file_by_version(self, version: str) -> Tuple[str, str]:
+    def get_test_config_file_by_version(self, version: str) -> tuple[str, str]:
         ngts_path = os.path.join(os.path.abspath(__file__).split('ngts', 1)[0], 'ngts')
         config_filename = self._relevant_config_filename_by_version(version)
         config_file_path = os.path.join(ngts_path, 'tools', 'test_utils', 'nvos_resources', config_filename)
@@ -277,10 +290,10 @@ class BaseDevice(ABC):
                                                                       database_docker=database_docker).returned_value
                         if len(output) < expected_entries:
                             result_obj.result = False
-                            result_obj.info += "Database docker: {database_docker} DB: {db_name}, Table: {table_name}. Table count mismatch, Expected: {expected} != Actual {actual}\n" \
-                                .format(database_docker=database_docker, db_name=db_name, table_name=table_name,
-                                        expected=str(expected_entries),
-                                        actual=str(len(output)))
+                            result_obj.info += (
+                                f"Database docker: {database_docker} DB: {db_name}, Table: {table_name}. "
+                                f"Table count mismatch, Expected: {str(expected_entries)} != Actual {str(len(output))}\n"
+                            )
 
             return result_obj
 
@@ -295,7 +308,7 @@ class BaseDevice(ABC):
             for docker in list_of_dockers:
                 if docker not in cmd_output:
                     result_obj.result = False
-                    result_obj.info += "{} docker is not active.\n".format(docker)
+                    result_obj.info += f"{docker} docker is not active.\n"
 
             return result_obj
 
@@ -306,10 +319,10 @@ class BaseDevice(ABC):
         with allure.step('Verify services'):
             result_obj = ResultObj(True, "")
             for service in self.available_services:
-                cmd_output = dut_engine.run_cmd('systemctl --type=service | grep -E "{}"'.format(service))
+                cmd_output = dut_engine.run_cmd(f'systemctl --type=service | grep -E "{service}"')
                 if NvosConst.SERVICE_STATUS_ACTIVE not in cmd_output:
                     result_obj.result = False
-                    result_obj.info += "{} service is not active. {} \n".format(service, cmd_output)
+                    result_obj.info += f"{service} service is not active. {cmd_output} \n"
 
             temp_res = self.verify_nvue_service(dut_engine)
             if not temp_res.result:
@@ -323,7 +336,7 @@ class BaseDevice(ABC):
             logging.info("Verify nvued service is active")
             nvued_cmd_output = dut_engine.run_cmd_after_cmd(["sudo systemctl status nvued", 'q'])
             if NvosConst.SERVICE_STATUS_ACTIVE not in nvued_cmd_output:
-                return ResultObj(False, "nvued service is not active. info: {}".format(nvued_cmd_output))
+                return ResultObj(False, f"nvued service is not active. info: {nvued_cmd_output}")
             return ResultObj(True)
 
     def get_database_id(self, db_name):
@@ -376,12 +389,6 @@ class BaseDevice(ABC):
 
     def bypass_password_on_sudo_commands(self, dut_engine: LinuxSshEngine):
         pass
-
-    def is_eth(self):
-        return self.switch_type == CumulusConsts.ETH_SWITCH_TYPE
-
-    def is_ib(self):
-        return self.switch_type == NvosConst.IB_SWITCH_TYPE
 
     def is_nvl(self):
         return self.switch_type == NvosConst.NVL_SWITCH_TYPE
@@ -545,7 +552,7 @@ class BaseSwitch(BaseDevice):
             "part-number": None,
             "serial-number": None,
             "asic-model": "",
-            "asic-revision": "0x00A0",
+            "asic-revision": PlatformConsts.FW_ASIC_REVISION_VALUE,
             "system-uuid": ExpectedString(regex=r"[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}"),
         }
         self.disk_default_partition_name = DiskConsts.DEFAULT_PARTITION_NAME

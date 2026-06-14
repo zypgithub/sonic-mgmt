@@ -27,11 +27,7 @@ Contract must match ``resolver_contract.ALLURE_JSON_RESOLVER_SERVER_BASE`` and `
 
 Local dev (fully offline resolver)::
 
-<<<<<<<< HEAD:ngts/scripts/ai_rca_server_side/allure_resolver_server.py
-    RESOLVE_DEV_HTTP=1 RESOLVE_MOCK=1 python3 ngts/scripts/ai_rca_server_side/allure_resolver_server.py
-========
     RESOLVE_DEV_HTTP=1 RESOLVE_MOCK=1 python3 ngts/scripts/ai_rca/server_side/allure_resolver_server.py
->>>>>>>> a5e8d27bc3 (Fix Agent to new design):ngts/scripts/ai_rca/server_side/allure_resolver_server.py
 
 Demo against production: pytest demo sets ``ALLURE_ATTACHMENT_DEMO=1``; stubs fetch HTML from
 ``ALLURE_JSON_RESOLVER_SERVER_BASE`` with ``demo=1``. ``/resolve`` for ``http://demo/allure/local``
@@ -40,11 +36,7 @@ returns ``demo/fixtures/mock_agent_output.json`` without ``RESOLVE_MOCK``.
 Debug why Allure shows "not exist" — extra ``/resolve`` lines **only** if ``RESOLVE_DEBUG`` is non-empty
 (stderr; use ``python3 -u`` if lines appear late under systemd)::
 
-<<<<<<<< HEAD:ngts/scripts/ai_rca_server_side/allure_resolver_server.py
-    RESOLVE_DEBUG=1 python3 -u ngts/scripts/ai_rca_server_side/allure_resolver_server.py
-========
     RESOLVE_DEBUG=1 python3 -u ngts/scripts/ai_rca/server_side/allure_resolver_server.py
->>>>>>>> a5e8d27bc3 (Fix Agent to new design):ngts/scripts/ai_rca/server_side/allure_resolver_server.py
 """
 import json
 import os

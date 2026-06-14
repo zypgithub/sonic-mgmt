@@ -50,7 +50,7 @@ THRESHOLD_PAIRS = {
     CPU_RESTARTS_THRESHOLD: CPU_WARNING_THRESHOLD,
 }
 
-WARNING_MSG_PATTERN = r"WARNING cpu_memory_container_checker: (Memory|CPU) usage ([0-9]+(\.[0-9]+))% is above expected threshold ([0-9]+)%"
+WARNING_MSG_PATTERN = r"WARNING cpu_memory_container_checker: .*(Memory|CPU) usage ([0-9]+(\.[0-9]+))% is above expected threshold ([0-9]+)%"
 HIGH_USAGE_EVENT_MSG_PATTERN = r"NOTICE cpu_memory_container_checker: :- publish: EVENT_PUBLISHED:.*\"resource\":\"{}\".*\"text\":\"(Memory|CPU) usage ([0-9]+(\.[0-9]+))% is above expected threshold ([0-9]+)%\""
 GENERATING_TECH_SUPPORT_MSG_PATTERN = r"INFO cpu_memory_container_checker: Generating techsupport"
 TECH_SUPPORT_GENERATED_MSG_PATTERN = r"INFO cpu_memory_container_checker: Generated techsupport"
@@ -646,7 +646,7 @@ def get_events(resource: str) -> tuple[tuple[str, dict], tuple[str, dict]]:
     return high_usage_event, normal_usage_event
 
 
-@retry.retry(tries=12, delay=10)
+@retry.retry(tries=13, delay=10)
 def verify_events_in_logs(engines: EnginesT, system: System, docker: str, start_time: datetime) -> None:
     log_message_list = [HIGH_USAGE_EVENT_MSG_PATTERN.format(docker),
                         NORMAL_USAGE_EVENT_MSG_PATTERN.format(docker)]

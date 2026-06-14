@@ -76,6 +76,17 @@ class Configurations:
         'NVOS_sws_rtf2_rosalind_198': [{'ip_address': '10.220.9.22', 'username': 'nvidia', 'password': 'nvidia'},
                                        {'ip_address': '10.220.9.23', 'username': 'nvidia', 'password': 'nvidia'}]}
 
+    # Per-setup tray model for SDN tray admin-state tests (RegressionConfigurations.tray_topology).
+    # Keys must match Noga/pytest setup_name exactly.
+    # switch_nodes / compute_nodes: expected tray counts for test_tray_show_cmd only.
+    # Maintenance-state tests use this to choose safe trays and whether to parse NMX topology:
+    #   - switch_nodes==1 (e.g. RTF): never toggle the lone switch tray; use compute trays only.
+    #   - compute_nodes==0 (e.g. simx): no gpuTopoInfo expected; skip topology file for acp mapping.
+    tray_topology = {
+        'NVOS_sws_rtf2_rosalind_198': {'switch_nodes': 1, 'compute_nodes': 2},
+        'NVOS_2_rosalind-simx': {'switch_nodes': 2, 'compute_nodes': 0},
+    }
+
     ports_to_disable = {'NVOS_juliet_10_7_148_148': ['acp17-20', 'acp69-72'],
                         'NVOS_sws_rtf2_rosalind_198': []}
 

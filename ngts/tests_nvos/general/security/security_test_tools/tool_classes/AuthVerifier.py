@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from typing import Any
+import os
 import logging
 import random
 import string
-import os
+from contextlib import contextmanager
 
 from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from devts.infra.tools.general_constants.constants import DefaultConnectionValues
@@ -15,7 +16,8 @@ from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder
+from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder, SshPassCmdBuilder
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
@@ -127,6 +129,27 @@ class AuthVerifier:
     def _authenticate(self, expect_success):
         raise Exception("Method not implemented!")
 
+    @staticmethod
+    @contextmanager
+    def _allure_step_expect_failure(step_msg: str, expect_success: bool):
+        """Wrap an allure step so it exits cleanly on expected authentication failures.
+
+        When *expect_success* is ``False`` and the body raises, the exception is
+        captured, the allure step ``__exit__`` runs normally (keeping the step
+        green in reports), and the exception is re-raised afterwards so the
+        caller (``verify_authentication``) can still observe it.
+        """
+        caught = None
+        with allure.step(step_msg):
+            try:
+                yield
+            except Exception as exc:
+                if expect_success:
+                    raise
+                caught = exc
+        if caught:
+            raise caught
+
     def verify_authorization(self, user_is_admin):
         orig_test_api = TestToolkit.tested_api
         self.change_test_api()
@@ -164,12 +187,9 @@ class SshAuthVerifier(AuthVerifier):
         super().__init__(username, password, engines, topology_obj)
 
     def _authenticate(self, expect_success):
-        with allure.step("For SSH - run some linux command on engine to trigger authentication"):
-            self._log.info(
-                "Running SSH auth probe command on %s as %s",
-                getattr(self.engine, "ip", "n/a"),
-                getattr(self.engine, "username", "n/a"),
-            )
+        with self._allure_step_expect_failure(
+            "For SSH - run some linux command on engine to trigger authentication", expect_success
+        ):
             self.engine.run_cmd("id")
 
 
@@ -191,7 +211,9 @@ class OpenApiAuthVerifier(AuthVerifier):
         })()
 
     def _authenticate(self, expect_success):
-        with allure.step("For OpenApi - run show command with OpenApi request to verify authentication"):
+        with self._allure_step_expect_failure(
+            "For OpenApi - run show command with OpenApi request to verify authentication", expect_success
+        ):
             System().version.show(dut_engine=self.engine, check_engine_connectivity=False)
 
 
@@ -223,7 +245,9 @@ class RconAuthVerifier(AuthVerifier):
                 self.engine = None
 
     def _authenticate(self, expect_success):
-        with allure.step("For RCON - start rcon connection and force new login"):
+        with self._allure_step_expect_failure(
+            "For RCON - start rcon connection and force new login", expect_success
+        ):
             assert isinstance(self.engine, PexpectSerialEngine), "engine should be pexpect serial engine"
             self.engine.create_serial_engine(disconnect_existing_login=True)
             self.engine.run_cmd_and_get_output("\r")
@@ -234,7 +258,9 @@ class ScpAuthVerifier(AuthVerifier):
         super().__init__(username, password, engines, topology_obj)
 
     def _authenticate(self, expect_success):
-        with allure.step(f"Download a non-privileged file from the switch. Expect success: {expect_success}"):
+        with self._allure_step_expect_failure(
+            f"Download a non-privileged file from the switch. Expect success: {expect_success}", expect_success
+        ):
             self._verify_scp_download(
                 switch_dir=AuthConsts.SWITCH_MONITORS_DIR, expect_success=expect_success, check_result_in_caller_func=True
             )
@@ -264,9 +290,11 @@ class ScpAuthVerifier(AuthVerifier):
         if not check_result_in_caller_func:
             assert scp_success == expect_success, f"SCP success ({scp_success}) status not as expected ({expect_success})"
 
-    def _verify_scp_download(self, switch_dir, expect_success, switch_filenme="", check_result_in_caller_func=False):
-        with allure.step(f"Verify SCP download from the switch. Expect success: {expect_success}"):
-            src_filename = AuthConsts.SWITCH_SCP_DOWNLOAD_TEST_FILE_NAME if not switch_filenme else switch_filenme
+    def _verify_scp_download(self, switch_dir, expect_success, switch_filename="", check_result_in_caller_func=False):
+        with self._allure_step_expect_failure(
+            f"Verify SCP download from the switch. Expect success: {expect_success}", expect_success
+        ):
+            src_filename = AuthConsts.SWITCH_SCP_DOWNLOAD_TEST_FILE_NAME if not switch_filename else switch_filename
             dst_filename = "".join([random.choice(string.ascii_lowercase) for _ in range(15)]) + ".txt"
             self.__verify_scp(
                 src_path=f"{switch_dir}/{src_filename}",
@@ -287,7 +315,7 @@ class ScpAuthVerifier(AuthVerifier):
 
     def _verify_scp_download_and_upload(self, switch_dir, expect_success):
         switch_filename = AuthConsts.SWITCH_ROOT_FILE_NAME if switch_dir == AuthConsts.SWITCH_ROOT_DIR else ""
-        self._verify_scp_download(switch_dir, expect_success, switch_filenme=switch_filename)
+        self._verify_scp_download(switch_dir, expect_success, switch_filename=switch_filename)
         self._verify_scp_upload(switch_dir, expect_success)
 
     def verify_authorization(self, user_is_admin):
@@ -311,18 +339,67 @@ class PKAAuthVerifier(AuthVerifier):
         engines: EnginesT = None,
         topology_obj: TopologyT = None,
     ):
-        super().__init__(username, password, engines, topology_obj)
+        # Avoid AuthVerifier.__init__ creating an IPv4 LinuxSshEngine; PKA uses PexpectTool only.
+        self._log = logger.getChild(self.__class__.__name__)
+        self.api = ApiType.NVUE
+        self.topology_obj: TopologyT = topology_obj
+        self.engines = engines
+        self.engine = None
         self.username = username
         self.private_key_path = private_key_path
         self.hostname = hostname
+        self._dut_key_path = None
+
+    def _ensure_key_on_dut(self) -> str:
+        """Copy the private key to the DUT so PKA ssh can run from the DUT (for IPv6 targets)."""
+        if self._dut_key_path:
+            return self._dut_key_path
+        dut = self.engines.dut
+        remote_name = f'pka_{os.path.basename(self.private_key_path)}'
+        remote_path = f'/tmp/{remote_name}'
+        dut.copy_file(
+            source_file=self.private_key_path, file_system='/tmp',
+            dest_file=remote_name, direction='put',
+        )
+        dut.run_cmd(f'chmod 600 {remote_path}')
+        self._dut_key_path = remote_path
+        return remote_path
 
     def _spawn_pka_engine(self) -> None:
-        ssh_pka_connection_cmd = SshCmdBuilder(self.username, self.hostname).set_ssn().use_auth_key(self.private_key_path).build()
+        if IpTool.is_address_ipv6(self.hostname) and self.engines is not None:
+            # sonic-mgmt has no IPv6 route and DUT forbids TCP forwarding, so run the PKA
+            # ssh from the DUT against its own IPv6 mgmt address (reached over IPv4).
+            dut = self.engines.dut
+            remote_key = self._ensure_key_on_dut()
+            inner_cmd = (
+                SshCmdBuilder(self.username, self.hostname)
+                .set_ssn()
+                .ConnectTimeout(30)
+                .use_auth_key(remote_key)
+                .ForceTTY()
+                .build()
+            )
+            ssh_cmd = (
+                SshPassCmdBuilder(
+                    dut.username, dut.password, dut.ip,
+                    getattr(dut, 'ssh_port', 22), cmd_to_execute=inner_cmd,
+                )
+                .set_ssn()
+                .build()
+            )
+        else:
+            ssh_cmd = (
+                SshCmdBuilder(self.username, self.hostname)
+                .set_ssn()
+                .ConnectTimeout(30)
+                .use_auth_key(self.private_key_path)
+                .build()
+            )
         self.cleanup()
-        self.engine = PexpectTool(spawn_cmd=ssh_pka_connection_cmd)
+        self.engine = PexpectTool(spawn_cmd=ssh_cmd)
 
     def _authenticate(self, expect_success):
-        with allure.step(f"SSH PKA authentication - {expect_success}"):
+        with self._allure_step_expect_failure(f"SSH PKA authentication - {expect_success}", expect_success):
             self._log.info(f"Create PKA engine for user: {self.username}")
             self._spawn_pka_engine()
             timeout = 5 if not expect_success else None

@@ -149,7 +149,7 @@ def _aaa_method_keep_check(engines: EnginesT, auth_method: str):
             with allure.step('Set authentication order'):
                 system.aaa.authentication.set(AuthConsts.ORDER, [auth_method, AuthConsts.LOCAL], apply=True).verify_result()
                 if auth_method == RemoteAaaType.LDAP:
-                    nvos_general_utils.wait_for_ldap_nvued_restart_workaround(None)
+                    nvos_general_utils.wait_for_ldap_nvued_restart_workaround(None, engine_to_use=engines.dut)
                 else:
                     time.sleep(3)
             with allure.step('enable failthrough'):

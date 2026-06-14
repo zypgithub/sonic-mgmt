@@ -1,6 +1,8 @@
 import pytest
 import logging
 import random
+import retry
+import re
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -165,10 +167,7 @@ def test_asic_debug_config_negative(engines, devices, nv_command):
                                             additional_params={'files': f'{SystemConsts.FAIL_ASIC_DEBUG_CONFIG_WRONG_REGISTER}'})
 
     with allure.step("Verify asic-debug-config failed"):
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
-            system.asic_debug_config.show()).get_returned_value()
-        ValidationTool.verify_field_value_in_output(output_dictionary, SystemConsts.STATUS_ASIC_DEBUG_CONFIG,
-                                                    SystemConsts.FAILED_STATUS_ASIC_DEBUG_CONFIG).verify_result()
+        _wait_asic_debug_config_status_changed(system, SystemConsts.STATUS_ASIC_DEBUG_CONFIG, SystemConsts.FAILED_STATUS_ASIC_DEBUG_CONFIG)
 
     with allure.step("Cleanup for asic debug config"):
         system.asic_debug_config.action(ActionConsts.DELETE,
@@ -210,7 +209,7 @@ def test_asic_debug_config_pgcb(engines, devices, nv_command, test_api):
     with allure.step('Download positive asic-debug-config and verify output'):
         _download_asic_debug_config(system, SystemConsts.PGCB_PASS_CONFIG)
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.asic_debug_config.show()).get_returned_value()
-        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(), output_dictionary)
+        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(), output_dictionary).verify_result()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.asic_debug_config.files.show()).get_returned_value()
         ValidationTool.verify_expected_output(output_dictionary, SystemConsts.PGCB_PASS_CONFIG).verify_result()
 
@@ -220,7 +219,7 @@ def test_asic_debug_config_pgcb(engines, devices, nv_command, test_api):
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.asic_debug_config.show()).get_returned_value()
-        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), [SystemConsts.NA, SystemConsts.PGCB_PASS_CONFIG], output_dictionary)
+        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), [SystemConsts.NA, SystemConsts.PGCB_PASS_CONFIG], output_dictionary).verify_result()
 
     with allure.step("Try to delete config file, when it already set"):
         system.asic_debug_config.files.file_name[SystemConsts.PGCB_PASS_CONFIG].action_delete().verify_result(should_succeed=False)
@@ -264,17 +263,165 @@ def test_asic_debug_config_pgcb(engines, devices, nv_command, test_api):
 
 @pytest.mark.asic_debug_config
 @pytest.mark.system
-def test_asic_debug_config_pgbc(engines, devices, nv_command):
+def test_asic_debug_config_pgbc(engines, devices, nv_command, standalone_system):
     """
-    Test flow:
-        1. Check default values for asic-debug-config output
-    """
+        Test flow:
+            1. Download positive asic-debug-config for 20 prms and verify output
+            2. Download positive asic-debug-config for 32 prms and verify output
+            3. Download positive asic-debug-config for 2k buffer and verify output
+            4. Unset asic-debug-config, reboot system, check config not applied
+            5. Cleanup
+        """
+    if standalone_system:
+        pytest.skip(f"Skipping test - Standalone system, need to run on system with gpu.")
     system = nv_command.system
-    # TBD test will be done, when we will have rosalind + gpu
+    mst_path = "/dev/mst/"
+    mst_devices = engines.dut.run_cmd(f"ls {mst_path} | grep -i pciconf").splitlines()
+    try:
+        with allure.step('Download positive asic-debug-config and verify output'):
+            _download_asic_debug_config(system, SystemConsts.ASIC_DEBUG_CONFIG_20_PRMS)
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.show()).get_returned_value()
+            ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                            SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(),
+                                                            output_dictionary)
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.files.show()).get_returned_value()
+            ValidationTool.verify_expected_output(output_dictionary, SystemConsts.ASIC_DEBUG_CONFIG_20_PRMS).verify_result()
 
-    with allure.step("Check default values for asic-debug-config output"):
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.asic_debug_config.show()).get_returned_value()
-        ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(), SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(), output_dictionary)
+        with allure.step("Set next asic-debug-config yaml and verify output"):
+            system.asic_debug_config.set(SystemConsts.NEXT_ASIC_DEBUG_CONFIG, SystemConsts.ASIC_DEBUG_CONFIG_20_PRMS)
+            TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config(engines.dut)
+            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.show()).get_returned_value()
+            ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                            [SystemConsts.NA, SystemConsts.ASIC_DEBUG_CONFIG_20_PRMS],
+                                                            output_dictionary)
+
+        with allure.step("Perform reboot and verify asic-debug-config applied"):
+            with allure.step("Perform system reboot"):
+                system.reboot.action_reboot(params='force').verify_result()
+
+            with allure.step("Verify asic-debug-config success after reboot"):
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.asic_debug_config.show()).get_returned_value()
+                ValidationTool.verify_field_value_in_output(output_dictionary, SystemConsts.STATUS_ASIC_DEBUG_CONFIG,
+                                                            SystemConsts.SUCCESS_STATUS_ASIC_DEBUG_CONFIG).verify_result()
+                ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                                [SystemConsts.ASIC_DEBUG_CONFIG_20_PRMS,
+                                                                 SystemConsts.ASIC_DEBUG_CONFIG_20_PRMS], output_dictionary)
+
+            with allure.step("Run PTER register access command"):
+                output = RegisterTool.get_mst_register_value(engines.dut, mst_path + mst_devices[1], "PGRRS",
+                                                             '-i local_port=0x2D')
+                assert validate_return_status(output, "return_status_19")
+
+        with allure.step('Download positive asic-debug-config and verify output'):
+            _download_asic_debug_config(system, SystemConsts.ASIC_DEBUG_CONFIG_2K_BUFFER)
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.show()).get_returned_value()
+            ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                            SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(),
+                                                            output_dictionary)
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.files.show()).get_returned_value()
+            ValidationTool.verify_expected_output(output_dictionary, SystemConsts.ASIC_DEBUG_CONFIG_2K_BUFFER).verify_result()
+
+        with allure.step("Set next asic-debug-config yaml and verify output"):
+            system.asic_debug_config.set(SystemConsts.NEXT_ASIC_DEBUG_CONFIG, SystemConsts.ASIC_DEBUG_CONFIG_2K_BUFFER)
+            TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config(engines.dut)
+            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.show()).get_returned_value()
+            ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                            [SystemConsts.NA, SystemConsts.ASIC_DEBUG_CONFIG_2K_BUFFER],
+                                                            output_dictionary)
+
+        with allure.step("Perform reboot and verify asic-debug-config applied"):
+            with allure.step("Perform system reboot"):
+                system.reboot.action_reboot(params='force').verify_result()
+
+            with allure.step("Verify asic-debug-config success after reboot"):
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.asic_debug_config.show()).get_returned_value()
+                ValidationTool.verify_field_value_in_output(output_dictionary, SystemConsts.STATUS_ASIC_DEBUG_CONFIG,
+                                                            SystemConsts.SUCCESS_STATUS_ASIC_DEBUG_CONFIG).verify_result()
+                ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                                [SystemConsts.ASIC_DEBUG_CONFIG_2K_BUFFER,
+                                                                 SystemConsts.ASIC_DEBUG_CONFIG_2K_BUFFER], output_dictionary)
+
+            with allure.step("Run PTER register access command"):
+                output = RegisterTool.get_mst_register_value(engines.dut, mst_path + mst_devices[1], "PGRRS",
+                                                             '-i local_port=0x2D')
+                assert validate_return_status(output, "return_status_27")
+
+        with allure.step('Download positive asic-debug-config and verify output'):
+            _download_asic_debug_config(system, SystemConsts.ASIC_DEBUG_CONFIG_32_PRMS)
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.show()).get_returned_value()
+            ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                            SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(),
+                                                            output_dictionary)
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.files.show()).get_returned_value()
+            ValidationTool.verify_expected_output(output_dictionary, SystemConsts.ASIC_DEBUG_CONFIG_32_PRMS).verify_result()
+
+        with allure.step("Set next asic-debug-config yaml and verify output"):
+            system.asic_debug_config.set(SystemConsts.NEXT_ASIC_DEBUG_CONFIG, SystemConsts.ASIC_DEBUG_CONFIG_32_PRMS)
+            TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config(engines.dut)
+            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.show()).get_returned_value()
+            ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                            [SystemConsts.NA, SystemConsts.ASIC_DEBUG_CONFIG_32_PRMS],
+                                                            output_dictionary)
+
+        with allure.step("Perform reboot and verify asic-debug-config applied"):
+            with allure.step("Perform system reboot"):
+                system.reboot.action_reboot(params='force').verify_result()
+
+            with allure.step("Verify asic-debug-config success after reboot"):
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.asic_debug_config.show()).get_returned_value()
+                ValidationTool.verify_field_value_in_output(output_dictionary, SystemConsts.STATUS_ASIC_DEBUG_CONFIG,
+                                                            SystemConsts.SUCCESS_STATUS_ASIC_DEBUG_CONFIG).verify_result()
+                ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                                [SystemConsts.ASIC_DEBUG_CONFIG_32_PRMS,
+                                                                 SystemConsts.ASIC_DEBUG_CONFIG_32_PRMS], output_dictionary)
+
+            with allure.step("Run PTER register access command"):
+                output = RegisterTool.get_mst_register_value(engines.dut, mst_path + mst_devices[1], "PGRRS",
+                                                             '-i local_port=0x2D')
+                assert validate_return_status(output, "return_status_31")
+    finally:
+        with allure.step("Unset asic-debug-config, reboot system, check config not applied"):
+            with allure.step("Unset asic debug config"):
+                system.asic_debug_config.unset()
+                TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config(engines.dut)
+                TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+            with allure.step("Perform system reboot"):
+                system.reboot.action_reboot(params='force').verify_result()
+
+            with allure.step("Check config not applied after reboot"):
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.asic_debug_config.show()).get_returned_value()
+                ValidationTool.validate_fields_values_in_output(SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.keys(),
+                                                                SystemConsts.DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES.values(),
+                                                                output_dictionary)
+
+        with allure.step("Cleanup for asic debug config"):
+            system.asic_debug_config.files.file_name[SystemConsts.ASIC_DEBUG_CONFIG_20_PRMS].action_delete()
+            system.asic_debug_config.files.file_name[SystemConsts.ASIC_DEBUG_CONFIG_32_PRMS].action_delete()
+            system.asic_debug_config.files.file_name[SystemConsts.ASIC_DEBUG_CONFIG_2K_BUFFER].action_delete()
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.files.show()).get_returned_value()
+            assert SystemConsts.ASIC_DEBUG_CONFIG_20_PRMS not in output_dictionary, 'config file not deleted'
+            assert SystemConsts.ASIC_DEBUG_CONFIG_32_PRMS not in output_dictionary, 'config file not deleted'
+            assert SystemConsts.ASIC_DEBUG_CONFIG_2K_BUFFER not in output_dictionary, 'config file not deleted'
 
 
 @pytest.mark.asic_debug_config
@@ -343,3 +490,31 @@ def _download_asic_debug_config(system, yaml='', expected_output='', should_succ
 def _validate_log_file(engines, string_to_validate=''):
     output = engines.dut.run_cmd(f'cat {SystemConsts.ASIC_DEBUG_CONFIG_LOG_FILE} | grep "{string_to_validate}"')
     assert string_to_validate in output, 'String not in asic-debug-config log'
+
+
+def validate_return_status(output: str, field_name: str, expected: str = "0x00000000") -> bool:
+    """
+    :param output: output of mlxreg command
+    :param field_name: prm return status "return_status_19"
+    :param expected: expected value (default = 0x00000000)
+    :return: True / False
+    """
+    pattern = rf"^{re.escape(field_name)}\s*\|\s*(0x[0-9a-fA-F]+)"
+
+    for line in output.splitlines():
+        match = re.match(pattern, line.strip())
+        if match:
+            actual = match.group(1)
+            return actual == expected
+
+    return False
+
+
+@retry.retry(Exception, tries=2, delay=1)
+def _wait_asic_debug_config_status_changed(system, status='', status_value=''):
+    with allure.step("Run show show asic debug config"):
+        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+            system.asic_debug_config.show()).get_returned_value()
+
+    with allure.step("Verify asic debug config status changed"):
+        ValidationTool.verify_field_value_in_output(output_dictionary, status, status_value).verify_result()

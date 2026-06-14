@@ -22,7 +22,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr, GnmiServerStatus
+from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmiServerStatus, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
     validate_show_gnmi, validate_gnmi_server_in_health_issues, run_gnmi_client_in_the_background, \
     verify_description_value, run_gnmi_client_and_parse_output, validate_gnmi_enabled_and_running, wait_for_gnmi_ready, \
@@ -225,12 +225,9 @@ def test_gnmi_performance(engines, devices):
     """
     Run 10 gnmi-client process to the same switch, validate stream updates and switch state.
         Test flow:
-            1. show gnmi-server status (no clients)
-            2. create 10 gnmi_clients
-            3. show gnmi-server status (10 clients, 10 active subscriptions)
-            4. change port description
-            5. validate gnmi-server stream updates
-            6. stop clients, show gnmi-server status (no clients)
+            1. create 10 gnmi_clients
+            2. change port description
+            3. validate gnmi-server stream updates
     """
     num_engines = 10
     gnmi_clients_without_updates = 0

@@ -50,7 +50,7 @@ from types import SimpleNamespace
 
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.ngts_types import DevicesT, EnginesT
+from ngts.ngts_types import DevicesT, EnginesT, OperationalAppliedT
 from ngts.nvos_constants.constants_nvos import (
     ClusterApps,
     ClusterConsts,
@@ -60,13 +60,15 @@ from ngts.nvos_constants.constants_nvos import (
     SystemConsts,
     TestFlowType,
 )
+from ngts.nvos_constants import constants_nvos as consts_nv
 from ngts.tests_nvos.constants import FW_COMPONENT_SSD
 from ngts.nvos_tools.Devices import IbDevice
+from ngts.nvos_tools.infra.CertificateGenerator import CertificateGenerator
 from ngts.nvos_tools.infra.CrlValidator import ClientConfig, RevokeConfig
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
+from ngts.nvos_tools.ib.InterfaceConfiguration import Port, nvos_consts as ib_consts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.SSDTool import SSDTool
 from ngts.nvos_tools.infra.NmxRbacTool import NmxRbacTool
@@ -104,9 +106,11 @@ from ngts.tests_nvos.general.security.gnmi_server.mtls.spiffe_id.test_gnmi_serve
 )
 from ngts.tests_nvos.general.security.helpers import (
     cleanup_certs_for_tests,
+    generate_certs,
     get_test_certs_dir_location,
     import_cas_safely,
     import_certs_safely,
+    import_crl_safely,
     setup_certs_for_tests,
 )
 from ngts.tests_nvos.general.security.mtls.generic_testing.helpers import get_scp_player, verify_ca_configuration, verify_connection
@@ -120,10 +124,16 @@ from ngts.tests_nvos.general.security.nmx_cert.test_cluster_app_mngr_security im
     setup_cluster_app_mngr_security_checker,
 )
 from ngts.tests_nvos.general.security.nv_bridge.helpers import (
+    build_internal_bridge_cert,
+    import_internal_certs,
     verify_cluster_app_internal_cert_files,
+    verify_cluster_app_internal_crl_show,
     verify_cluster_app_internal_show,
+    verify_cluster_app_internal_spiffe_json,
     verify_system_internal_cert_files,
+    verify_system_internal_crl_show,
     verify_system_internal_show,
+    verify_system_internal_spiffe_json,
     wait_for_cluster_app_update,
 )
 from ngts.tests_nvos.general.security.radius.constants import (
@@ -187,6 +197,8 @@ from ngts.tests_nvos.interfaces.nvl_port.test_link_low_power import (
     low_power_state_case,
     should_skip_if_low_power_not_supported
 )
+from ngts.tests_nvos.helpers.interfaces import interface_helpers
+from ngts.tests_nvos.helpers.interfaces.nvl_port.nvl6 import link_training_helpers
 from ngts.tests_nvos.system.aaa.helpers import create_new_user
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client_tools_installed
 from ngts.tests_nvos.system.test_system_api_compression import verify_api_compression_state
@@ -895,7 +907,7 @@ def _check_ldap_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
         update_auth_mode_func=update_ldap_encryption_mode,
         aaa_obj=System().aaa.ldap,
         remote_aaa_type=RemoteAaaType.LDAP,
-        extra_setup_func=wait_for_ldap_nvued_restart_workaround,
+        extra_setup_func=functools.partial(wait_for_ldap_nvued_restart_workaround, engine_to_use=engines.dut),
     )
 
 
@@ -1006,6 +1018,146 @@ def _check_nv_bridge_system_encryption(engines: EnginesT, devices: DevicesT, **k
             nmx_c_app.internal.ca_certificate.action_restore()
 
 
+@_requires_compatibility(IbDevice.RosalindSurrogateSwitch, minimal_version="25.03.0600")
+def _check_nv_bridge_internal_crl_spiffe(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
+    """
+    Verify NV Bridge internal CRL + SPIFFE config survives upgrade.
+
+    Test flow:
+        1. Enable cluster
+        2. Generate SPIFFE certs for system/cluster and a CRL revoking an unrelated cert
+        3. Configure system internal: SPIFFE cert + CA + mTLS + CRL
+        4. Configure cluster internal: SPIFFE cert + CA + mTLS + CRL
+        5. Verify config pre-upgrade
+        6. Save config and do upgrade
+        7. Verify SPIFFE + CRL + cert config persisted after upgrade
+    """
+    cluster = Cluster()
+    system = System()
+    dut_hostname = engines.dut.ip
+    scp_player = get_scp_player(engines)
+    verify_gnmi_client_tools_installed()
+    spiffe_uri = "spiffe://nvbridge/default"
+
+    with allure.step("enable cluster"):
+        enable_cluster()
+
+    with allure.step("generate SPIFFE certificates for system and cluster"):
+        certs_location = get_test_certs_dir_location("nv_bridge_crl_spiffe_upgrade", dut_hostname)
+        spiffe_certs_dir = os.path.join(certs_location, "spiffe_certs")
+
+        system_cert = build_internal_bridge_cert(
+            cert_name="upgrade-spiffe-sys",
+            cert_info="system SPIFFE cert for upgrade",
+            dut_hostname=dut_hostname,
+            dut_ip=engines.dut.ip,
+            cert_cn="nv-bridge-upgrade-sys",
+            spiffe_uri=spiffe_uri,
+        )
+        cluster_cert = build_internal_bridge_cert(
+            cert_name="upgrade-spiffe-cluster",
+            cert_info="cluster SPIFFE cert for upgrade",
+            dut_hostname=dut_hostname,
+            dut_ip=engines.dut.ip,
+            cert_cn="nv-bridge-upgrade-cluster",
+            spiffe_uri=spiffe_uri,
+        )
+        generate_certs(spiffe_certs_dir, [system_cert, cluster_cert])
+
+    with allure.step("generate CRL revoking unrelated cert"):
+        crl_certs_dir = os.path.join(certs_location, "crl_certs")
+        revoked_cert = build_internal_bridge_cert(
+            cert_name="upgrade-revoked",
+            cert_info="cert to revoke for CRL generation",
+            dut_hostname=dut_hostname,
+            dut_ip=engines.dut.ip,
+            cert_cn="nv-bridge-upgrade-revoked",
+        )
+        generate_certs(crl_certs_dir, [revoked_cert])
+
+        crl_name = "upgrade-bridge-crl"
+        cert_gen = CertificateGenerator()
+        ca_dest = os.path.dirname(revoked_cert.cacert) if revoked_cert.cacert else ""
+        ca_name = os.path.splitext(os.path.basename(revoked_cert.cacert))[0] if revoked_cert.cacert else "ca"
+        crl_path = cert_gen.revoke_cert(
+            crl_certs_dir, crl_name, revoked_cert.name,
+            ca_dest=ca_dest, ca_name=ca_name,
+        )
+
+    with allure.step("import certificates and CRL"):
+        import_internal_certs(engines, [system_cert, cluster_cert], [system_cert, cluster_cert])
+        import_crl_safely(crl_name, crl_path, scp_player)
+
+    nmx_c_app = cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER]
+
+    with allure.step("configure system internal: SPIFFE cert + CA + mTLS + CRL"):
+        system.internal.certificate.action_update(system_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(system_cert.cacert_name).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        system.internal.crl.action_update(crl_name).verify_result()
+
+        verify_system_internal_show(
+            expect_cert=system_cert.name,
+            expect_cacert=system_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+        )
+        verify_system_internal_crl_show(expect_crl=crl_name)
+
+    with allure.step("configure cluster nmx_c internal: SPIFFE cert + CA + mTLS + CRL"):
+        nmx_c_app.internal.certificate.action_update(cluster_cert.name).verify_result()
+        nmx_c_app.internal.ca_certificate.action_update(cluster_cert.cacert_name).verify_result()
+        nmx_c_app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+        nmx_c_app.internal.crl.action_update(crl_name).verify_result()
+
+        verify_cluster_app_internal_show(
+            ClusterConsts.NMX_CONTROLLER,
+            expect_cert=cluster_cert.name,
+            expect_cacert=cluster_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+        )
+        verify_cluster_app_internal_crl_show(ClusterConsts.NMX_CONTROLLER, expect_crl=crl_name)
+
+    try:
+        with allure.step("save config"):
+            NvueGeneralCli.save_config(engines.dut)
+
+        yield  # Do upgrade
+
+        with allure.step("verify SPIFFE + CRL + cert config persisted after upgrade"):
+            verify_system_internal_show(
+                expect_cert=system_cert.name,
+                expect_cacert=system_cert.cacert_name,
+                expect_encryption=EncryptionMode.MTLS,
+            )
+            verify_system_internal_crl_show(expect_crl=crl_name)
+            verify_system_internal_spiffe_json(engines.dut, expected_cert_spiffe=spiffe_uri)
+
+            verify_cluster_app_internal_show(
+                ClusterConsts.NMX_CONTROLLER,
+                expect_cert=cluster_cert.name,
+                expect_cacert=cluster_cert.cacert_name,
+                expect_encryption=EncryptionMode.MTLS,
+            )
+            verify_cluster_app_internal_crl_show(ClusterConsts.NMX_CONTROLLER, expect_crl=crl_name)
+            verify_cluster_app_internal_spiffe_json(
+                engines.dut,
+                ClusterConsts.NMX_CONTROLLER,
+                expected_cert_spiffe=spiffe_uri,
+            )
+
+    finally:
+        with allure.step("restore system and cluster internal config"):
+            system.internal.crl.action_restore()
+            system.internal.encryption.action_restore()
+            system.internal.certificate.action_restore()
+            system.internal.ca_certificate.action_restore()
+            nmx_c_app.internal.crl.action_restore()
+            nmx_c_app.internal.encryption.action_restore()
+            nmx_c_app.internal.certificate.action_restore()
+            nmx_c_app.internal.ca_certificate.action_restore()
+
+
 @_requires_compatibility(minimal_version="25.02.6000")
 def _check_ssh_cert_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
     """
@@ -1106,7 +1258,7 @@ def _check_phy_role(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator
         2. Verify ports phy-role after upgrade
     """
     with allure.step("Get linked ports pair"):
-        linked_ports_pair: List[str] = list(get_linked_ports_pair(devices, engines))
+        linked_ports_pair: list[str] = list(get_linked_ports_pair(devices, engines))
         logger.info(f"Linked ports pair: {linked_ports_pair[0]} <-> {linked_ports_pair[1]}")
         fae_port_1, fae_port_2 = get_fae_objs(linked_ports_pair)
 
@@ -1164,7 +1316,7 @@ def _check_low_power(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
         Skipped("Low power is not supported")
 
     with allure.step("Get linked ports pair"):
-        linked_ports_pair: List[str] = list(get_linked_ports_pair(devices, engines))
+        linked_ports_pair: list[str] = list(get_linked_ports_pair(devices, engines))
         logger.info(f"Linked ports pair: {linked_ports_pair[0]} <-> {linked_ports_pair[1]}")
         linked_ports_objs = get_linked_ports_objs(devices, linked_ports_pair)
 
@@ -1195,6 +1347,88 @@ def _check_low_power(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
                 port_obj.interface.link.low_power.unset(apply=True).verify_result()
             for port_obj in linked_ports_objs:
                 port_obj.port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
+
+
+@_requires_compatibility(IbDevice.RosalindSwitch, minimal_version="25.03.0500")
+def _check_link_training(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
+    """
+    Verify link training params on NVL ports survive upgrade.
+    Test Steps:
+        1. Set fec-measure-mode to enabled on both ports
+        2. Set fec-measure-fail-action to a random non-default value on both ports
+        3. Verify both params on both ports
+        4. Save configuration
+        5. Do upgrade
+        6. Verify both params are still set after upgrade
+        7. Cleanup link-training configuration
+    """
+    with allure.step("Get linked ports pair"):
+        linked_ports_pair: list[str] = list(get_linked_ports_pair(devices, engines))
+        logger.info(f"Linked ports pair: {linked_ports_pair[0]} <-> {linked_ports_pair[1]}")
+        fae_port_1, fae_port_2 = get_fae_objs(linked_ports_pair)
+        fae_objs_tuple = (fae_port_1, fae_port_2)
+
+    try:
+        with allure.step("Set fec-measure-mode to enabled on both ports"):
+            for fae in fae_objs_tuple:
+                fae.interface.link.link_training.set(
+                    op_param_name=consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE,
+                    op_param_value=consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+                    apply=True,
+                    ask_for_confirmation=True,
+                ).verify_result()
+            interface_helpers.wait_and_verify_link(
+                [Port.Port(fae.port.name) for fae in fae_objs_tuple],
+                timeout=ib_consts.InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED,
+            )
+
+        random_fail_action = random.choice(consts_nv.LinkTrainingConsts.FecMeasureFailAction.operational())
+        with allure.step(f"Set fec-measure-fail-action to '{random_fail_action}' on both ports"):
+            for fae in fae_objs_tuple:
+                fae.interface.link.link_training.set(
+                    op_param_name=consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION,
+                    op_param_value=random_fail_action,
+                    apply=True,
+                    ask_for_confirmation=True,
+                ).verify_result()
+            interface_helpers.wait_and_verify_link(
+                [Port.Port(fae.port.name) for fae in fae_objs_tuple],
+                timeout=ib_consts.InternalNvosConsts.NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED,
+            )
+
+        expected_after_set: OperationalAppliedT = {
+            consts_nv.ConfState.OPERATIONAL: {
+                consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+                consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION: random_fail_action,
+            },
+            consts_nv.ConfState.APPLIED: {
+                consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+                consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION: random_fail_action,
+            },
+        }
+        with allure.step("Verify link-training params"):
+            for fae in (fae_port_1, fae_port_2):
+                with allure.step(f"Verify port {fae.port.name}"):
+                    ValidationTool.compare_nested_dictionary_content(
+                        fae.interface.link.link_training.parse_show_operational_applied(),
+                        expected_after_set,
+                    ).verify_result()
+
+        with allure.step("Save configuration"):
+            NvueGeneralCli.save_config(engines.dut)
+
+        yield  # Do upgrade
+
+        with allure.step("Verify link-training params after upgrade"):
+            for fae in (fae_port_1, fae_port_2):
+                with allure.step(f"Verify port {fae.port.name}"):
+                    ValidationTool.compare_nested_dictionary_content(
+                        fae.interface.link.link_training.parse_show_operational_applied(),
+                        expected_after_set,
+                    ).verify_result()
+
+    finally:
+        link_training_helpers.cleanup_link_training(devices, fae_objs_tuple)
 
 # #################### End of Feature Checkers ###################
 
@@ -1414,10 +1648,12 @@ _CHECKERS: list[CheckerFn] = [
     _check_nmx_controller_rbac,
     _check_nmx_telemetry_rbac,
     _check_nv_bridge_system_encryption,
+    _check_nv_bridge_internal_crl_spiffe,
     _check_speed_configuration,
     _check_ssh_cert_auth,
     _check_api_compression,
     _check_phy_role,
+    _check_link_training,
 ]
 
 _CHECKERS.append(

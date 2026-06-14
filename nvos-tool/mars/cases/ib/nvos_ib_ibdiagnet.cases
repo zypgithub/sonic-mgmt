@@ -46,7 +46,7 @@
       <condition>
         <key>dut_type</key>
         <op> in </op>
-        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia, rosalind]</value>
+        <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless, portia]</value>
       </condition>
     </ignore>
   </case>
@@ -64,7 +64,7 @@
       <condition>
         <key>dut_type</key>
         <op> in </op>
-        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia, rosalind]</value>
+        <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless, portia]</value>
       </condition>
     </ignore>
   </case>
@@ -82,7 +82,7 @@
       <condition>
         <key>dut_type</key>
         <op> in </op>
-        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia, rosalind]</value>
+        <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless, portia]</value>
       </condition>
     </ignore>
   </case>
@@ -100,25 +100,7 @@
       <condition>
         <key>dut_type</key>
         <op> in </op>
-        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia, rosalind]</value>
-      </condition>
-    </ignore>
-  </case>
-
-  <case>
-    <name> IB Ibdiagnet Server PHY Info </name>
-    <info> Run ibdiagnet from hfnm server with PHY info and pemi/pddr registers </info>
-    <tout> 900 </tout>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_ibdiagnet_server.py::test_ibdiagnet_server_phy_info --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
-      </params>
-    </cmd>
-    <ignore>
-      <condition>
-        <key>dut_type</key>
-        <op> in </op>
-        <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value>
+        <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless, portia]</value>
       </condition>
     </ignore>
   </case>

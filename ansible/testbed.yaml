@@ -10765,7 +10765,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: rosalind-eb1-2152-ptf-any
+- conf-name: rosalind-mec-2152-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -10775,7 +10775,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - rosalind-eb1-2152
+    - rosalind-mec-2152
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -10821,7 +10821,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: rosalind-nvos-2164-ptf-any
+- conf-name: rosalind-mec-2164-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -10831,7 +10831,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - rosalind-nvos-2164
+    - rosalind-mec-2164
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -11055,34 +11055,6 @@
   vm_base: VM0000
   dut:
     - juliet-136
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-160-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-160
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-160-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-160
   inv_name: lab
   comment: Mellanox MTR testbed
 

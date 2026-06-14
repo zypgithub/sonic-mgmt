@@ -631,6 +631,13 @@ def test_asic_health_fatal_state_marks_all_unhealthy(engines):
         pytest.skip("No ASIC instances in health output")
     instance_ids = list(asic_instances.keys())
 
+    initially_healthy_components = []
+    for comp in (HealthConsts.Component.Software, HealthConsts.Component.Switch):
+        if comp in health_out and HealthConsts.Component.INSTANCE in health_out[comp]:
+            comp_instances = health_out[comp][HealthConsts.Component.INSTANCE]
+            if "ALL" in comp_instances and comp_instances["ALL"].get(HealthConsts.Component.STATE) == HealthConsts.Component.HEALTHY:
+                initially_healthy_components.append(comp)
+
     try:
         with allure.step("Set ASIC_HEALTH fatal_state to true (triggers all ASICs unhealthy)"):
             _set_asic_health_fatal_state(engines, "true")
@@ -648,6 +655,11 @@ def test_asic_health_fatal_state_marks_all_unhealthy(engines):
             for inst in instance_ids:
                 _assert_asic_instance(system, inst, HealthConsts.Component.STATE, HealthConsts.Component.HEALTHY,
                                       tries=3, delay=_HEALTH_POLL_WAIT_SEC)
+        if initially_healthy_components:
+            with allure.step(f"Validate initially healthy components recovered: {initially_healthy_components}"):
+                for comp in initially_healthy_components:
+                    _assert_component_instance(system, comp, "ALL", HealthConsts.Component.STATE,
+                                               HealthConsts.Component.HEALTHY, tries=3, delay=_HEALTH_POLL_WAIT_SEC)
         with allure.step("Wait for system is ready (recovery after fatal state)"):
             DutUtilsTool.wait_for_nvos_to_become_functional(
                 engines.dut, throw_exception_on_unhealthy=False).verify_result()

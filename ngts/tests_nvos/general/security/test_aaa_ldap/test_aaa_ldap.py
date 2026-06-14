@@ -368,7 +368,7 @@ def test_cert_verify(test_flow, test_api, addressing_type, engines, devices, top
                     with allure.step(f'Configure encryption mode: {encryption_mode}'):
                         update_ldap_encryption_mode(engines, item, ldap_server_info, server_resource, encryption_mode,
                                                     False)
-                        wait_for_ldap_nvued_restart_workaround(item)
+                        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
                     with allure.step(f'Verify auth with LDAP user when there is CA cert in the switch - expect success'):
                         verify_auth(test_flow, engines, topology_obj, good_flow_users=[user_to_validate],
@@ -378,7 +378,7 @@ def test_cert_verify(test_flow, test_api, addressing_type, engines, devices, top
                         remove_ldap_server_certificate_to_switch(engines.dut)
                         if is_bug_active(4273468):
                             restart_nslcd(engines.dut)
-                        wait_for_ldap_nvued_restart_workaround(item)
+                        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
                     if encryption_mode != LdapEncryptionModes.NONE:
                         with allure.step(
@@ -422,7 +422,7 @@ def test_ldap_filter_passwd(test_api, engines, request, topology_obj):
 
     with allure.step('Enable LDAP'):
         ldap.enable(failthrough=True, apply=True, verify_res=True)
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(f'Verify user {test_user.username} does not exist in getent passwd'):
         check_ldap_user_with_getent_passwd(engine=engines.dut, username=test_user.username, user_should_exist=False)
@@ -435,7 +435,7 @@ def test_ldap_filter_passwd(test_api, engines, request, topology_obj):
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear passwd filter'):
             ldap.filter.unset(LdapConsts.PASSWD, apply=True).verify_result()
-            wait_for_ldap_nvued_restart_workaround(item)
+            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
         with allure.step(f'Verify user "{test_user.username}" exists in getent passwd'):
             check_ldap_user_with_getent_passwd(engine=engines.dut, username=test_user.username, user_should_exist=True)
         with allure.step(f'Verify user {test_user.username} can auth'):
@@ -476,7 +476,7 @@ def test_ldap_filter_group(test_api, engines, request, topology_obj):
 
     with allure.step('Enable LDAP'):
         ldap.enable(failthrough=True, apply=True, verify_res=True)
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(f'Verify user {test_user.username} does not have group "{group_9999}"'):
         check_ldap_user_groups_with_id(engine=engines.dut, username=test_user.username, groupname=group_9999,
@@ -485,7 +485,7 @@ def test_ldap_filter_group(test_api, engines, request, topology_obj):
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear group filter'):
             ldap.filter.unset(LdapConsts.GROUP, apply=True).verify_result()
-            wait_for_ldap_nvued_restart_workaround(item)
+            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
         with allure.step(f'Verify user {test_user.username} now has group "{group_9999}"'):
             check_ldap_user_groups_with_id(engine=engines.dut, username=test_user.username, groupname=group_9999,
                                            group_should_exist=True)
@@ -523,7 +523,7 @@ def test_ldap_filter_shadow(test_api, engines, request, topology_obj):
 
     with allure.step('Enable LDAP'):
         ldap.enable(failthrough=True, apply=True, verify_res=True)
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(f'Verify user {test_user.username} exist in getent passwd'):
         check_ldap_user_with_getent_passwd(engine=engines.dut, username=test_user.username, user_should_exist=True)
@@ -536,7 +536,7 @@ def test_ldap_filter_shadow(test_api, engines, request, topology_obj):
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear shadow filter'):
             ldap.filter.unset(LdapConsts.SHADOW, apply=True).verify_result()
-            wait_for_ldap_nvued_restart_workaround(item)
+            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
         with allure.step(f'Verify user "{test_user.username}" exists in getent passwd'):
             check_ldap_user_with_getent_passwd(engine=engines.dut, username=test_user.username, user_should_exist=True)
         with allure.step(f'Verify user {test_user.username} can auth'):
@@ -574,7 +574,7 @@ def test_ldap_filter_combo(test_api, engines, request, topology_obj):
 
     with allure.step('Enable LDAP'):
         ldap.enable(failthrough=True, apply=True, verify_res=True)
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     def check_users_in_combo_filter_test(adm1_exists: bool, adm2_exists: bool, adm3_exists: bool, adm1_can_auth: bool,
                                          adm2_can_auth: bool, adm3_can_auth: bool, grp9999_exists: bool):
@@ -600,23 +600,30 @@ def test_ldap_filter_combo(test_api, engines, request, topology_obj):
         check_users_in_combo_filter_test(adm1_exists=True, adm2_exists=True, adm3_exists=False, adm1_can_auth=False,
                                          adm2_can_auth=True, adm3_can_auth=False, grp9999_exists=False)
 
+    # Wait before each unset: the preceding verification step triggers auth attempts
+    # that can leave nvued in a transitional state; the unset+apply itself also
+    # restarts nvued, so we wait both before (settle from verification) and after
+    # (settle from config apply).
     with allure.step('Clear group filter'):
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
         ldap.filter.unset(LdapFilterFields.GROUP, apply=True).verify_result()
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
     with allure.step('Check with passwd, shadow filters'):
         check_users_in_combo_filter_test(adm1_exists=True, adm2_exists=True, adm3_exists=False, adm1_can_auth=False,
                                          adm2_can_auth=True, adm3_can_auth=False, grp9999_exists=True)
 
     with allure.step('Clear shadow filter'):
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
         ldap.filter.unset(LdapFilterFields.SHADOW, apply=True).verify_result()
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
     with allure.step('Check with passwd filter only'):
         check_users_in_combo_filter_test(adm1_exists=True, adm2_exists=True, adm3_exists=False, adm1_can_auth=True,
                                          adm2_can_auth=True, adm3_can_auth=False, grp9999_exists=True)
 
     with allure.step('Clear passwd filter'):
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
         ldap.filter.unset(LdapFilterFields.PASSWD, apply=True).verify_result()
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
     with allure.step('Check with no filters'):
         check_users_in_combo_filter_test(adm1_exists=True, adm2_exists=True, adm3_exists=True, adm1_can_auth=True,
                                          adm2_can_auth=True, adm3_can_auth=True, grp9999_exists=True)
@@ -657,7 +664,7 @@ def test_ldap_map_passwd(test_api, engines, request, topology_obj):
 
     with allure.step('Enable LDAP'):
         ldap.enable(failthrough=True, apply=True, verify_res=True)
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(f'Verify user {cn_test_user.username} exist in getent passwd'):
         check_ldap_user_with_getent_passwd(engine=engines.dut, username=cn_test_user.username, user_should_exist=True)
@@ -678,7 +685,7 @@ def test_ldap_map_passwd(test_api, engines, request, topology_obj):
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear passwd map'):
             ldap.map.passwd.unset(apply=True).verify_result()
-            wait_for_ldap_nvued_restart_workaround(item)
+            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
         with allure.step(f'Verify user "{non_cn_test_user.username}" now exists in getent passwd'):
             check_ldap_user_with_getent_passwd(engine=engines.dut, username=non_cn_test_user.username,
                                                user_should_exist=True)
@@ -723,7 +730,7 @@ def test_ldap_map_group(test_api, engines, request, topology_obj):
 
     with allure.step('Enable LDAP'):
         ldap.enable(failthrough=True, apply=True, verify_res=True)
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(f'Verify user {test_user.username} dont have groups "{test_groups}"'):
         check_ldap_user_groups_with_id(engine=engines.dut, username=test_user.username, groupname=test_groups,
@@ -732,7 +739,7 @@ def test_ldap_map_group(test_api, engines, request, topology_obj):
     with allure.step('Sanity: clear map and check the opposite'):
         with allure.step('Clear group map'):
             ldap.map.group.unset(apply=True).verify_result()
-            wait_for_ldap_nvued_restart_workaround(item)
+            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
         with allure.step(f'Verify user {test_user.username} has groups "{test_groups}"'):
             check_ldap_user_groups_with_id(engine=engines.dut, username=test_user.username, groupname=test_groups,
                                            group_should_exist=True)
@@ -774,7 +781,7 @@ def test_ldap_filter_performance(test_api, engines, request, topology_obj):
 
     with allure.step('Enable LDAP'):
         ldap.enable(failthrough=True, apply=True, verify_res=True)
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     def get_ssh_and_command_execution_duration(engine: ProxySshEngine, resource_obj: BaseComponent, set_param_name: str,
                                                set_param_val, description: str = '') -> float:
@@ -797,7 +804,7 @@ def test_ldap_filter_performance(test_api, engines, request, topology_obj):
 
     with allure.step('Clear filters'):
         ldap.filter.unset(apply=True).verify_result()
-        wait_for_ldap_nvued_restart_workaround(item)
+        wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step('Without filters - Connect with LDAP user and make operation'):
         ldap_user_engine.disconnect()

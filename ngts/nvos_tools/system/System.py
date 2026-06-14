@@ -232,7 +232,7 @@ class FactoryDefault(BaseComponent):
             from ngts.tests_nvos.system.factory_reset.helpers import KEEP_ONLY_FILES
             # can't import at top of file due to circular import
             if wait_for_functional and (handle_log_analyzer or (handle_log_analyzer is None and param != KEEP_ONLY_FILES)):
-                log_analyzer_marker = TestToolkit.get_loganalyzer_marker(engine, get_full_line=True)
+                log_analyzer_marker = TestToolkit.get_loganalyzer_marker(engine, get_full_line=True, test_string=test_name)
             else:
                 log_analyzer_marker = ""
             res_obj, duration = OperationTime.save_duration(f'reset factory {param}', "", test_name, SendCommandTool.execute_command,

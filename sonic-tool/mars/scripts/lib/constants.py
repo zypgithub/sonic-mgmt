@@ -17,7 +17,7 @@ DOCKER_NGTS_IMAGE_NAME = "docker-ngts"
 # Single source of truth for the pinned docker-ngts tag.
 # Used to pin the image for sonic-mgmt container creation (update_docker.py) and the
 # devts package installation in the air simulation bringup (air_simulation_bringup.sh).
-DOCKER_NGTS_DEFAULT_TAG = "1.3.77"
+DOCKER_NGTS_DEFAULT_TAG = "1.3.79"
 
 SONIC_MGMT_REPO_URL = "http://10.7.77.140:8080/switchx/sonic/sonic-mgmt"
 
@@ -44,6 +44,12 @@ BARE_METAL_MOUNTPOINTS = {
     '/auto/mswg/utils/bin/': '/auto/mswg/utils/bin/',
     '/auto/cumulus': '/auto/cumulus',
     '/.autodirect/cumulus': '/.autodirect/cumulus',
+    '/auto/mswg_release_mft/': '/auto/mswg_release_mft/',
+    '/.autodirect/mswg_release_mft/': '/.autodirect/mswg_release_mft/',
+}
+AIR_SONIC_MGMT_MOUNTPOINTS = {
+    '/auto/sw_regression/system/SONIC/MARS': '/auto/sw_regression/system/SONIC/MARS',
+    '/auto/sw_tools/Internal/BugHandling/RELEASES': '/auto/sw_tools/Internal/BugHandling/RELEASES',
     '/auto/sw_system_release': '/auto/sw_system_release',
     '/auto/sw_system_release/cumulus': '/auto/sw_system_release/cumulus',
     '/.autodirect/sw_system_release/cumulus/': '/.autodirect/sw_system_release/cumulus/',

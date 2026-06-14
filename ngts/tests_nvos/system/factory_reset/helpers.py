@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import time
+import retry
 from datetime import datetime, timezone
 from dateutil import parser
 
@@ -136,15 +137,7 @@ def add_verification_data_for_ib(engine, system):
         output = engine.run_cmd("sudo touch /host/warmboot/verification_test")
 
     with allure.step("Check running dockers"):
-        logging.info("Check running dockers")
-        output = engine.run_cmd("docker container list").split('\n')[1:]
-        for line in output:
-            line = line.split()
-            docker_name = line[len(line) - 1]
-            if docker_name not in DO_NOT_CHECK_DOCKERS:
-                start_time = engine.run_cmd(r"docker inspect -f \{\{'.Created'\}\} " + docker_name)
-                start_time = datetime.strptime(start_time.split(".")[0], f'%Y-%m-%dT%H:%M:%S')
-                running_dockers[docker_name] = start_time
+        check_running_dockers(engine)
 
     with allure.step("Create new user"):
         username, password = System(force_api=ApiType.NVUE).aaa.user.set_new_user(apply=True)
@@ -489,3 +482,21 @@ def add_verification_data_for_cumulus(engine, device):
     with allure.step("Create new user for Cumulus system"):
         username, password = System(force_api=ApiType.NVUE).aaa.user.set_new_user(apply=True)
         return username
+
+
+@retry.retry(Exception, delay=5, tries=5)
+def check_running_dockers(engine):
+    output = engine.run_cmd("docker container list").split('\n')[1:]
+    for line in output:
+        line = line.split()
+        docker_name = line[len(line) - 1]
+        if docker_name not in DO_NOT_CHECK_DOCKERS:
+            start_time = get_docker_start_time(engine, docker_name)
+            running_dockers[docker_name] = start_time
+
+
+def get_docker_start_time(engine, docker_name):
+    result = engine.run_cmd(r"docker inspect -f {{'.Created'}} " + docker_name)
+    if "Error" in result:
+        raise Exception(f"Error: No such object: {docker_name}")
+    return datetime.strptime(result.split(".")[0], '%Y-%m-%dT%H:%M:%S')

@@ -374,6 +374,11 @@ class OpenApiRequest:
         return ResultObj(True, "")
 
     @staticmethod
+    @retry(requests.exceptions.ConnectionError, tries=3, delay=5, logger=logger)
+    def _get_with_retry(url, auth, timeout=None):
+        return requests.get(url=url, auth=auth, timeout=timeout, **OpenApiRequest._get_client_security_config())
+
+    @staticmethod
     def send_get_request(request_data, op_params=''):
         with allure.step('Send GET request'):
             logging.info("Send GET request")
@@ -381,7 +386,7 @@ class OpenApiRequest:
             req_url = '{url}{resource_path}{params}'.format(url=OpenApiRequest._get_endpoint_url(request_data),
                                                             params=params,
                                                             resource_path=request_data.resource_path)
-            r = requests.get(url=req_url, auth=OpenApiRequest._get_http_auth(request_data), **OpenApiRequest._get_client_security_config())
+            r = OpenApiRequest._get_with_retry(req_url, OpenApiRequest._get_http_auth(request_data))
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.GET)
 
@@ -538,7 +543,7 @@ class OpenApiRequest:
             auth = OpenApiRequest._get_http_auth(request_data)
 
             while True:
-                r = requests.get(url=req_url, auth=auth, timeout=30, **OpenApiRequest._get_client_security_config())
+                r = OpenApiRequest._get_with_retry(req_url, auth, timeout=30)
                 # Note: this 30-second timeout is for obtaining the action-status, *not* for completing the action.
                 # This tool does not define a timeout for completing the action since there's a great variance in
                 # completion times for different actions, for example CPLD update takes ~15 minutes.

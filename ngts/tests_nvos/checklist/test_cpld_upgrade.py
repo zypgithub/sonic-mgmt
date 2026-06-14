@@ -1,5 +1,7 @@
 import logging
 import os.path
+import sys
+import time
 from typing import Dict
 
 import pytest
@@ -120,15 +122,28 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
                 validate_firmware_versions(firmware_shown, image_details)
 
     finally:
-        for file_name in file_names:
-            with allure.step(f"Deleting image file {file_name}"):
-                platform.firmware.cpld.files.file_name[file_name].action_delete().verify_result()
+        original_exception = sys.exc_info()[1]
+        try:
+            with allure.step("Wait for system to be functional"):
+                # Needed if reboot took longer than expected; small overhead if the system is already functional.
+                engines.dut.disconnect()
+                DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
+            for file_name in file_names:
+                with allure.step(f"Deleting image file {file_name}"):
+                    platform.firmware.cpld.files.file_name[file_name].action_delete().verify_result()
 
-        with allure.step(f"Asserting delete was successful"):
-            final_file_list = platform.firmware.cpld.show_files_as_list()
-            assert set(initial_files) == set(final_file_list), (
-                f"File list is expected to be the same at the start and end of the test, but the initial file list is:\n"
-                f"{initial_files}\nAnd at the end of the test the list is:\n{final_file_list}")
+            with allure.step(f"Asserting delete was successful"):
+                final_file_list = platform.firmware.cpld.show_files_as_list()
+                assert set(initial_files) == set(final_file_list), (
+                    f"File list is expected to be the same at the start and end of the test, but the initial file list is:\n"
+                    f"{initial_files}\nAnd at the end of the test the list is:\n{final_file_list}")
+        except Exception as cleanup_exc:
+            if original_exception is None:
+                raise
+            logger.warning(
+                "Second exception during cleanup (wait/delete), preserving original failure: %s",
+                cleanup_exc,
+            )
 
 
 def validate_firmware_versions(firmware_shown, image_details: Dict[str, Dict[str, str]]):

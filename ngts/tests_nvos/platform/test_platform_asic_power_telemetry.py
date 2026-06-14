@@ -1,16 +1,18 @@
 import logging
+
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.constants.constants import GnmiConsts
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.ngts_types import DevicesT
+from ngts.nvos_constants.constants_nvos import DatabaseConst, PlatformConsts, PowerCappingConsts
+from ngts.nvos_tools.Devices.IbDevice import RosalindSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.helpers import run_gnmi_client_and_parse_output
-from ngts.nvos_tools.infra.NvCommand import NvCommand
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -40,8 +42,9 @@ def test_platform_asic_power_telemetry_default_fields_values(random_api, devices
 
         with allure.step("Check only positive integers inside"):
             for asic, values in asic_output.items():
+                power_values = values.get(PowerCappingConsts.POWER, {})
                 for key in PlatformConsts.POWER_TELEMETRY_ASIC_OUTPUT_FIELDS:
-                    value = values.get(key)
+                    value = power_values.get(key)
                     assert isinstance(value, str), f"Error: {key} in {asic} is not a string"
                     assert value.isdigit(), f"Error: {key} in {asic} is not a numeric string"
                     assert int(value) > 0, f"Error: {key} in {asic} is not a positive integer"
@@ -88,7 +91,7 @@ def test_platform_asic_power_telemetry_default_fields_values(random_api, devices
 
 @pytest.mark.platform
 @pytest.mark.power_telemetry
-def test_platform_asic_power_telemetry_counters_updates(engines, random_api, devices, nv_command, wrong_shunt_resistor_system):
+def test_platform_asic_power_telemetry_counters_updates(engines, random_api, devices: DevicesT, nv_command, wrong_shunt_resistor_system):
     """
     Validate ASIC Power Telemetry feature counters updates.
         Test flow:
@@ -106,22 +109,23 @@ def test_platform_asic_power_telemetry_counters_updates(engines, random_api, dev
     with allure.step("Get random ASIC"):
         random_asic = RandomizationTool.select_random_value(devices.dut.asic_numbers).get_returned_value()
 
-        with allure.step("Get output from NVUE counters command, wait 5 seconds, check counters changed"):
-            with allure.step("Get output from NVUE command before reboot"):
-                counters_before_sleep = _get_power_temetry_counters(nv_command.platform, random_asic)
+        if _check_hw_mgmt_rev(engines) and not isinstance(devices.dut, RosalindSwitch):
+            with allure.step("Get output from NVUE counters command, wait 5 seconds, check counters changed"):
+                with allure.step("Get output from NVUE command before reboot"):
+                    counters_before_sleep = _get_power_temetry_counters(nv_command.platform, random_asic)
 
-            with allure.step('Stress the system for 5 seconds'):
-                for _ in range(5):
-                    nv_command.platform.firmware.show()
+                with allure.step('Stress the system for 5 seconds'):
+                    for _ in range(5):
+                        nv_command.platform.firmware.show()
 
-            with allure.step("Get output from NVUE command after reboot"):
-                counters_after_sleep = _get_power_temetry_counters(nv_command.platform, random_asic)
+                with allure.step("Get output from NVUE command after reboot"):
+                    counters_after_sleep = _get_power_temetry_counters(nv_command.platform, random_asic)
 
-            with allure.step('Compare values'):
-                for key in PlatformConsts.POWER_TELEMETRY_COUNTERS_CHANGABLE_FIELDS:
-                    value_counters_before_sleep = int(counters_before_sleep[key])
-                    value_counters_after_sleep = int(counters_after_sleep[key])
-                    assert value_counters_after_sleep - value_counters_before_sleep != 0, f"Error: {key} did not change"
+                with allure.step('Compare values'):
+                    for key in PlatformConsts.POWER_TELEMETRY_COUNTERS_CHANGABLE_FIELDS:
+                        value_counters_before_sleep = int(counters_before_sleep[key])
+                        value_counters_after_sleep = int(counters_after_sleep[key])
+                        assert value_counters_after_sleep - value_counters_before_sleep != 0, f"Error: {key} did not change"
 
         with allure.step("Get output from NVUE command, GNMI and compare"):
             for index, key in enumerate(PlatformConsts.POWER_TELEMETRY_ASIC_OUTPUT_FIELDS):
@@ -177,3 +181,21 @@ def _get_power_temetry_counters(platform_obj, random_asic):
     asic_output = OutputParsingTool.parse_json_str_to_dictionary(platform_obj.asic.show(random_asic + ' power counters')).get_returned_value()
 
     return {key: asic_output[key] for key in PlatformConsts.POWER_TELEMETRY_COUNTERS_CHANGABLE_FIELDS if key in asic_output}
+
+
+def _check_hw_mgmt_rev(engines):
+    """
+        This function check if we have hw-mgmt-rev which support power-capping feature
+        """
+    try:
+        curr_value = Tools.DatabaseTool.sonic_db_cli_hget(engine=engines.dut, asic="",
+                                                          db_name=DatabaseConst.CONFIG_DB_NAME,
+                                                          db_config='DEVICE_METADATA|localhost', param='hw-mgmt-rev')
+        value = int(curr_value)
+        hex_val = hex(value)[2:]
+        last_digit = int(hex_val[-1], 16)
+        return last_digit >= 5
+
+    except Exception as e:
+        logger.info(f"Error occurred: {e}")
+        return False

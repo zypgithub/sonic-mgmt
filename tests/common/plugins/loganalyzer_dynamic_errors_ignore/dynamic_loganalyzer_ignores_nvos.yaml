@@ -605,7 +605,6 @@
         - tests_nvos/interfaces/test_port_split.py
         - tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up
         - tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up_openapi
-        - tests_nvos/interfaces/test_ib_interface_counters.py
         - tests_nvos/general/traffic/test_basic_traffic.py
         - tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state
         - tests_nvos/system/test_techsupport_feature.py::test_techsupport_folder_name
@@ -1215,9 +1214,6 @@
     - ".*ERR health-statsd#health_history: gnmi-server: Container 'gnmi-server' is not running.*"
   Conditions:
     - Affected_test_cases:
-        - tests_nvos/system/test_system_snmp.py::test_system_snmp_load_test
-        - tests_nvos/system/test_system_snmp.py::test_system_snmp_redis_crash
-        - tests_nvos/system/test_system_snmp.py::test_snmp_default_values_fields
         - tests_nvos/system/test_system_snmp.py::test_system_snmp_load_test
         - tests_nvos/system/test_system_snmp.py::test_system_snmp_redis_crash
         - tests_nvos/system/test_system_snmp.py::test_snmp_default_values_fields
@@ -2160,8 +2156,8 @@
 
 # NVOS: Expected logs
 - Errors_list:
-    - '.*WARNING cpu_memory_container_checker: Memory usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
-    - '.*WARNING cpu_memory_container_checker: CPU usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
+    - '.*WARNING cpu_memory_container_checker: .*Memory usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
+    - '.*WARNING cpu_memory_container_checker: .*CPU usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/test_cpu_memory_monitoring.py
@@ -2216,7 +2212,6 @@
         - tests_nvos/cluster/test_cluster_reboot.py::test_reboot_command
         - tests_nvos/system/test_system_reboot.py
         - tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py::test_tpm_reboot_cases
-        - tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_reboot_system_keeps_data
         - tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade
         - tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_reboot_system
 
@@ -2339,3 +2334,10 @@
     - Affected_test_cases:
         - tests_nvos/cluster/test_nmx_package.py::test_nmx_package_good_flow
 
+# nv-bridge connection teardown warnings during cluster encryption config changes
+- Errors_list:
+    - '.*WARNING nv-bridge#nv-bridge.*ConnectionLivenessMonitor: connection .* reached disconnection threshold.*'
+    - '.*WARNING nv-bridge#nv-bridge.*ServerConnections\.remove_connection.*Failed to remove connection for session_id:.*is not registered'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/nv_bridge/test_nv_bridge_encryption.py::test_bridge_cluster_encryption_set

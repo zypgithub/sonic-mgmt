@@ -127,36 +127,38 @@ def test_ssh_pka_positive_flow(engines, addressing_type, generate_new_admin_keys
                                                                     expected_values=list(
                                                                         expected_authorized_key_dict.values())).verify_result()
 
-            with allure.independent_step("try to connect using the keys"):
-                hostname = engines.dut.ip if addressing_type == AddressingType.IPV4 else dut_ipv6_addr
-                with PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path, hostname=hostname, engines=engines) as admin_session_obj:
+            hostname = engines.dut.ip if addressing_type == AddressingType.IPV4 else dut_ipv6_addr
+            with PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,
+                                 hostname=hostname, engines=engines) as admin_session_obj, \
+                    PKAAuthVerifier(username=monitor_user, private_key_path=monitor_private_key_path,
+                                    hostname=hostname, engines=engines) as monitor_session_obj:
+                with allure.independent_step("try to connect using the keys"):
                     admin_session_obj.verify_authentication(True)
-                with PKAAuthVerifier(username=monitor_user, private_key_path=monitor_private_key_path, hostname=hostname, engines=engines) as monitor_session_obj:
                     monitor_session_obj.verify_authentication(True)
 
-            with allure.independent_step(f"verify sessions count for both admin and {monitor_user}"):
-                admin_sessions_after_testing = system.aaa.user.get_ssh_session_count(engine=engines.dut, username='admin')
-                monitor_sessions_after_testing = system.aaa.user.get_ssh_session_count(engine=engines.dut, username=monitor_user)
+                with allure.independent_step(f"verify sessions count for both admin and {monitor_user}"):
+                    admin_sessions_after_testing = system.aaa.user.get_ssh_session_count(engine=engines.dut, username='admin')
+                    monitor_sessions_after_testing = system.aaa.user.get_ssh_session_count(engine=engines.dut, username=monitor_user)
 
-                with allure.independent_step("verify sessions count for admin"):
-                    assert admin_sessions_after_testing - admin_sessions_before_testing == 1, (
-                        f"after connection using key we expect more sessions for admin, the sessions count "
-                        f"before testing was {admin_sessions_before_testing} and after connecting with the "
-                        f"key it's {admin_sessions_after_testing}"
-                    )
+                    with allure.independent_step("verify sessions count for admin"):
+                        assert admin_sessions_after_testing - admin_sessions_before_testing == 1, (
+                            f"after connection using key we expect more sessions for admin, the sessions count "
+                            f"before testing was {admin_sessions_before_testing} and after connecting with the "
+                            f"key it's {admin_sessions_after_testing}"
+                        )
 
-                with allure.independent_step(f"verify sessions count for {monitor_user}"):
-                    assert monitor_sessions_after_testing - monitor_sessions_before_testing == 1, (
-                        f"after connection using key we expect more sessions for {monitor_user}, the "
-                        f"sessions count before testing was {monitor_sessions_before_testing} and after "
-                        f"connecting with the key it's {monitor_sessions_after_testing}"
-                    )
+                    with allure.independent_step(f"verify sessions count for {monitor_user}"):
+                        assert monitor_sessions_after_testing - monitor_sessions_before_testing == 1, (
+                            f"after connection using key we expect more sessions for {monitor_user}, the "
+                            f"sessions count before testing was {monitor_sessions_before_testing} and after "
+                            f"connecting with the key it's {monitor_sessions_after_testing}"
+                        )
 
-            with allure.independent_step("verify users ability using the new connection session"):
-                with allure.independent_step("verify admin ability"):
-                    admin_session_obj.verify_authorization(user_is_admin=True)
-                with allure.independent_step("verify monitor ability"):
-                    monitor_session_obj.verify_authorization(user_is_admin=False)
+                with allure.independent_step("verify users ability using the new connection session"):
+                    with allure.independent_step("verify admin ability"):
+                        admin_session_obj.verify_authorization(user_is_admin=True)
+                    with allure.independent_step("verify monitor ability"):
+                        monitor_session_obj.verify_authorization(user_is_admin=False)
 
             with allure.independent_step("verify functionality  after unset admin key"):
                 with allure.step(f"unset {random_key_id} for admin"):

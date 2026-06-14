@@ -1724,6 +1724,7 @@ class BugHandlerConst:
     BUG_HANDLER_STATUS = "status"
     BUG_HANDLER_ACTION = "action"
     BUG_HANDLER_BUG_ID = "bug_id"
+    LA_BUG_HANDLER_ATTACHMENT_PREFIX = "la_bug_handler_"
     BUG_HANDLER_MESSAGES = "messages"
     LA_RM_ISSUES_DICT = "la_rm_issues_dict"
     BUG_HANDLER_FAILURE_EXCEPTION = "The log analyzer bug handler has failed"

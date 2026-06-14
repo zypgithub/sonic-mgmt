@@ -30,7 +30,7 @@ from ngts.tests_nvos.general.security.mtls.generic_testing.constants import CA_C
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.helpers.general_helpers import run_cmd
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient, GnmicCmdBuilder
-from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmicErr, GnmiServerStatus
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmiServerStatus, GnmicErr
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
 from ngts.tests_nvos.system.gnmi.constants import (

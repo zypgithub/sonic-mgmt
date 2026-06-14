@@ -69,9 +69,7 @@ def ensure_debug_firmware(engines, target_version):
         bin_filename = os.path.basename(bin_path)
         mfa_filename = os.path.basename(mfa_path)
 
-        # Extract version from filename: debug_fw_41_2018_0220.bin -> 41.2018.0220
-        match = DebugFwPatterns.VERSION_FROM_FILENAME.search(bin_filename)
-        version_name = f"{match.group(1)}.{match.group(2)}.{match.group(3)}" if match else None
+        version_name = DebugFwPatterns.version_name_from_filename(bin_filename)
 
         fw_info = {
             'bin_path': bin_path,

@@ -67,6 +67,9 @@ def test_ci_sanity_set(engines, topology_obj, devices):
 @pytest.mark.nvos_ci
 def test_ci_sanity_fetch(engines, topology_obj, devices):
     with allure.step("Test action fetch"):
+        if not getattr(devices.dut, 'nvl_trunk_ports_list', None):
+            pytest.skip("No trunk ports available")
+
         platform = Platform()
         new_fw_file = "sec_issu_46_120_10011_dev_signed.bin"
         fw_path = f"{SystemConsts.GENERAL_TRANSCEIVER_FIRMWARE_FILES}/{new_fw_file}"

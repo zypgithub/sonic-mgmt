@@ -257,6 +257,15 @@ def _select_random_sma_component(devices: DevicesT) -> tuple[str, FWComponentsTo
     return sma_name, firmware_component
 
 
+def _fw_package_supports_ssd() -> bool:
+    """Return True if the FW package has SSD entries for this device's part number."""
+    _, filename, version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+    if version_name is None:
+        logger.info("Excluding SSD from component list: package %r does not support SSD model", filename)
+        return False
+    return True
+
+
 def select_random_component(devices: DevicesT) -> str:
     """
         @summary: Select a random component on tested device
@@ -272,6 +281,8 @@ def select_random_component(devices: DevicesT) -> str:
     # Add SSD for switches that support SSD firmware updates (if not already from components_list)
     if devices.dut.supports_ssd_upgrade and constants.FW_COMPONENT_SSD not in components_list:
         components_list.append(constants.FW_COMPONENT_SSD)
+    if constants.FW_COMPONENT_SSD in components_list and not _fw_package_supports_ssd():
+        components_list.remove(constants.FW_COMPONENT_SSD)
 
     with allure.step("Randomize a components from components list"):
         logger.info(f"Components list = {components_list}")

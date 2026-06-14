@@ -11,6 +11,9 @@ FUNCTION_SCOPE = "function scope"
 FIXTURE_NAME_SCOPE_FORMAT = "{} {} scope"
 LINE_BREAK = '\n'
 
+logger = logging.getLogger(__name__)
+
+
 # TODO: temporary workaround. Replace with a proper mixin that adds the
 # allure command-tracking interface to every engine type (PexpectSerialEngine,
 # AirWebSocketSerialEngine, ...) instead of guarding at every call site.

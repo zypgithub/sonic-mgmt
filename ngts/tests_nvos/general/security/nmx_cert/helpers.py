@@ -29,16 +29,16 @@ def set_cluster_state(cluster_state, nmc_state, force_wait: bool = False):
         cluster = Cluster()
         res: ResultObj = cluster.set(nmx_cert_constants.STATE, cluster_state, apply=True)
         if force_wait or res.apply_occurred():
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_state, nmc_state)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state=cluster_state, nmx_c_expected_state=nmc_state)
         res.verify_result()
 
 
 def enable_cluster(force_wait: bool = False):
-    set_cluster_state(nmx_cert_constants.ENABLED, _CLUSTER_STATE_TO_NMX_CONN[nmx_cert_constants.ENABLED], force_wait)
+    set_cluster_state(nmx_cert_constants.ENABLED, _CLUSTER_STATE_TO_NMX_CONN[nmx_cert_constants.ENABLED], force_wait=force_wait)
 
 
 def disable_cluster(force_wait: bool = False):
-    set_cluster_state(nmx_cert_constants.DISABLED, _CLUSTER_STATE_TO_NMX_CONN[nmx_cert_constants.DISABLED], force_wait)
+    set_cluster_state(nmx_cert_constants.DISABLED, _CLUSTER_STATE_TO_NMX_CONN[nmx_cert_constants.DISABLED], force_wait=force_wait)
 
 
 def update_cluster_app_manager_state(manager: Manager, state):
@@ -153,8 +153,6 @@ def run_manager_hello_request(app_name: str, client_tls_mode: str, server_cert: 
                               num_requests: int = 1, delay_between_requests: int = 1, skip_etc_mapping: bool = False) -> ResultObj:
     app_consts: nmx_cert_constants.ClusterAppConsts = nmx_cert_constants.APP_CONSTS[app_name]
 
-    result = ResultObj(result=True, info=f'client successfully communicated with {app_name}', returned_value=True)
-
     with allure.step('create config for grpc client'):
         config = GrpcConfig(
             server=GrpcServerConfig(address=server_cert.dn or server_cert.ip, port=app_consts.external_manager_port,
@@ -169,11 +167,14 @@ def run_manager_hello_request(app_name: str, client_tls_mode: str, server_cert: 
                 responses = NmxControllerClientApp.run_nmx_c_grpc_client(config, TestToolkit.engines.dut.ip, skip_etc_mapping)
             else:
                 responses = NmxTelemetryClientApp.run_nmx_t_grpc_client(config, TestToolkit.engines.dut.ip, skip_etc_mapping)
-        result.returned_value = responses
     except Exception as e:
-        result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
+        return ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
 
-    return result
+    return ResultObj(
+        result=True,
+        info=f'client successfully communicated with {app_name}',
+        returned_value=responses,
+    )
 
 
 def get_user_config_json_file_content(app_name, dut_engine: LinuxSshEngine) -> str:

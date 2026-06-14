@@ -11,6 +11,7 @@ from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.ngts_types import EnginesT
+from ngts.nvos_constants.constants_nvos import ClusterApps, ClusterConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvBridgeTool import verify_nv_bridge_has_connection
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -33,6 +34,7 @@ from ngts.tests_nvos.general.security.nmx_cert.constants import (
     CA_CERTIFICATE,
     CERTIFICATE,
     CLUSTER_INTERNAL_JSON_PATH,
+    CRL,
     DISABLED,
     ENCRYPTION,
     ITEM_NOT_EXIST_ERR,
@@ -62,6 +64,17 @@ CLUSTER_INTERNAL_ALTERNATE_CERT_PATH = "/etc/{}/int_alt_cert/{}.crt"
 CLUSTER_INTERNAL_ALTERNATE_KEY_PATH = "/etc/{}/int_alt_cert/{}.key"
 
 
+def normalize_cluster_app_name(app_name: str) -> str:
+    """Normalize cluster app aliases to canonical names."""
+    if app_name in ClusterApps.ALL_APPS:
+        return app_name
+    if app_name.startswith(ClusterConsts.NMX_CONTROLLER_PREFIX):
+        return ClusterApps.NMX_CONTROLLER
+    if app_name.startswith(ClusterConsts.NMX_TELEMETRY_PREFIX):
+        return ClusterApps.NMX_TELEMETRY
+    raise ValueError(f"Unsupported cluster app name: {app_name}")
+
+
 def is_cluster_enabled() -> bool:
     """Check if cluster is enabled."""
     with allure.step("check if cluster is enabled"):
@@ -79,6 +92,7 @@ def verify_component_show(
     required_fields: list[str],
     value_expectations: dict[str, str | None | int],
     expect_success: bool = True,
+    dut_engine: LinuxSshEngine | None = None,
 ):
     """
     Verify show command output for a component.
@@ -87,10 +101,12 @@ def verify_component_show(
         component: The component to verify show output for
         required_fields: List of fields that must exist in output
         value_expectations: Dict of field names to expected values
+        expect_success: Whether the show command should succeed
+        dut_engine: Target engine. When None, uses TestToolkit default (engines.dut).
     """
     with allure.step(f"verify show: {component._resource_path}"):
         with allure.step("run show command"):
-            output = component.show(should_succeed=expect_success)
+            output = component.show(should_succeed=expect_success, dut_engine=dut_engine)
             if not expect_success:
                 return
         out = OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
@@ -104,17 +120,45 @@ def verify_system_internal_show(
     expect_cacert: str = "",
     expect_alt_cert: str = "",
     expect_encryption: str = Defaults.ENCRYPTION,
+    expect_crl: str | None = None,
+    dut_engine: LinuxSshEngine | None = None,
 ):
-    """Verify system internal show command output."""
+    """Verify system internal show command output.
+
+    Args:
+        expect_crl: When not None, the ``crl`` field is included in the
+            expected fields and its value is validated against this argument.
+            Use ``None`` (default) when CRL is not configured so existing
+            callers stay unaffected.
+    """
+    required_fields = list(FieldsInShowOf.INTERNAL)
+    value_expectations: dict[str, str | None | int] = {
+        CERTIFICATE: expect_cert,
+        CA_CERTIFICATE: expect_cacert,
+        ENCRYPTION: expect_encryption,
+        ALTERNATE_CERTIFICATE: expect_alt_cert,
+    }
+    if expect_crl is not None:
+        required_fields.append(CRL)
+        value_expectations[CRL] = expect_crl
+
     verify_component_show(
         System().internal,
-        FieldsInShowOf.INTERNAL,
+        required_fields,
+        value_expectations,
+        dut_engine=dut_engine,
+    )
+
+
+def verify_system_internal_crl_show(expect_crl: str = "", dut_engine: LinuxSshEngine | None = None):
+    """Verify system internal CRL show command output."""
+    verify_component_show(
+        System().internal.crl,
+        FieldsInShowOf.CRL,
         {
-            CERTIFICATE: expect_cert,
-            CA_CERTIFICATE: expect_cacert,
-            ENCRYPTION: expect_encryption,
-            ALTERNATE_CERTIFICATE: expect_alt_cert,
+            CRL: expect_crl,
         },
+        dut_engine=dut_engine,
     )
 
 
@@ -142,27 +186,45 @@ def verify_system_internal_json(
                 f"certificate path is not expected: {output.get(SystemInternalJsonFields.CERTIFICATE, '')} != {cert_path}"
             )
         with allure.independent_step("verify certificate private key path"):
-            assert output.get(SystemInternalJsonFields.CERTIFICATE_PRIVATE_KEY, "") == cert_key_path, (
-                f"certificate private key path is not expected: {output.get(SystemInternalJsonFields.CERTIFICATE_PRIVATE_KEY, '')} != {cert_key_path}"
-            )
+            cert_key_value = output.get(SystemInternalJsonFields.CERTIFICATE_PRIVATE_KEY, "")
+            assert cert_key_value == cert_key_path, f"certificate private key path is not expected: {cert_key_value} != {cert_key_path}"
         with allure.independent_step("verify ca certificate path"):
             assert output.get(SystemInternalJsonFields.CA_CERTIFICATE, "") == cacert_path, (
                 f"ca certificate path is not expected: {output.get(SystemInternalJsonFields.CA_CERTIFICATE, '')} != {cacert_path}"
             )
         with allure.independent_step("verify alternate certificate path"):
-            assert output.get(SystemInternalJsonFields.ALTERNATE_CERTIFICATE, "") == alt_cert_path, (
-                f"alternate certificate path is not expected: {output.get(SystemInternalJsonFields.ALTERNATE_CERTIFICATE, '')} != {alt_cert_path}"
-            )
+            alt_cert_value = output.get(SystemInternalJsonFields.ALTERNATE_CERTIFICATE, "")
+            assert alt_cert_value == alt_cert_path, f"alternate certificate path is not expected: {alt_cert_value} != {alt_cert_path}"
         with allure.independent_step("verify alternate certificate private key path"):
-            assert output.get(SystemInternalJsonFields.ALTERNATE_CERTIFICATE_PRIVATE_KEY, "") == alt_cert_key_path, (
-                f"alternate certificate private key path is not expected: {output.get(SystemInternalJsonFields.ALTERNATE_CERTIFICATE_PRIVATE_KEY, '')} != {alt_cert_key_path}"
+            alt_cert_key_value = output.get(SystemInternalJsonFields.ALTERNATE_CERTIFICATE_PRIVATE_KEY, "")
+            assert alt_cert_key_value == alt_cert_key_path, (
+                f"alternate certificate private key path is not expected: {alt_cert_key_value} != {alt_cert_key_path}"
             )
         with allure.independent_step("verify encryption"):
             out_encryption = output.get(SystemInternalJsonFields.ENCRYPTION, "")
             assert out_encryption == expected_encryption, f"encryption is not expected: {out_encryption} != {expected_encryption}"
 
 
-def verify_cluster_app_internal_json(
+def verify_system_internal_spiffe_json(
+    dut_engine: LinuxSshEngine,
+    expected_cert_spiffe: str = "",
+    expected_alt_cert_spiffe: str = "",
+):
+    """Verify system internal SPIFFE fields in json output."""
+    with allure.step("verify system internal spiffe in json"):
+        output: str = dut_engine.run_cmd(f"sudo cat {SYSTEM_INTERNAL_JSON_PATH}; echo")
+        output = OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
+        with allure.independent_step("verify certificate-spiffe"):
+            cert_spiffe = output.get(SystemInternalJsonFields.CERTIFICATE_SPIFFE, "") or ""
+            assert cert_spiffe == expected_cert_spiffe, f"certificate-spiffe is not expected: {cert_spiffe} != {expected_cert_spiffe}"
+        with allure.independent_step("verify alternate-certificate-spiffe"):
+            alt_cert_spiffe = output.get(SystemInternalJsonFields.ALTERNATE_CERTIFICATE_SPIFFE, "") or ""
+            assert alt_cert_spiffe == expected_alt_cert_spiffe, (
+                f"alternate-certificate-spiffe is not expected: {alt_cert_spiffe} != {expected_alt_cert_spiffe}"
+            )
+
+
+def verify_cluster_app_internal_json(  # noqa: PLR0913
     dut_engine: LinuxSshEngine,
     app_name: str,
     expected_cert: str = "",
@@ -172,15 +234,15 @@ def verify_cluster_app_internal_json(
 ):
     """Verify cluster app internal json output."""
     with allure.step("verify cluster app internal json"):
+        full_app_name = normalize_cluster_app_name(app_name)
         output: str = dut_engine.run_cmd(f"sudo cat {CLUSTER_INTERNAL_JSON_PATH}; echo")
         output = OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
-        cert_path = CLUSTER_INTERNAL_CERT_PATH.format(app_name, expected_cert) if expected_cert else ""
-        cert_key_path = CLUSTER_INTERNAL_KEY_PATH.format(app_name, expected_cert) if expected_cert else ""
-        cacert_path = CLUSTER_INTERNAL_CACERT_PATH.format(app_name, expected_cacert) if expected_cacert else ""
-        alt_cert_path = CLUSTER_INTERNAL_ALTERNATE_CERT_PATH.format(app_name, expected_alt_cert) if expected_alt_cert else ""
-        alt_cert_key_path = CLUSTER_INTERNAL_ALTERNATE_KEY_PATH.format(app_name, expected_alt_cert) if expected_alt_cert else ""
+        cert_path = CLUSTER_INTERNAL_CERT_PATH.format(full_app_name, expected_cert) if expected_cert else ""
+        cert_key_path = CLUSTER_INTERNAL_KEY_PATH.format(full_app_name, expected_cert) if expected_cert else ""
+        cacert_path = CLUSTER_INTERNAL_CACERT_PATH.format(full_app_name, expected_cacert) if expected_cacert else ""
+        alt_cert_path = CLUSTER_INTERNAL_ALTERNATE_CERT_PATH.format(full_app_name, expected_alt_cert) if expected_alt_cert else ""
+        alt_cert_key_path = CLUSTER_INTERNAL_ALTERNATE_KEY_PATH.format(full_app_name, expected_alt_cert) if expected_alt_cert else ""
 
-        full_app_name = "nmx-controller" if "nmx-c" in app_name else "nmx-telemetry"
         with allure.independent_step("verify certificate path"):
             cert_value = output.get(ClusterInternalJsonFields.CERTIFICATE.format(full_app_name), "")
             assert cert_value == cert_path, f"certificate path is not expected: {cert_value} != {cert_path}"
@@ -212,25 +274,80 @@ def verify_cluster_app_internal_json(
             assert out_encryption == expected_encryption, f"encryption is not expected: {out_encryption} != {expected_encryption}"
 
 
-def verify_cluster_app_internal_show(
+def verify_cluster_app_internal_spiffe_json(
+    dut_engine: LinuxSshEngine,
+    app_name: str,
+    expected_cert_spiffe: str = "",
+    expected_alt_cert_spiffe: str = "",
+):
+    """Verify cluster app internal SPIFFE fields in json output."""
+    with allure.step("verify cluster app internal spiffe in json"):
+        full_app_name = normalize_cluster_app_name(app_name)
+        output: str = dut_engine.run_cmd(f"sudo cat {CLUSTER_INTERNAL_JSON_PATH}; echo")
+        output = OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
+        with allure.independent_step("verify internal spiffe"):
+            cert_spiffe = output.get(ClusterInternalJsonFields.CERTIFICATE_SPIFFE.format(full_app_name), "") or ""
+            assert cert_spiffe == expected_cert_spiffe, f"internal spiffe is not expected: {cert_spiffe} != {expected_cert_spiffe}"
+        with allure.independent_step("verify internal alternate spiffe"):
+            alt_cert_spiffe = output.get(ClusterInternalJsonFields.ALTERNATE_CERTIFICATE_SPIFFE.format(full_app_name), "") or ""
+            assert alt_cert_spiffe == expected_alt_cert_spiffe, (
+                f"internal alternate spiffe is not expected: {alt_cert_spiffe} != {expected_alt_cert_spiffe}"
+            )
+
+
+def verify_cluster_app_internal_show(  # noqa: PLR0913
     app_name: str,
     expect_cert: str = "",
     expect_cacert: str = "",
     expect_encryption: str = Defaults.ENCRYPTION,
     expect_alt_cert: str = "",
+    expect_crl: str | None = None,
     expect_success: bool = True,
+    dut_engine: LinuxSshEngine | None = None,
 ):
-    """Verify cluster app internal show command output."""
+    """Verify cluster app internal show command output.
+
+    Args:
+        expect_crl: When not None, the ``crl`` field is included in the
+            expected fields and its value is validated against this argument.
+            Use ``None`` (default) when CRL is not configured so existing
+            callers stay unaffected.
+    """
+    full_app_name = normalize_cluster_app_name(app_name)
+    required_fields = list(FieldsInShowOf.INTERNAL)
+    value_expectations: dict[str, str | None | int] = {
+        CERTIFICATE: expect_cert,
+        CA_CERTIFICATE: expect_cacert,
+        ENCRYPTION: expect_encryption,
+        ALTERNATE_CERTIFICATE: expect_alt_cert,
+    }
+    if expect_crl is not None:
+        required_fields.append(CRL)
+        value_expectations[CRL] = expect_crl
+
     verify_component_show(
-        Cluster().apps.app_name[app_name].internal,
-        FieldsInShowOf.INTERNAL,
-        {
-            CERTIFICATE: expect_cert,
-            CA_CERTIFICATE: expect_cacert,
-            ENCRYPTION: expect_encryption,
-            ALTERNATE_CERTIFICATE: expect_alt_cert,
-        },
+        Cluster().apps.app_name[full_app_name].internal,
+        required_fields,
+        value_expectations,
         expect_success=expect_success,
+        dut_engine=dut_engine,
+    )
+
+
+def verify_cluster_app_internal_crl_show(
+    app_name: str,
+    expect_crl: str = "",
+    dut_engine: LinuxSshEngine | None = None,
+):
+    """Verify cluster app internal CRL show command output."""
+    full_app_name = normalize_cluster_app_name(app_name)
+    verify_component_show(
+        Cluster().apps.app_name[full_app_name].internal.crl,
+        FieldsInShowOf.CRL,
+        {
+            CRL: expect_crl,
+        },
+        dut_engine=dut_engine,
     )
 
 
@@ -280,32 +397,33 @@ def verify_cluster_app_internal_cert_files(
     expected_alt_cert_id: str = "",
 ):
     """Verify cluster app internal certificate files exist."""
+    full_app_name = normalize_cluster_app_name(app_name)
     with allure.step(f"verify {app_name} internal cert files"):
         if expected_cert_id:
             verify_file_exists_in_dut(
-                CLUSTER_INTERNAL_CERT_PATH.format(app_name, expected_cert_id),
+                CLUSTER_INTERNAL_CERT_PATH.format(full_app_name, expected_cert_id),
                 dut_engine,
                 should_exist=True,
             )
             verify_file_exists_in_dut(
-                CLUSTER_INTERNAL_KEY_PATH.format(app_name, expected_cert_id),
+                CLUSTER_INTERNAL_KEY_PATH.format(full_app_name, expected_cert_id),
                 dut_engine,
                 should_exist=True,
             )
         if expected_alt_cert_id:
             verify_file_exists_in_dut(
-                CLUSTER_INTERNAL_ALTERNATE_CERT_PATH.format(app_name, expected_alt_cert_id),
+                CLUSTER_INTERNAL_ALTERNATE_CERT_PATH.format(full_app_name, expected_alt_cert_id),
                 dut_engine,
                 should_exist=True,
             )
             verify_file_exists_in_dut(
-                CLUSTER_INTERNAL_ALTERNATE_KEY_PATH.format(app_name, expected_alt_cert_id),
+                CLUSTER_INTERNAL_ALTERNATE_KEY_PATH.format(full_app_name, expected_alt_cert_id),
                 dut_engine,
                 should_exist=True,
             )
         if expected_cacert_id:
             verify_file_exists_in_dut(
-                CLUSTER_INTERNAL_CACERT_PATH.format(app_name, expected_cacert_id),
+                CLUSTER_INTERNAL_CACERT_PATH.format(full_app_name, expected_cacert_id),
                 dut_engine,
                 should_exist=True,
             )
@@ -323,17 +441,20 @@ def wait_for_cluster_app_update(cluster: Cluster, engine: LinuxSshEngine):
         time.sleep(1)
 
 
-def verify_system_internal_has_empty_defaults():
+def verify_system_internal_has_empty_defaults(dut_engine: LinuxSshEngine | None = None):
     """Verify system internal show has default empty values."""
     verify_system_internal_show(
         expect_cert=Defaults.CERT,
         expect_cacert=Defaults.CACERT,
         expect_alt_cert=Defaults.ALTERNATE_CERTIFICATE,
         expect_encryption=Defaults.ENCRYPTION,
+        dut_engine=dut_engine,
     )
 
 
-def verify_cluster_app_internal_has_empty_defaults(app_name: str):
+def verify_cluster_app_internal_has_empty_defaults(
+    app_name: str, dut_engine: LinuxSshEngine | None = None,
+):
     """Verify cluster app internal show has default empty values."""
     verify_cluster_app_internal_show(
         app_name,
@@ -341,6 +462,32 @@ def verify_cluster_app_internal_has_empty_defaults(app_name: str):
         expect_cacert=Defaults.CACERT,
         expect_encryption=Defaults.ENCRYPTION,
         expect_alt_cert=Defaults.ALTERNATE_CERTIFICATE,
+        dut_engine=dut_engine,
+    )
+
+
+def build_internal_bridge_cert(  # noqa: PLR0913
+    cert_name: str,
+    cert_info: str,
+    dut_hostname: str,
+    dut_ip: str,
+    cert_cn: str,
+    spiffe_uri: str = "",
+) -> CertInfo:
+    """Build CertInfo for nv-bridge internal certificate generation."""
+    san_uris = [spiffe_uri] if spiffe_uri else []
+    return CertInfo(
+        cert_name,
+        cert_info,
+        "",
+        "",
+        "",
+        "",
+        dut_hostname,
+        dut_ip,
+        "",
+        cert_cn,
+        san_uris,
     )
 
 
@@ -380,12 +527,13 @@ def reset_cluster_app(cluster, app_name: str, engine: LinuxSshEngine, wait_time:
         wait_time: Seconds to wait after reset (kept for compatibility, unused)
     """
     with allure.step(f"Reset cluster app {app_name} internal connections"):
-        app = cluster.apps.app_name[app_name]
+        full_app_name = normalize_cluster_app_name(app_name)
+        app = cluster.apps.app_name[full_app_name]
         app.internal.connections.action_reset(dut_engine=engine).verify_result()
         wait_for_cluster_app_update(cluster, engine)
 
 
-def rotate_system_internal_and_verify(
+def rotate_system_internal_and_verify(  # noqa: PLR0913
     system,
     cluster,
     app_name: str,
@@ -414,7 +562,7 @@ def rotate_system_internal_and_verify(
         Tuple of (new_cert, new_alt) after rotation (swapped)
     """
     with allure.step("Rotate system internal certificate"):
-        system.internal.certificate.action_rotate().verify_result()
+        system.internal.certificate.action_rotate(dut_engine=dut_engine).verify_result()
         new_cert, new_alt = current_alt, current_cert
         with allure.step("Verify system cert swapped"):
             verify_system_internal_show(
@@ -422,6 +570,7 @@ def rotate_system_internal_and_verify(
                 expect_cacert=cacert_name,
                 expect_alt_cert=new_alt,
                 expect_encryption=encryption_mode,
+                dut_engine=dut_engine,
             )
         if should_reset:
             reset_cluster_app(cluster, app_name, dut_engine)
@@ -430,7 +579,7 @@ def rotate_system_internal_and_verify(
     return new_cert, new_alt
 
 
-def rotate_cluster_internal_and_verify(
+def rotate_cluster_internal_and_verify(  # noqa: PLR0913
     app,
     cluster,
     app_name: str,
@@ -459,7 +608,7 @@ def rotate_cluster_internal_and_verify(
         Tuple of (new_cert, new_alt) after rotation (swapped)
     """
     with allure.step("Rotate cluster internal certificate"):
-        app.internal.certificate.action_rotate().verify_result()
+        app.internal.certificate.action_rotate(dut_engine=dut_engine).verify_result()
         new_cert, new_alt = current_alt, current_cert
         wait_for_cluster_app_update(cluster, dut_engine)
         with allure.step("Verify cluster cert swapped"):
@@ -469,9 +618,48 @@ def rotate_cluster_internal_and_verify(
                 expect_cacert=cacert_name,
                 expect_alt_cert=new_alt,
                 expect_encryption=encryption_mode,
+                dut_engine=dut_engine,
             )
         if should_reset:
             reset_cluster_app(cluster, app_name, dut_engine)
             wait_for_cluster_app_update(cluster, dut_engine)
         verify_nv_bridge_has_connection(dut_engine, expect_connection=True)
     return new_cert, new_alt
+
+
+def nv_bridge_internal_factory_reset_no_params_check():
+    """
+    Factory reset checker for NV Bridge internal encryption (no-params variant).
+
+    Pre-reset:
+        Configure system internal with cert + CA + mTLS and verify the config is present.
+    Post-reset:
+        Verify system internal has default empty values (everything wiped).
+
+    This is a generator following the factory-reset checker protocol:
+        yield once between setup and verification.
+    """
+    from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+    from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
+
+    engines = TestToolkit.engines
+    system = System()
+
+    with allure.step("setup NV Bridge system internal encryption"):
+        server_cert, _ = generate_internal_certs(engines, "nv_bridge_factory_reset", engines.dut.ip)
+        import_internal_certs(engines, [server_cert], [server_cert])
+
+        system.internal.certificate.action_update(server_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(server_cert.cacert_name).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+
+        verify_system_internal_show(
+            expect_cert=server_cert.name,
+            expect_cacert=server_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+        )
+
+    yield  # factory reset happens here
+
+    with allure.step("verify NV Bridge internal config wiped after factory reset"):
+        verify_system_internal_has_empty_defaults()

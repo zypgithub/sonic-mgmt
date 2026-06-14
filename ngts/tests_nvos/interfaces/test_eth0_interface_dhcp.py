@@ -482,6 +482,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
 
             # Check lease information instead of has-lease (new schema)
             with allure.step('Check DHCP lease information'):
+                logger.info(f"dhcp hostname from noga: {dhcp_hostname}, hostname from show system command:{system_output['hostname']}")
                 lease_output = mgmt_port.interface.ipv4.dhcp_client.lease.show()
                 assert lease_output is not None, "DHCP lease information should be available"
                 logger.info(" DHCP lease information is accessible")

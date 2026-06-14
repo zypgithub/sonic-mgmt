@@ -1,8 +1,10 @@
+import contextlib
 import logging
 import math
+import time
 import re
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -47,7 +49,7 @@ class TestToolkit:
             TestToolkit.active_dut = dut_name
 
     @staticmethod
-    def get_engine(dut_name: Optional[str] = None) -> Any:
+    def get_engine(dut_name: str | None = None) -> Any:
         """
         Get engine for specified DUT or active DUT.
 
@@ -58,7 +60,7 @@ class TestToolkit:
         return getattr(TestToolkit.engines, dut_name or TestToolkit.active_dut)
 
     @staticmethod
-    def get_device(dut_name: Optional[str] = None) -> Any:
+    def get_device(dut_name: str | None = None) -> Any:
         """
         Get device for specified DUT or active DUT.
 
@@ -92,6 +94,24 @@ class TestToolkit:
         with allure.step("Update api in TestTookit to " + api_type):
             TestToolkit.tested_api = api_type
             logger.info("API updated to: " + api_type)
+
+    @staticmethod
+    @contextlib.contextmanager
+    def force_api(api_type: str):
+        """Pin TestToolkit.tested_api inside the with-block; restore on exit (raise or not).
+
+        Use this whenever a section must run against a specific API regardless of the
+        outer random_api / test_api parametrization — the restore is exception-safe,
+        so a raise inside the block won't leak the override into later code (e.g. a
+        finally block that re-enters the dispatcher).
+        """
+        prev = TestToolkit.tested_api
+        with allure.step(f"Force API to {api_type} (restore on exit)"):
+            TestToolkit.tested_api = api_type
+            try:
+                yield
+            finally:
+                TestToolkit.tested_api = prev
 
     @staticmethod
     def update_port_output_dictionary(port_obj, engine=None):
@@ -209,7 +229,7 @@ class TestToolkit:
         return pytest.is_mars_run and not TestToolkit.is_special_run()
 
     @staticmethod
-    def get_loganalyzer_marker(engine, get_full_line=False, use_sudo=False) -> str:
+    def get_loganalyzer_marker(engine, get_full_line=False, use_sudo=False, test_string='') -> str:
         """
         Returns the most recent log-analyzer test-start marker from the logs. If get_full_line is false, returns only
         the line contents; otherwise returns the full line from the log, including timestamp, hostname, etc. .
@@ -217,9 +237,15 @@ class TestToolkit:
         """
         try:
             with allure.step("Get log analyzer marker"):
-                cmd = 'zgrep -h -a " start-LogAnalyzer-" /var/log/syslog.* /var/log/syslog | tail -n 1'
+                # re.escape so a parametrized test_string (e.g. 'test_x[NVUE]') isn't interpreted
+                # as a regex character-class by zgrep
+                test_string = " start-LogAnalyzer-" if not test_string \
+                    else f" start-LogAnalyzer-.*{re.escape(test_string)}"
+                cmd = 'zgrep -h -a "{}" /var/log/syslog.* /var/log/syslog | tail -n 1'.format(test_string)
                 if use_sudo:
                     cmd = 'sudo ' + cmd
+                engine.run_cmd("sudo pkill -HUP rsyslogd || true", validate=False)
+                time.sleep(2)
                 markers = engine.run_cmd(cmd)
                 last_marker = markers.split("\n")[-1]
                 return last_marker if get_full_line else re.findall(r'\bstart-LogAnalyzer-\S+', last_marker)[0]

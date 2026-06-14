@@ -24,8 +24,8 @@ logger = logging.getLogger()
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(55 * MINUTE, func_only=True)
-def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, engines, has_loopbox, standalone_system,
-                                  base_version_realpath, target_version_realpath, handle_la_marker_in_manufacture, is_simx):
+def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, engines, dut_engines, has_loopbox, standalone_system,
+                                  base_version_realpath, target_version_realpath, handle_la_marker_in_manufacture):
     '''
     Test will install a base version (Taken from regression).
     On base version perform the following:
@@ -71,14 +71,14 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     f"{NvosConst.DISABLED}"
 
         with allure.step("Enable cluster and perform configurations"):
-            ClusterTools.start_cluster(cluster, setup_name, output_format, verify_nmx_c=False, devices=devices)  # remove verify=False once base version for regression is different than 1638.
+            ClusterTools.start_cluster(cluster, setup_name, output_format, verify_nmx_c=False, engine=engines.dut, devices=devices)  # remove verify=False once base version for regression is different than 1638.
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system, is_simx)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines.dut, dut_engines, has_loopbox, setup_name, standalone_system)
             next(interfaces_wa)
             interface_wa_called = True
 
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER,
-                                                             standalone_system=standalone_system)
+                                                             standalone_system=standalone_system, engine=engines.dut)
 
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in devices.dut.expected_cluster_apps:
@@ -87,7 +87,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     log_levels[app] = log_level
 
             # Get config files paths for all apps that exist on this device type
-            config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices)
+            config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices, engine=engines.dut)
 
             # Initialize dicts with ONLY file types that exist on this device
             path_to_config = {config_type: '' for config_type in config_files_paths.keys()}
@@ -143,12 +143,12 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
         if not standalone_system:
             with allure.step("Creating Empty partition, then adding a GPU to it with no-reroute option"):
                 logger.info("After upgrade, empty partition should persist, but GPU added to it with no-reroute should be deleted")
-                uuid, location, _, partition_to_remove_from = ClusterTools.create_empty_partition_and_add_gpu(sdn, 'no-reroute')
+                uuid, location, _, partition_to_remove_from = ClusterTools.create_empty_partition_and_add_gpu(sdn, 'no-reroute', engine=engines.dut)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         with allure.step("Before upgrade, verify apps are running"):
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format,
-                                             standalone_system, has_loopbox, is_simx)
+            ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format,
+                                             standalone_system, has_loopbox)
 
         with allure.step("Performing upgrade:"):
             bin_filename = target_version_realpath.split('/')[-1]
@@ -164,11 +164,11 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
             target_image_installed = True
 
         with allure.step("Install sm_config after upgrade"):
-            sm_result = ClusterTools.edit_sm_config(sdn, engines, devices, standalone_system, has_loopbox, is_simx)
+            sm_result = ClusterTools.edit_sm_config(sdn, engines.dut, devices, standalone_system, has_loopbox)
             if sm_result:
                 # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4910763)
                 if hasattr(devices.dut, 'wa_restart_nv_bridge_after_sm_config'):
-                    devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines)
+                    devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines.dut)
 
         with allure.step("Running 'nv show cluster' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
@@ -180,11 +180,11 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     f"{NvosConst.ENABLED}"
 
         with allure.step("Validate apps are still running"):
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system,
-                                             has_loopbox, retries=6, is_simx=is_simx)
+            ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format, standalone_system,
+                                             has_loopbox, retries=6)
         with allure.step("Check log level"):
             for app in devices.dut.expected_cluster_apps:
-                ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
+                ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster, engine=engines.dut)
 
         with allure.step("Make sure config is saved"):
             # Only iterate over file types that were actually configured
@@ -210,14 +210,14 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                 assert ClusterConsts.EMPTY_PARTITION_ID in output.keys(), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was deleted, while its expected to be kept'
                 output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
-                uuids, locations = ClusterTools.uuid_location_in_partition(sdn, partition_to_remove_from)
+                uuids, locations = ClusterTools.uuid_location_in_partition(sdn, partition_to_remove_from, engine=engines.dut)
                 assert uuid not in uuids, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute, See current uuids: {uuids}"
                 assert location not in locations, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute. See current locations: {locations}"
 
     finally:
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
-                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
 
         if not target_image_installed:
             NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, target_version_realpath)
@@ -245,7 +245,9 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
             with allure.step("Restore log level"):
-                cluster.apps.app_name[app].loglevel.action_restore_cluster()
+                for app in devices.dut.expected_cluster_apps:
+                    if app in log_levels:
+                        cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
             if interface_wa_called:
                 try:
@@ -255,7 +257,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
 
             else:
                 cluster.unset(apply=True)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down', engine=engines.dut)
 
 
 def get_next_partition_id(partition_id):

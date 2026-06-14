@@ -19,11 +19,7 @@ On Fedora / RHEL (once per machine)::
 
 Debug a single URL (same lookup as the resolver)::
 
-<<<<<<<< HEAD:ngts/scripts/ai_rca_server_side/misql_pbi_connect.py
-    python3 ngts/scripts/ai_rca_server_side/misql_pbi_connect.py \\
-========
     python3 ngts/scripts/ai_rca/server_side/misql_pbi_connect.py \\
->>>>>>>> a5e8d27bc3 (Fix Agent to new design):ngts/scripts/ai_rca/server_side/misql_pbi_connect.py
         --lookup-allure 'https://allure.nvidia.com/.../index.html#suites/...'
 """
 import argparse

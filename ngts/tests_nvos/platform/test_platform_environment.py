@@ -28,6 +28,7 @@ logger = logging.getLogger()
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.nvos_ci
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 @pytest.mark.air
 @pytest.mark.air_ci
@@ -54,12 +55,13 @@ def test_show_platform_environment(engines, devices, random_api, output_format):
         ValidationTool.validate_set_equal(output.keys(),
                                           devices.dut.psu_fan_list + devices.dut.fan_list + devices.dut.psu_list +
                                           temperature_sensor_list + devices.dut.led_list +
-                                          devices.dut.voltage_sensors).verify_result()
+                                          devices.dut.voltage_sensors + devices.dut.list_of_leakages).verify_result()
 
 
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 def test_show_platform_environment_fan(engines, devices, random_api, output_format, skip_for_fanless_setup):
     """
@@ -123,6 +125,7 @@ def _test_specific_fan(fan, output_format, expected, output, platform):
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 @pytest.mark.air
 def test_show_platform_environment_led(engines, devices, random_api):
@@ -216,6 +219,7 @@ def test_set_platform_environment_led(engines, devices, random_api):
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 def test_show_platform_environment_psu(engines, devices, random_api):
     """

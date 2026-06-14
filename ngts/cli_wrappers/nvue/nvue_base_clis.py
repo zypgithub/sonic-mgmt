@@ -54,7 +54,7 @@ class NvueBaseCli(BaseCli):
             #  ("Action executing...") and print it to the log, instead of waiting for the action to finish and only
             #  then printing everything all at once.
             # Use custom read_timeout for long-running operations (e.g., ISSU)
-            timing_kwargs = {}
+            timing_kwargs = {'last_read': 5}
             if timeout is not None:
                 timing_kwargs['read_timeout'] = timeout
             response: str = netmiko_engine.send_command_timing(cmd, **timing_kwargs)

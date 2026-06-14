@@ -308,10 +308,10 @@ if isinstance(d, dict) and "error" in d:
     print("BMC_IP_FETCH:redfish:" + (msg or "")[:1200])
 else:
     slaac = next(
-        (a["Address"] for a in d.get("IPv6Addresses", []) if a.get("AddressOrigin") == "SLAAC"),
+        (a["Address"] for a in d.get("IPv6Addresses", []) if a.get("AddressOrigin") in {"SLAAC", "DHCPv6"}),
         None,
     )
-    print("BMC_IP_FETCH:slaac:" + (slaac or ""))
+    print("BMC_IP_FETCH:ipv6:" + (slaac or ""))
 """
         b64 = base64.b64encode(script.encode()).decode("ascii")
         on_dut = "import base64; exec(base64.b64decode(" + repr(b64) + ").decode())"
@@ -349,8 +349,8 @@ else:
                     BmcTool.BMC_LOCAL_IP,
                 )
                 line = BmcTool._redfish_bmc_eth0_fetch_slaac_line(engines.dut, BmcTool.BMC_LOCAL_IP)
-            if line.startswith("BMC_IP_FETCH:slaac:"):
-                rest = line[len("BMC_IP_FETCH:slaac:"):].strip()
+            if line.startswith("BMC_IP_FETCH:ipv6:") or line.startswith("BMC_IP_FETCH:slaac:"):
+                rest = line.split(":", 2)[2].strip()
                 ip_addresses["IPv6"] = rest or None
                 return ip_addresses
             if line.startswith("BMC_IP_FETCH:redfish:"):

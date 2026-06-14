@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+    <global>
+        <Test>
+            <group> NVOS </group>
+            <name> SDN cmd </name>
+            <info></info>
+            <owner> Rula Shalata </owner>
+        </Test>
+        <Case>
+            <tags> </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+            <tout> 10800 </tout>
+            <tags>ALL</tags>
+        </Case>
+    </global>
+    <case>
+        <name> SDN cmd rejection </name>
+        <info>Reject sdn cmd when cluster disabled or NMX-C gRPC not up</info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_cmd_rejection --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --ansible_inventory_file=[[conf:extra_info.ansible_inventory_file:False]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 660   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <name> SDN get cmd </name>
+        <info>sdn GET with/without --file, tech-support, gRPC GET parity</info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_get_cmd --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --ansible_inventory_file=[[conf:extra_info.ansible_inventory_file:False]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1260   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <name> SDN set cmd </name>
+        <info>Generic sdn SET flows (partition, static config, factory reset, etc.)</info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_set_cmd --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --ansible_inventory_file=[[conf:extra_info.ansible_inventory_file:False]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 960   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <name> SDN invalid cmd </name>
+        <info>Reject invalid sdn cmd string, over 1 KiB, empty string</info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_invalid_cmd --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --ansible_inventory_file=[[conf:extra_info.ansible_inventory_file:False]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 660   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <name> SDN cmd rotation policy </name>
+        <info>Rotation policy for sdn --file output files</info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/test_sdn_cmd_run.py::test_sdn_cmd_rotation_policy --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --ansible_inventory_file=[[conf:extra_info.ansible_inventory_file:False]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1260   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+</CASEDEF>

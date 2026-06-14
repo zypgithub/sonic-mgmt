@@ -5,7 +5,12 @@ class InternalNvosConsts:
     # Output dictionary
     OPERATIONAL_INDEX = 0
     APPLIED_INDEX = 1
-    DEFAULT_TIMEOUT = 120   # in MS
+    DEFAULT_TIMEOUT = 120  # Non-ACP ports (FNM/SW)
+    NVL5_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 60  # NVL5 ACP ports with LTX enabled
+    NVL5_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 30  # NVL5 ACP ports with LTX (fec-measure-mode) disabled
+    NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 375  # NVL6 ACP ports with fec-measure-mode enabled
+    NVL6_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 90  # NVL6 ACP ports with fec-measure-mode disabled
+    ACP_PORT_GOES_UP = 'acp port goes up'
     IB_TRAFFIC_SENDER_INTERFACE = "h1p1"
     IB_TRAFFIC_RECEIVER_INTERFACE = "h2p1"
     IB_TRAFFIC_LAT_TYPE = "ib_send_lat"
@@ -92,6 +97,7 @@ class IbInterfaceConsts:
     LINK_MTU = "mtu"
     LINK_VL_ADMIN_CAPABILITIES = "vl-capabilities"
     LINK_OPERATIONAL_VLS = "op-vls"
+    LINK_TO_LINK_UP = "time-to-link-up"
     LINK_IB_SUBNET = "ib-subnet"
     LINK_STATS = "counters"
     LINK_STATS_CARRIER_TRANSITION = "carrier-transitions"
@@ -233,12 +239,15 @@ class PhyRecoveryConsts:
     ENABLED = 'enabled'
     DISABLED = 'disabled'
     FW_DEFAULT = 'fw-default'
+    AUTO = 'auto'
+    FULL_DUPLEX = 'full-duplex'
 
     # NVL6 attributes
     LINK_DOWN_TIMEOUT = 'link-down-timeout'
     RECOVERY_SUPPORTED = 'recovery-supported'
     RECOVERY_STATUS = 'recovery-status'
     RECOVERY_NEGATIVE_TYPE = 'recovery-neg-type'
+    RECOVERY_NEG_TYPE_FORCE_PEER = 'force-peer'
     RECOVERY_ENTRY_REASON = 'recovery-entry-reason'
     PRESENT_MODE = 'preset-mode'
     PEQ_NUMBER_OF_RETRY_PRESET1 = 'peq-number-of-retry-preset1'
@@ -302,6 +311,16 @@ class PhyRecoveryConsts:
         STATE_60_TO_LINKUP_TIMEOUT: list(range(0, 65536)),
     }
 
+    phy_recovery_mutable_attributes = [
+        PEQ_NUMBER_OF_RETRY_PRESET3,
+        STATE_60_TIMEOUT,
+        STATE_61_TIMEOUT,
+        STATE_62_TIMEOUT,
+        STATE_65_TO_66_TIME_PRESET3,
+        STATE_66_TO_67_TIME_PRESET3,
+        STATE_67_TO_68_TIME_PRESET3
+    ]
+
     class SerdesEQMode(Enum):
         ENABLED = 'enabled'
         DISABLED = 'disabled'
@@ -327,7 +346,47 @@ class PhyRecoveryConsts:
         SerdesEQ.TIMEOUT: str(0),
     }
 
-    MODES = [ENABLED, DISABLED, FW_DEFAULT]
+    NVL5_MODES = [ENABLED, DISABLED, FW_DEFAULT]
+    NVL6_MODES = [ENABLED, DISABLED, AUTO]
+
+
+class TxBwLossMonitorConsts:
+    """Constants for tx-bandwidth-loss-monitor (zombie link) feature."""
+
+    # Field names in show output
+    STATE: str = 'state'
+    MONITOR_STATUS: str = 'monitor-status'
+
+    class State(Enum):
+        ENABLED: str = 'enabled'
+        DISABLED: str = 'disabled'
+        FW_DEFAULT: str = 'fw-default'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    class MonitorStatus(Enum):
+        NORMAL: str = 'normal'
+        NA: str = 'N/A'
+        WARNING: str = 'warning'
+        ALARM: str = 'alarm'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    # Default show values (port up, no config applied)
+    DEFAULT_OPER_STATE: str = State.ENABLED.value
+    DEFAULT_APPLIED_STATE: str = State.FW_DEFAULT.value
+    DEFAULT_MONITOR_STATUS: str = MonitorStatus.NORMAL.value
+
+    # Link-down diagnostics opcode for BW-loss threshold exceeded
+    BW_LOSS_DIAG_CODE: str = '45'
+    BW_LOSS_DIAG_STATUS: str = 'BW_loss_threshold_exceeded'
+
+    # Expected error fragment for invalid state input
+    ERR_MSG_INVALID_STATE: str = "is not one of"
 
 
 class DataBaseNames:
@@ -343,8 +402,8 @@ class DelayedRecovery:
     DELAYED_RECOVERY_LOSS_TH_FORCE = "peer-fec-plr-align-loss-th-force"
     DELAYED_RECOVERY_RETRY_TH_FORCE = "peer-plr-retry-th-force"
     DELAYED_RECOVERY_DEFAULT_STATE = "disabled"
-    DELAYED_RECOVERY_DEFAULT_LOSS_TH = 127
-    DELAYED_RECOVERY_DEFAULT_RETRY_TH = 255
+    DELAYED_RECOVERY_DEFAULT_LOSS_TH = 126
+    DELAYED_RECOVERY_DEFAULT_RETRY_TH = 32
     DELAYED_RECOVERY_DEFAULT_FORCE_STATE = "enabled"
     DELAYED_RECOVERY_DEFAULT_FORCE_LOSS_TH = "disabled"
     DELAYED_RECOVERY_DEFAULT_FORCE_RETRY_TH = "disabled"

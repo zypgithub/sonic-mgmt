@@ -11,6 +11,8 @@ import re
 import sys
 import traceback
 
+logger = logging.getLogger(__name__)
+
 
 class IssueType:
     Unknown = 0
@@ -66,13 +68,39 @@ class ResultObj:
         return self._duration
 
     @duration.setter
-    def duration(self, value):
+    def duration(self, value: float | dict[str, float]) -> None:
+        logger.debug(f"Setting duration to {value!r}")
         if value is None:
             raise ValueError("Duration cannot be None")  # Prevent setting None
-        if value < 0:
+        if isinstance(value, dict):
+            for sub_name, sub_value in value.items():
+                if not isinstance(sub_name, str):
+                    raise ValueError(f"Duration dict keys must be strings, got {type(sub_name).__name__}")
+                if sub_value is None or sub_value < 0:
+                    raise ValueError(f"Duration dict value for '{sub_name}' must be non-negative, got {sub_value!r}")
+        elif value < 0:
             raise ValueError("Duration cannot be negative")  # Prevent invalid values
         self._duration = value
         self._update_traceback()
+
+    @property
+    def duration_total(self):
+        """Return the total duration as a single number, regardless of whether _duration is a number or a dict.
+
+        For dict-shaped durations, prefers the 'total' key if present, otherwise sums all values.
+        For scalar durations, returns the value as-is. Returns None if no duration was set.
+        """
+        if isinstance(self._duration, dict):
+            if 'total' in self._duration:
+                return self._duration['total']
+            return sum(self._duration.values()) if self._duration else None
+        return self._duration
+
+    def get_duration_part(self, name: str) -> float | None:
+        """Return a named sub-duration if _duration is a dict, else None."""
+        if isinstance(self._duration, dict):
+            return self._duration.get(name)
+        return None
 
     @property
     def returned_value(self):
@@ -89,10 +117,10 @@ class ResultObj:
         :return: If 'result' is True, returns the 'returned_value'
         """
         self.ignore_result()
-        logging.info("\n   Result: {result}\n   should_succeed: {should_succeed}\n   info: {info}\n".format(
-                     result=bool(self.result),
-                     should_succeed=bool(should_succeed),
-                     info=self.info))
+        logger.info("\n   Result: {result}\n   should_succeed: {should_succeed}\n   info: {info}\n".format(
+            result=bool(self.result),
+            should_succeed=bool(should_succeed),
+            info=self.info))
         if should_succeed != self.result:
             raise AssertionError(self._get_fail_message())
 
@@ -110,11 +138,12 @@ class ResultObj:
 
         return output
 
-    def verify_duration(self, expected_duration):
+    def verify_duration(self, expected_duration: float) -> None:
         """Raises an exception if duration is missing or exceeds the expected threshold"""
-        assert self._duration, "Duration is missing. Please set a valid duration before verifying."
+        total = self.duration_total
+        assert total, "Duration is missing. Please set a valid duration before verifying."
 
-        assert expected_duration > self._duration, f"Operation took {self._duration} seconds - more than the threshold of {expected_duration} seconds."
+        assert expected_duration > total, f"Operation took {total} seconds - more than the threshold of {expected_duration} seconds."
 
     def get_returned_value(self, should_succeed=True):
         return self.verify_result(should_succeed)

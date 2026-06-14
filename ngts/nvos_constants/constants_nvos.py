@@ -1,13 +1,11 @@
-import os
 import json
+import os
+import re
 from enum import Enum
 from pathlib import Path
-from tokenize import Double
-from typing import List, Literal, TypedDict
-import re
+from typing import TypedDict
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 
 class DatabaseConst:
@@ -540,6 +538,8 @@ class ActionConsts:
     POWER_CYCLE = 'power-cycle'
     REBOOT = 'reboot'
     RENEW = 'renew'
+    RESTORE = 'restore'
+    ROTATE = 'rotate'
     ACTIVATE = 'activate'
     ERASE = 'erase'
 
@@ -594,20 +594,6 @@ class SystemConsts:
     FILE_TRANSFER_PROTOCOLS = ['scp', 'sftp']
     TECHSUPPORT_SIZE_LIMIT = 75  # in MBs
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "is not a"
-    TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
-                                              'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
-                                              'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
-                                              'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
-                                              'verification_test.gz']
-    TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
-                                             'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
-                                             'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
-                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
-                                             'empty.sh', 'nv-bridge_reconcile', 'gpu_telemetry_enable']
-    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed',
-                                                 'nvlink_domain_telemetry.csv']
-    TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
-    TECHSUPPORT_SKYNET_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
 
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
@@ -863,6 +849,9 @@ class SystemConsts:
     PASS_ASIC_DEBUG_CONFIG = 'pass-asic-debug.yaml'
     PASS_ASIC_DEBUG_CONFIG_ZTP = 'passing-asic-debug-config.yaml'
     NOT_YAML_ASIC_DEBUG_CONFIG = 'incorrect.txt'
+    ASIC_DEBUG_CONFIG_20_PRMS = '20.yaml'
+    ASIC_DEBUG_CONFIG_32_PRMS = '32_prms.yaml'
+    ASIC_DEBUG_CONFIG_2K_BUFFER = '2k_buff.yaml'
     FAIL_ASIC_DEBUG_CONFIG_WRONG_REGISTER = 'failing-asic-debug-config-wrong-register.yaml'
     FAIL_ASIC_DEBUG_CONFIG_WRONG_VERSION = 'failing-asic-debug-config-wrong-version.yaml'
     YAML_WITHOUT_FIELDS = 'trash.yaml'
@@ -942,10 +931,6 @@ class SystemConsts:
         "is successfully installed",
     )
 
-    ACTION_INSTALL_SUCCESS_MESSAGES = (
-        "is successfully installed",
-    )
-
     LOCALHOST = "127.0.0.1"
     DUMMY_IMAGE = "dummy.bin"
     DUMMY_IMAGE_PATH = "/tmp/"
@@ -968,7 +953,7 @@ class SystemConsts:
 
     NV_BRIDGE = 'nv-bridge'
     NV_BRIDGE_STATE = 'state'
-    NV_BRIDGE_HEART_BEAT = 'heart-beat'
+    NV_BRIDGE_HEARTBEAT = 'heartbeat'
     NV_BRIDGE_HEALTH = 'health'
     NV_BRIDGE_HEALTH_REASON = 'health-reason'
     NV_BRIDGE_CONNECTION = 'connections'
@@ -978,7 +963,6 @@ class SystemConsts:
     NV_BRIDGE_SERVER_ADDRESS = 'server-address'
     NV_BRIDGE_CLIENT_ID = 'client-id'
     NV_BRIDGE_CLIENT_ACTIVE = 'active'
-    NV_BRIDGE_DISABLED = 'disabled'
     NV_BRIDGE_HEALTH_OK = 'ok'
     NV_BRIDGE_HEALTH_NOT_OK = 'not ok'
     NV_BRIDGE_GREP = '| grep nv-bridge'
@@ -1104,12 +1088,14 @@ class ConfigConsts:
 class PlatformConsts:
     PLATFORM_FW = "firmware"
     SYSTEM_TYPE = "system-type"
+    ASIC_REVISION = "asic-revision"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
     XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/{asic}/"
     PLATFORM_ENVIRONMENT = "environment"
     PLATFORM_HW = "hardware"
     PLATFORM_SW = "software"
     FW_ASIC = "ASIC"
+    FW_ASIC_REVISION_VALUE = "0x00A0"
     FW_BIOS = "BIOS"
     FW_CPLD = "CPLD"
     FW_SSD = "SSD"
@@ -1257,6 +1243,7 @@ class PlatformConsts:
     EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
     INV_STATE = 'state'
     INV_OK = 'ok'
+    HARDWARE_VERSION = "hardware-version"
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/x86_64-nvidia_{}-r0/asic.conf"
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_BIOS_INSTALL = 720
@@ -1264,6 +1251,16 @@ class PlatformConsts:
     DISK_SIZE = 'disk-size'
     MEMORY = 'memory'
     DPC = "dpc"
+    ROSALIND_ASIC_REVISION_4 = "0x00A4"
+    ROSALIND_ASIC_REVISION_BY_PART_NUMBER = {
+        "699-23809-0600-EB1": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-GS0": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-TS0": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-TS1": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-TS2": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-1313-TS3": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-1313-TS4": FW_ASIC_REVISION_VALUE,
+    }
 
 
 class ChassisLocationConsts:
@@ -1303,6 +1300,7 @@ class CableCartridgeConsts:
         "HS-32836-003",
         "HS-33868-002",
         "HS-33869-002",
+        "HS-33886-002",
         "755-XXXXX-XXXX-XXX"
     ]
     # Error messages
@@ -1317,6 +1315,7 @@ class CableCartridgeConsts:
 
 class PowerCappingConsts:
     DEFAULT_PROFILE_ID = 'compute'
+    POWER = 'power'
     ACTIVE = 'active'
     STATE = 'state'
 
@@ -1331,20 +1330,6 @@ class PowerCappingConsts:
     PROFILES = ["networking", "reduced-bandwidth", DEFAULT_PROFILE_ID]
     ENUM_PROFILES = [profile.value for profile in ProfileName]
 
-    PROFILES_DEFAULT_DICT = {
-        'compute': {
-            'long-term-power-allocation': '475',
-            'short-term-power-allocation': '575'
-        },
-        'networking': {
-            'long-term-power-allocation': '575',
-            'short-term-power-allocation': '575'
-        },
-        'reduced-bandwidth': {
-            'long-term-power-allocation': '380',
-            'short-term-power-allocation': '475'
-        }
-    }
     TEST_PROFILES = ["test_profile1", "test_profile2", "test_profile3", "test_profile4", "test_profile5", "test_profile6"]  # Define 1 extra profile
     ATTRIBUTES = [
         'power-allocation-1', 'power-allocation-2', 'max-integral-1', 'max-integral-2',
@@ -1527,7 +1512,7 @@ class LowPowerConsts:
     PEC_DURATION: str = 'peq-duration'
     PEC_RECAL_PERIOD: str = 'peq-recal-period'
     PEC_RECAL_FORCE_PERIOD: str = 'peq-recal-force-period'
-    FAE_ALL_PARAMS: List[str] = [PEC_DURATION, PEC_RECAL_PERIOD, PEC_RECAL_FORCE_PERIOD]
+    FAE_ALL_PARAMS: list[str] = [PEC_DURATION, PEC_RECAL_PERIOD, PEC_RECAL_FORCE_PERIOD]
 
     class PecRecalPeriodForce(Enum):
         USE_AGREED_FUNCTION = 'use-agreed-function'
@@ -1545,7 +1530,66 @@ class LowPowerConsts:
 
     L1_TOTAL_ENTRIES: str = 'l1-total-entries'
     AVERAGE_LOCAL_FULL_BW_EXIT: str = 'average-local-full-bw-exit'
-    ALL_COUNTERS: List[str] = [L1_TOTAL_ENTRIES, AVERAGE_LOCAL_FULL_BW_EXIT]
+    ALL_COUNTERS: list[str] = [L1_TOTAL_ENTRIES, AVERAGE_LOCAL_FULL_BW_EXIT]
+
+
+class LinkTrainingConsts:
+    FEC_MEASURE_MODE: str = 'fec-measure-mode'
+
+    class FecMeasureMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+        @classmethod
+        def operational(cls):
+            return [cls.ENABLED.value, cls.DISABLED.value]
+
+    FEC_MEASURE_MODE_OPERATIONAL_DEFAULT = FecMeasureMode.ENABLED
+    FEC_MEASURE_MODE_APPLIED_DEFAULT = FecMeasureMode.FW_DEFAULT
+
+    FEC_MEASURE_FAIL_ACTION: str = 'fec-measure-fail-action'
+
+    class FecMeasureFailAction(Enum):
+        FW_DEFAULT = 'fw-default'
+        FORCE_LINKUP = 'force-linkup'
+        GOTO_POLLING = 'goto-polling'
+        GOTO_DISABLE = 'goto-disable'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+        @classmethod
+        def operational(cls):
+            return [cls.FORCE_LINKUP.value, cls.GOTO_POLLING.value, cls.GOTO_DISABLE.value]
+
+    FEC_MEASURE_FAIL_ACTION_OPERATIONAL_DEFAULT = FecMeasureFailAction.FORCE_LINKUP
+    FEC_MEASURE_FAIL_ACTION_APPLIED_DEFAULT = FecMeasureFailAction.FW_DEFAULT
+
+    FAIL_ACTION_PRIORITY: dict[str, int] = {
+        FecMeasureFailAction.FW_DEFAULT.value: 0,
+        FecMeasureFailAction.FORCE_LINKUP.value: 1,
+        FecMeasureFailAction.GOTO_POLLING.value: 2,
+        FecMeasureFailAction.GOTO_DISABLE.value: 3,
+    }
+
+    FORCE_MAX_ITERATIONS: str = 'force-max-iterations'
+
+    class ForceMaxIterations(Enum):
+        DISABLED = 'disabled'
+        ENABLED = 'enabled'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    FORCE_MAX_ITERATIONS_OPERATIONAL_DEFAULT = ForceMaxIterations.DISABLED
+    FORCE_MAX_ITERATIONS_APPLIED_DEFAULT = ForceMaxIterations.DISABLED
 
 
 class ImageConsts:
@@ -1969,7 +2013,6 @@ class SyslogConsts:
     PROTOCOL = 'protocol'
     STANDARD = 'standard'
     WELF = 'welf'
-    DEFAULT_PORT = 514
     MODULE_LINE = "module(load=\"im{protocol}\")"
     PORT_LINE = "input(type=\"im{protocol}\" port=\"{port}\")"
     RSYSLOG_CONF_FILE = '/etc/rsyslog.conf'
@@ -2056,6 +2099,28 @@ class SyslogSeverityLevels:
                            CRITICAL: CRIT}
 
 
+class SdnCmdConsts:
+    HELP = 'help'
+    DOMAIN_STATE_INFO = 'DomainStateInfo'
+    TOPOLOGY_INFO = 'TopologyInfo'
+    SWITCH_NODE_INFO_LIST = 'SwitchNodeInfoList'
+    COMPUTE_NODE_INFO_LIST = 'ComputeNodeInfoList'
+    GPU_INFO_LIST = 'GpuInfoList'
+    SET_STATIC_CONFIG = 'SetStaticConfig'
+    STATIC_CONFIG = 'StaticConfig'
+    FACTORY_RESET = 'FactoryReset'
+    CREATE_PARTITION = 'CreatePartition'
+    DELETE_PARTITION = 'DeletePartition'
+    REMOVE_GPUS_FROM_PARTITION = 'RemoveGpusFromPartition'
+    ADD_GPUS_TO_PARTITION = 'AddGpusToPartition'
+    GET_COMMAND_LIST = [
+        HELP, DOMAIN_STATE_INFO, TOPOLOGY_INFO, SWITCH_NODE_INFO_LIST,
+        COMPUTE_NODE_INFO_LIST, GPU_INFO_LIST,
+    ]
+    SET_COMMAND_BASE_LIST = [SET_STATIC_CONFIG, FACTORY_RESET]
+    SET_COMMAND_NON_STANDALONE_LIST = [SET_STATIC_CONFIG, FACTORY_RESET, CREATE_PARTITION, REMOVE_GPUS_FROM_PARTITION]
+
+
 class HealthConsts:
     OK = "OK"
     NOT_OK = "Not OK"
@@ -2071,8 +2136,8 @@ class HealthConsts:
     ISSUE = "issue"
     ISSUES = "issues"
     ASIC_HEALTH_ISSUE = "ASIC-HEALTH"
-    SUMMARY_REGEX_OK = "INFO {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX[0], OK)
-    SUMMARY_REGEX_NOT_OK = "ERROR {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX[0], NOT_OK)
+    SUMMARY_REGEX_OK = f"INFO {NvosConst.DATE_TIME_REGEX[0]} : Summary: {OK}"
+    SUMMARY_REGEX_NOT_OK = f"ERROR {NvosConst.DATE_TIME_REGEX[0]} : Summary: {NOT_OK}"
     ADD_STATUS_TO_SUMMARY_REGEX = NvosConst.DATE_TIME_REGEX[0] + " : Summary:.*"
     HEALTH_ISSUE_REGEX = "ERROR {time_regex} : {component}: (?:is )?{issue}"
     HEALTH_FIX_REGEX = "INFO {time_regex} : Cleared: {component}: (?:is )?{issue}"
@@ -2118,6 +2183,12 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
+
+    # Operation labels used by save_duration / row-name lookups in expected_operation_durations.
+    IMAGE_INSTALL = 'image install'
+    IMAGE_UPGRADE = 'image upgrade'
+    IMAGE_DOWNGRADE = 'image downgrade'
+    IMAGE_INSTALL_OPERATION_ROW = 'image install (operation)'
 
 
 class LinkDetectionConsts:
@@ -2218,7 +2289,19 @@ class FastRecoveryConsts:
 class LogComponentsConsts:
     NVUE = 'nvue'
     SYMMETRY_MANAGER = 'symmetry-manager'
-    COMPONENTS_LIST = [NVUE, "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", SYMMETRY_MANAGER, "syncd"]
+    GPU_TELEMETRY = 'gpu_telemetry'
+    PEER_TELEMETRY = 'peer_telemetry'
+    COMPONENTS_LIST = [
+        NVUE,
+        "orchagent",
+        "portsyncd",
+        "sai_api_port",
+        "sai_api_switch",
+        SYMMETRY_MANAGER,
+        "syncd",
+        GPU_TELEMETRY,
+        PEER_TELEMETRY,
+    ]
     CRITICAL = "critical"
     DEBUG = "debug"
     ERROR = "error"
@@ -2588,7 +2671,7 @@ class SecureConfig:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(SecureConfig, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._load_config()
         return cls._instance
 
@@ -2599,7 +2682,7 @@ class SecureConfig:
         # This is a placeholder - implement your preferred secure storage method
         config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
         if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
+            with open(config_path) as f:
                 cls._config = json.load(f)
 
     @classmethod
@@ -2705,3 +2788,13 @@ class PeerPortConsts:
                                      ApiType.OPENAPI: {"under_limit": LOWER_INTERVAL_ERR_MSG,
                                                        "over_limit": HIGHER_INTERVAL_ERR_MSG}}
     ASSOCIATED_SWITCH_PORT = "associated-switch-port"
+
+
+class StoDebug:
+    ENABLED = 'enabled'
+    DISABLED = 'disabled'
+    STATE = 'state'
+    STO_EVENT_LOG = 'NVLink STO event'
+    CONTAIN_DRAIN_EVENT = 'Contain_and_drain'
+    DEBUG_STO_DUMP_FOLDER = '/var/log/mellanox/'
+    STO_DEBUG_DUMPS = 'sdk-wrn-dumps'

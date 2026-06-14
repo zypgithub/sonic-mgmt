@@ -264,9 +264,7 @@ def test_lldp_max_values(engines, devices):
         with allure.step("Disable and enable lldp to get first frame instead of waiting forever"):
             _set_lldp_state(lldp, key=SystemConsts.STATE, val=NvosConst.DISABLED)
             # WA in order to get first lldp frame without waiting for long ttl
-            _set_lldp_state(
-                lldp, key=SystemConsts.STATE, val=NvosConst.ENABLED, poll_interval=0
-            )
+            _set_lldp_state(lldp, key=SystemConsts.STATE, val=NvosConst.ENABLED, wait_for_state=False)
 
         with allure.step("Verify interval values"):
             lldp_dump = LLDPTool.get_lldp_frames(engine=engines.dut)

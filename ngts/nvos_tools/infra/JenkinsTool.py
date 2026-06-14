@@ -241,3 +241,9 @@ class JenkinsQueryBuilder:
 
     def build(self) -> str:
         return self._formatter.to_query_string(self._params)
+
+    def include_file_path(self, value: str) -> "JenkinsQueryBuilder":
+        return self.add("INCLUDE_FILE_PATH", value)
+
+    def exclude_file_path(self, value: str) -> "JenkinsQueryBuilder":
+        return self.add("EXCLUDE_FILE_PATH", value)

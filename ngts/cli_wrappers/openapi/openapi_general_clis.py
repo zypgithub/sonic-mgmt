@@ -96,7 +96,7 @@ class OpenApiGeneralCli:
             return NvueGeneralCli.apply_config(
                 engine, ask_for_confirmation, option, validate_apply_message, rev_id,
                 skip_no_config_diff_err, verify_execution, client_certs_after_apply, apply_timeout)
-        logging.info("Execute config apply using OpenApi")
+        logger.info("Execute config apply using OpenApi")
 
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'APPLY', engine.ip,
                                                    engine.open_api_port, 'system/config/apply',

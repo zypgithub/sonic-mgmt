@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import pytest
+import requests
 from netmiko import ConnectHandler, ReadTimeout
 from paramiko.ssh_exception import AuthenticationException
 from retry.api import retry_call, retry
@@ -16,6 +17,7 @@ from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, DatabaseConst, NvosConst, RebootConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime, SubDuration
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -25,7 +27,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from .ResultObj import ResultObj, IssueType
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -48,26 +50,40 @@ class DutUtilsTool:
         reboot_params = reboot_params or RebootParams()
         with allure.step(f'Run command "{command}" and wait for reboot to finish'):
             list_commands = [command, 'y'] if confirm else [command]
+            op_start = time.perf_counter()
             output = device.reload_device(engine, list_commands)
+            op_duration = time.perf_counter() - op_start
+            OperationTime.record_sub_duration(SubDuration.OPERATION, op_duration)
             logger.info(output)
             output = output.replace('-bash: y: command not found', '')
 
             output_lower = output.lower()
             if ('action succeeded' in output_lower) and ('reboot skipped' in output_lower):
-                return ResultObj(result=True, info=output)
+                res_obj = ResultObj(result=True, info=output, returned_value=output)
+                res_obj.duration = {SubDuration.OPERATION: op_duration, SubDuration.REBOOT: 0.0}
+                OperationTime.record_sub_duration(SubDuration.REBOOT, 0.0)
+                return res_obj
 
             error_list = ['aborted', 'aborting', 'error: action failed', 'command not found']
             for error in error_list:
                 if error in output_lower:
-                    return ResultObj(result=False, info=output)
+                    res_obj = ResultObj(result=False, info=output, returned_value=output)
+                    res_obj.duration = {SubDuration.OPERATION: op_duration, SubDuration.REBOOT: 0.0}
+                    OperationTime.record_sub_duration(SubDuration.REBOOT, 0.0)
+                    return res_obj
 
+            reboot_start = time.perf_counter()
             res_obj = DutUtilsTool.wait_on_system_reboot(engine, reboot_params, device,
                                                          verify_final_result=False, wait_for_nvos=True)
+            reboot_duration = time.perf_counter() - reboot_start
+            OperationTime.record_sub_duration(SubDuration.REBOOT, reboot_duration)
             if not reboot_params.should_wait_till_system_ready:
                 time.sleep(40)
+                res_obj.duration = {SubDuration.OPERATION: op_duration, SubDuration.REBOOT: reboot_duration}
                 return res_obj
 
         res_obj.returned_value = output
+        res_obj.duration = {SubDuration.OPERATION: op_duration, SubDuration.REBOOT: reboot_duration}
         return res_obj
 
     @staticmethod
@@ -132,6 +148,16 @@ class DutUtilsTool:
 
         with allure.step("Waiting for system to reboot and become available"):
             dut_engine: LinuxSshEngine = reboot_params.recovery_engine or engine
+
+            # Attach to the serial console BEFORE the port-up wait. "System is ready" is a
+            # one-shot banner printed *before* the mgmt IP/port becomes reachable sometimes, so attaching
+            # serial only after the port-up wait races against (and loses to) it. Connecting now
+            # lets the pexpect buffer accumulate the banner while we poll the port.
+            serial_engine = None
+            if wait_for_nvos and reboot_params.topology_obj:
+                with allure.step('get serial engine (before port-up wait)'):
+                    serial_engine = ConnectionTool.create_serial_engine(reboot_params.topology_obj,
+                                                                        enter_serial_context=True)
             with allure.step("Waiting for switch to be ready"):
                 with allure.step('wait for switch reachable/ping'):
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
@@ -139,12 +165,15 @@ class DutUtilsTool:
                     with allure.step('wait for System is ready in serial'):
                         if reboot_params.system_is_ready_timeout:
                             DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine,
                                                                          wait_timeout=reboot_params.system_is_ready_timeout)
                         elif device:
                             DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine,
                                                                          wait_timeout=device.timeout_system_is_ready)
                         else:
-                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj)
+                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine)
                         if reboot_params.track_boot_intervals:
                             InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE)
                 if not wait_for_nvos:

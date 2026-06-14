@@ -37,6 +37,7 @@
           --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/nginx_faillock/test_nginx_faillock_audit_socket_no_leak.py
           --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -m \"not cumulus_only\"
           --release_name=[[conf:extra_info.release_name]] --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
+
           --clean-alluredir --alluredir=/tmp/allure-results --showlocals [[conf:extra_info.additional_options]] --timeout 900   \'"</static_args>
       </params>
     </cmd>

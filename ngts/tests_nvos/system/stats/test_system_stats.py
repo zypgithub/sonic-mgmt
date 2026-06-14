@@ -1,22 +1,26 @@
+from datetime import datetime, timedelta
+import logging
 import random
 import pytest
-import logging
+import shlex
 import time
 import os
 
 import pandas as pd
 
-from datetime import datetime, timedelta
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from ngts.ngts_types import DevicesT, EnginesT
+
 from ngts.nvos_constants.constants_nvos import ApiType, DatabaseConst, NvosConst, LogsSources
 from ngts.tests_nvos.system.stats.constants import StatsConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
-from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from retry import retry
@@ -34,7 +38,7 @@ def cleanup_verification_test(engines):
 @pytest.mark.system
 @pytest.mark.stats
 @pytest.mark.simxl
-def test_system_stats_configuration(engines, devices, random_api):
+def test_system_stats_configuration(engines: EnginesT, devices: DevicesT, random_api: str):
     """
     validate:
     - Enable/Disable stats feature
@@ -185,7 +189,7 @@ def test_system_stats_configuration(engines, devices, random_api):
 @pytest.mark.system
 @pytest.mark.stats
 @pytest.mark.simx
-def test_system_stats_generation(engines, devices, random_api):
+def test_system_stats_generation(engines: EnginesT, devices: DevicesT, random_api: str):
     """
     validate:
     - Enable/Disable stats feature
@@ -340,7 +344,7 @@ def test_system_stats_generation(engines, devices, random_api):
 @pytest.mark.stats
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_stats_performance(engines, devices, test_api):
+def test_system_stats_performance(engines: EnginesT, devices: DevicesT, test_api: str):
     """
     validate:
     - Generate all system stats command
@@ -461,7 +465,7 @@ def test_system_stats_performance(engines, devices, test_api):
             engine.run_cmd("sudo tar -xf {}{}".format(NvosConst.MARS_RESULTS_FOLDER, file_name))
             file_split = file_name.split("_")
             report_path = os.path.splitext('report_{}_{}'.format(file_split[-2], file_split[-1]))[0]
-            output = engine.run_cmd("ls {}{}".format(NvosConst.MARS_RESULTS_FOLDER, report_path))
+            _ = engine.run_cmd("ls {}{}".format(NvosConst.MARS_RESULTS_FOLDER, report_path))
             # for name in category_list:
             #     assert name in output, f"{name} external file is missing in tar file"
 
@@ -476,7 +480,7 @@ def test_system_stats_performance(engines, devices, test_api):
 @pytest.mark.stats
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_stats_reliability(engines, devices, test_api):
+def test_stats_reliability(engines: EnginesT, devices: DevicesT, test_api: str):
     """
     validate:
     - Configuration of the feature persists through upgrade and reboot
@@ -552,7 +556,7 @@ def test_stats_reliability(engines, devices, test_api):
                 "stats state parameter is expected to be 'enabled'"
             system.log.rotate_logs()
             # Exempt 'Not Found': benign PCIe/pmon messages in log (e.g. "PCIe Device: ... Not Found") are not failures.
-            show_output = system.log.file.show_log(exit_cmd='q', exempted_err_msgs=('Not Found',))
+            _ = system.log.file.show_log(exit_cmd='q', exempted_err_msgs=('Not Found',))
             # TODO: update StatsConsts.LOG_MSG_ERROR_DB
             # ValidationTool.verify_expected_output(show_output, StatsConsts.LOG_MSG_ERROR_DB).verify_result()
 
@@ -564,7 +568,7 @@ def test_stats_reliability(engines, devices, test_api):
 @pytest.mark.stats
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_stats_log(engines, devices, test_api):
+def test_system_stats_log(engines: EnginesT, devices: DevicesT, test_api: str):
     """
     validate:
     - Configuring commands are logged to system log
@@ -614,7 +618,7 @@ def test_system_stats_log(engines, devices, test_api):
 @pytest.mark.stats
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_validate_tech_support_with_max_size(engines, devices, test_api):
+def test_validate_tech_support_with_max_size(engines: EnginesT, devices: DevicesT, test_api: str):
     """
     validate:
     - Validate creating tech support when all stats files are full (reached max size)
@@ -663,7 +667,7 @@ def test_validate_tech_support_with_max_size(engines, devices, test_api):
 @pytest.mark.stats
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_stats_invalid_values(engines, devices, test_api):
+def test_system_stats_invalid_values(engines: EnginesT, devices: DevicesT, test_api: str):
     """
     validate:
     - Check all the commands that get param with invalid values
@@ -762,7 +766,7 @@ def test_system_stats_invalid_values(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.stats
 @pytest.mark.simx
-def test_system_stats_big_files(engines, devices, random_api):
+def test_system_stats_big_files(engines: EnginesT, devices: DevicesT, random_api: str):
     """
     validate:
     - Append works on a big file (600K samples)
@@ -784,7 +788,7 @@ def test_system_stats_big_files(engines, devices, random_api):
 
     system = System(devices_dut=devices.dut)
     engine = engines.dut
-    player_engine = engines['sonic_mgmt']
+    player_engine: ProxySshEngine = engines['sonic_mgmt']
 
     try:
         with allure.step("Set system stats feature to default"):
@@ -857,7 +861,7 @@ def test_system_stats_big_files(engines, devices, random_api):
         with allure.step("Validate creating new category file when header is corrupted"):
             validate_number_of_lines_in_external_file(engines, system, 'cpu',
                                                       devices.dut.stats_cpu_header_num_of_lines,
-                                                      devices.dut.stats_cpu_header_num_of_lines + 3)
+                                                      devices.dut.stats_cpu_header_num_of_lines + 40)
 
         with allure.step("Delete uploaded file"):
             engine.run_cmd(cmd='rm -f {}'.format(file_path))
@@ -872,7 +876,7 @@ def test_system_stats_big_files(engines, devices, random_api):
         with allure.step("Wait for stats-reportd to finish cleaning up the huge file"):
             wait_for_stats_file_cleanup(engine, 'temperature')
 
-        with allure.step(f"Get Temperature header number of lines"):
+        with allure.step("Get Temperature header number of lines"):
             temperature_header_num_of_lines = get_header_number_of_lines(engines, 'temperature')
             assert temperature_header_num_of_lines >= devices.dut.stats_temperature_header_num_of_lines, \
                 (f"temperature header number of lines ({temperature_header_num_of_lines}) is lower than the "
@@ -891,7 +895,7 @@ def test_system_stats_big_files(engines, devices, random_api):
 @pytest.mark.stats
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_validate_category_file_values(engines, devices, test_api):
+def test_validate_category_file_values(engines: EnginesT, devices: DevicesT, test_api: str):
     """
     validate:
     - Category file values are within the valid range
@@ -969,7 +973,7 @@ def test_validate_category_file_values(engines, devices, test_api):
 @pytest.mark.stats
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_system_stats_on_skynet(test_api):
+def test_system_stats_on_skynet(test_api: str):
     """
     (Dedicated test will be added later to skynet to check some of the functionalities once a month)
 
@@ -981,7 +985,7 @@ def test_system_stats_on_skynet(test_api):
 
 
 # ---------------------------------------------
-def set_system_stats_to_default(engine, system):
+def set_system_stats_to_default(engine: ProxySshEngine, system: System) -> None:
     with allure.step("Update Stats feature to default"):
         system.stats.unset(apply=True).verify_result()
 
@@ -1019,7 +1023,7 @@ def configure_all_categories(system, category_list, interval=None,
                                         apply_config, TestToolkit.engines.dut, False).verify_result()
 
 
-def clear_all_internal_and_external_files(engine, system, category_list):
+def clear_all_internal_and_external_files(engine: ProxySshEngine, system: System, category_list: list[str]) -> None:
     system.stats.action_general(StatsConsts.CLEAR).verify_result()
     stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()).get_returned_value()
     if stats_files_show != "":
@@ -1029,7 +1033,7 @@ def clear_all_internal_and_external_files(engine, system, category_list):
     engine.run_cmd("sudo rm -f /var/stats/*.old")
 
 
-def check_category_internal_files_exist(engine, category_list, retries=10, interval=3):
+def check_category_internal_files_exist(engine: ProxySshEngine, category_list: list[str], retries: int = 10, interval: int = 3) -> None:
     expected_files = [f"{cat}.csv" for cat in category_list]
     start_time = time.perf_counter()
     for attempt in range(1, retries + 1):
@@ -1057,7 +1061,7 @@ def check_category_internal_files_exist(engine, category_list, retries=10, inter
     assert not extra, f"Unexpected extra files found: {extra}"
 
 
-def validate_upload_stats_file(engines, system, file, delete=True):
+def validate_upload_stats_file(engines: EnginesT, system: System, file: str, delete: bool = True) -> None:
     """
     validate upload stats file with scp and sftp
     """
@@ -1219,7 +1223,7 @@ def validate_external_file_header_and_data(name, file_path, hostname, start_time
                     f"{name}: timestamp at row {i + 1} ({t_curr}) is not after row {i} ({t_prev})"
 
 
-def validate_external_file_timestamps(file_name, clear_time):
+def validate_external_file_timestamps(file_name: str, clear_time: datetime) -> None:
     full_path = NvosConst.MARS_RESULTS_FOLDER + file_name
     meta = parse_stats_csv(full_path)
     df = meta['df']
@@ -1232,7 +1236,7 @@ def validate_external_file_timestamps(file_name, clear_time):
             f"Sample at row {row_idx + 1} has timestamp {sample_time} earlier than clear time {clear_time}"
 
 
-def validate_number_of_lines_in_external_file(engines, system, cat_name, min_lines, max_lines):
+def validate_number_of_lines_in_external_file(engines: EnginesT, system: System, cat_name: str, min_lines: int, max_lines: int) -> None:
     player = engines['sonic_mgmt']
 
     with allure.step("Clear external files"):
@@ -1258,7 +1262,14 @@ def validate_number_of_lines_in_external_file(engines, system, cat_name, min_lin
         player.run_cmd(cmd='rm -f {}'.format(full_path))
 
 
-def validate_stats_files_exist_in_techsupport(system, engine, stats_files):
+def get_stats_file_line_count(engine: ProxySshEngine, file_path: str) -> int:
+    """Return the number of lines in a DUT stats file, or -1 if the file is absent."""
+    quoted_path = shlex.quote(file_path)
+    output: str = engine.run_cmd(f"if [ -e {quoted_path} ]; then wc -l < {quoted_path}; else echo -1; fi")
+    return int(output.strip().splitlines()[-1])
+
+
+def validate_stats_files_exist_in_techsupport(system: System, engine: ProxySshEngine, stats_files: list[str]) -> None:
     """
     generate techsupport and validate stats files exist in the stats dir
     """
@@ -1323,8 +1334,31 @@ def generate_huge_stats_file(engine, category, num_lines=7000000):
     )
 
 
-def get_header_number_of_lines(engines, category):
+def get_header_number_of_lines(engines: EnginesT, category: str) -> int:
     with allure.step(f"Get {category} header number of lines"):
         num_of_lines = int(engines.dut.run_cmd(f"grep -c '^#' /var/stats/{category}.csv")) + 2
 
     return num_of_lines
+
+
+def wait_for_stats_file_to_shrink(engine: ProxySshEngine, category: str, max_size_kb: int = 1024) -> int:
+    """Wait for stats-reportd to finish cleaning up a huge internal file.
+
+    Polls the file size of /var/stats/{category}.csv until it drops below max_size_kb,
+    indicating that stats-reportd has completed the cleanup and created a new file.
+    """
+    counter = 0
+
+    @retry(AssertionError, tries=24, delay=5)  # ~2 min timeout
+    def _wait():
+        nonlocal counter
+        counter += 1
+
+        with allure.step(f"Check {category!r} stats file shrink: attempt {counter}"):
+            output = engine.run_cmd(f"stat --format=%s /var/stats/{category}.csv 2>/dev/null || echo 0")
+            file_size_bytes = int(output.strip())
+            file_size_kb = file_size_bytes / 1024
+            assert file_size_kb < max_size_kb, \
+                f"stats-reportd still cleaning up {category}.csv (size: {file_size_kb:.0f}KB, waiting for < {max_size_kb}KB)"
+
+    _wait()

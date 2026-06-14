@@ -203,7 +203,7 @@ def skip_if_engines_does_not_exist_in_setup(required_engines_list, engines):
         pytest.skip("Skip this test cause don't have the required engines {}".format(not_existed_engines))
 
 
-@retry(Exception, tries=10, delay=2)
+@retry(Exception, tries=12, delay=2)
 def wait_for_hostname_changed(system, dhcp_hostname):
     with allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname)):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()

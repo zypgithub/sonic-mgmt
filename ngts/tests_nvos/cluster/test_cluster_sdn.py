@@ -49,10 +49,10 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
     try:
 
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
+        ClusterTools.start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
 
         # Get config files paths for all apps that exist on this device type
-        config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices)
+        config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices, engine=engines.dut)
 
         # Initialize dicts with ONLY file types that exist on this device
         path_to_config = {config_type: '' for config_type in config_files_paths.keys()}
@@ -150,8 +150,8 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
                 engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
             # INSTEAD OF THE ABOVE, YOU CAN USE THE FOLLOWING: sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.delete_files() and provide with a files list
             # Make sure all files are deleted.
-            ClusterTools.verify_sdn_config_files_deleted(sdn, devices)
-            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system, devices)
+            ClusterTools.verify_sdn_config_files_deleted(sdn, devices, engine=engines.dut)
+            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system, devices, engine=engines.dut)
             verify_all_files_are_deleted(engines, all_state_files_paths)
             verify_all_files_are_deleted(engines, all_config_files_paths)
 
@@ -187,7 +187,7 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
             for file_path in uploaded_files:
                 engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
-        ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
+        ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
 
 
 def verify_all_files_are_deleted(engines, files_list):

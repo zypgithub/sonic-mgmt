@@ -961,6 +961,7 @@ def finalize_bug_categories(alluredir: str,
             "bug_marker: baseline log_analyzer attachments=%d; "
             "stamped %d known-bug + %d unknown failures; categories.json %s",
             baseline_attached, counts["known"], counts["unknown"],
+
             "written" if wrote else "unchanged",
         )
     except Exception:

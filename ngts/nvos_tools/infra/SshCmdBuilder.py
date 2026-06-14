@@ -2,7 +2,7 @@ from ngts.nvos_tools.infra.IpTool import IpTool
 
 
 class SshCmdBuilder:
-    SSH_CMD_TEMPLATE = 'ssh {opts} -p {port} -l {usr} {host}'
+    SSH_CMD_TEMPLATE = 'ssh {opts} -p {port} {target}'
 
     def __init__(self, user: str, host: str, port=22):
         self.user = user
@@ -10,13 +10,28 @@ class SshCmdBuilder:
         self.port = port
         self.options: str = ''
 
+    def _prepare_ipv6_for_ssh(self) -> None:
+        """Use bare IPv6 with -6; bracketed user@host is resolved as a DNS name by OpenSSH."""
+        if self.host.startswith('[') and self.host.endswith(']'):
+            self.host = self.host[1:-1]
+        if not IpTool.is_address_ipv6(self.host):
+            return
+        if '-6' not in self.options.split():
+            self.options = f'-6 {self.options}'.strip()
+
+    @staticmethod
+    def _bracket_ipv6_host(host: str) -> str:
+        if IpTool.is_address_ipv6(host) and not (host.startswith('[') and host.endswith(']')):
+            return f'[{host}]'
+        return host
+
     def build(self) -> str:
-        self.options.strip()
-        if IpTool.is_address_ipv6(self.host):
-            self.options = f'-6 {self.options}'
-            self.host = f'{self.host}'
-        return SshCmdBuilder.SSH_CMD_TEMPLATE.format(opts=self.options, port=self.port, usr=self.user,
-                                                     host=self.host).strip()
+        self.options = self.options.strip()
+        self._prepare_ipv6_for_ssh()
+        target = f'{self.user}@{self.host}'
+        return SshCmdBuilder.SSH_CMD_TEMPLATE.format(
+            opts=self.options, port=self.port, target=target
+        ).strip()
 
     def ControlMaster(self, val) -> 'SshCmdBuilder':
         self.options += f' -o ControlMaster={val}'
@@ -90,6 +105,10 @@ class SshCmdBuilder:
     def set_ssn(self) -> 'SshCmdBuilder':
         return self.NoStrictHostKeyChecking().NoUserKnownHostsFile()
 
+    def ForceTTY(self) -> 'SshCmdBuilder':
+        self.options += ' -tt'
+        return self
+
     def set_num_password_prompts(self, num_pw_prompts) -> 'SshCmdBuilder':
         return self.PreferredAuthenticationsPassword().NumberOfPasswordPrompts(num_pw_prompts)
 
@@ -106,10 +125,12 @@ class SshPassCmdBuilder(SshCmdBuilder):
         self.cmd_to_execute = cmd_to_execute
 
     def build(self) -> str:
-        self.options.strip()
-        cmd = SshPassCmdBuilder.SSH_CMD_TEMPLATE.format(pw=self.password, opts=self.options, port=self.port,
-                                                        usr=self.user,
-                                                        host=self.host).strip() + f" '{self.cmd_to_execute}'"
+        self.options = self.options.strip()
+        self._prepare_ipv6_for_ssh()
+        target = f'{self.user}@{self.host}'
+        cmd = SshPassCmdBuilder.SSH_CMD_TEMPLATE.format(
+            pw=self.password, opts=self.options, port=self.port, target=target
+        ).strip() + f" '{self.cmd_to_execute}'"
         return cmd.strip()
 
 
@@ -122,12 +143,13 @@ class ScpPassCmdBuilder(SshPassCmdBuilder):
         self.dest = dest
 
     def build(self) -> str:
-        self.options.strip()
+        self.options = self.options.strip()
+        self._prepare_ipv6_for_ssh()
         return ScpPassCmdBuilder.SCP_CMD_TEMPLATE.format(
             pw=self.password,
             opts=self.options,
             src=self.src,
             usr=self.user,
-            host=self.host,
+            host=self._bracket_ipv6_host(self.host),
             dest=self.dest
         )
