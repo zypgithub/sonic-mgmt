@@ -288,6 +288,12 @@ tests/nightly/sensors/test_psu.py::test_psu_sensor_key_prefix:
     conditions:
     - "'simx' in platform"
 
+tests/push_build_tests:
+  skip:
+    reason: "All push gate tests skipped on ASAN image due to RM issue: https://redmine.mellanox.com/issues/5079498"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5079498 and 'ASAN' in build_version"
+
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
     reason: "sflow still isn't supported on Simx or due to RM issue: https://redmine.mellanox.com/issues/5041113 on sn6600_ld platform"
