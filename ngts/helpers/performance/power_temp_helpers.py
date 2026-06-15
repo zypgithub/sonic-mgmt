@@ -2,11 +2,11 @@ import re
 import allure
 import pandas as pd
 import logging
-from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_base_df, calculate_avg_on_all_samples
 from ngts.helpers.performance.sensors_power_parse import (
     get_controllers_info_str_list,
+    get_spc6_rail_labels_by_channel,
     infer_spc6_supply_label,
     normalized_i2c_address,
 )
@@ -79,16 +79,22 @@ def get_avg_samples_power_dataframe(cli_obj, chip_type, power_samples):
 
 def get_sensors_data(cli_obj, power_sample):
     sensors_output = power_sample[ValidationConsts.SENSORS_OUTPUT]
-    if not sensors_output and isinstance(cli_obj, SonicCli):
-        sensors_output = cli_obj.performance.get_sensors_data()
-    elif not sensors_output:
+    if not sensors_output:
+        get_sensors_data_func = getattr(cli_obj.performance, "get_sensors_data", None)
+        if get_sensors_data_func:
+            sensors_output = get_sensors_data_func()
+    if not sensors_output:
         raise TestIssue("Sensors data was not collected by validator as expected by DVS/CL OS")
     return sensors_output
 
 
-def _resolve_power_supply_name(chip_type, controller_id, block_text, address_hex):
+def _resolve_power_supply_name(chip_type, controller_id, block_text, address_hex, rail_index=None):
     """Map I2C chip + sensor block to a display name; SPC6 uses label inference on SN5600-class dumps."""
     if chip_type == "SPC6":
+        labels_by_channel = get_spc6_rail_labels_by_channel(block_text)
+        channel = f"out{rail_index}"
+        if channel in labels_by_channel:
+            return labels_by_channel[channel]
         inferred = infer_spc6_supply_label(block_text)
         if inferred != "Misc PMIC (unknown rail)":
             return inferred
@@ -142,6 +148,9 @@ def get_power_dataframe(cli_obj, sensors_output, chip_type):
         for index in [1, 2]:
             if not controller_info_dict.get(f"vout{index}"):
                 continue
+            if chip_type == "SPC6":
+                supply_name = _resolve_power_supply_name(chip_type, controller_name, block_text, address_hex,
+                                                         index)
             voltage = controller_info_dict[f"vout{index}"]
             if f"iout{index}" in controller_info_dict:
                 current = abs(controller_info_dict[f"iout{index}"])
@@ -167,6 +176,10 @@ def get_controller_power(index, controller_info_dict, voltage, current):
     return abs(power)
 
 
+def _collector_counter(power_supply):
+    return {"counter": 0, PowerConsts.POWER_SUPPLY: power_supply, PowerConsts.POWER_SUPPLY_ADDRESS: []}
+
+
 def get_sum_power_df_by_collectors_group(power_df):
     """
     This function is calculating a new summary dataframe, summing the power consumption
@@ -188,9 +201,14 @@ def get_sum_power_df_by_collectors_group(power_df):
     """
     rows_to_drop = []
     collectors_regex_counters = {
-        r"VCORE & 1.8V_Tile": {"counter": 0, PowerConsts.POWER_SUPPLY: "VCORE & 1.8V_Tile", PowerConsts.POWER_SUPPLY_ADDRESS: []},
-        r"VCORE TILES \d & \d \(VDD_Tx\)": {"counter": 0, PowerConsts.POWER_SUPPLY: "VCORE TILES", PowerConsts.POWER_SUPPLY_ADDRESS: []},
-        r"DVDD TILES \d & \d \(DVDD_Tx\)": {"counter": 0, PowerConsts.POWER_SUPPLY: "DVDD TILES", PowerConsts.POWER_SUPPLY_ADDRESS: []},
+        r"VCORE & 1.8V_Tile": _collector_counter("VCORE & 1.8V_Tile"),
+        r"swb_mps29816_\d+_STRESS_(?:VDD_T\d+|VDDHBID_T\d+(?:_T\d+)?)_rail\d+": _collector_counter(
+            "VCORE TILES"),
+        r"VCORE TILES \d & \d \(VDD_Tx\)": _collector_counter("VCORE TILES"),
+        r"swb_mps29816_\d+_STRESS_DVDD_T\d+_rail\d+": _collector_counter("DVDD TILES"),
+        r"DVDD TILES \d & \d \(DVDD_Tx\)": _collector_counter("DVDD TILES"),
+        r"swb_mps29816_\d+_STRESS_HVDD_T\d+_rail\d+": _collector_counter("HVDD TILES"),
+        r"swb_mps29816_\d+_STRESS_AVDD_T\d+_rail\d+": _collector_counter("VDDSCC"),
     }
     power_df_by_group = power_df.groupby([PowerConsts.POWER_SUPPLY, PowerConsts.POWER_SUPPLY_ADDRESS])[PowerConsts.POWER_WATT].sum().reset_index()
     for index, row in power_df_by_group.iterrows():
@@ -227,7 +245,8 @@ def validate_power_df_by_collectors(power_df, collectors_power_threshold, violat
                     violations_list.append(f"Power for {collector_name}: {collector_power} W,  "
                                            f"was higher than threshold {collector_th}, "
                                            f"please check table \"Power full dataframe\" in allure attachments")
-                if re.search(r"HVDD TILES \(HVDD_T\d+\)", collector_name):
+                if re.search(r"HVDD TILES \(HVDD_T\d+\)|swb_mps29816_\d+_STRESS_HVDD_T\d+_rail\d+",
+                             collector_name):
                     hvdd_power_sum += collector_power
         if hvdd_power_sum > hvdd_power_th:
             logger.info(f"Power for total HVDD TILES: {hvdd_power_sum} W,  "

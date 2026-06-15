@@ -5,7 +5,8 @@ from datetime import datetime
 from collections import defaultdict
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, PowerConsts, MRCConsts
-from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+from infra.tools.exceptions.test_issue import TestIssue
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 import logging
 
 logger = logging.getLogger()
@@ -281,6 +282,14 @@ def get_base_df(df_list):
 
 
 def calculate_avg_on_all_samples(df_list, sample_key):
+    if not df_list:
+        raise TestIssue(f"calculate_avg_on_all_samples: empty df_list for key {sample_key}")
+    for df in df_list:
+        if df.empty or sample_key not in df.columns:
+            raise TestIssue(
+                f"calculate_avg_on_all_samples: missing column {sample_key} in a sample dataframe "
+                f"(empty={df.empty}); check sensors / power parsing for this platform."
+            )
     return sum(df[sample_key] for df in df_list) / len(df_list)
 
 
@@ -297,7 +306,10 @@ def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_
     bw_df = restructure_bw(validation_json)
     performance_counters_df = pd.DataFrame(performance_counters_df)
     bw_counters_data = pd.merge(counters_df, bw_df, on=ValidationConsts.PORT)
-    merged_df = pd.merge(bw_counters_data, ports_group_df, on=ValidationConsts.PORT)
+    if not ports_group_df.empty and ValidationConsts.PORT in ports_group_df.columns:
+        merged_df = pd.merge(bw_counters_data, ports_group_df, on=ValidationConsts.PORT)
+    else:
+        merged_df = bw_counters_data
     if not performance_counters_df.empty:
         performance_counters_df.rename(columns={col: change_name_to_camel_case(col) for col in performance_counters_df.columns}, inplace=True)
         merged_df = pd.merge(merged_df, performance_counters_df, on=ValidationConsts.PORT)

@@ -14,22 +14,48 @@ from devts.infra.tools.exceptions.test_issue import TestIssue
 from devts.infra.tools.exceptions.real_issue import RealIssue
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import MongoDbConsts, PerfConsts, Cl_Consts, ValidationConsts
-from dataclasses import dataclass
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
+from ngts.helpers.performance.sensors_power_parse import build_controllers_info_dicts_list
 from jinja2 import Environment, FileSystemLoader
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_list, is_ipv6, address_calculator
 from time import sleep
-import re
+
+_LOGICAL_SWP_SPLIT_RE = re.compile(r"^swp\d+s\d+$")
 
 
-@dataclass
-class VoltageCurrentInfo:
-    vout_number: str
-    vout_value: str
-    vout_unit: str
-    iout_number: str
-    iout_value: str
-    iout_unit: str
+def cumulus_ports_already_logical_split(ports):
+    """True if every port looks like an already-split Cumulus name (e.g. swp1s0).
+
+    On platforms such as SPC6, front-panel ports are often exposed pre-split (2x as
+    ``swpNs0`` / ``swpNs1``). NVUE must not apply ``link breakout`` again, and Jinja
+    must not append a second ``sM`` suffix.
+
+    Args:
+        ports: Iterable of interface name strings (may be empty).
+
+    Returns:
+        False if ``ports`` is empty; otherwise True only if every name matches
+        ``swp<digits>s<digits>``.
+    """
+    if not ports:
+        return False
+    return all(_LOGICAL_SWP_SPLIT_RE.match(str(p)) for p in ports)
+
+
+def sort_swp_split_port_names(ports):
+    """Sort ``swpNsM`` (and plain ``swpN``) by numeric N then M for stable YAML ordering."""
+
+    def _key(port_name):
+        name = str(port_name)
+        match = re.match(r"^swp(\d+)s(\d+)$", name)
+        if match:
+            return (int(match.group(1)), int(match.group(2)))
+        match = re.match(r"^swp(\d+)$", name)
+        if match:
+            return (int(match.group(1)), -1)
+        return (10**9, 0)
+
+    return sorted(ports, key=_key)
 
 
 class NvuePerformanceCli(PerformanceCommon):
@@ -147,6 +173,31 @@ class NvuePerformanceCli(PerformanceCommon):
                 self.execute_cmd("nv unset router adaptive-routing profile")
             self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         return True
+
+    def validate_ingress_buffer_mode_active(self):
+        """Assert ingress buffer mode (IBM) is active: custom AR profile and ``ar.ibm = ingress`` in switchd.
+
+        IBM is applied by :meth:`set_ibm` when ``auto_buffer_mode == \"False\"`` (NVUE ``profile-custom`` and
+        ``/etc/cumulus/switchd.d/ar_profile_custom.conf``).
+
+        Raises:
+            TestIssue: If NVUE profile is not ``profile-custom`` or the custom profile lacks IBM ingress.
+        """
+        profile_out = self.execute_cmd("nv show router adaptive-routing", print_output=False)
+        profile_lower = profile_out.lower().replace("_", "-")
+        if "profile-custom" not in profile_lower:
+            raise TestIssue(
+                "Ingress buffer mode (IBM) requires NVUE adaptive-routing profile 'profile-custom'. "
+                f"Got from 'nv show router adaptive-routing': {profile_out!r}")
+
+        conf_text = self.execute_cmd(
+            "sudo test -f /etc/cumulus/switchd.d/ar_profile_custom.conf && "
+            "sudo cat /etc/cumulus/switchd.d/ar_profile_custom.conf || echo ''",
+            print_output=False)
+        if not re.search(r"ar\.ibm\s*=\s*ingress", conf_text, re.IGNORECASE):
+            raise TestIssue(
+                "Ingress buffer mode (IBM) not set: /etc/cumulus/switchd.d/ar_profile_custom.conf "
+                f"missing 'ar.ibm = ingress'. File contents: {conf_text!r}")
 
     def get_player_ports(self, dst_dut_dir="/tmp"):
         """Classify switch ports as connected or unconnected by parsing sx_api_ports_dump.py output.
@@ -361,41 +412,13 @@ class NvuePerformanceCli(PerformanceCommon):
         A list of dicts, each dict contains the values of a controller on the device i.e,
         [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
         """
-        sensor_pattern = r'\s*Rail \((out\d+)\):\s+(\d+.\d+ )(m|V)|\s*Curr \((out\d+)\):\s+(\d+.\d+ )(m|A)'
-        i2c_group = re.split(r'\n\s*\n', sensors_output)
-        controller_dict_list = []
-        for group in i2c_group:
-
-            controller_dict = {}
-            sensor_info_list = re.findall(sensor_pattern, group)
-
-            for info in sensor_info_list:
-                values = VoltageCurrentInfo(*info)
-                # convert 'mV' and 'mA' values to corresponding float
-                if values.iout_value:
-                    converted_value = float(values.iout_value)
-                elif values.vout_value:
-                    converted_value = float(values.vout_value)
-                if values.vout_unit.lower() == 'm' or values.iout_unit.lower() == 'm':
-                    converted_value /= 1000
-                if values.vout_number:
-                    if 'out1' in values.vout_number:
-                        controller_dict['vout1'] = converted_value
-                    elif 'out2' in values.vout_number:
-                        controller_dict['vout2'] = converted_value
-                elif values.iout_number:
-                    if 'out1' in values.iout_number:
-                        controller_dict['iout1'] = converted_value
-                    elif 'out2' in values.iout_number:
-                        controller_dict['iout2'] = converted_value
-            controller_dict_list.append(controller_dict)
-        return controller_dict_list
+        return build_controllers_info_dicts_list(sensors_output)
 
     def get_right_left_ports_dict(self, bring_up_ports=False):
         """
         Returns:
-        A dict of ports in the dut connect to the right TG and left TG, i.e,
-        {'left_ports': ['swp1s0', 'swp1s1', ...,], 'right_ports': ['swp33s0', 'swp33s1',...]}
+        A dict of ports on the DUT facing each TG. Names follow LLDP (parent ``swpN``
+        on classic SKUs, or pre-split ``swpNsM`` on platforms such as SPC6 default 2x).
         """
         right_left_port_dict = {
             "right_ports": [],
@@ -448,7 +471,9 @@ class NvuePerformanceCli(PerformanceCommon):
                      "generate_ip_address_list": generate_ip_address_list,
                      "filter_ports": self.cli_obj.interface.filter_lldp_neighbors,
                      "down_ports": self.cli_obj.interface.get_down_ports,
-                     "address_calculator": address_calculator
+                     "address_calculator": address_calculator,
+                     "cumulus_ports_already_logical_split": cumulus_ports_already_logical_split,
+                     "sort_swp_split_port_names": sort_swp_split_port_names,
                      }
         asic = self.cli_obj.general.get_asic_model(self.engine)
         number_of_bonus_ports = len(Cl_Consts.BONUS_PORTS[asic])
@@ -466,7 +491,10 @@ class NvuePerformanceCli(PerformanceCommon):
             "split_right": conf_args['split_right'],
             "total_ports": total_dut_ports,
             "speed": conf_args.get('speed', "400000000"),
-            "two_sided_ar": conf_args.get('two_sided_ar', False)
+            "two_sided_ar": conf_args.get('two_sided_ar', False),
+            "link_auto_negotiate": conf_args.get('link_auto_negotiate', False),
+            "link_phy_autoneg": conf_args.get("link_phy_autoneg"),
+            "link_phy_speed": conf_args.get("link_phy_speed"),
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
         try:
@@ -573,14 +601,25 @@ class NvuePerformanceCli(PerformanceCommon):
         Implemented for Cumulus only
         """
         asic_model = self.cli_obj.general.get_asic_model(self.engine)
+        is_spectrum6_cumulus = asic_model == "Spectrum-6"
+        nexthop_count_cmd = "ip neighbor show | grep swp | wc -l"
         if number_of_nexthops is None:
-            total_dut_ports = (self.cli_obj.interface.get_physical_ports() - len(Cl_Consts.BONUS_PORTS[asic_model]))
-            number_of_nexthops = total_dut_ports * (conf_args["split_left"] + conf_args["split_right"])
+            if is_spectrum6_cumulus:
+                ports = self.get_right_left_ports_dict()
+                left_ports = ports["left_ports"]
+                right_ports = ports["right_ports"]
+                left_ports_count = len(left_ports) if cumulus_ports_already_logical_split(left_ports) else len(left_ports) * conf_args["split_left"]
+                right_ports_count = len(right_ports) if cumulus_ports_already_logical_split(right_ports) else len(right_ports) * conf_args["split_right"]
+                number_of_nexthops = (left_ports_count + right_ports_count) * 2
+                nexthop_count_cmd = "ip neighbor show | grep ' dev swp' | awk '$1 !~ /^fe80:/ {print}' | wc -l"
+            else:
+                total_dut_ports = (self.cli_obj.interface.get_physical_ports() - len(Cl_Consts.BONUS_PORTS[asic_model]))
+                number_of_nexthops = total_dut_ports * (conf_args["split_left"] + conf_args["split_right"])
             logging.info(f"Number of nexthops to resolve: {number_of_nexthops}")
         nexthop_number = 0
         start_time = timeout
         while nexthop_number < number_of_nexthops:
-            nexthop_number = int(self.execute_cmd("ip neighbor show | grep swp | wc -l"))
+            nexthop_number = int(self.execute_cmd(nexthop_count_cmd))
             logging.info("Number of nexthops resolved on the dut at time {} is {}".format(start_time - timeout, nexthop_number))
             sleep(10)
             timeout -= 10

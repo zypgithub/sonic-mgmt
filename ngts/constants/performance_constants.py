@@ -102,6 +102,9 @@ class PerfConsts:
         "COUNTERS_SAMPLE_DELAY": 5,
         "CLEAR_COUNTERS": "True"
     }
+    SENSORS_CMD_ENV_VAR = "SENSORS_CMD"
+    DEFAULT_SENSORS_CMD = r"sensors *-i2c-5-*"
+    SPC6_SENSORS_CMD = "sensors"
     CLEAR_COUNTERS_ENV_VAR = "CLEAR_COUNTERS"
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
     SEND_FWS_ENV = "SEND_FWS"
@@ -334,6 +337,9 @@ class PerfConsts:
 
     # Timeouts
     TIMEOUT_FOR_NEXTHOP_RESOLUTION = 180
+    # Post-reboot settle time before ONIE/install steps; used for multi-NOS uninstall (onie-select -k).
+    # Unknown chip types fall back to TIMEOUT_FOR_UNINSTALL_MODE_DEFAULT (see general_clis_common).
+    TIMEOUT_FOR_UNINSTALL_MODE_DEFAULT = 900
     TIMEOUT_FOR_UNINSTALL_MODE = {
         "SPC3": 900,
         "SPC4": 900,
@@ -373,7 +379,8 @@ class Cl_Consts:
     BONUS_PORTS = {
         'Spectrum-3': [],
         'Spectrum-4': ['swp65'],
-        'Spectrum-5': ['swp65', 'swp66']
+        'Spectrum-5': ['swp65', 'swp66'],
+        'Spectrum-6': ['swp65s0', 'swp65s1']
     }
     CL_HOME_DIR = "/home/cumulus"
     CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
@@ -433,6 +440,7 @@ class SPCXRAConsts:
 
     PACKET_NUM_400G_x2 = 8
     PACKET_NUM_800G_x1 = 20
+    PACKET_NUM_800G_x2 = PACKET_NUM_800G_x1
     PACKET_NUM_800G_x1_WITH_INCREMENTAL_DIPS = 72
 
 
@@ -700,13 +708,22 @@ class PowerConsts:
             "HVDD_TILES_TH": 444
         },  # TODO: Add SPC6 power thresholds
         "SPC6": {
-            r"VCORE TILES \d & \d \(VDD_Tx\)": 28.5,
-            r"DVDD TILES \d & \d \(DVDD_Tx\)": 30.75,
+            r"swb_mps29816_\d+_STRESS_VDD_rail\d+": 400,
+            r"swb_mps29816_\d+_STRESS_HVDD_T\d+_rail\d+": 222,
+            r"swb_mps29816_\d+_STRESS_DVDD_T\d+_rail\d+": 35,
+            r"swb_mps29816_\d+_STRESS_VDDHBID_T\d+(?:_T\d+)?_rail\d+": 150,
+            r"swb_mps29816_\d+_STRESS_AVDD_T\d+_rail\d+": 55,
+            r"VCORE TILES \d & \d \(VDD_Tx\)": 150,
+            r"DVDD TILES \d & \d \(DVDD_Tx\)": 35,
             r"HVDD TILES \(HVDD_T\d+\)": 222,
-            r"VDDSCC": 48,
-            r"VCORE MAIN \(VDD_M\)": 310,
-            "TOTAL": 811,
-            "HVDD_TILES_TH": 444
+            r"VDDSCC": 55,
+            r"VCORE MAIN \(VDD_M\)": 400,
+            r"DDR PMIC": 60,
+            r"OSFP PHY": 45,
+            r"PDB CONVERTER": 200,
+            r"Misc PMIC": 600,
+            "TOTAL": 2500,
+            "HVDD_TILES_TH": 444,
         }
     }
     CONTROLLER_REGEX = r'\w*\d*-i2c-\d*-\d*\w*'

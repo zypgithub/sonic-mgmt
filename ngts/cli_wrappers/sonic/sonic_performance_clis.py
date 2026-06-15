@@ -14,6 +14,12 @@ from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst
 from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts, MongoDbConsts, PortMappingOptionsConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
+from ngts.helpers.performance.sensors_power_parse import (
+    build_controllers_info_dicts_list,
+    get_controllers_info_str_list as sensors_get_controllers_info_str_list,
+    get_sensors_output_key as sensors_get_sensors_output_key,
+    parse_sensor_line as sensors_parse_sensor_line,
+)
 from ngts.helpers.interface_helpers import get_alias_letter, get_alias_number, convert_letter_to_idx
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict, generate_mac_range
 from ngts.helpers.config_db_utils import save_config_db_json
@@ -70,6 +76,12 @@ class SonicPerformanceCli(PerformanceCommon):
         new_cmd = f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH} {variables} && {cmd}'"
         return new_cmd
 
+    def get_sensors_data(self):
+        """Collect all SPC6 sensors; keep legacy bus-5 collection for older chips."""
+        if self.chip_type == "SPC6":
+            return self.execute_cmd(PerfConsts.SPC6_SENSORS_CMD)
+        return super().get_sensors_data()
+
     def get_controllers_info_dicts_list(self, sensors_output):
         """
         returns voltage/current per controller
@@ -80,82 +92,20 @@ class SonicPerformanceCli(PerformanceCommon):
         A list of dicts, each dict contains the values of a controller on the device i.e,
         [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
         """
-        controllers_info_dicts_list = []
-        controller_names_list = re.findall(PowerConsts.CONTROLLER_REGEX, sensors_output)
-        controllers_info_str_list = self.get_controllers_info_str_list(sensors_output)
-        for idx, controller_info_str in enumerate(controllers_info_str_list):
-            controller_name = controller_names_list[idx]
-            is_controller_name_vddscc = 'i2c-5-6e' in controller_name
-            controller_info_list = controller_info_str.splitlines()
-            if controller_info_list:
-                controllers_info_dict = {}
-                for controller_info in controller_info_list:
-                    parsed = self._parse_sensor_line(controller_info)
-                    if not parsed:
-                        continue
-                    key, value, measure_unit = parsed
-                    key = self.get_sensors_output_key(key, measure_unit)
-                    if is_controller_name_vddscc and '1' in key:
-                        controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
-                    elif not is_controller_name_vddscc:
-                        controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
-                controllers_info_dicts_list.append(controllers_info_dict)
-        return controllers_info_dicts_list
+        return build_controllers_info_dicts_list(sensors_output)
 
     @staticmethod
     def _parse_sensor_line(line):
-        """Parse a single sensor output line and return (channel, value, unit), or None.
-
-        Sensor readings can come in two different text formats depending on the tool:
-
-        1. "labeled" format (original, from SDK scripts) — the measurement type is a
-           word and the channel appears in parentheses:
-               Rail (out1):  1.20 V
-               Curr (out1): 13.00 A
-
-        2. "compact" format (added to support lm-sensors) — the measurement type is a
-           single-letter prefix (v/i/p) fused with the channel name:
-               vout1:  1.20 V
-               iout1: 13.00 A
-           The prefix is stripped so the return value is the same shape as format 1.
-        """
-        labeled_match = re.search(
-            r"(Rail|Curr|Pwr)\s*\((out\d+)\):\s+(\d*\.?\d+)\s+([mV|A|V|W]+)", line)
-        if labeled_match:
-            return labeled_match.group(2), labeled_match.group(3), labeled_match.group(4)
-
-        compact_match = re.search(
-            r"([vip])(out\d+|in):\s+(\d*\.?\d+)\s+(m?[VAW])", line)
-        if compact_match:
-            prefix = compact_match.group(1)
-            channel = compact_match.group(2)
-            value = compact_match.group(3)
-            unit = compact_match.group(4)
-            if channel == "in":
-                channel = "out1"
-            measure_unit = unit if len(unit) == 1 else unit
-            return channel, value, measure_unit
-
-        return None
+        """Delegate to :mod:`ngts.helpers.performance.sensors_power_parse` (kept for callers)."""
+        return sensors_parse_sensor_line(line)
 
     @staticmethod
     def get_sensors_output_key(key, measure_unit):
-        if "V" in measure_unit:
-            key = f"v{key}"
-        elif 'A' in measure_unit:
-            key = f"i{key}"
-        elif 'W' in measure_unit:
-            key = f"p{key}"
-        else:
-            raise TestIssue(f"Unrecognized measure unit {measure_unit} in sensors output parsing")
-        return key
+        return sensors_get_sensors_output_key(key, measure_unit)
 
     @staticmethod
     def get_controllers_info_str_list(sensors_output):
-        controllers_info_str_list = re.split(PowerConsts.CONTROLLER_REGEX, sensors_output)
-        if '' in controllers_info_str_list:
-            controllers_info_str_list.remove('')
-        return controllers_info_str_list
+        return sensors_get_controllers_info_str_list(sensors_output)
 
     def get_dut_system_information(self, session_id, setup_name):
         """
@@ -733,7 +683,7 @@ class SonicPerformanceCli(PerformanceCommon):
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
         logging.info("Running traffic validator on the dut")
         self.start_mst()
-        samples_params = []
+        samples_params = self.get_power_sensor_env_variables()
         for env_var_name, param_val in samples_params_dict.items():
             samples_params.append(f"{env_var_name}={param_val}")
         run_validator_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"

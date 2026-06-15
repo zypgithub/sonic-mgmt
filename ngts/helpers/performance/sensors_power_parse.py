@@ -10,6 +10,12 @@ from infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.performance_constants import PowerConsts
 
 
+SPC6_RAIL_LABEL_REGEX = (
+    r"\b(?P<label>swb_mps29816_\d+_STRESS_[A-Za-z0-9_]+_rail(?P<rail>\d+))_"
+    r"(?P<metric>[VIP]OUT)\s*:"
+)
+
+
 def get_controllers_info_str_list(sensors_output):
     """Split full ``sensors`` text into per-controller blocks (text after each controller id).
 
@@ -36,9 +42,17 @@ def normalized_i2c_address(controller_name):
 
 def parse_sensor_line(line):
     """Parse one line of sensor output into ``(channel, value_str, unit_str)`` or ``None``."""
+    spc6_rail_match = re.search(
+        SPC6_RAIL_LABEL_REGEX + r"\s+(-?\d*\.?\d+)\s+(m?[VAW])\b", line, re.I)
+    if spc6_rail_match:
+        channel = f"out{spc6_rail_match.group('rail')}"
+        value = spc6_rail_match.group(4)
+        unit = spc6_rail_match.group(5)
+        return channel, value, unit
+
     # Compact lm-sensors line: ``vout1: 12.0 V`` / ``iin: 500 mA`` / ``pout2: 1.2 W``
     # Group 1: measure prefix (v/i/p), group 2: channel (outN or in),
-    # group 3: numeric value, group 4: unit (V/A/W or mV/mA/mW).
+    # Group 3: numeric value, group 4: unit (V/A/W or mV/mA/mW).
     compact_match = re.search(
         r"([vip])(out\d+|in):\s+(-?\d*\.?\d+)\s+(m?[VAW])", line)
     if compact_match:
@@ -172,6 +186,15 @@ def infer_spc6_supply_label(block_text):
         return PowerConsts.SPC6_SUPPLY_PDB_CONVERTER
 
     return PowerConsts.SPC6_SUPPLY_MISC_PMIC
+
+
+def get_spc6_rail_labels_by_channel(block_text):
+    """Return SPC6 raw rail labels keyed by ``outN`` channel from one ``sensors`` chip block."""
+    labels_by_channel = {}
+    for match in re.finditer(SPC6_RAIL_LABEL_REGEX, block_text, re.I):
+        channel = f"out{match.group('rail')}"
+        labels_by_channel[channel] = match.group('label')
+    return labels_by_channel
 
 
 def build_controllers_info_dicts_list(sensors_output):
