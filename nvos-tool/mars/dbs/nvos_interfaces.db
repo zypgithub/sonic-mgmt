@@ -74,5 +74,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_nvl5_port.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvl_zombie_link.cases </cases>
+	</test>
 	
 </DBDEF>

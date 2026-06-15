@@ -1,5 +1,7 @@
 import pytest
 import logging
+import re
+from collections import defaultdict
 from retry.api import retry_call
 
 from ngts.nvos_constants.constants_nvos import ConfState
@@ -7,11 +9,53 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, TxBwLossMonitorConsts
-from ngts.tests_nvos.interfaces.nvl_port.helpers import (
-    select_random_nvl_port_name, skip_if_no_access_links
-)
-from ngts.tests_nvos.cluster.cluster_tools import summarize_switch_ports
+from ngts.tests_nvos.interfaces.nvl_port.helpers import skip_if_no_access_links
+from ngts.tests_nvos.interfaces.zombie_link import get_zombie_link_manager
 from ngts.tools.test_utils import allure_utils as allure
+
+
+_PORT_SEG_RE = re.compile(r'([a-zA-Z]+)(\d+)')
+
+
+def _build_port_range(ports):
+    """Compress a port list into a NVUE-friendly range string, per port group.
+
+    Partitions ports by their leading prefix (e.g. ``swA`` vs ``swB`` on
+    Crocodile) so each group emits its own ``<prefix>{mn}-{mx}`` chain
+    independently. Within a group, segments keep the order they appear in
+    the port name. Single-value numeric segments are collapsed to just the
+    number (so ``['sw1p1', ..., 'sw144p1']`` yields ``sw1-144p1``, not
+    ``sw1-144p1-1`` which NVUE rejects).
+
+    Examples:
+    - ``['acp1', ..., 'acp72']``                       -> ``acp1-72``
+    - ``['sw1p1', ..., 'sw144p1']``                    -> ``sw1-144p1``
+    - ``['sw1p1', 'sw1p2', ..., 'sw72p2']``            -> ``sw1-72p1-2``
+    - ``['swA1p1', ..., 'swB18p2']`` (multi-group)     -> ``swA1-18p1-2swB1-18p1-2``
+    """
+    # Group by the first prefix in each port (e.g. 'swA' vs 'swB'), and within
+    # each group accumulate numeric sets per subsequent prefix.
+    group_segments = defaultdict(lambda: defaultdict(set))
+    group_order = {}
+    for port in ports:
+        tokens = _PORT_SEG_RE.findall(port)
+        if not tokens:
+            continue
+        group = tokens[0][0]
+        for prefix, num in tokens:
+            group_segments[group][prefix].add(int(num))
+        group_order.setdefault(group, [pref for pref, _ in tokens])
+
+    parts = []
+    for group, prefixes in group_segments.items():
+        for prefix in group_order[group]:
+            numbers = prefixes[prefix]
+            if not numbers:
+                continue
+            mn, mx = min(numbers), max(numbers)
+            parts.append(f"{prefix}{mn}-{mx}" if mn != mx else f"{prefix}{mn}")
+    return ''.join(parts)
+
 
 logger = logging.getLogger()
 
@@ -22,6 +66,12 @@ ZLMonitor = TxBwLossMonitorConsts.MonitorStatus
 # Retry settings — FlexCounter polls monitor-status every ~10s
 VALIDATE_RETRIES = 6
 VALIDATE_RETRY_DELAY = 5
+
+
+@pytest.fixture
+def zombie_link_manager(devices):
+    """Resolve the zombie-link manager for the DUT (port lists per platform)."""
+    return get_zombie_link_manager(devices)
 
 
 def _get_monitor(fae_obj):
@@ -46,7 +96,13 @@ def _validate_state(fae_obj, expected_oper_state, expected_applied_state, expect
 
     applied = OutputParsingTool.parse_json_str_to_dictionary(
         monitor.show(rev=ConfState.APPLIED)).get_returned_value()
-    assert applied.get(TxBwLossMonitorConsts.STATE) == expected_applied_state, \
+    # Some platforms return an empty ``{}`` for the applied subtree when no
+    # configuration is set — treat that as semantically equal to ``fw-default``
+    # (the documented "no config" applied value).
+    actual_applied = applied.get(TxBwLossMonitorConsts.STATE)
+    if actual_applied is None and expected_applied_state == ZLState.FW_DEFAULT.value:
+        actual_applied = ZLState.FW_DEFAULT.value
+    assert actual_applied == expected_applied_state, \
         f"Applied state: expected '{expected_applied_state}', got '{applied.get(TxBwLossMonitorConsts.STATE)}'"
 
 
@@ -69,10 +125,15 @@ def _validate_state_with_retry(fae_obj, expected_oper_state, expected_applied_st
 @pytest.mark.multiplanar
 def test_tx_bw_loss_monitor_configuration(engines, devices, random_api):
     """
-    Verify show, set, unset and invalid input on the tx-bandwidth-loss-monitor state knob.
+    Verify show, set, unset and invalid input on the tx-bandwidth-loss-monitor
+    state knob, on a single randomly-picked port that is link-up.
+
+    Platform-agnostic: the port is selected via ``RandomizationTool.select_random_port``,
+    so this runs unchanged on any multi-planar IB switch (Juliet / Rosalind /
+    Black Mamba / Crocodile / Taipan).
 
     Steps:
-    - Show default: state operational=disabled applied=fw-default, monitor-status=N/A
+    - Show default state
     - Set disabled -> apply -> verify
     - Set fw-default -> apply -> verify (back to default)
     - Set enabled -> apply -> verify
@@ -88,7 +149,7 @@ def test_tx_bw_loss_monitor_configuration(engines, devices, random_api):
     monitor = _get_monitor(selected_port)
 
     try:
-        with allure.step("Verify default state (fw-default -> operational disabled)"):
+        with allure.step("Verify default state"):
             _validate_state(
                 selected_port,
                 TxBwLossMonitorConsts.DEFAULT_OPER_STATE,
@@ -139,6 +200,8 @@ def test_tx_bw_loss_monitor_configuration(engines, devices, random_api):
 def test_tx_bw_loss_monitor_link_state_down(engines, devices, random_api):
     """
     Verify that operational state and monitor-status update on link down / up events.
+
+    Platform-agnostic: picks any link-up port (acp on NVL, sw on non-NVL multi-ASIC).
 
     Steps:
     - Ensure monitor is enabled and port is link-up -> monitor-status=normal
@@ -193,31 +256,51 @@ def test_tx_bw_loss_monitor_link_state_down(engines, devices, random_api):
 
 
 # ---------------------------------------------------------------------------
-# Test 3 — Range-based configuration (access ports)
+# Test 3 — Range-based configuration (ports under test)
 # ---------------------------------------------------------------------------
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
-def test_tx_bw_loss_monitor_range(engines, devices, random_api, standalone_system, has_loopbox, is_simx):
+def test_tx_bw_loss_monitor_range(engines, devices, random_api, standalone_system, has_loopbox, is_simx,
+                                  zombie_link_manager):
     """
-    Verify tx-bandwidth-loss-monitor state can be set on a range of access ports
-    (e.g. ``nv set fae interface acp1-72 link tx-bandwidth-loss-monitor state disabled``).
+    Verify tx-bandwidth-loss-monitor state can be set on a range of ports
+    (e.g. ``acp1-72`` on NVL5/NVL6, ``sw1-144p1`` on Taipan, ``sw1-72p1-2`` on
+    Black Mamba, ``swA1-18p1-2swB1-18p1-2`` on Crocodile).
+
+    The manager picks the platform-appropriate port list (see
+    ``managers.py``): NVL access ports when available, otherwise the
+    traffic-port subset derived from ``dut.interface_list``.
 
     Steps:
-    - Build access-port range (acp<a>-<b>)
-    - Set disabled on range -> verify on a random single port
-    - Set enabled on range -> verify on a random single port
-    - Unset on range -> verify defaults restored on single port
+    - Build a port range from ``manager.ports_under_test``
+    - Set disabled on the range -> verify on a random single port
+    - Set enabled on the range -> verify on a random single port
+    - Unset on the range -> verify defaults restored on the single port
     """
-    skip_if_no_access_links(has_loopbox, standalone_system, is_simx)
+    ports_under_test = zombie_link_manager.ports_under_test
+    if not ports_under_test:
+        pytest.skip("Platform exposes no ports_under_test for the range test")
 
-    with allure.step("Build access port range"):
-        access_ports = devices.dut.nvl_access_ports_list
-        port_range = summarize_switch_ports(access_ports)
+    # ``skip_if_no_access_links`` only applies on NVL platforms (acp loopbox concept).
+    # Other multi-ASIC platforms have no access-port wiring — skipping there would be wrong.
+    if getattr(devices.dut, 'nvl_access_ports_list', None):
+        skip_if_no_access_links(has_loopbox, standalone_system, is_simx)
+
+    with allure.step("Build port range"):
+        port_range = _build_port_range(ports_under_test)
         all_ports = Fae(port_name=port_range)
 
-    with allure.step("Select a random access port for single-port verification"):
-        verify_port_name = select_random_nvl_port_name(devices, 'acp')
+    with allure.step("Select a link-up port for single-port verification"):
+        # monitor-status only flips to 'normal' on link-up ports. On non-NVL
+        # platforms most ports in ports_under_test are not physically wired,
+        # so picking randomly from the full list gives a flaky ``N/A`` verify.
+        up_port_res = RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP)
+        if not up_port_res.result:
+            pytest.skip(f"no up port to verify range on: {up_port_res.info}")
+        verify_port_name = up_port_res.get_returned_value().name
+        if verify_port_name not in set(ports_under_test):
+            pytest.skip(f"up port {verify_port_name} is not in ports_under_test")
         verify_port = Fae(port_name=verify_port_name)
 
     range_monitor = _get_monitor(all_ports)
@@ -246,33 +329,39 @@ def test_tx_bw_loss_monitor_range(engines, devices, random_api, standalone_syste
 
 
 # ---------------------------------------------------------------------------
-# Test 4 — Internal FNM ports
+# Test 4 — FNM ports (internal or external, depending on platform)
 # ---------------------------------------------------------------------------
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
-def test_tx_bw_loss_monitor_internal_fnm_port(engines, devices, random_api):
+def test_tx_bw_loss_monitor_fnm_port(engines, devices, random_api, zombie_link_manager):
     """
-    Verify tx-bandwidth-loss-monitor is configurable on internal FNM ports.
+    Verify tx-bandwidth-loss-monitor is configurable on FNM ports.
 
-    Internal FNM ports (fnmaXpY) connect ASICs together and are LinkUp by default,
-    so the tx-bandwidth-loss-monitor feature must be exposed and behave the same
-    as on access/trunk ports.
+    FNM ports come in two flavors:
+    - Internal FNM (``fnmaXpY``) — connect ASICs together inside the switch;
+      LinkUp by default.
+    - External FNM (``fnmN``) — face the outside.
 
-    Steps (mirrors test_tx_bw_loss_monitor_configuration, but on an internal FNM port):
-    - Show default: state operational=disabled applied=fw-default, monitor-status=N/A
+    Either flavor must expose tx-bandwidth-loss-monitor and behave the same as
+    user-facing ports. The manager picks the platform-appropriate FNM list
+    (see ``managers.py``): NVL internal FNM when available, otherwise the
+    platform's external FNM list (``fnm_external_port_list``).
+
+    Steps (mirrors test_tx_bw_loss_monitor_configuration, on an FNM port):
+    - Show default state
     - Set disabled -> apply -> verify
     - Set fw-default -> apply -> verify (back to default)
     - Set enabled -> apply -> verify (monitor-status=normal since port is link-up)
     - Set invalid value -> verify rejection
     - Cleanup: unset -> verify state returns to fw-default
     """
-    if not getattr(devices.dut, 'nvl_internal_fnm_ports', None):
-        pytest.skip("No nvl_internal_fnm_ports defined for this device")
+    fnm_ports = zombie_link_manager.fnm_ports_under_test
+    if not fnm_ports:
+        pytest.skip("No FNM ports defined for this platform")
 
-    with allure.step("Select a random internal FNM port"):
-        fnm_port_name = RandomizationTool.select_random_value(
-            devices.dut.nvl_internal_fnm_ports).get_returned_value()
+    with allure.step("Select a random FNM port"):
+        fnm_port_name = RandomizationTool.select_random_value(fnm_ports).get_returned_value()
         selected_port = Fae(port_name=fnm_port_name)
 
     monitor = _get_monitor(selected_port)
