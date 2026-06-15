@@ -1258,9 +1258,11 @@ process_monitoring/test_critical_process_monitoring.py:
 
 process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5008193 and sn6600_ld platform"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5008193 on sn6600_ld platform or https://redmine.mellanox.com/issues/5080485 on ASAN image"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/5008193 and 'sn6600_ld' in platform"
+    - "https://redmine.mellanox.com/issues/5080485 and 'ASAN' in build_version"
 
 sub_port_interfaces/:
   skip:
