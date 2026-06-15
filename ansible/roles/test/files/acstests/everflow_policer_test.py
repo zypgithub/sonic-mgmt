@@ -25,7 +25,7 @@ logger = logging.getLogger('EverflowPolicerTest')
 class EverflowPolicerTest(BaseTest):
 
     GRE_PROTOCOL_NUMBER = 47
-    NUM_OF_TOTAL_PACKETS = 9000
+    NUM_OF_TOTAL_PACKETS = 10000
     METER_TYPES = ['packets', 'bytes']
 
     def __init__(self):
@@ -341,7 +341,8 @@ class EverflowPolicerTest(BaseTest):
 
         # Send traffic and verify the original traffic is not rate limited
         count = self.checkOriginalFlow()
-        assert count == self.NUM_OF_TOTAL_PACKETS
+        # Allow 1% packet loss due to ptf performance limit
+        assert count >= self.NUM_OF_TOTAL_PACKETS * 0.99
 
         # Verify packet policing is used
         assert_str = "Non packet policing is not supported"
