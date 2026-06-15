@@ -256,12 +256,6 @@ def pytest_addoption(parser):
     parser.addoption("--recover_method", action="store", default="adaptive",
                      help="Set method to use for recover if sanity failed")
 
-    ############################
-    #   weak server options    #
-    ############################
-    parser.addoption("--weak_server", action="store_true", default=False,
-                     help="Treat testbed as a weak server (reduces packet counts and adds delays in relevant tests)")
-
     ########################
     #   pre-test options   #
     ########################
@@ -534,17 +528,6 @@ def converge_topo_if_needed(config):
     except Exception as e:
         logger.error(f"Error during topo converge: {e}")
         raise
-
-
-@pytest.fixture(scope="session")
-def weak_server(request, duthosts):
-    """
-    Returns True if the testbed should be treated as a weak server.
-    Can be forced via --weak_server CLI flag, or auto-detected from the platform (simx).
-    """
-    if request.config.getoption("--weak_server"):
-        return True
-    return False
 
 
 @pytest.fixture(scope="session")
