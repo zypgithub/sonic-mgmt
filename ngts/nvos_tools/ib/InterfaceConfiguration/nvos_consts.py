@@ -384,9 +384,95 @@ class TxBwLossMonitorConsts:
     # Link-down diagnostics opcode for BW-loss threshold exceeded
     BW_LOSS_DIAG_CODE: str = '45'
     BW_LOSS_DIAG_STATUS: str = 'BW_loss_threshold_exceeded'
+    # Same opcode as it appears in NVOS ``nv show interface <p> link phy detail``
+    # ``linkdown-reason-status-local`` field (uppercase-underscored).
+    NVOS_LINKDOWN_STATUS_BW_LOSS: str = 'BW_LOSS_THRESHOLD_EXCEEDED'
+
+    # NVOS phy-detail fields used by the injection test verification.
+    NVOS_PHY_DETAIL_LINKDOWN_CODE_LOCAL: str = 'linkdown-reason-code-local'
+    NVOS_PHY_DETAIL_LINKDOWN_STATUS_LOCAL: str = 'linkdown-reason-status-local'
+    NVOS_PHY_DETAIL_UNINTENTIONAL_LINK_DOWN: str = 'unintentional-link-down-events'
+    # ``link phy detail`` returns per-plane values joined with this separator
+    # (e.g. ``"45/23/23/23"``). First slot = most-recent link-down event.
+    NVOS_PHY_DETAIL_PLANE_SPLITTER: str = '/'
 
     # Expected error fragment for invalid state input
     ERR_MSG_INVALID_STATE: str = "is not one of"
+
+
+class PhyDiagConsts:
+    """Constants for the phy team's ``phy_diag.py`` register-access tool.
+
+    Used by :class:`ngts.nvos_tools.infra.PhyDiagTool.PhyDiagTool` to drive
+    BW-loss-monitor injection (PPBMP + PTER) on Mellanox switches.
+    """
+
+    # Canonical NFS source path on the sonic-mgmt host. Not mounted on NVOS
+    # DUTs, so :meth:`PhyDiagTool.ensure_deployed` SCPs the package from
+    # here to the DUT before the test runs.
+    PHY_DIAG_SOURCE_DIR: str = (
+        "/auto/mswg/release/fwshared/phy/utils/phy_tools/"
+        "phy_tools_last_stable/phy_package"
+    )
+    # Deployed location on the DUT (where the SCP push lands). The phy_diag
+    # entry-point lives under ``phy_diag/phy_diag.py`` inside the package.
+    PHY_DIAG_DUT_DIR: str = "/tmp/phy_package"
+    PHY_DIAG_BIN: str = f"{PHY_DIAG_DUT_DIR}/phy_diag/phy_diag.py"
+
+    # Register names as phy_diag.py knows them. Note these differ from the
+    # bare ``mlxreg --reg_name`` form — phy_diag's ADB exposes specialized
+    # variants (e.g. ``PPBMP_BW_LOSS_MONITOR_PARAMETERS`` instead of
+    # ``PPBMP``, ``PTER_PHY_REG`` instead of ``PTER``).
+    REG_PPBMC: str = "PPBMC"
+    REG_PPBMP_BW_LOSS: str = "PPBMP_BW_LOSS_MONITOR_PARAMETERS"
+    REG_PTER_PHY: str = "PTER_PHY_REG"
+    REG_PDDR_LINK_DOWN_INFO: str = "PDDR_LINK_DOWN_INFO"
+
+    # PPBMC ``monitor_cntl`` bitmask — bit 5 (``0x20``) enables the literal
+    # ``Tx_BW_loss`` monitor type (phy_diag decodes it as enum ``Tx_BW_loss``).
+    # The FW default is ``0x24`` (bits 5+2 -- general BER monitoring) which
+    # does NOT classify our injection as a BW-loss event on the local port.
+    # We override to pure ``0x20`` so the local linkdown-reason-code is 45.
+    PPBMC_MONITOR_CNTL_TX_BW_LOSS: int = 0x20
+
+    # PPBMP ``monitor_group`` enum values discovered on Quantum3 (mt54004)
+    # firmware 35.2016.4994-002. Groups 0/1/2/5 are BER source enums and
+    # FW-locked for writes (``th_cap_exp_max=0``). Group 8 (``Tx_BW_loss``)
+    # is the actual zombie-link group and is writable (``time_window_set_cap=1``).
+    PPBMP_MONITOR_GROUP_RAW_BER_RS: int = 0
+    PPBMP_MONITOR_GROUP_RAW_BER_FC: int = 1
+    PPBMP_MONITOR_GROUP_EFFECTIVE_BER: int = 2
+    PPBMP_MONITOR_GROUP_SYMBOL_BER: int = 5
+    PPBMP_MONITOR_GROUP_TX_BW_LOSS: int = 8
+
+    # PPBMP knobs for the "trip-immediately" injection setup.
+    PPBMP_BW_LOSS_THRESHOLD_LOW: int = 1
+    PPBMP_TIME_WINDOW_DEFAULT: int = 100
+    PPBMP_TIME_WINDOW_W_EN: int = 1
+
+    # PTER ``error_type_admin`` enum (also reported as ``error_type_cap`` bitmap).
+    PTER_ERROR_TYPE_NONE: int = 0
+    PTER_ERROR_TYPE_RAW_BER: int = 1
+    PTER_ERROR_TYPE_EFFECTIVE_BER: int = 2
+    PTER_ERROR_TYPE_SYMBOL_ERRORS: int = 4
+
+    # PTER BER injection — verified-working values on Taipan Quantum3 FW
+    # 35.2016.4994-002 (matches the wiki's NVL6 recipe). Higher values
+    # (e.g. 15/15) are FW-rejected on some builds.
+    PTER_BER_MANTISSA_DEFAULT: int = 1
+    PTER_BER_EXP_DEFAULT: int = 4
+    PTER_INJECTION_TIME_MAX: int = 0xFFFF
+
+    # Regex matching the PTER response row that indicates the firmware armed
+    # the injection (``error_type_oper`` field is 1). Whitespace-tolerant so
+    # padding differences in phy_diag's table formatting don't break detection.
+    # If absent the FW silently rejected (engineering-FW-only path) — caller
+    # should skip rather than fail.
+    PTER_ARMED_REGEX: str = r"error_type_oper\s*\|\s*1\b"
+
+    # PDDR page selector for link-down info (the page that exposes
+    # ``local_reason_opcode = 45 BW_loss_threshold_exceeded``).
+    PDDR_PAGE_LINK_DOWN_INFO: int = 6
 
 
 class DataBaseNames:
