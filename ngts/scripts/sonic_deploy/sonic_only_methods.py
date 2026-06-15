@@ -179,7 +179,8 @@ class SonicInstallationSteps:
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
                 "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and
-                not dut_name.startswith('slm-') and not setup_name.endswith('-ha') and
+                (not dut_name.startswith('slm-') or dut_name in SonicDeployConstants.SLM_GEN_MG_ALLOWLIST) and
+                not setup_name.endswith('-ha') and
                 "r-bison-18" != dut_name and "r-bison-08" != dut_name):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,

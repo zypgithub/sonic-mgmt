@@ -1339,7 +1339,8 @@ class MarsConstants:
         "dualtor-aa", "t0-isolated-d2u254s1", "t1-isolated-d254u2s1", "dualtor-64-breakout",
         "dualtor-aa-64-breakout", "t0-88-o8c80", "ptp-256", "ptp-130", "t1-isolated-d28u1", 't1-isolated-d28u4',
         "t1-isolated-d56u2", "t0-isolated-d32u32s2", "t0-isolated-v6-d32u32s2", "t0-isolated-d2u254s2", "t0-isolated-d32u32s2-mix",
-        "t1-isolated-v6-d56u1-lag", "t1-48-lag", "t0-isolated-d128u128s2", "t0-isolated-d2u510s2", "t1-isolated-d510u2"
+        "t1-isolated-v6-d56u1-lag", "t1-48-lag", "t0-isolated-d128u128s2", "t0-isolated-d2u510s2", "t1-isolated-d510u2",
+        "bmc-dual-mgmt"
     )
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa", "dualtor-64-breakout", "dualtor-aa-64-breakout")
     TOPO_ARRAY_HA = ("t1-smartswitch-ha",)
@@ -1441,6 +1442,11 @@ class SonicDeployConstants:
     REMOVE_TOPO_TIMEOUT = 600
     REMOVE_TOPO_TIMEOUT_SCALE = 3600
     SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't0-isolated-d2u510s2', 't1-isolated-d510u2', 't1-isolated-v6-d56u1-lag']
+    # 'slm-' DUTs are excluded from gen-mg in start_community_background_threads by default.
+    # BMC setups (e.g. bmc-dual-mgmt) still need their minigraph generated, so list the
+    # 'slm-' DUT names that must run gen-mg here. Value is the DUT name used to build the
+    # gen-mg command (the switch dut_name, e.g. 'slm-chipless-2700a1-146'), not the '-bmc' host.
+    SLM_GEN_MG_ALLOWLIST = ['slm-chipless-2700a1-146']
 
 
 class BmcDeployConstants:
@@ -1485,6 +1491,9 @@ class BmcDeployConstants:
     # AST2700-A1 is moved to OpenBMC-only.
     SONIC_BMC_SUPPORTED_HW_TYPES = ('AST2700-A1', 'AST2700-A2')
 
+    # BMC HWSKU
+    BMC_HWSKU = "NVIDIA-AST2700-BMC"
+
     # Timeouts (seconds).
     UBOOT_PROMPT_TIMEOUT = 120         # time to interrupt autoboot and reach U-Boot prompt
     DHCP_TIMEOUT = 60                  # one DHCP attempt timeout
@@ -1492,7 +1501,7 @@ class BmcDeployConstants:
     TFTP_DOWNLOAD_TIMEOUT = 900        # time to download the FIT image via TFTP
     TFTP_DOWNLOAD_RETRY_LIMIT = 3      # retries when TFTP fails (e.g. ARP retry exceeded)
     EMMC_WRITE_TIMEOUT = 1800          # time for the eMMC write to finish
-    BMC_BOOT_TIMEOUT = 600             # time for the BMC to come up and present login prompt
+    BMC_BOOT_TIMEOUT = 900             # time for the BMC to come up and present login prompt
     BMC_CHRONY_SETTLE_SECONDS = 5      # wait after starting chrony before forcing 'chronyc -a makestep'
 
 

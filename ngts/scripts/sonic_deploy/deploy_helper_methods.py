@@ -27,7 +27,8 @@ from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths, prepare_images
 from ngts.tools.align_components.nogaq import CACHE_FILE_NAME as NOGA_CACHE_FILE
 from ngts.helpers.general_helper import extract_host_details_from_topo_obj, get_cli_obj
-from ngts.scripts.sonic_deploy.sonic_only_methods import is_community
+from ngts.scripts.sonic_deploy.sonic_only_methods import is_community, SonicInstallationSteps
+from ngts.scripts.sonic_deploy.community_only_methods import get_deploy_minigraph_cmd, execute_script
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -843,10 +844,52 @@ class DeployOrchestrator:
         results = {}
 
         # BMC installation runs before the switch: the BMC boots first and
-        # controls Switch-Host power, so deploying it first
+        # controls Switch-Host power, so deploying it first.
+        # The BMC reuses the community topo flow (bmc-dual-mgmt is a normal topo),
+        # so it is driven by --sonic-topo / --dest_hwsku, not by dedicated params.
         if self.context.deploy_bmc:
+            ctx = self.context
+            bmc_topo_threads = {}
+            dut_name = ctx.primary_dut['dut_name']
+            ansible_path = ctx.setup_info['ansible_path']
+            bmc_params = DeployBmcHelper._resolve_bmc_params(ctx)
+
+            # remove-topo / add-topo / gen-mg reuse the community deploy functions
+            # in sonic_only_methods directly (bmc-dual-mgmt is a normal topo); there
+            # are no BMC-specific topo wrappers.
+            with allure.step('BMC remove-topo'):
+                SonicInstallationSteps.remove_topologies(
+                    ansible_path=ansible_path,
+                    dut_names=[dut_name],
+                    setup_name=ctx.setup_name,
+                    sonic_topo=ctx.sonic_topo,
+                )
+            with allure.step('BMC add-topo and generate minigraph'):
+                SonicInstallationSteps.start_community_background_threads(
+                    bmc_topo_threads, ctx.setup_name, dut_name, ctx.sonic_topo,
+                    'ceos', MarsConstants.DEFAULT_PTF_TAG, '', ansible_path,
+                    ctx.setup_info, ctx.destination_hwsku,
+                    deploy_sequential=ctx.deploy_sequential,
+                )
             with allure.step('BMC installation'):
-                DeployBmcHelper.install_bmc(self.context)
+                DeployBmcHelper.install_bmc(ctx)
+            with allure.step('Wait for BMC add-topo/gen-mg to finish'):
+                wait_until_background_procs_done(bmc_topo_threads)
+
+            # deploy-mg produces the NetworkBmc DEVICE_METADATA, the default ACL
+            # tables and the telemetry certificates on the BMC.
+            with allure.step('BMC deploy minigraph'):
+                deploy_cmd = get_deploy_minigraph_cmd().format(SWITCH=dut_name, TOPO=ctx.sonic_topo)
+                logger.info(f"Running CMD: {deploy_cmd}")
+                execute_script(deploy_cmd, ansible_path, validate=True, timeout=900)
+            with allure.step('Wait for BMC is ready after config reload'):
+                DeployBmcHelper._wait_bmc_sonic_db_ready(bmc_params)
+                DeployBmcHelper._wait_bmc_containers_running(bmc_params)
+            # Disable extra services not available on the BMC. Must run after deploy-mg:
+            # 'config load_minigraph' / 'config reload' resets FEATURE state.
+            if is_redmine_issue_active([5057220])[0] or is_redmine_issue_active([5057221])[0]:
+                with allure.step('Disable unavailable services in the config'):
+                    DeployBmcHelper._disable_unavailable_services(bmc_params)
 
         if self.context.deploy_switch:
             # Phase 1: Pre-installation
@@ -1061,7 +1104,7 @@ class DeployBmcHelper:
                 )
                 with allure.step('Resume BMC boot (HW not supported)'):
                     DeployBmcHelper._run_uboot_cmd(serial_engine, 'boot')
-                return
+                return False
 
             with allure.step('Run U-Boot install sequence'):
                 DeployBmcHelper._run_uboot_install(serial_engine, bmc_params)
@@ -1070,7 +1113,9 @@ class DeployBmcHelper:
                 DeployBmcHelper._wait_emmc_write_done(serial_engine)
 
             with allure.step('Verify BMC SSH login'):
-                DeployBmcHelper._wait_bmc_login(serial_engine)
+                DeployBmcHelper._wait_bmc_login_with_power_cycle(
+                    context, dut_alias, serial_engine
+                )
                 DeployBmcHelper._verify_bmc_login(bmc_params)
 
             # sshd comes up well before the SONiC stack after the install reboots.
@@ -1080,27 +1125,14 @@ class DeployBmcHelper:
             with allure.step('Wait for BMC SONiC DB to be ready'):
                 DeployBmcHelper._wait_bmc_sonic_db_ready(bmc_params)
 
-            # workaround to update the router_type to NetworkBmc in the DEVICE_METADATA table
-            # of the config_db
-            if is_redmine_issue_active([5051317])[0]:
-                with allure.step('Set BMC DEVICE_METADATA type to NetworkBmc'):
-                    DeployBmcHelper._set_device_metadata_type(bmc_params)
-
-            # Need some default ACL tables to be applied to the BMC for the cacl tests to pass
-            with allure.step('Add BMC Default ACL tables'):
-                DeployBmcHelper._add_default_acl_tables(bmc_params)
-
-            # disable extra services that are not available on the BMC to avoid test failures
-            if is_redmine_issue_active([5057220])[0] or is_redmine_issue_active([5057221])[0]:
-                with allure.step('Disable unavailable services in the config'):
-                    DeployBmcHelper._disable_unavailable_services(bmc_params)
-
             # Reboot the BMC to apply the config changes.
             with allure.step('Power-cycle BMC to apply the config changes'):
                 context.primary_cli_obj.remote_reboot(
                     context.topology_obj, dut_alias, wait_till_alive=False
                 )
-                DeployBmcHelper._wait_bmc_login(serial_engine)
+                DeployBmcHelper._wait_bmc_login_with_power_cycle(
+                    context, dut_alias, serial_engine
+                )
 
             # Sync the BMC clock
             with allure.step('Sync BMC clock via chrony'):
@@ -1111,11 +1143,8 @@ class DeployBmcHelper:
                         f"Failed to sync BMC clock on {dut_name}: {e}"
                     )
 
-            # Generate telemetry certificates on BMC
-            with allure.step('Generate BMC telemetry certificates'):
-                DeployBmcHelper._init_telemetry_keys(context, bmc_params)
-
             logger.info(f"BMC installation succeeded on {dut_name}")
+            return True
         finally:
             DeployBmcHelper._close_serial(serial_engine)
 
@@ -1389,13 +1418,39 @@ class DeployBmcHelper:
         )
 
     @staticmethod
-    def _verify_bmc_login(bmc_params):
+    def _wait_bmc_login_with_power_cycle(context, dut_alias, serial_engine):
+        """
+        Wait for the BMC login prompt after a reboot.
+        """
+        try:
+            DeployBmcHelper._wait_bmc_login(serial_engine)
+            return
+        except Exception as err:
+            logger.warning(
+                f"BMC login prompt not seen within timeout: {err}. "
+                f"Power-cycling to recover from a possibly stuck reboot."
+            )
+            context.primary_cli_obj.remote_reboot(
+                context.topology_obj, dut_alias, wait_till_alive=False
+            )
+        DeployBmcHelper._wait_bmc_login(serial_engine)
+
+    @staticmethod
+    def _verify_bmc_login(bmc_params, tries=30, delay=5):
+        """
+        Confirm SSH login to the freshly-booted BMC works. sshd accepts TCP well
+        before it actually serves a password prompt / the admin account is ready,
+        so the first connections can time out without ever showing a prompt. Retry
+        until login succeeds (same pattern as _wait_bmc_sonic_db_ready); otherwise a
+        transient not-ready window aborts the whole BMC install.
+        """
         engine = LinuxSshEngine(
             bmc_params['bmc_ip'],
             username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
             password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
         )
-        engine.run_cmd("uname -a")
+        retry_call(engine.run_cmd, fargs=["uname -a"],
+                   tries=tries, delay=delay, logger=logger)
 
     @staticmethod
     def _wait_bmc_sonic_db_ready(bmc_params, tries=30, delay=10):
@@ -1430,6 +1485,34 @@ class DeployBmcHelper:
         retry_call(_check, tries=tries, delay=delay, logger=logger)
 
     @staticmethod
+    def _wait_bmc_containers_running(bmc_params, tries=30, delay=10):
+        """
+        Wait BMC containers are running
+        """
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+        general_cli = GeneralCliCommon(engine)
+
+        def _check():
+            defined = engine.run_cmd("docker ps -a --format '{{.Names}}'").split()
+            if not defined:
+                raise RuntimeError("No BMC containers reported by 'docker ps' yet")
+            running = set(general_cli.get_running_containers_names())
+            not_running = [name for name in defined if name not in running]
+            if not_running:
+                raise RuntimeError(
+                    f"BMC containers not running yet: {', '.join(not_running)}"
+                )
+            logger.info(
+                "All BMC containers are running"
+            )
+
+        retry_call(_check, tries=tries, delay=delay, logger=logger)
+
+    @staticmethod
     def _sync_bmc_clock(bmc_params):
         """
         Force a one-shot clock sync via SSH. Equivalent to running
@@ -1454,63 +1537,6 @@ class DeployBmcHelper:
         logger.info(
             f"BMC clock after sync:  {engine.run_cmd('date').strip()}"
         )
-
-    @staticmethod
-    def _init_telemetry_keys(context, bmc_params):
-        """
-        Generate telemetry cert on BMC
-        """
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
-        context.primary_cli_obj.init_telemetry_keys(engine=engine)
-
-    @staticmethod
-    def _set_device_metadata_type(bmc_params):
-        """
-        Set DEVICE_METADATA|localhost 'type' to 'NetworkBmc'
-        """
-        type_metadata = BmcDeployConstants.BMC_DEVICE_METADATA_TYPE
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
-        type_before = engine.run_cmd(
-            'sonic-db-cli CONFIG_DB hget "DEVICE_METADATA|localhost" type'
-        ).strip()
-        logger.info(f"BMC DEVICE_METADATA type before: '{type_before}'")
-        engine.run_cmd(
-            'sonic-db-cli CONFIG_DB hset "DEVICE_METADATA|localhost" type '
-            f'{type_metadata}'
-        )
-        engine.run_cmd(r"sudo sed -i 's/^DEVICE_TYPE=LeafRouter$/DEVICE_TYPE=NetworkBmc/' /etc/sonic/sonic-environment")
-        engine.run_cmd("sudo config save -y")
-        type_after = engine.run_cmd(
-            'sonic-db-cli CONFIG_DB hget "DEVICE_METADATA|localhost" type'
-        ).strip()
-        logger.info(f"BMC DEVICE_METADATA type after:  '{type_after}'")
-        if type_after != type_metadata:
-            raise RuntimeError(
-                f"Failed to set BMC DEVICE_METADATA type to '{type_metadata}'; "
-                f"still '{type_after}'"
-            )
-
-    @staticmethod
-    def _add_default_acl_tables(bmc_params):
-        """
-        Add NTP_ACL, SNMP_ACL, SSH_ONLY
-        """
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
-        engine.copy_file(source_file="/root/mars/workspace/sonic-mgmt/ngts/common/bmc_default_acls.json", dest_file="bmc_default_acls.json", file_system="/tmp/", overwrite_file=True, verify_file=True)
-        engine.run_cmd("sudo config apply-patch /tmp/bmc_default_acls.json")
-        engine.run_cmd("sudo config save -y")
 
     @staticmethod
     def _disable_unavailable_services(bmc_params):

@@ -233,6 +233,7 @@ all:
           - ptp-256
           - urh
           - lrh
+          - bmc-dual-mgmt
       children:
         server_1:
         server_2:
