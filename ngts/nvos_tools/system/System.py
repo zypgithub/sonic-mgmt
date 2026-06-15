@@ -2,6 +2,8 @@ import logging
 import os
 import time
 from typing import Tuple, Union
+from typing import Dict
+
 import pytest
 from retry import retry
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
@@ -184,6 +186,34 @@ class System(BaseComponent):
                 with allure.step(f'check_sanitizer_and_store_dump in {dumps_folder}'):
                     check_sanitizer_and_store_dump(engine, dumps_folder, pytest.test_name)
             return result
+
+
+class Events(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/events')
+
+    def show_events_last_recent_entries(self, query_param, events_count='1') -> str:
+        system = System()
+        query_param_api = '?' + query_param
+        query_param_nvue = '--' + query_param
+        if events_count:
+            events_count_api = '=' + str(events_count)
+        else:
+            events_count_api = '=' + str(20)  # default value for openapi as "system events --last" is not supported as in RM-4396664
+        events_count_nvue = ' ' + str(events_count)
+        with allure.step("Show system event --last/--recent"):
+            logging.info("Show system event --last/--recent")
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
+                                                       TestToolkit.engines.dut, self.get_resource_path(),
+                                                       query_param_api + events_count_api).get_returned_value()
+            else:
+                return system.events.show(query_param_nvue + events_count_nvue)
+
+    def get_last(self) -> Dict[str, str]:
+        return tuple(OutputParsingTool.parse_json_str_to_dictionary(
+            self.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '1')
+        ).get_returned_value().values())[0]
 
 
 class Documentation(BaseComponent):

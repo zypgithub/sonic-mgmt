@@ -1,7 +1,6 @@
 import logging
 import random
 import re
-
 import pytest
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -76,6 +75,9 @@ def test_cluster_chassis_id(engines, devices, random_api):
                 filename].action_delete().verify_result()
         with allure.step("Running sdn factory reset"):
             ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
+
+        with allure.step("Running sdn factory reset"):
+            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
 
 
 def get_name_from_generate_config_file(output):

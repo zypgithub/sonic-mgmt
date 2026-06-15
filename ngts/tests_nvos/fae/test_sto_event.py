@@ -68,7 +68,8 @@ def test_fae_system_sto_event_default(engines, devices, nv_command, random_api, 
 
             # Get all files in dump folder
             dump_files_list = nv_command.system.techsupport.get_techsupport_files_list(engines.dut, '')
-            assert StoDebug.STO_DEBUG_DUMPS in dump_files_list, f'{StoDebug.STO_DEBUG_DUMPS} not found in tech-support'
+            assert any(f.startswith(StoDebug.STO_DEBUG_DUMPS) for f in dump_files_list), \
+                f'{StoDebug.STO_DEBUG_DUMPS} not found in tech-support'
 
     finally:
         with allure.step('Reboot system after injection STO event'):
@@ -115,6 +116,8 @@ def test_fae_system_sto_event_disabled(engines, devices, nv_command, random_api)
 
     finally:
         fae.system.sto_event.unset(op_param=StoDebug.STATE, apply=True).verify_result()
+        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+            fae.system.sto_event.show()).get_returned_value()
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=StoDebug.STATE,
                                                           expected_value=StoDebug.ENABLED)

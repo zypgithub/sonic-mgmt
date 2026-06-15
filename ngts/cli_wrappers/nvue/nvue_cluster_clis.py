@@ -61,6 +61,11 @@ class NvueClusterCli(NvueBaseCli):
         return NvueClusterCli.action_deprecated(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
+    def action_fetch(engine, resource_path, path):
+        remote_url = ImageConsts.SCP_PATH + path
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.FETCH.replace('@', ''), resource_path=resource_path, param_value=remote_url)
+
+    @staticmethod
     def action_install(engine, resource_path, file):
         return NvueClusterCli.action_deprecated(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path, param_value=file)
 

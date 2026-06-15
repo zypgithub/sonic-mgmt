@@ -4,10 +4,11 @@ import re
 import time
 import retry
 from datetime import datetime, timezone
+from datetime import datetime
 from dateutil import parser
 
 from ngts.constants.constants import LinuxConsts
-from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, ApiType, SystemConsts, RemarkableLogsConsts
+from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, ApiType, SystemConsts
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
@@ -216,10 +217,9 @@ def verify_cleanup_done_for_ib(engine, time_before_rf, system, username, param='
 
     with allure.step("Verify tech-support files were deleted"):
         if param != KEEP_ONLY_FILES:
-            output = engine.run_cmd(f"find {RemarkableLogsConsts.LOGS_PATH} -type f -size +5M -exec du -h {{}} + | sort -h")
-
-            if output:
-                errors += "\nsome tech-support files were not deleted: {} check logs to see file size before factory reset".format(output)
+            output = engine.run_cmd("ls /var/dump")
+            if output and "No such file or directory" not in output:
+                errors += "\ntech-support files were not deleted: {}".format(output)
 
     with allure.step("Verify old stats internal files were deleted"):
         if param != KEEP_ONLY_FILES:

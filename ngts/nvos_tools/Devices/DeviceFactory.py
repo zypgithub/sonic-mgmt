@@ -8,15 +8,16 @@ from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4
     Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, \
     Mlx2201Switch, Mlx2100Switch, \
     Mlx2010Switch, Mlx3700Switch, Mlx5640Switch
-from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, BlackMambaDGXSwitch,
-                                              CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch,
-                                              JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
-                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600,
-                                              JulietNonScaleoutSwitchGB300, JulietNonScaleoutSwitchGB300QS,
+from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch,
+                                              BlackMambaDGXSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch,
+                                              JulietScaleoutSunbirdSwitch, JulietTTMSwitch, JulietNonScaleoutSwitch,
+                                              JulietAriel, JulietNonScaleoutSwitchNoNCI, JulietArielPS,
+                                              JulietNonScaleoutSwitchNoNCI5600, JulietNonScaleoutSwitchGB300,
+                                              JulietNonScaleoutSwitchGB300QS, JulietNonScaleoutSwitchGB300PS,
                                               RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch,
-                                              RosalindStackedSwitch, RosalindStackedSimx,
-                                              JulietNonScaleoutSwitchGB300PS, RosalindChipless, TaipanSwitch,
-                                              PortiaSimx, PortiaSA, RosalindSA, RosalindRTF)
+                                              RosalindStackedSwitch, RosalindStackedSimx, RosalindChipless,
+                                              TaipanSwitch, TaipanSingleAsicSwitch, PortiaSimx, PortiaSA,
+                                              RosalindSA, RosalindRTF)
 
 logger = logging.getLogger()
 
@@ -57,6 +58,7 @@ class DeviceFactory:
             'Mellanox 2100': Mlx2100Switch,
             'Mellanox 2010': Mlx2010Switch,
             'N5110_LD - JulietScaleout': JulietScaleoutSwitch,
+            'N5110_LD - JulietScaleoutSunbirdSwitch': JulietScaleoutSunbirdSwitch,
             'N5110_LD - JulietTTM': JulietTTMSwitch,
             'N5100_LD - JulietNonScaleout': JulietNonScaleoutSwitch,
             'N5112_LD - JulietAriel': JulietAriel,
@@ -64,6 +66,7 @@ class DeviceFactory:
             'N5112_LD - JulietArielPS': JulietArielPS,
             'N5600_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI5600,
             'Q3450_LD - Taipan': TaipanSwitch,
+            'Q3451_LD - TaipanSingleAsic': TaipanSingleAsicSwitch,
             'N5500_LD - JulietNonScaleoutSwitchGB300': JulietNonScaleoutSwitchGB300,
             'N5500_LD - JulietNonScaleoutSwitchGB300QS': JulietNonScaleoutSwitchGB300QS,
             'N5500_LD - JulietNonScaleoutSwitchGB300PS': JulietNonScaleoutSwitchGB300PS,

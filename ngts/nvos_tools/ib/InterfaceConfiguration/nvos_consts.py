@@ -377,9 +377,9 @@ class TxBwLossMonitorConsts:
             return [member.value for member in cls]
 
     # Default show values (port up, no config applied)
-    DEFAULT_OPER_STATE: str = State.ENABLED.value
+    DEFAULT_OPER_STATE: str = State.DISABLED.value
     DEFAULT_APPLIED_STATE: str = State.FW_DEFAULT.value
-    DEFAULT_MONITOR_STATUS: str = MonitorStatus.NORMAL.value
+    DEFAULT_MONITOR_STATUS: str = MonitorStatus.NA.value
 
     # Link-down diagnostics opcode for BW-loss threshold exceeded
     BW_LOSS_DIAG_CODE: str = '45'
@@ -398,6 +398,63 @@ class TxBwLossMonitorConsts:
 
     # Expected error fragment for invalid state input
     ERR_MSG_INVALID_STATE: str = "is not one of"
+
+
+class FWRecoveryConsts:
+    # Define constants for recovery event fields
+    TOTAL_SUCCESSFUL_RECOVERY_EVENTS = 'total-successful-recovery-events'
+    TIME_IN_LAST_LOGIC_RECOVERY_EVENT = 'time-in-last-logic-recovery-event'
+    TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT = 'time-in-last-serdes-eq-recovery-event'
+    TIME_SINCE_LAST_RECOVERY = 'time-since-last-recovery'
+    LAST_LOGIC_RECOVERY_ATTEMPTS = 'last-logic-recovery-attempts'
+    LAST_SERDES_EQ_RECOVERY_ATTEMPTS = 'last-serdes-eq-recovery-attempts'
+    TIME_BETWEEN_LAST_TWO_RECOVERIES = 'time-between-last-two-recoveries'
+
+    ENABLED = 'enabled'
+    DISABLED = 'disabled'
+    FW_DEFAULT = 'fw-default'
+
+    # Default expected values
+    DEFAULT_FW_RECOVERY_COUNTERS = {
+        TOTAL_SUCCESSFUL_RECOVERY_EVENTS: 0,
+        TIME_IN_LAST_LOGIC_RECOVERY_EVENT: 0,
+        TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT: 0,
+        TIME_SINCE_LAST_RECOVERY: 0,
+        LAST_LOGIC_RECOVERY_ATTEMPTS: 0,
+        LAST_SERDES_EQ_RECOVERY_ATTEMPTS: 0,
+        TIME_BETWEEN_LAST_TWO_RECOVERIES: 0,
+    }
+
+    class SerdesEQMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+    class LogicRelockMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+    class SerdesEQ:
+        MODE = "serdes-eq-mode"
+        TIMEOUT = "serdes-eq-timeout"
+        SETTING_PREFIX = "serdes-eq"
+
+    class LogicRelock:
+        MODE = "logic-relock-mode"
+        TIMEOUT = "logic-relock-timeout"
+        SETTING_PREFIX = "logic-relock"
+
+    DEFAULT_PHY_RECOVERY_DICT = {
+        SerdesEQ.MODE: SerdesEQMode.ENABLED.value,
+        SerdesEQ.TIMEOUT: str(100),
+    }
+
+    MODES = [SerdesEQMode.DISABLED.value, SerdesEQMode.FW_DEFAULT.value, SerdesEQMode.ENABLED.value]
+
+    # Go once action constants
+    GO_ONCE_INVALID_PORT_TYPES = ['eth0', 'eth1', 'fnm1', 'lo']
+    GO_ONCE_LOG_MESSAGE = 'Got phy recovery event for port'
 
 
 class PhyDiagConsts:

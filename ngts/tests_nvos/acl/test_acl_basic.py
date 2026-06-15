@@ -429,6 +429,38 @@ def test_acl_match_dest_port(engines, random_api, topology_obj):
     match_ip_port_test(engines, mgmt_port, 'ipv4', 'AA_TEST_ACL_DEST_PORT', dest_port_list, engines.sonic_mgmt.ip, AclConsts.TCP_DEST_PORT, engines.dut)
 
 
+@pytest.mark.acl
+def test_acl_match_protocol(engines, random_api, topology_obj):
+    """
+    Validate ACL match protocol rules.
+    steps:
+    1. config ACL with a match protocol rule
+    2. send packet
+    3. validate counter increased
+    """
+    acl_id = "AA_TEST_ACL_PROTOCOL"
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = Port(mgmt_port_name)
+    dest_addr = engines.dut.ip
+    protocol_packet_dict = {'tcp': f"IP(dst=\"{dest_addr}\") / TCP()",
+                            'udp': f"IP(dst=\"{dest_addr}\") / UDP()",
+                            'icmp': f"IP(dst=\"{dest_addr}\") / ICMP()"}
+    rule_id = str(len(protocol_packet_dict))
+    acl_obj = None
+
+    with allure.step("Testing protocols"):
+        for protocol, packet in protocol_packet_dict.items():
+            with allure.independent_step(f"{protocol=}"):
+                rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.IP_PROTOCOL: protocol}
+                acl_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id, 'ipv4', rule_id,
+                                                                     rule_configuration_dict, mgmt_port, AclConsts.INBOUND,
+                                                                     AclConsts.CONTROL_PLANE, acl_obj=acl_obj)
+                time.sleep(5)
+                validate_counters_after_traffic(engines.sonic_mgmt, AclConsts.INBOUND, mgmt_port, acl_id, rule_id, dest_addr,
+                                                packet=packet)
+                rule_id = str(int(rule_id) - 1)
+
+
 @pytest.mark.skip(reason="Fragment test is unreliable for control-plane ACLs - skipping temporarily")
 @pytest.mark.acl
 def test_acl_match_fragment(engines, random_api, topology_obj):

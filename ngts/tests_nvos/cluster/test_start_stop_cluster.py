@@ -51,6 +51,7 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
         pytest.skip("Skipping test for Juliet systems (non-Rosalind) while bug SW #4859121 is active: "
                     "nmx-controller has 'nvbridge' capability which is not supported on Juliet")
 
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     def verify_apps_attributes(output):

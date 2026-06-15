@@ -12,15 +12,17 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
 
+@disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.nvl_ci
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     try:
@@ -105,6 +107,7 @@ def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_sys
         pass
 
 
+@disabled_access_ports
 @pytest.mark.timeout(50 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -126,9 +129,11 @@ def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox
         pass
 
 
+@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_state_with_stressed_resources(engines, devices, random_api, test_name, has_loopbox, standalone_system, setup_name):
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):

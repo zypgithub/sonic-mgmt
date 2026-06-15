@@ -28,6 +28,7 @@ from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType, SonicConst
+from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType
 from ngts.constants.constants import SerialLoggerConst
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_objs_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
@@ -95,6 +96,12 @@ def pytest_collection(session: pytest.Session):
 
     platform = json.loads(devinfo).get('platform')
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_PLATFORM_TYPE, platform)
+
+    # If pytest is running in collect-only mode, skip the rest of the code
+    # WHY? because we want the collection mode to run faster
+    if session.config.getoption('--collect-only'):
+        return
+
     if is_deploy_run():
         # Required for prevent SSH attempts into DUT at the beginning of deploy image test(in case when device in ONIE)
         branch = 'master'

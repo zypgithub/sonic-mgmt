@@ -482,11 +482,12 @@ class IbSwitch(BaseSwitch):
             NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD, NvosConst.FIT70)
         self.default_username = SystemConsts.DEFAULT_USER_ADMIN
         self.release_name = ImageConsts.NVOS_RELEASE_25_02_1000
+        self.list_of_leakages = []
 
         self.reboot_reason_dict = {
             RebootConsts.HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
-            RebootConsts.IMMEDIATE: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.IMMEDIATE: ("Platform reset", RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
             RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
             RebootConsts.PSU_OFF: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA),
@@ -616,6 +617,8 @@ class IbSwitch(BaseSwitch):
                     current_version='0202-000', alternate_version='0202-002'),
         }
         self.module_offset = None  # Should be overridden in child if used for module mapping
+        if not hasattr(self, 'expected_operation_durations'):
+            self.expected_operation_durations = {}
         # Note: _init_expected_operation_durations() is called by BaseSwitch._init_platform_lists()
         self.techsupport_threshold = self.expected_operation_durations.get(self.generate_tech_support)
         self.unsupported_commands_list = [
@@ -631,8 +634,10 @@ class IbSwitch(BaseSwitch):
             "nv show platform boot-policy",
             "nv show platform cable-cartridge",
             "nv show platform chassis-location",
+            "nv show system cli",
             "nv show cluster",
             "nv show sdn",
+            "nv sh fae interface swA10p1 link link-training",
             "nv show interface swA10p1 link plr",
             # IB (croc+mamba) uses logic-relock-*, NOT serdes-eq-* for PHY recovery
             "nv set fae interface {port} link phy-recovery serdes-eq-mode",
@@ -782,14 +787,16 @@ class IbSwitch(BaseSwitch):
             IbInterfaceConsts.LINK_STATS_OUT_ERRORS: GnmiConstants.OUT_ERRORS,
             IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS: GnmiConstants.SYMBOL_ERROR_COUNTER,
             IbInterfaceConsts.LINK_STATS_OUT_WAIT: GnmiConstants.XMIT_WAIT,
-            # QTM3 top-level fields
-            IbInterfaceConsts.LINK_STATS_QNT3_TOP_LEVEL[0]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
-            # QTM3 fields under 'link' dictionary
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[0]: GnmiConstants.LINK_ERROR_RECOVERY,
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[1]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[2]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[3]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[4]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[0]: GnmiConstants.LINK_ERROR_RECOVERY,
+            IbInterfaceConsts.LINK_STATS_QNT3[1]: GnmiConstants.LINK_DOWNED,
+            IbInterfaceConsts.LINK_STATS_QNT3[2]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[3]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[4]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[5]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[6]: GnmiConstants.QP1_DROPPED,
+            IbInterfaceConsts.LINK_STATS_QNT3[7]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
+            # IbInterfaceConsts.LINK_STATS_QNT3[8]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+            # IbInterfaceConsts.LINK_STATS_QNT3[9]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
             IbInterfaceConsts.LINK_PLR_RCV_CODES_ERRORS: GnmiConstants.LINK_PLR_RCV_CODE_ERRORS,
             IbInterfaceConsts.LINK_STATS_UNICAST_IN_PKTS: GnmiConstants.IN_UNICAST_PKTS,
             IbInterfaceConsts.LINK_STATS_UNICAST_OUT_PKTS: GnmiConstants.OUT_UNICAST_PKTS,
@@ -1503,6 +1510,22 @@ class TaipanSwitch(IbSwitch):
             DutUtilsTool.wait_on_system_reboot(engine, device=self)
 
 
+# -------------------------- Taipan Single Asic Switch ----------------------------
+class TaipanSingleAsicSwitch(TaipanSwitch):
+
+    def __init__(self):
+        super().__init__(switch_class=NvosConst.TAIPAN_SINGLE_ASIC_SWITCH)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.number_of_transceivers = 4
+        self.transceivers_tables_name = "TRANSCEIVER_INFO"
+        self.transceiver_list = [f'els{a + 1}' for a in range(4)] + ['fnm1'] + [f'oe{b + 18}' for b in range(18)]
+
+    def _init_psu_list(self):
+        self.psu_list = []
+
+
 # -------------------------- Crocodile Switch ----------------------------
 class CrocodileSwitch(IbSwitch):
 
@@ -1913,7 +1936,7 @@ class JulietSwitch(NvLinkSwitch):
             RebootConsts.HALT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.POWER_CYCLE: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
-            RebootConsts.IMMEDIATE: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.IMMEDIATE: ("Platform reset", RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
             RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
             RebootConsts.REMOTE_REBOOT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_NA),
@@ -1921,7 +1944,7 @@ class JulietSwitch(NvLinkSwitch):
         }
 
         self.power_cycle_type = 'juliet-power-cycle'
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions_4500.json"
         self.valid_ports_count = 72
         self.nmx_simulation_gpu_count = 72
         self.number_of_transceivers = 72
@@ -2200,6 +2223,38 @@ class JulietScaleoutSwitch(JulietSwitch):
     def _get_lane_bmap(cls, port):
         return (0x3 if port.split_number == 1 else 0xc) * (0x10 if port.local_port == 2 else 1)
 
+
+# -------------------------- JulietScaleoutSunbirdSwitch Switch ----------------------------
+
+
+class JulietScaleoutSunbirdSwitch(JulietScaleoutSwitch):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_fan_list(self):
+        super()._init_fan_list()
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+        self.fan_led_list = []
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        sensors_to_remove = ['PDB-Conv-3-Temp', 'PDB-Conv-4-Temp']
+        for sensor in sensors_to_remove:
+            self.temperature_sensors.remove(sensor)
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        sensors_to_remove = [
+            'PDB-3-Conv-In-1', 'PDB-3-Conv-Out-1',
+            'PDB-4-Conv-In-1', 'PDB-4-Conv-Out-1'
+        ]
+        for sensor in sensors_to_remove:
+            self.voltage_sensors.remove(sensor)
+        self.list_of_leakages = []
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-00MV-S11"})
+
+
 # -------------------------- JulietTTM Switch ----------------------------
 
 
@@ -2312,8 +2367,8 @@ class JulietArielPS(JulietTTMSwitch):
                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
                                       'acp71', 'acp72']
 
-        self.show_platform_chassis_location_standalone_values.update({ChassisLocationConsts.TOPO_ID: ChassisLocationConsts.OBERON_36})  # https://redmine.mellanox.com/issues/4275347
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.show_platform_chassis_location_standalone_values.update({ChassisLocationConsts.TOPO_ID: ChassisLocationConsts.OBERON_36})  # https://redmine.mellanox.com/issues/4275347
 
     def _init_temperature(self):
         super()._init_temperature()
@@ -2437,7 +2492,7 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
             "asic-model": self.asic_type,
         })
         self.stats_disk_header_num_of_lines = 16
-        self.stats_cpu_header_num_of_lines = 39
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 17
         self.cpld_amount = 3
         self._extend_firmware_by_cpld_amount()

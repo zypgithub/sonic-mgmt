@@ -1000,6 +1000,200 @@
     - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_run
     - tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_firmware
 
+# NVOS : Error - Bug 3494774 related
+- Errors_list:
+  - '.* ERR nvued:   ERROR: lifecycle.py:\d+ File not found.*'
+  - '.* ERR nvued:   ERROR: format_checkers.py:\d+.*'
+  - '.* ERR nvued: message repeated 3 times: \[   ERROR: format_checkers.py:\d+.*'
+  - '.* ERR nvued:   ERROR: format_checkers.py:\d+ Instance ffff:.*'
+  - '.* ERR nvued: message repeated 3 times: \[   ERROR: format_checkers.py:\d+ Instance ffff.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests_nvos/system/test_system_documents.py::test_upload_document
+    - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_upload
+    - tests_nvos/system/test_techsupport_commands.py::test_techsupport_upload_and_delete
+
+- Errors_list:
+  - ".*ERR mlnx-fw-upgrade.sh: FW (Query|Update) command.*"
+
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+
+- Errors_list:
+  - '.* ERR kernel: \[.*\] Fails to access \(\d+\) register MCIA \(module:\d+, page:\d+, device_addr:\d+, size:\d+, i2c_addr:.*, slot:\d+, status:\d+\), err: -16.*'
+  - '.* ERR kernel: \[.*\] Fails to get module type, err: -16.*'
+  - '.* ERR kernel: \[ .*\] Fails to read module eeprom, status: -16.*'
+  - '.* ERR kernel: \[.*\] Fails to access .* module eeprom, status: -16.*'
+  - '.* ERR pmon#xcvrd:.*Failed to get SFP type, index=\d+, error=\[Errno \d+\] Device or resource busy.*'
+  - '.*ERR swss#orchagent: :- on_switch_shutdown_request: Syncd stopped.*'
+  - '.* ERR swss#orchagent: :- wait: SELECT operation result: TIMEOUT on object_type_get_availability_response.*'
+  - '.* ERR swss#orchagent: :- wait: failed to get response for object_type_get_availability_response.*'
+  - '.*mlnx_switch_health_event_handle: Health event happened.*HW catastrophic.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/auto_negotition/test_auto_neg_scale.py
+    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
+    - show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sanity
+    - qos/test_buffer.py::test_port_admin_down
+    - fdb/test_fdb_mac_move.py
+
+- Errors_list:
+  - '.*ERR systemctl.*Failed to start.*service: Transaction for.*service\/start is destructive \(.* has .stop. job queued, but .start. is included in transaction\).*'
+  - '.*ERR systemctl.*: See system logs and .systemctl status.*service. for details.*'
+  Conditions:
+  - Redmine:
+    - 3814720
+
+- Errors_list:
+  - '.*ERR pmon#psud:.*\/var\/run\/hw-management\/thermal\/psu\d+_status.*'
+  - '.*ERR pmon#psud:.*\/var\/run\/hw-management\/thermal\/psu\d+_fan_dir.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/psu\d+_status.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/psu\d+_fan_dir.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_status.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_dir.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_speed_get.*'
+  - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
+  - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
+  - '.*ERR health-statsd#health_history: PSU\d\/FAN: direction exhaust is not aligned with fan1 direction intake.*'
+  - '.*ERR health-statsd#health_history: FAN\d\/\d: direction intake is not aligned with fan1 direction exhaust.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
+
+# In the test case test_temperature_sweep, it has an action to remove the sensors files,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/sensor_file",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+  - '.*ERR pmon#.*\/var\/run\/hw-management\/thermal\/.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
+
+# In the test case test_sensor_errors and test_sensor_blacklist, it has an action to remove the port_amb file,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/port_amb",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+  - '.*ERR pmon#psud.*\/var\/run\/hw-management\/thermal\/port_amb.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
+    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_blacklist
+    - platform_tests/test_platform_info.py::test_show_platform_temperature_mocked
+
+- Errors_list:
+  - '.*ERR pmon#psud: message repeated \d+ times.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.* with base.*invalid value.*'
+  - '.*ERR pmon#psud: message repeated \d+ times:.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.* with base \d+.*'
+  Conditions:
+  - Redmine:
+    - 3589197
+
+- Errors_list:
+  - '.*ERR watchdogutil: Failed to read from file /run/hw-management/watchdog/main/timeout - FileNotFoundError.*No such file or directory.*'
+  - '.*ERR watchdogutil: Failed to read from file /run/hw-management/watchdog/main/state - FileNotFoundError.*No such file or directory*'
+  Conditions:
+  - Redmine:
+    - 3584706
+    Platform:
+    - simx
+
+- Errors_list:
+  - '.*ERR dualtor_neighbor_check.py: .*'
+  Conditions:
+  - Affected_test_cases:
+    - vxlan/test_vnet_route_leak.py
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+    - dualtor_io/test_link_failure.py::test_active_link_admin_down_config_reload_upstream
+    - dualtor_io/test_link_failure.py::test_active_link_admin_down_config_reload_downstream
+    - pc/test_lag_2.py::test_lag_db_status_with_po_update
+    - pc/test_po_cleanup.py
+    GitHub:
+    - https://github.com/sonic-net/sonic-mgmt/issues/10670
+
+- Errors_list:
+  - '.* ERR syncd#SAI: \[SAI_PORT.ERR\] .\/src\/mlnx_sai_port.c.*- mlnx_run_and_process_ethtool_cmd: Failed to run the cmd ethtool -S  Ethernet\d+.*'
+  - '.* ERR syncd#SAI.*- collectData: Failed to get stats of Port Counter.*'
+  - '.* ERR syncd#SDN: mlx\d_net: Failed to update link status: No such device or address.*'
+  - '.* ERR syncd#SDN: mlx\d+_net: Failed to update link status: No such device.*'
+  - '.* ERR syncd#SAI: \[SAI_INTERFACE_QUERY_ETH.ERR\] .\/src\/mlnx_sai_interfacequery_dpu.c.*- sai_dbg_do_dump: Failed to run mlxconfig command - mlxconfig -d \/dev\/mst\/mt.*_pciconf.* q .* \/var\/log\/bluefield\/sdk-dumps\/_stage\/sai_nasa_dump.txt.*'
+  - '.* ERR swss#orchagent: :- on_switch_shutdown_request: Syncd stopped.*'
+  - '.* ERR syncd#SDN: mlx\d+_net: \[mlx\d+dr_cmd_stc_modify\]: Failed to modify STC FW action_type \d+.*'
+  - '.* ERR syncd#SDN: mlx\d+_net: \[mlx\d+dr_cmd_flow_table_modify\]: Failed to modify FT.*'
+  - '.* ERR syncd#SDN: mlx5_net: \[mlx5dr_matcher_disconnect\]: Failed to update miss table RTC for last matcher.*'
+  - '.* ERR pmon#thermalctld: Failed to exec mget_temp - Failed to open \(\/sys\/bus\/pci\/devices\/0000:03:00.0\/config\) for reading: No such file or directory.*'
+  - '.* WARNING kernel.*NOHZ tick-stop error: Non-RCU local softirq work is pending, handler.*'
+  Conditions:
+  - Affected_test_cases:
+    - show_techsupport/test_techsupport_dpu.py
+
+- Errors_list:
+  - '.*kernel.*NOHZ tick-stop error: local softirq work is pending, handler.*'
+  Conditions:
+  - Platform:
+    - dpu
+
+- Errors_list:
+  - '.* ERR syncd#SDK: \[BULK_COUNTER.ERR\] Port-Counter-Transaction-Start: failed to access MOCS register .*'
+  - '.* ERR syncd#SDK: \[BULK_COUNTER.ERR\] failed to start port counters bulk-read transaction .*'
+  - '.* ERR syncd#SDK: \[SAI_OBJECT.ERR\] mlnx_sai_object.c.*- mlnx_set_async_bulk_read: Failed to start bulk read operation: No More Resources.*'
+  - '.* ERR syncd#SDK: \[SAI_PORT.ERR\] mlnx_sai_port.c.*- mlnx_get_port_stats_ext: Failed to prepare bulk counter for port stats.*'
+  - '.* ERR syncd#SDK: :- collectPortCounters: Failed to get stats of port .*'
+  Conditions:
+  - Redmine:
+    - 3653755
+    Branch:
+    - master
+
+- Errors_list:
+  - '.*ERR eventd#eventd.*run_eventd_service: Eventd service exiting.*'
+  Conditions:
+  - Redmine:
+    - 3685068
+
+- Errors_list:
+  - '.*ERR \(udev-worker\)\[\d+\]: could not read from .*\/sys\/module\/pcc_cpufreq\/initstate.*: No such device.*'
+  Conditions:
+  - Redmine:
+    - 3693907
+
+- Errors_list:
+  - '.*ERR syncd#SDK: \[TRACE_CBUFF.ERR\] Received port profile apply done OK event, but port profile \(index \d+\) has already been destroyed.*'
+  - '.*ERR syncd#SDK: \[TRACE_CBUFF.ERR\] Could not send port added events.*'
+  - '.*ERR syncd#SDK: \[CORE_API.ERR\] Failed to process port profile apply status job, error: Internal Error.*'
+  Conditions:
+  - Redmine:
+    - 3908922
+    Platform:
+    - simx
+
+- Errors_list:
+  - '.*ERR kernel:.*usb usb\d-port\d: connect-debounce failed.*'
+  Conditions:
+  - Redmine:
+    - 3735940
+
+- Errors_list:
+  - '.* ERR kernel:.*i2c i2c-\d+: Invalid block size returned.*'
+  Conditions:
+  - Redmine:
+    - 3827149
+
+- Errors_list:
+  - '.*ERR kernel:.* RETBleed: WARNING: Spectre v\d+ mitigation leaves CPU vulnerable to RETBleed attacks, data leaks possible.*'
+  Conditions:
+  - Redmine:
+    - 3856241
+    Platform:
+    - simx
+
+- Errors_list:
+  - '.*ERR hw-management: message repeated \d+ times: \[ chip hwmon object\].*'
+  Conditions:
+  - Redmine:
+    - 3856952
+    Platform:
+    - simx
+
 # NVOS
 - Errors_list:
   - '.*ERR health-statsd#health_history: .*: speed is out of range, speed=.*'
@@ -1161,7 +1355,7 @@
   - '.*IPv4 hosts not reachable.*'
   Conditions:
   - Affected_test_cases:
-    - tests_nvos/system/test_system_ztp.py::test_ztp_json
+    - tests_nvos/system/ztp/test_system_ztp.py::test_ztp_json
 
 # NVOS
 - Errors_list:
@@ -1172,7 +1366,7 @@
   - '.*Error.*'
   Conditions:
   - Affected_test_cases:
-    - tests_nvos/system/test_system_ztp.py::test_ztp_startup_file_commands_list
+    - tests_nvos/system/ztp/test_system_ztp.py::test_ztp_startup_file_commands_list
 
 # NVOS gorilla-100 PSU2 is missing.
 - Errors_list:

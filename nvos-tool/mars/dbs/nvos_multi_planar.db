@@ -63,4 +63,14 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvl_link_low_power.cases </cases>
 		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_fw_recovery.cases </cases>
+		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_plu_phy_recovery.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvl5_zombie_link.cases </cases>
+	</test>
 </DBDEF>

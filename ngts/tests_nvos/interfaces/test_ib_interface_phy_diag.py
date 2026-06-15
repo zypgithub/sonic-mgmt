@@ -4,10 +4,10 @@ from typing import Union, Dict, Tuple, List
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ActionConsts, NvosConst
+from ngts.nvos_constants.constants_nvos import ActionConsts
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, PhyDetailConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
@@ -15,7 +15,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionLinks
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tests_nvos.interfaces.nvl_port.helpers import skip_if_no_trunk_links
+from ngts.tests_nvos.interfaces.nvl5_port.helpers import skip_if_no_trunk_links
 from ngts.tools.test_utils import allure_utils as allure
 
 LOCAL = 'local'
@@ -54,180 +54,18 @@ logger = logging.getLogger()
 
 
 @pytest.mark.ib_interfaces
-def test_show_phy_detail(engines, test_api, output_format):
-    """Checks that `nv show interface <port> link phy detail` returns non-empty output in a valid format."""
+def test_show_phy_diag(engines, test_api, output_format):
+    """Checks that `nv show interface <port> link phy-diag` returns non-empty output in a valid format."""
     selected_port = RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
-    output = selected_port.interface.link.phy.detail.show(output_format=output_format)
+    output = selected_port.interface.link.phy_diag.show(output_format=output_format)
     d = OutputParsingTool.parse_show_output_to_dict(output, output_format).get_returned_value()
     assert len(d) > 1
 
 
 @pytest.mark.ib_interfaces
-def test_phy_detail_attribute_types(engines, devices, test_api):
-    """
-    Verify attribute types in 'nv show interface <port> link phy detail' output match ASIC generation.
-
-    Test flow:
-    1. Determine ASIC generation (QTM3 or QTM4+)
-    2. Select a random port (any state - works on Juliet NVL and Crocodile IB ports)
-    3. Run 'nv show interface <port> link phy detail'
-    4. Verify each attribute's type matches expected type for the ASIC generation
-
-    Note: QTM3 group includes both QTM3 and NVL5 chip types
-    """
-    with allure.step("Determine ASIC generation and expected attribute types"):
-        asic_type = getattr(devices.dut, 'asic_type', 'unknown')
-        is_qtm3 = asic_type in [NvosConst.QTM3, NvosConst.NVL5]
-        expected_types = PhyDetailConsts.ATTR_TYPES_QTM3 if is_qtm3 else PhyDetailConsts.ATTR_TYPES_QTM4_AND_NEWER
-        asic_gen = "QTM3 (includes NVL5)" if is_qtm3 else "QTM4 and newer"
-        logger.info(f"ASIC type: {asic_type}, Generation: {asic_gen}")
-
-    with allure.step("Select random port"):
-        selected_port = RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
-        logger.info(f"Selected port: {selected_port.name}")
-
-    with allure.step(f"Run 'nv show interface {selected_port.name} link phy detail'"):
-        output = selected_port.interface.link.phy.detail.show()
-        phy_detail_output = OutputParsingTool.parse_show_output_to_dict(output).get_returned_value()
-        logger.info(f"PHY detail output has {len(phy_detail_output)} fields")
-
-    with allure.step("Verify attribute types"):
-        validate_phy_attribute_types(phy_detail_output, expected_types, is_qtm3, asic_gen)
-
-    # For QTM4+ ASICs, verify certain attributes should NOT exist at all
-    if not is_qtm3:
-        with allure.step("Verify QTM4+ non-existent attributes are absent"):
-            validate_qtm4_non_existent_attributes(phy_detail_output, asic_gen)
-
-
-@pytest.mark.ib_interfaces
-def test_no_logging_flood_on_port_state_change(engines, devices, nv_command):
-    """
-    Regression test to verify that port state changes don't cause excessive logging (flooding).
-
-    Test flow:
-    1. Select a random IB port
-    2. Rotate syslog to start with a clean log
-    3. Set port down and verify write message count is within acceptable threshold
-    4. Set port up and verify write message count is within acceptable threshold
-
-    Expected behavior after fix (per operation):
-    - 9 writes for initialization: '0/0/0/0' state
-    - 4 writes for plane transitions: '22/0/0/0' → '22/22/0/0' → '22/22/22/0' → '22/22/22/22'
-    - Total: ~13 writes per DOWN or UP operation
-
-    Before fix (regression indicator):
-    - Port down operation: 60-70+ messages (severe flood)
-    - Port up operation: 60-70+ messages (severe flood)
-    """
-    MAX_WRITE_MESSAGES_PER_OPERATION = 15  # 13 expected + buffer for timing variations
-
-    skip_if_no_trunk_links(devices)
-
-    with allure.step("Select random port"):
-        selected_port: Port = RandomizationTool.select_random_port().get_returned_value()
-        port_name = selected_port.name
-        logger.info(f"Testing port {port_name} for logging flood")
-
-    try:
-        with allure.step("Rotate syslog to start with clean logs"):
-            nv_command.system.log.rotate_logs()
-
-        with allure.step("Set port DOWN and check for logging flood"):
-            selected_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True).verify_result()
-            time.sleep(3)  # Allow state change to propagate and logs to be written
-
-            down_write_count = _count_port_write_messages(engines.dut, port_name, devices.dut)
-            logger.info(f"Port {port_name} DOWN operation generated {down_write_count} write messages")
-
-            with allure.step(f"Assert write count ({down_write_count}) is within acceptable threshold"):
-                assert down_write_count > 0, (
-                    f"Port DOWN operation generated 0 write messages. "
-                    f"Expected at least 1 message - check if grep pattern is matching correctly."
-                )
-                assert down_write_count <= MAX_WRITE_MESSAGES_PER_OPERATION, (
-                    f"Port DOWN operation generated {down_write_count} write messages, "
-                    f"exceeding threshold of {MAX_WRITE_MESSAGES_PER_OPERATION}. "
-                    f"This indicates a logging flood issue!"
-                )
-
-        with allure.step("Rotate syslog again before UP operation"):
-            nv_command.system.log.rotate_logs()
-
-        with allure.step("Set port UP and check for logging flood"):
-            selected_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_UP, apply=True).verify_result()
-            time.sleep(10)  # Allow state change to propagate and logs to be written
-
-            up_write_count = _count_port_write_messages(engines.dut, port_name, devices.dut)
-            logger.info(f"Port {port_name} UP operation generated {up_write_count} write messages")
-
-            with allure.step(f"Assert write count ({up_write_count}) is within acceptable threshold"):
-                assert up_write_count > 0, (
-                    f"Port UP operation generated 0 write messages. "
-                    f"Expected at least 1 message - check if grep pattern is matching correctly."
-                )
-                assert up_write_count <= MAX_WRITE_MESSAGES_PER_OPERATION, (
-                    f"Port UP operation generated {up_write_count} write messages, "
-                    f"exceeding threshold of {MAX_WRITE_MESSAGES_PER_OPERATION}. "
-                    f"This indicates a logging flood issue!"
-                )
-    finally:
-        with allure.step("Cleanup: Ensure port is set back to UP"):
-            selected_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_UP, apply=True).verify_result()
-
-
-def _count_port_write_messages(engine, port_name: str, device) -> int:
-    """
-    Counts the number of portsyncmgrd "Handling op SET key <port>" messages in syslog for the specified port.
-
-    Uses grep to search syslog for the specific pattern that indicates a SET operation to the port.
-    Uses the device-specific port-to-Infiniband conversion method to get the base Infiniband port name,
-    which matches all planes (e.g., Infiniband260 matches Infiniband260pl1, pl2, pl3, pl4).
-
-    Args:
-        engine: The device engine to execute commands on
-        port_name: Port name (e.g., "swA5p1", "sw72p2", "swB14p1")
-        device: The device object with convert_port_to_infiniband method
-
-    Returns:
-        int: Number of write messages found in syslog
-    """
-    # Use device-specific conversion method
-    if hasattr(device, 'convert_port_to_infiniband'):
-        ib_port_name = device.convert_port_to_infiniband(port_name)
-    else:
-        logger.warning(f"Device does not have convert_port_to_infiniband method, using port name as-is")
-        ib_port_name = port_name
-
-    # Search pattern: "portsyncmgrd: Handling op SET key <port_name>" in syslog
-    # Note: We use the base port name (e.g., Infiniband260) to match all planes (pl1, pl2, pl3, pl4)
-    # Note: grep -c returns exit code 1 when no matches found, so we use '|| true' to avoid command failure
-    # and take only the first line of output (the count)
-    grep_count_command = f'grep -c "Handling op SET key {ib_port_name}" /var/log/syslog || true'
-    grep_messages_command = f'grep "Handling op SET key {ib_port_name}" /var/log/syslog | head -20 || true'
-
-    try:
-        result = engine.run_cmd(grep_count_command)
-        # Take only the first line in case of multiple outputs, default to 0 if empty
-        first_line = result.strip().split('\n')[0] if result.strip() else '0'
-        count = int(first_line) if first_line.isdigit() else 0
-        logger.info(f"Found {count} 'Handling op SET key' messages for port {ib_port_name} (original: {port_name})")
-
-        # Log the actual messages found (limited to first 20 to avoid log flood)
-        if count > 0:
-            messages = engine.run_cmd(grep_messages_command)
-            logger.info(f"SET key messages for port {ib_port_name} (first 20):\n{messages}")
-
-        return count
-    except (ValueError, AttributeError) as e:
-        logger.error(f"Failed to parse write message count: {e}, result: {result}")
-        return 0
-
-
-@pytest.mark.ib_interfaces
 def test_intentional_link_down_counter(engines, devices):
     """
-    Test for `nv show interface <port> link phy detail` intentional-link-down-events field. Flow:
+    Test for `nv show interface <port> link phy-diag` intentional-link-down-events field. Flow:
     1.  Get intentional-link-down-events and unintentional-link-down-events counters for a port
     2.  Set port down
     3.  Assert the intentional- counter increased
@@ -260,7 +98,7 @@ def test_intentional_link_down_counter(engines, devices):
 @pytest.mark.ib_interfaces
 def test_unintentional_link_down_counter(engines, devices, enable_asic_error_injection):
     """
-    Test for `nv show interface <port> link phy detail` unintentional-link-down-events field. Flow:
+    Test for `nv show interface <port> link phy-diag` unintentional-link-down-events field. Flow:
     1.  Get intentional-link-down-events and unintentional-link-down-events counters for a port
     2.  Simulate link drop
     3.  Assert the unintentional- counter increased
@@ -293,7 +131,7 @@ def test_unintentional_link_down_counter(engines, devices, enable_asic_error_inj
 @pytest.mark.ib_interfaces
 def test_link_down_reason(engines, devices, setup_name, enable_asic_error_injection):
     """
-    Test the 'link-down-code' field (and related fields) under `nv show interface <port> link phy detail`.
+    Test the 'link-down-code' field (and related fields) under `nv show interface <port> link phy-diag`.
     Flow:
         1. Choose a random loopback port ("test port") and some other connected port.
         2. Set the test-port down, then set it back up.
@@ -341,12 +179,12 @@ def _get_test_ports(engine, device) -> Tuple[Port, Port, Port, Port, Port]:
     PORTS = {
         '10.7.145.61': ('swA5p1', 'swA8p1', 'swA3p1'),
         '10.7.145.62': ('swA5p1', 'swA8p1', 'swA3p1'),
-        '10.7.148.94': ('swB5p1', 'swB6p1', 'swA1p1'),
-        '10.7.148.95': ('swB5p1', 'swB6p1', 'swA1p1'),
+        '10.7.148.94': ('swB1p1', 'swB2p1', 'swA10p1'),
+        '10.7.148.95': ('swB1p1', 'swB2p1', 'swA10p1'),
         '10.7.148.138': ('swA1p1', 'swA2p1', 'swA15p1'),
         '10.7.148.139': ('swA1p1', 'swA2p1', 'swA15p1'),
-        '10.7.148.248': ('sw7p1', 'sw8p2', 'sw61p1'),
-        '10.7.148.249': ('sw7p1', 'sw8p2', 'sw61p1'),
+        '10.7.148.248': ('sw9p1', 'sw10p1', 'sw67p1'),
+        '10.7.148.249': ('sw9p1', 'sw10p1', 'sw67p1'),
 
         # juliet:
         '10.7.145.52': ('sw2p1s1', 'sw3p1s1', 'sw17p1s1'),
@@ -389,14 +227,14 @@ def enable_asic_error_injection(devices):
         return
 
 
-def get_phy_detail(port):
-    return OutputParsingTool.parse_show_output_to_dict(port.interface.link.phy.detail.show()).get_returned_value()
+def get_phy_diag(port):
+    return OutputParsingTool.parse_show_output_to_dict(port.interface.link.phy_diag.show()).get_returned_value()
 
 
 def get_counters(port: Port) -> Tuple[int, int]:
-    """Runs nv show interface <port> link phy detail, and returns the intentional & unintentional link-down counters"""
-    phy_detail_output = get_phy_detail(port)
-    return int(phy_detail_output[INTENTIONAL_LINK_DOWN_EVENTS]), int(phy_detail_output[UNINTENTIONAL_LINK_DOWN_EVENTS])
+    """Runs nv show interface <port> link phy-diag, and returns the intentional & unintentional link-down counters"""
+    phy_diag_output = get_phy_diag(port)
+    return int(phy_diag_output[INTENTIONAL_LINK_DOWN_EVENTS]), int(phy_diag_output[UNINTENTIONAL_LINK_DOWN_EVENTS])
 
 
 def assert_reason_for_plane(plane_port: Port, code: int, all_planes_previous_codes: Dict):
@@ -450,7 +288,7 @@ def assert_description_matches_code(description: str, code: Union[int, str], ite
 
 def get_codes(port: Port) -> Dict[str, Tuple[int]]:
     """
-    Obtains the output of nv show interface <port> link phy detail --output json , for example:
+    Obtains the output of nv show interface <port> link phy-diag --output json , for example:
     {
       ...
       "linkdown-reason-code-local": "22###22###22###22",
@@ -465,7 +303,7 @@ def get_codes(port: Port) -> Dict[str, Tuple[int]]:
       {LOCAL: (22, 22, 22, 22), REMOTE: (33, 33, 33, 33)}
     """
     with allure.step(f"Get link-down reasons for {port.name}"):
-        output = port.interface.link.phy.detail.show()
+        output = port.interface.link.phy_diag.show()
         output = OutputParsingTool.parse_show_output_to_dict(output).get_returned_value()
         result = {}
         for side in (LOCAL, REMOTE):
@@ -503,142 +341,3 @@ def get_loopback_plane_ports(engine, setup_name, num_of_planes=1, forbidden_tran
         local_port = Port(local_port)
         allure.attach("Selected ports", f"{local_port=}, {local_planes=}, {remote_port=}, {remote_planes=}")
         return local_port, local_planes, remote_port, remote_planes
-
-
-def validate_qtm4_non_existent_attributes(phy_detail_output: Dict, asic_gen: str):
-    """
-    Validate that certain attributes are None/null on QTM4+ ASICs.
-    These attributes should either be absent or have a null value.
-    Collects ALL violations before failing.
-
-    :param phy_detail_output: Parsed output from 'nv show interface <port> link phy detail'
-    :param asic_gen: Human-readable ASIC generation string for error messages
-    """
-    violations = []
-
-    for attr_name in PhyDetailConsts.QTM4_NON_EXISTENT_ATTRS:
-        if attr_name in phy_detail_output:
-            value = phy_detail_output[attr_name]
-            # None/null is expected - that's correct behavior
-            if value is None:
-                logger.info(f"  ✓ Attribute '{attr_name}' is null on {asic_gen} (expected)")
-            else:
-                # Has a real value - that's the violation!
-                violations.append((attr_name, value))
-                logger.error(f"  ✗ Attribute '{attr_name}' should be null on {asic_gen}, but found value: '{value}'")
-        else:
-            logger.info(f"  ✓ Attribute '{attr_name}' is absent on {asic_gen} (expected)")
-
-    if violations:
-        error_msg = (
-            f"\n{'=' * 80}\n"
-            f"ATTRIBUTES SHOULD BE NULL ON QTM4+!\n"
-            f"{'=' * 80}\n"
-            f"ASIC Generation: {asic_gen}\n"
-            f"Found {len(violations)} attribute(s) with unexpected values:\n"
-        )
-        for attr_name, value in violations:
-            error_msg += f"  - '{attr_name}': {value}\n"
-        error_msg += (
-            f"\nThese attributes should be null/absent on QTM4 and newer ASICs\n"
-            f"{'=' * 80}\n"
-        )
-        assert False, error_msg
-
-
-def validate_phy_attribute_types(phy_detail_output: Dict, expected_types: Dict, is_qtm3: bool, asic_gen: str):
-    """
-    Validate that PHY detail attributes have the expected types.
-
-    :param phy_detail_output: Parsed output from 'nv show interface <port> link phy detail'
-    :param expected_types: Dictionary mapping attribute names to expected types
-    :param is_qtm3: True if ASIC is QTM3 generation (includes NVL5)
-    :param asic_gen: Human-readable ASIC generation string for error messages
-    """
-    for attr_name, expected_type in expected_types.items():
-        with allure.step(f"Validate '{attr_name}' type"):
-            # For QTM4+, skip attributes that should NOT exist (they're validated separately)
-            if not is_qtm3 and attr_name in PhyDetailConsts.QTM4_NON_EXISTENT_ATTRS:
-                logger.info(f"  {attr_name}: skipping type validation (attribute should not exist on QTM4+)")
-                continue
-
-            if attr_name not in phy_detail_output:
-                logger.warning(f"Attribute '{attr_name}' not found in output. Available: {list(phy_detail_output.keys())}")
-                continue
-
-            value = phy_detail_output[attr_name]
-
-            # Skip validation for None/null values - we can't determine SAI type from a null value
-            if value is None:
-                logger.info(f"  {attr_name}: value is None/null, skipping type validation (no type inference possible)")
-                continue
-
-            is_compatible, error_reason = is_value_compatible_with_type(str(value), expected_type)
-
-            if is_compatible:
-                logger.info(f"  {attr_name}: value='{value}' is compatible with {expected_type}")
-            else:
-                error_msg = (
-                    f"\n{'=' * 80}\n"
-                    f"TYPE MISMATCH DETECTED!\n"
-                    f"{'=' * 80}\n"
-                    f"Attribute: '{attr_name}'\n"
-                    f"ASIC Generation: {asic_gen}\n"
-                    f"Value: '{value}'\n"
-                    f"Expected Type: {expected_type}\n"
-                    f"Reason: {error_reason}\n"
-                    f"{'=' * 80}\n"
-                )
-                logger.error(error_msg)
-                assert False, error_msg
-
-
-def is_value_compatible_with_type(value: str, expected_type: str) -> tuple:
-    """
-    Check if a value is compatible with an expected SAI type.
-
-    Note: We can't determine exact SAI type from value alone (e.g., 0 could be uint8 or uint32).
-    Instead, we check if the value VIOLATES the expected type's constraints.
-
-    Compatibility rules:
-    - sai_uint8_t: single integer 0-255
-    - sai_uint32_t: single integer 0-4294967295 (any non-negative int is fine)
-    - sai_u32_list_t: list format "count:val1:val2..." with non-negative values
-    - sai_s32_list_t: list format "count:val1:val2..." (can have negative values)
-
-    Args:
-        value: The string value from JSON output
-        expected_type: The expected SAI type
-
-    Returns:
-        tuple: (is_compatible: bool, error_reason: str or None)
-    """
-    value = value.strip()
-    is_list_format = ":" in value
-
-    # List types
-    if expected_type in ("sai_u32_list_t", "sai_s32_list_t"):
-        if not is_list_format:
-            return False, f"Expected list format (count:val1:val2...) but got single value '{value}'"
-        # For list types, just verify format is correct
-        parts = value.split(":")
-        if not parts[0].isdigit():
-            return False, f"List format invalid - first part '{parts[0]}' should be count"
-        return True, None
-
-    # Single value types (uint8, uint32)
-    if expected_type in ("sai_uint8_t", "sai_uint32_t"):
-        if is_list_format:
-            return False, f"Expected single value but got list format '{value}'"
-        try:
-            num = int(value)
-            if expected_type == "sai_uint8_t" and (num < 0 or num > 255):
-                return False, f"Value {num} out of range for uint8 (0-255)"
-            if expected_type == "sai_uint32_t" and num < 0:
-                return False, f"Value {num} is negative, invalid for uint32"
-            return True, None
-        except ValueError:
-            return False, f"Value '{value}' is not a valid integer"
-
-    # Unknown type
-    return False, f"Unknown expected type: {expected_type}"

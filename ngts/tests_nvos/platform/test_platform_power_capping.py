@@ -34,6 +34,7 @@ def cleanup_profiles(engines):
     yield
     platform = NvCommand().platform
     fae = NvCommand().fae
+
     with allure.step('return to default config after test'):
         NvueGeneralCli.detach_config(engines.dut)
         platform.power_capping.unset_active_profile(apply=True).verify_result()

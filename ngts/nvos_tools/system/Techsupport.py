@@ -1,7 +1,7 @@
 import logging
 import re
-
 from datetime import datetime, timedelta
+
 from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts, NvosConst, ApiType
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -23,17 +23,12 @@ class TechSupport(BaseComponent):
         self.files = Files(self)
         self.file_name = ""
 
-    def action_upload(self, upload_path, file_name):
-        with allure.step("Upload techsupport {file} to '{path}".format(file=file_name, path=upload_path)):
-            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_upload, TestToolkit.engines.dut,
-                                                   self.get_resource_path(), file_name, upload_path)
-
     def action_delete(self, file_name):
         with allure.step("Delete tech-support: {}".format(file_name)):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_delete, TestToolkit.engines.dut,
                                                    self.get_resource_path(), file_name)
 
-    def action_generate(self, engine="", option="", since_time="", test_name='', verify_size=False):
+    def action_generate(self, engine="", option="", since_time="", test_name='', verify_size=False, check_size=False):
         """
         in the future the command will be nv action generate system tech-support (without files)
         changes to do :
@@ -51,7 +46,6 @@ class TechSupport(BaseComponent):
             cmd_out.ignore_result()
             if 'failed' in cmd_out.info or 'error' in cmd_out.info:
                 return cmd_out.info, duration
-
             # Parse the techsupport folder name based on device type
             if device.is_eth():
                 self.parse_eth_techsupport_folder_name(cmd_out)
@@ -60,8 +54,7 @@ class TechSupport(BaseComponent):
                 self.parse_ib_techsupport_folder_name(cmd_out)
                 tech_support_folder = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name
 
-            # Verify file size if requested
-            if verify_size:
+            if verify_size or check_size:
                 self.verify_size(engine, tech_support_folder, device)
 
             return tech_support_folder, duration

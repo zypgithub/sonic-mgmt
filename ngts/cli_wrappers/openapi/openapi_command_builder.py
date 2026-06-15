@@ -599,6 +599,11 @@ class OpenApiCommandHelper:
             return OpenApiCommandHelper.req_method[req_type](request_data, op_param_name)
 
     @staticmethod
+    def update_open_api_port(port_num):
+        OpenApiRequest.port_num = port_num
+        logging.info(f"OpenApi port number updated to {port_num}")
+
+    @staticmethod
     def execute_action(action_type, user_name, password, dut_ip, port, resource_path, params, expected_str=''):
         requests_cache.uninstall_cache()
         logger.info("Uninstalled requests cache")
