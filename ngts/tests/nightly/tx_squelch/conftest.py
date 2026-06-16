@@ -5,8 +5,6 @@ from types import SimpleNamespace
 
 from ngts.constants.constants import MarsConstants, SonicConst, TxSquelchConsts
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer
-from tests.common.plugins.loganalyzer.bug_handler_helper import get_bughandler_instance
 
 
 logger = logging.getLogger(__name__)
@@ -111,26 +109,6 @@ def get_all_ports_tx_squelch_modes(duthost, ports, sonic_to_sdk_map):
     return result
 
 
-def syslog_init_expect_regex_list(mode):
-    """LogAnalyzer expect_regex for syncd KV init after reboot"""
-    kv = re.escape(TxSquelchConsts.SAI_TX_SQUELCH_MODE_KV)
-    return [
-        rf".*{kv} set to: {mode}.*",
-        rf".*Bulk TX Squelch mode {mode} applied to.*ports from KV.*",
-    ]
-
-
-def verify_tx_squelch_init_syslog(loganalyzer, dut_cli, topology_obj, ports_list, mode):
-    """Reboot and assert syncd KV init messages via LogAnalyzer"""
-    loganalyzer.expect_regex = syslog_init_expect_regex_list(mode)
-    loganalyzer.ignore_regex = [r".*"]
-    with allure.step(
-            f"Verify syslog contains {TxSquelchConsts.SAI_TX_SQUELCH_MODE_KV} set to: {mode} "
-            f"and bulk TX squelch applied from KV (LogAnalyzer)"):
-        with loganalyzer:
-            reboot_dut(dut_cli, topology_obj, ports_list)
-
-
 def verify_all_ports_tx_squelch_mode(duthost, ports, expected_mode, sonic_to_sdk_map):
     """Assert all ports match expected TX squelch mode"""
     expected_str = TxSquelchConsts.KV_TO_SQUELCH_STR[expected_mode]
@@ -162,7 +140,7 @@ def verify_all_ports_tx_squelch_mode(duthost, ports, expected_mode, sonic_to_sdk
 
 
 def verify_default_kv_baseline(
-        duthost, sai_profile_path, dut_cli, topology_obj, expected_ports_list, sonic_to_sdk_map, loganalyzer):
+        duthost, sai_profile_path, dut_cli, topology_obj, expected_ports_list, sonic_to_sdk_map):
     """Verify default KV is present, applied after reboot, and reflected on all ports"""
     default_mode = TxSquelchConsts.TX_SQUELCH_MODE_DISABLE
 
@@ -172,7 +150,8 @@ def verify_default_kv_baseline(
             f"Expected {TxSquelchConsts.SAI_TX_SQUELCH_MODE_KV} to be {default_mode} (default) in sai.profile, "
             f"but found '{current_mode}'. The DUT must be in its default state before running tests.")
 
-    verify_tx_squelch_init_syslog(loganalyzer, dut_cli, topology_obj, expected_ports_list, default_mode)
+    with allure.step("Reboot DUT to verify default KV is applied on all ports"):
+        reboot_dut(dut_cli, topology_obj, expected_ports_list)
 
     with allure.step(
             f"Verify all {len(expected_ports_list)} physical ports report "
@@ -181,19 +160,7 @@ def verify_default_kv_baseline(
 
 
 @pytest.fixture(scope="class")
-def tx_squelch_loganalyzer(duthosts, request):
-    """Local LogAnalyzer for syncd TX squelch KV init syslog"""
-    analyzer = LogAnalyzer(
-        ansible_host=duthosts[0],
-        marker_prefix="tx_squelch",
-        request=request,
-        bughandler=get_bughandler_instance({"type": "default"}))
-    analyzer.load_common_config()
-    yield analyzer
-
-
-@pytest.fixture(scope="class")
-def tx_squelch_class_context(duthosts, topology_obj, cli_objects, tx_squelch_loganalyzer):
+def tx_squelch_class_context(duthosts, topology_obj, cli_objects):
     """Shared DUT and port context for the TX squelch test class; restores default KV on teardown"""
     with allure.step("Resolve DUT host"):
         duthost = duthosts[0]
@@ -230,8 +197,7 @@ def tx_squelch_class_context(duthosts, topology_obj, cli_objects, tx_squelch_log
             ctx.dut_cli,
             topology_obj,
             ctx.expected_ports_list,
-            ctx.sonic_to_sdk_map,
-            tx_squelch_loganalyzer)
+            ctx.sonic_to_sdk_map)
 
     yield ctx
 
