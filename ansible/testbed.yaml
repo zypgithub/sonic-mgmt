@@ -14692,6 +14692,8 @@
   vm_base: VM1401
   dut:
     - slm-180
+  inv_name: lab
+  comment: Mellanox MEC testbed
 
 - conf-name: slm-18-ptp-130
   group-name: vm-t1
