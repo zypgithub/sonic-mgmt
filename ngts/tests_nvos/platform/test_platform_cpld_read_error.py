@@ -183,7 +183,7 @@ def _parallel_bounded_read_worker(
 
 
 @pytest.mark.platform
-def test_platform_cpld_parellel_read_error(engines, topology_obj):
+def test_platform_cpld_parallel_read_error(engines, topology_obj, devices):
     """
     CPLD / iorw parallel read consistency
 
@@ -202,6 +202,10 @@ def test_platform_cpld_parellel_read_error(engines, topology_obj):
     Note: The DUT kernel or CPLD driver may still serialize access to the same device; the barrier
     maximizes overlap from the test harness (three independent SSH sessions, aligned start).
     """
+
+    with allure.step("Consider skipping test (if system/platform has no BMC)"):
+        if not devices.dut.platform_inventory_items_dict.get("bmc"):
+            pytest.skip("Skipping test because the system/platform does not support BMC")
 
     iorw_read = "sudo iorw -r"
     iorw_read_32 = "sudo iorw -r -b 0x2500 -l32"
