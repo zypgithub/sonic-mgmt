@@ -246,6 +246,15 @@ def show_platform_initial_state(engines):
         logger.info(f"Platform firmware initial state:\n{firmware_output}")
 
 
+@pytest.fixture(scope='session')
+def update_platform_expected_values():
+    """Update device-specific expected platform values before platform output validation."""
+    with allure.step('Update platform expected values'):
+        platform = Platform()
+        output = OutputParsingTool.parse_show_output_to_dict(platform.show()).get_returned_value()
+        TestToolkit.get_device().update_show_platform_output(output)
+
+
 @pytest.fixture(autouse=True)
 def check_disk_usage(request, engines):
     marker_name = 'check_disk_usage'
