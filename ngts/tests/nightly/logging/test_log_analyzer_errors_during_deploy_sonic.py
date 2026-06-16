@@ -138,6 +138,7 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
 
     ignore_regex_dpu_errors = [
         r".*kernel.*mlx5_core.*err.*",
+        r".*ERR.*kernel.*mlx5_core.*",
     ]
     if flavor == 'switch-ignore_dpu_errors':
         ignore_regex.extend(ignore_regex_dpu_errors)
