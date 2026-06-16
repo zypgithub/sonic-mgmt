@@ -11,7 +11,8 @@ from tests.common.config_reload import config_reload
 from tests.common.utilities import kill_process_by_pid, wait_until
 
 pytestmark = [
-    pytest.mark.topology('any')
+    pytest.mark.topology('any'),
+    pytest.mark.enable_monit_refresh,
 ]
 
 logger = logging.getLogger(__name__)
