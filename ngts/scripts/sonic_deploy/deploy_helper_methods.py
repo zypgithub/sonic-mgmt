@@ -1447,6 +1447,10 @@ class DeployBmcHelper:
         engine.run_cmd("sudo systemctl start chrony")
         time.sleep(BmcDeployConstants.BMC_CHRONY_SETTLE_SECONDS)
         engine.run_cmd("sudo chronyc -a makestep")
+        # Persist the step across reboots via a conf.d drop-in, then restart
+        # chrony so it picks the directive up. RM ticket 5089582 track the issue.
+        engine.run_cmd("echo 'makestep 1 3' | sudo tee /etc/chrony/conf.d/step.conf")
+        engine.run_cmd("sudo systemctl restart chrony")
         logger.info(
             f"BMC clock after sync:  {engine.run_cmd('date').strip()}"
         )
