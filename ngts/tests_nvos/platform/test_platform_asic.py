@@ -8,7 +8,6 @@ from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.platform
-@pytest.mark.nvos_ci
 def test_show_platform_asic_revision_id(engines: EnginesT, devices: DevicesT):
     """
     Verify nv show platform reports correct asic-revision-id.
