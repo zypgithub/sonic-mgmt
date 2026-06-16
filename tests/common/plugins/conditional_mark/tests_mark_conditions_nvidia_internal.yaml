@@ -348,58 +348,6 @@ tests/push_build_tests/L3/dhcp_relay/test_dhcp_relay.py::TestDHCPRelay::test_dhc
     conditions:
     - https://github.com/Azure/sonic-buildimage/issues/6053
 
-tests/dhcp_relay/test_dhcpv4_relay.py::test_dhcp_relay_with_non_default_vrf:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5041721"
-    conditions:
-    - "https://redmine.mellanox.com/issues/5041721"
-
-tests/dhcp_relay/test_dhcpv4_relay.py::test_dhcp_relay_with_different_non_default_vrf:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5041721"
-    conditions:
-    - "https://redmine.mellanox.com/issues/5041721"
-
-tests/dhcp_relay/test_dhcpv4_relay.py:
-  xfail:
-    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
-    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
-
-tests/dhcp_relay/test_dhcp_relay.py::test_interface_binding[sonic-relay-agent]:
-  xfail:
-    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
-    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
-
-tests/dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_default[isc-relay-agent]:
-  xfail:
-    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
-    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
-
-tests/dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_with_source_port_ip_in_relay_enabled[isc-relay-agent]:
-  xfail:
-    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
-    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
-
-tests/dhcp_relay/test_dhcpv6_relay.py::test_interface_binding:
-  xfail:
-    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
-    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
-
 tests/push_build_tests/general/wjh/test_wjh.py::TestBuffer::test_buffer:
   skip:
     reason: "Testcase is not supported on simx or due to RM issue: https://redmine.mellanox.com/issues/4815589"
@@ -609,6 +557,58 @@ dash/test_dash_privatelink_redirect.py::TestPrivateLinkRedirectPLNSG::test_dst_p
     reason: "Xfail the test for RM issue https://redmine.mellanox.com/issues/4964882"
     conditions:
     - "https://redmine.mellanox.com/issues/4964882"
+
+dhcp_relay/test_dhcpv4_relay.py::test_dhcp_relay_with_non_default_vrf:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5041721"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5041721"
+
+dhcp_relay/test_dhcpv4_relay.py::test_dhcp_relay_with_different_non_default_vrf:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5041721"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5041721"
+
+dhcp_relay/test_dhcpv4_relay.py:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
+    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
+
+dhcp_relay/test_dhcp_relay.py::test_interface_binding[sonic-relay-agent]:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
+    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
+
+dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_default[isc-relay-agent]:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
+    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
+
+dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_with_source_port_ip_in_relay_enabled[isc-relay-agent]:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
+    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
+
+dhcp_relay/test_dhcpv6_relay.py::test_interface_binding:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5056903"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/5056903 and 'arc-switch1004' in testbed"
+    - "https://redmine.mellanox.com/issues/5056903 and 'sonic-dual-tor-leopard' in testbed"
 
 dns/test_dns_resolv_conf.py::test_dns_resolv_conf:
   xfail:
