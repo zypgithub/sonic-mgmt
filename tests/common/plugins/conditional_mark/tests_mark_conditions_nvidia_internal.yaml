@@ -469,6 +469,12 @@ tests/push_build_tests/general/wjh/test_wjh.py::test_acl_ingress_router:
     conditions:
     - "'sn4280' in platform and https://redmine.mellanox.com/issues/4834399"
 
+acl/test_acl.py::TestMultiBindingAcl:
+  skip:
+    reason: "acl_rules fail due to RM issue: https://redmine.mellanox.com/issues/5089623"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5089623"
+
 autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-26-None-teamd]:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3587377"
