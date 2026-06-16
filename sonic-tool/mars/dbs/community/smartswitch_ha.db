@@ -69,4 +69,8 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_dpu_power_down.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_repairing_dpu.cases </cases>
+    </test>
+
 </DBDEF>
