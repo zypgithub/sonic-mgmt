@@ -53,9 +53,11 @@ tests/nightly/fec/test_fec.py::TestFec::test_fec_bug_2705016:
     - "https://redmine.mellanox.com/issues/3971501 and 'r-leopard-56' in testbed"
     - "https://redmine.mellanox.com/issues/3969985 and 'sn5' in platform"
   skip:
-    reason: "bobcat does not support warm-reboot"
+    reason: "bobcat does not support warm-reboot or testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5083790 on ASAN image"
+    conditions_logical_operator: or
     conditions:
     - "'sn4280' in platform"
+    - "https://redmine.mellanox.com/issues/5083790 and 'ASAN' in build_version"
 
 tests/nightly/runtime/test_runtime.py:
   skip:
@@ -404,6 +406,12 @@ tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_toggl
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3937842"
     conditions:
     - "https://redmine.mellanox.com/issues/3937842 and ('sn5400' in platform)"
+
+tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_conf:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5083790 on ASAN image"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5083790 and 'ASAN' in build_version"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_psu_status_check:
   skip:
