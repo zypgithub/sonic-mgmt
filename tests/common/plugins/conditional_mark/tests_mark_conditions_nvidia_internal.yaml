@@ -118,9 +118,11 @@ tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_hosts_ports:
 tests/nightly/rocev2_acl_counter/test_rocev2_acl_counter.py::TestRocev2AclCounter:
   skip:
     # see details in https://redmine.mellanox.com/issues/4834399
-    reason: "internal test, not for MSFT. Not supported on bobcat with Multi Binding enabled"
+    reason: "internal test, not for MSFT. Not supported on bobcat with Multi Binding enabled; skipped on ASAN image due to RM https://redmine.mellanox.com/issues/5079498"
+    conditions_logical_operator: or
     conditions:
     - "'sn4280' in platform"
+    - "https://redmine.mellanox.com/issues/5079498 and 'ASAN' in build_version"
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_fw_stuck_dump:
   skip:
