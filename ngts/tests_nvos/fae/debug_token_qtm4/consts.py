@@ -21,11 +21,14 @@ class DebugFwPaths:
     # Output directory for generated debug firmware
     DEBUG_FW_OUTPUT_DIR = "/auto/sw_system_project/NVOS_INFRA/verification_files/debug_token"
 
-    # MFT internal package path (required for mlxburn)
+    # Fallback mft-int package path used when no mft is installed on the switch
     MFT_INTERNAL_PATH = (
         "/auto/mswg_release_mft/mft-4.34.0/mft-4.34.0-5015/Deliverables/"
         "linux-x86_64/mft-4.34.0-5015-int/DEBS/mft-int_4.34.0-5015_amd64.deb"
     )
+
+    # Base directory for mft releases used to locate a matching mft-int deb
+    MFT_RELEASE_BASE = "/auto/mswg_release_mft"
 
     # Temporary directory on switch for generation
     SWITCH_TMP_DIR = "/tmp/debug_fw_gen"
@@ -78,6 +81,13 @@ class DebugFwCommands:
 
     # Create temp directory
     CREATE_TMP_DIR = "sudo mkdir -p {tmp_dir} && sudo chmod 777 {tmp_dir}"
+
+    # Check if mft-int is installed; prints match count (0 if missing, 1 if present)
+    # mft-int ships 'mic' (image generation tool); the public 'mft' package does not
+    CHECK_MFT_INT = "dpkg -l mft-int 2>/dev/null | grep -c '^ii' || true"
+
+    # Get the installed mft version string (e.g. "4.35.0.6007-1"), empty if not installed
+    GET_MFT_VERSION = "dpkg -l mft 2>/dev/null | awk '/^ii/{print $3}'"
 
     # Install MFT internal package
     INSTALL_MFT = "sudo dpkg -i /tmp/{mft_name}"

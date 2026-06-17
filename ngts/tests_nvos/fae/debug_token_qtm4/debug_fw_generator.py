@@ -9,6 +9,7 @@ Usage:
     bin_path, mfa_path = generator.generate_debug_firmware()
 """
 import os
+import re
 import time
 import glob
 import logging
@@ -164,16 +165,53 @@ class DebugFirmwareGenerator:
 
     # ==================== Generation ====================
 
+    def _resolve_mft_int_path(self) -> str:
+        """Return the mft-int .deb that matches the mft version on the switch.
+
+        When the switch has a public mft installed (e.g. 4.35.0.6007-1), installing
+        an older mft-int (4.34.0) fails with a dpkg file-conflict error. This method
+        finds the matching mft-int build from /auto/mswg_release_mft and falls back
+        to the hardcoded path when no match is found.
+        """
+        mft_ver_raw = self.dut_engine.run_cmd(DebugFwCommands.GET_MFT_VERSION).strip()
+        if mft_ver_raw:
+            # dpkg version format: "4.35.0.6007-1" -> major "4.35.0", build "6007"
+            m = re.match(r'(\d+\.\d+\.\d+)\.(\d+)', mft_ver_raw)
+            if m:
+                major, build = m.group(1), m.group(2)
+                candidate = (
+                    f"{DebugFwPaths.MFT_RELEASE_BASE}/mft-{major}/"
+                    f"mft-{major}-{build}/Deliverables/linux-x86_64/"
+                    f"mft-{major}-{build}-int/DEBS/mft-int_{major}-{build}_amd64.deb"
+                )
+                if os.path.exists(candidate):
+                    logger.info(f"Using mft-int matching installed mft {mft_ver_raw}: {candidate}")
+                    return candidate
+                logger.warning(f"No matching mft-int found for mft {mft_ver_raw}, using fallback")
+        return DebugFwPaths.MFT_INTERNAL_PATH
+
     def _setup_switch(self) -> None:
         """Setup switch workspace and install dependencies."""
         self.dut_engine.run_cmd(DebugFwCommands.CREATE_TMP_DIR.format(tmp_dir=DebugFwPaths.SWITCH_TMP_DIR))
 
-        # Always install MFT internal - mlxburn needs internal image generation tools
-        # Even if mlx_mfa_gen_old exists, mlxburn may be missing required components
-        mft_name = os.path.basename(DebugFwPaths.MFT_INTERNAL_PATH)
-        self.dut_engine.copy_file(source_file=DebugFwPaths.MFT_INTERNAL_PATH, dest_file=mft_name,
-                                  file_system='/tmp', direction='put')
-        self.dut_engine.run_cmd(DebugFwCommands.INSTALL_MFT.format(mft_name=mft_name))
+        # mft-int ships 'mic', the image generation tool mlxburn -wrimage needs.
+        # If mft-int is already installed, skip. Otherwise install a matching version
+        # to avoid dpkg conflicts with any public mft already on the switch.
+        out = self.dut_engine.run_cmd(DebugFwCommands.CHECK_MFT_INT)
+        lines = [l for l in out.splitlines() if l.strip()]
+        try:
+            mft_int_installed = int(lines[0]) if lines else 0
+        except ValueError:
+            logger.warning(f"Unexpected CHECK_MFT_INT output: {out!r}; assuming none installed")
+            mft_int_installed = 0
+        if mft_int_installed == 0:
+            mft_int_path = self._resolve_mft_int_path()
+            mft_name = os.path.basename(mft_int_path)
+            self.dut_engine.copy_file(source_file=mft_int_path, dest_file=mft_name,
+                                      file_system='/tmp', direction='put')
+            self.dut_engine.run_cmd(DebugFwCommands.INSTALL_MFT.format(mft_name=mft_name))
+        else:
+            logger.info("mft-int already installed, skipping")
 
         # Install pycryptodome if needed
         if "not_found" in self.dut_engine.run_cmd(DebugFwCommands.CHECK_PYCRYPTO):
