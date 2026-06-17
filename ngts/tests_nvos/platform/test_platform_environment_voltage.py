@@ -15,6 +15,7 @@ from ngts.tests_nvos.platform.helpers import (
     is_sensor_for_absent_psu,
     validate_health,
     validate_health_issues,
+    validate_invalid_voltage_value_logged,
     validate_sensor_state,
 )
 from ngts.nvos_constants.constants_nvos import DatabaseConst, HealthConsts, PlatformConsts
@@ -292,6 +293,8 @@ def test_simulate_voltage_faults(engines, devices):
                     validate_sensor_state(voltage_show, sensor_name, 'failed')
                     validate_health(system, HealthConsts.NOT_OK)
                     validate_health_issues(system, sensor_name, expected_present=True)
+                    if fault_name == 'gibberish':
+                        validate_invalid_voltage_value_logged(system, engines.dut)
 
                 validate_sensor_state(voltage_show, sensor_name, 'ok')
                 validate_health(system, HealthConsts.OK)

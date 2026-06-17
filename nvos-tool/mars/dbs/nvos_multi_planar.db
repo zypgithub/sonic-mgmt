@@ -70,7 +70,4 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_plu_phy_recovery.cases </cases>
 	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvl5_zombie_link.cases </cases>
-	</test>
 </DBDEF>

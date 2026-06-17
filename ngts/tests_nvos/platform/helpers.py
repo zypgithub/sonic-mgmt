@@ -4,7 +4,7 @@ from typing import Callable, Iterable
 
 from retry import retry
 
-from ngts.nvos_constants.constants_nvos import HealthConsts
+from ngts.nvos_constants.constants_nvos import HealthConsts, LogsSources
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
@@ -143,4 +143,24 @@ def validate_health_issues(system, sensor_name: str, *, expected_present: bool):
         assert matched_key is None, (
             f"Expected sensor '{sensor_name}' NOT in health issues, "
             f"but it is still present as '{matched_key}': {health_issues.get(matched_key)}"
+        )
+
+
+def validate_invalid_voltage_value_logged(system, engine):
+    """Verify syslog contains evidence that an unreadable voltage value was detected.
+
+    Called after a non-numeric (gibberish) value is injected.  Two messages are
+    expected:
+      1. healthd logs that the sensor reading is unavailable.
+      2. health-statsd logs the out-of-range event with voltage=N/A.
+    """
+    with allure.step("Verify syslog contains evidence of unreadable voltage value"):
+        system.log.verify_expected_logs(
+            logs_to_find=[
+                'Voltage sensor reading is not available',
+                'voltage=N/A',
+            ],
+            logs_source=LogsSources.SYSLOG,
+            engine=engine,
+            only_latest_log=True,
         )
