@@ -129,16 +129,17 @@ def stop_pmon_sensord_task(ans_host):
         logging.info("sensord stopped successfully")
 
 
-def start_pmon_sensord_task(duthost):
+def start_pmon_sensord_task(duthost, timeout=10):
     sensord_running_status, sensord_pid = check_sensord_status(duthost)
     if not sensord_running_status:
         duthost.command("docker exec pmon supervisorctl restart lm-sensors")
-        time.sleep(3)
-        sensord_running_status, sensord_pid = check_sensord_status(duthost)
-        if sensord_running_status:
+        if wait_until(timeout, 1, 0, lambda: check_sensord_status(duthost)[0]):
+            sensord_running_status, sensord_pid = check_sensord_status(duthost)
             logging.info("sensord task started, pid = {}".format(sensord_pid))
         else:
-            logging.error("Failed to start sensord task.")
+            sensord_running_status = False
+            sensord_pid = -1
+            logging.error("Failed to start sensord task within {} seconds.".format(timeout))
     else:
         logging.info("sensord is running, pid = {}".format(sensord_pid))
     return sensord_running_status, sensord_pid
@@ -158,17 +159,9 @@ def psu_test_setup_teardown(duthosts, enum_rand_one_per_hwsku_hostname):
     yield
 
     logging.info("Starting psu test teardown")
-    sensord_running_status, sensord_pid = check_sensord_status(duthost)
-    if not sensord_running_status:
-        duthost.command("docker exec pmon supervisorctl restart lm-sensors")
-        time.sleep(3)
-        sensord_running_status, sensord_pid = check_sensord_status(duthost)
-        if sensord_running_status:
-            logging.info("sensord task restarted, pid = {}".format(sensord_pid))
-        else:
-            pytest_assert(False, "Failed to restart sensord task after test.")
-    else:
-        logging.info("sensord is running, pid = {}".format(sensord_pid))
+    started, sensord_pid = start_pmon_sensord_task(duthost)
+    if not started:
+        pytest_assert(False, "Failed to restart sensord task after test.")
 
 
 @pytest.fixture(scope="function")
