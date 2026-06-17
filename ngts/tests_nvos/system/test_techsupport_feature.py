@@ -422,7 +422,7 @@ def verify_secret_obscurity(content: str, pattern: str, file_name: str, secret_n
         assert match.group(1) == expected_obscurity, f'{secret_name} secret is not obscured correctly'
 
 
-def _parse_sx_core_module_names(raw_output):
+def _parse_sx_core_module_names(dump_modules_output):
     """
     Extract only valid sx_core module directory names (e.g. 'module0', 'module72')
     from raw command output.
@@ -434,8 +434,11 @@ def _parse_sx_core_module_names(raw_output):
     :param raw_output: raw stdout/stderr text returned by engine.run_cmd()
     :return: set of valid module directory names
     """
+    if not dump_modules_output or not dump_modules_output.strip():
+        logger.info('dump_modules_output is empty')
+        return set()
     _SX_CORE_MODULE_NAME_RE = re.compile(r'^module[0-9]+$')
-    return {line.strip() for line in raw_output.splitlines()
+    return {line.strip() for line in dump_modules_output.splitlines()
             if _SX_CORE_MODULE_NAME_RE.match(line.strip())}
 
 
@@ -462,22 +465,23 @@ def validate_sx_core_modules_in_dump_nvos(engine, dump_folder_path):
     # validator must be revisited to include asicX in the comparison key.
     SX_CORE_SYSFS_PATH = "/sys/module/sx_core/asic0"
 
-    with allure.step('Verify sx_core SysFS modules are accessible on the DUT'):
+    with allure.step('Verify sx_core SysFS modules are accessible on the DUT AND collect module names from DUT'):
         # List all module directories under sx_core sysfs and extract just the directory names
         # Example output: module0\nmodule1\n...\nmodule72
         dut_modules_output = engine.run_cmd(
             'ls -d {}/module* | xargs -I{{}} basename {{}}'.format(SX_CORE_SYSFS_PATH))
         output_lower = dut_modules_output.strip().lower()
-        assert dut_modules_output.strip() and 'module' in output_lower \
+        logger.info('dut_modules_output: ' + str(dut_modules_output.strip()))
+        dut_modules = _parse_sx_core_module_names(dut_modules_output.strip())
+        logger.info('DUT has {} sx_core modules:'.format(len(dut_modules)))
+        logger.info('dut_modules: ' + str(dut_modules))
+
+        assert dut_modules and 'module' in output_lower \
             and "error" not in output_lower and "failed" not in output_lower \
             and "no such file" not in output_lower and "cannot access" not in output_lower, \
             'sx_core module path {} not accessible on this switch. ' \
             'The sx_core kernel module may not be loaded. Output: {}'.format(
                 SX_CORE_SYSFS_PATH, dut_modules_output.strip())
-
-    with allure.step('Collect module names from DUT'):
-        dut_modules = _parse_sx_core_module_names(dut_modules_output)
-        logger.info('DUT has {} sx_core modules: {}'.format(len(dut_modules), sorted(dut_modules)))
 
     with allure.step('Collect module names from techsupport dump'):
         # Search the extracted dump for sx_core/asic0 module directories and extract their names.
