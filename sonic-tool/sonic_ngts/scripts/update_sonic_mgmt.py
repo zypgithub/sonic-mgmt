@@ -1,5 +1,4 @@
 import argparse
-import yaml
 import os
 import logging
 import shutil
@@ -7,7 +6,6 @@ import sys
 import json
 import pandas as pd
 import numpy as np
-import re
 
 from devts.infra.tools.general_constants.air_constants import NvidiaAirConstants
 from devts.infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
@@ -41,37 +39,25 @@ class TestbedYAML:
     def __init__(self, yaml_file):
         self.testbed_yaml = yaml_file
 
-    def entry_exists(self, dut_name):
-        """
-        Ensure entry with specified DUT exists in 'ansible/testbed.yaml' file
-        @param dut_name: DUT name
-        """
-        with open(self.testbed_yaml) as testbed_file:
-            testbed_configs = yaml.safe_load(testbed_file)
-            if any([dut_name in config.get('conf-name', '') for config in testbed_configs]):
-                return True
-            else:
-                return False
-
     def add_entry(self, dut_name):
         """
-        Add new entry to the testbed.yaml file
+        Write the testbed entry to the testbed.yaml file
         """
-        with open(self.testbed_yaml, "a+") as testbed_file:
-            line = (
-                f"\n- conf-name: {dut_name}-ptf-any\n"
-                f"  group-name: vm-t1\n"
-                f"  topo: ptf-any\n"
-                f"  ptf_image_name: docker-ptf-mlnx\n"
-                f"  ptf: ptf-dummy\n"
-                f"  ptf_ip: 1.1.1.1/16\n"
-                f"  ptf_ipv6:\n"
-                f"  server: server_54\n"
-                f"  vm_base: VM0000\n"
-                f"  dut:\n"
-                f"     - {dut_name}\n"
-                f"  comment: NvidiaAir testbed"
-            )
+        line = (
+            f"- conf-name: {dut_name}-ptf-any\n"
+            f"  group-name: vm-t1\n"
+            f"  topo: ptf-any\n"
+            f"  ptf_image_name: docker-ptf-mlnx\n"
+            f"  ptf: ptf-dummy\n"
+            f"  ptf_ip: 1.1.1.1/16\n"
+            f"  ptf_ipv6:\n"
+            f"  server: server_54\n"
+            f"  vm_base: VM0000\n"
+            f"  dut:\n"
+            f"     - {dut_name}\n"
+            f"  comment: NvidiaAir testbed"
+        )
+        with open(self.testbed_yaml, "w") as testbed_file:
             testbed_file.write(line)
 
 
@@ -81,32 +67,14 @@ class Inventory:
     """
     def __init__(self, inventory):
         self.inventory_path = inventory
-        self.inventory_buff = self.read()
-
-    def read(self):
-        """
-        Read and return content of 'ansible/inventory' file
-        """
-        with open(self.inventory_path) as inv_file:
-            buff = inv_file.read()
-        return buff
-
-    def entry_exists(self, dut_name):
-        """
-        Ensure entry with specified DUT exists in 'ansible/inventory' file
-        @param dut_name: DUT name
-        """
-        with open(self.inventory_path) as inventory_file:
-            return dut_name in inventory_file.read()
 
     def add_entry(self, dut_name, ansible_host, ansible_port, hwsku, topology_type):
         """
-        Add new entries to the inventory file
+        Write inventory entries to the inventory file
         Entry example:
         air_2700_1-ptf-any ansible_host=147.75.47.205 ansible_port=18696
         air_2700_1 ansible_host=147.75.47.205 ansible_port=18696
         """
-        buff = ""
         serial = SerialConsts.PLATFORM_SERIAL_NUM_MAP.get(topology_type, None)
         model = SerialConsts.PLATFORM_MODEL_MAP.get(topology_type, None)
         host_entry_ptf_any = f"{dut_name}-ptf-any ansible_host={ansible_host} ansible_port={ansible_port} sonic_hwsku={hwsku}"
@@ -116,19 +84,16 @@ class Inventory:
         if model:
             host_entry += f" model={model}"
 
-        for line in self.inventory_buff.splitlines():
-            if "[sonic_latest]" in line:
-                buff += line + "\n"
-                buff += host_entry_ptf_any + "\n"
-                buff += host_entry + "\n"
-            elif "[lab]" in line:
-                buff += line + "\n"
-                buff += f"{dut_name}-ptf-any" + "\n"
-                buff += dut_name + "\n"
-            else:
-                buff += line + "\n"
-        with open(self.inventory_path, "w", 0o0600) as inv_file:
-            inv_file.write(buff)
+        with open(self.inventory_path, "w") as inv_file:
+            inv_file.write(
+                f"[sonic_latest]\n"
+                f"{host_entry_ptf_any}\n"
+                f"{host_entry}\n"
+                f"\n"
+                f"[lab]\n"
+                f"{dut_name}-ptf-any\n"
+                f"{dut_name}\n"
+            )
 
 
 class Lab:
@@ -137,69 +102,37 @@ class Lab:
     """
     def __init__(self, lab_path):
         self.lab_path = lab_path
-        self.lab_buff = self.read()
-
-    def read(self):
-        """
-        Read and return content of 'ansible/lab' file
-        """
-        with open(self.lab_path) as lab_file:
-            buff = lab_file.read()
-        return buff
 
     def add_entry(self, dut_name, ansible_host, ansible_port, hwsku):
         """
-        Add new entry to the lab file
+        Write lab entry to the lab file
         Entry example:
         air_2700_1      ansible_host=10.210.25.107 ansible_port=12345 sonic_version=v2
         """
-        buff = ""
-        lab_template = "{dut_name}      ansible_host={ansible_host} ansible_port={ansible_port} sonic_version=v2 sonic_hwsku={hwsku}"
-        lab_entry = lab_template.format(dut_name=dut_name, ansible_host=ansible_host, ansible_port=ansible_port, hwsku=hwsku)
-        for line in self.lab_buff.splitlines():
-            if "[sonic_latest]" in line:
-                buff += line + "\n"
-                buff += lab_entry + "\n"
-            else:
-                buff += line + "\n"
-
-        with open(self.lab_path, "w", 0o0600) as lab_file:
-            lab_file.write(buff)
-
-    def entry_exists(self, dut_name):
-        """
-        Ensure entry with specified DUT exists in 'ansible/lab' file
-        @param dut_name: DUT name
-        """
-        with open(self.lab_path) as lab_file:
-            return dut_name in lab_file.read()
+        with open(self.lab_path, "w") as lab_file:
+            lab_file.write(
+                f"[sonic_latest]\n"
+                f"{dut_name}      ansible_host={ansible_host} ansible_port={ansible_port} "
+                f"sonic_version=v2 sonic_hwsku={hwsku}\n"
+            )
 
 
 class SonicNvidiaCommonDevices:
+    CSV_COLUMNS = ["Hostname", "ManagementIp", "HwSku", "Type", "Protocol", "Os"]
+
     def __init__(self, sonic_nvidia_common_devices_path):
         self.sonic_nvidia_common_devices_path = sonic_nvidia_common_devices_path
 
-    def read(self):
-        with open(self.sonic_nvidia_common_devices_path) as f:
-            buff = pd.read_csv(f)
-        return buff
-
-    def entry_exists(self, dut_name):
-        devices_content = self.read()
-        return dut_name in devices_content['Hostname'].values
-
-    def add_entry(self, host_name, management_ip, hwsku):
-        line = {
+    def add_entries(self, host_names, management_ip, hwsku):
+        rows = [{
             "Hostname": host_name,
             "ManagementIp": management_ip,
             "HwSku": hwsku,
             "Type": "DevSonic",
             "Protocol": np.nan,
             "Os": "sonic"
-        }
-        df = self.read()
-        df = pd.concat([df, pd.DataFrame([line])], ignore_index=True)
-        df.to_csv(self.sonic_nvidia_common_devices_path, index=False)
+        } for host_name in host_names]
+        pd.DataFrame(rows, columns=self.CSV_COLUMNS).to_csv(self.sonic_nvidia_common_devices_path, index=False)
 
 class MinigraphFacts:
     def __init__(self, mgmt_minigraph_path):
@@ -276,27 +209,23 @@ if __name__ == "__main__":
     logger.info('Replace "tests/common/plugins/ptfadapter/__init__.py" '
                 'with "sonic-tool/sonic_ngts/scripts/ptfadapter/__init__.py"')
     replace_ptfadapter_init_py(mgmt_repo)
-    topology = get_topology_by_setup_name(setup_name=setup_name, slow_cli=False)
-    ansible_host = topology.players['dut']['engine'].ip
-    ansible_port = topology.players['dut']['engine'].ssh_port
-    devdescription = json.loads(topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])
-    hwsku = devdescription['hwsku']
-    topology_type = devdescription['platform']
-    files = [inv, lab, testbed_yaml]
+
     if 'air' in setup_name:
+        topology = get_topology_by_setup_name(setup_name=setup_name, slow_cli=False)
+        ansible_host = topology.players['dut']['engine'].ip
+        ansible_port = topology.players['dut']['engine'].ssh_port
+        devdescription = json.loads(topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])
+        hwsku = devdescription['hwsku']
+        topology_type = devdescription['platform']
         os.system(f"echo '{ansible_host} {setup_name}' >> /etc/hosts")
-        files.append(sonic_nvidia_common_devices)
-    for f in files:
-        if not f.entry_exists(dut_name=dut_name):
+        files = [inv, lab, testbed_yaml, sonic_nvidia_common_devices]
+        for f in files:
             if isinstance(f, TestbedYAML):
                 f.add_entry(dut_name=dut_name)
             elif isinstance(f, SonicNvidiaCommonDevices):
-                f.add_entry(host_name=ansible_host, management_ip=ansible_host, hwsku=hwsku)
-                f.add_entry(host_name=dut_name, management_ip=ansible_host, hwsku=hwsku)
+                f.add_entries(host_names=[ansible_host, dut_name], management_ip=ansible_host, hwsku=hwsku)
             elif isinstance(f, Inventory):
                 f.add_entry(dut_name=dut_name, ansible_host=ansible_host, ansible_port=ansible_port, hwsku=hwsku, topology_type=topology_type)
             else:
                 f.add_entry(dut_name=dut_name, ansible_host=ansible_host, ansible_port=ansible_port, hwsku=hwsku)
-            logger.info(f"Entry for '{dut_name}' DUT entry added to {f.__class__.__name__} file.")
-        else:
-            logger.info(f"Entry for '{dut_name}' DUT entry already exists in {f.__class__.__name__} file. Skip configuration.")
+            logger.info(f"Entry for '{dut_name}' DUT added to {f.__class__.__name__} file.")
