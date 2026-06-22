@@ -1133,15 +1133,6 @@ class DeployBmcHelper:
                 with allure.step('Install BMC DHCP recovery workaround service'):
                     DeployBmcHelper._install_dhcp_recovery_service(bmc_params)
 
-            # Reboot the BMC to apply the config changes.
-            with allure.step('Power-cycle BMC to apply the config changes'):
-                context.primary_cli_obj.remote_reboot(
-                    context.topology_obj, dut_alias, wait_till_alive=False
-                )
-                DeployBmcHelper._wait_bmc_login_with_power_cycle(
-                    context, dut_alias, serial_engine
-                )
-
             # Sync the BMC clock
             with allure.step('Sync BMC clock via chrony'):
                 try:
