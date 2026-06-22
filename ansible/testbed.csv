@@ -416,6 +416,8 @@ r-bison-04-t1,vm-t1,t1,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_9
 r-bison-04-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_91,VM6837,r-bison-04,Mellanox MTR testbed
 r-bison-04-t1-isolated-d28u1,vm-t1,t1-isolated-d28u1,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_91,VM6837,r-bison-04,Mellanox MTR testbed
 r-bison-04-t1-isolated-d224u8,vm-t1,t1-isolated-d224u8,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_91,VM6837,r-bison-04,Mellanox MTR testbed
+r-bison-04-t1-isolated-d448u15-lag,vm-t1,t1-isolated-d448u15-lag,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_91,VM6837,r-bison-04,Mellanox MTR testbed
+r-bison-04-t1-isolated-d56u1-lag,vm-t1,t1-isolated-d56u1-lag,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_91,VM6837,r-bison-04,Mellanox MTR testbed
 r-bison-04-t1-isolated-d56u2,vm-t1,t1-isolated-d56u2,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_91,VM6837,r-bison-04,Mellanox MTR testbed
 r-bison-04-t1-isolated-v6-d56u1-lag,vm-t1,t1-isolated-v6-d56u1-lag,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_91,VM6837,r-bison-04,Mellanox MTR testbed
 r-bison-04-t1-isolated-d510u2,vm-t1,t1-isolated-d510u2,docker-ptf-mlnx,ptf-r-bison-04,10.215.40.182/20,,server_91,VM6837,r-bison-04,Mellanox MTR testbed
