@@ -324,6 +324,19 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             self.dut_name = f'{self.dut_name}-bmc'
             self.Logger.info(f"BMC mode: overridden testbed={testbed}, dut_name={self.dut_name}")
 
+        if is_smartswitch_test:
+            if '--dpu-pattern' in self.raw_options:
+                # For tests that require exact number of DPUs(e.g. HA tests)
+                # it should be specified in the cases file
+                if len(self.dut_name_list) > 1:
+                    self.raw_options = self.raw_options.replace('dut-a-dpu-', self.dut_name_list[0] + '-dpu-')
+                    self.raw_options = self.raw_options.replace('dut-b-dpu-', self.dut_name_list[1] + '-dpu-')
+                else:
+                    self.raw_options = self.raw_options.replace('dut-dpu-', self.dut_name_list[0] + '-dpu-')
+            else:
+                # For general smartswitch tests, we provide all available DPUs
+                self.raw_options += f" --dpu-pattern {','.join(dpu_duts)}"
+
         # The test script file must come first, see explaination on https://github.com/Azure/sonic-mgmt/pull/2131
         cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
                ../ansible/library/ --testbed {TESTBED} --setup_name={SETUP_NAME} --testbed_file ../ansible/testbed.yaml \
@@ -343,13 +356,6 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                          TESTBED=testbed,
                          SONIC_MGMT_PATH=self.sonic_mgmt_path
                          )
-        if is_smartswitch_test:
-            ha_test_path = "tests/ha/"
-            if ha_test_path in test_script_fullpath:
-                # Currently the HA test only use dpu-0 of the DUTs, adding more DPUs will cause test failure
-                cmd += f" --dpu-pattern {self.dut_name_list[0]}-dpu-0,{self.dut_name_list[1]}-dpu-0"
-            else:
-                cmd += f" --dpu-pattern {','.join(dpu_duts)}"
         # Take the first epoint as just one is specified in *.setup file. Currently supported are: SONIC_MGMT or NGTS
         # Take the first player as just one is specified in *.setup file
         epoint = self.EPoints[0]
