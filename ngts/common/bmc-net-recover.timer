@@ -1,0 +1,14 @@
+[Unit]
+Description=Periodic BMC ftgmac100 DHCP recovery check (Redmine #5091238)
+Documentation=https://redmine.mellanox.com/issues/5091238
+
+[Timer]
+# First check a couple of minutes after boot, once SONiC's own eth0 bring-up has
+# run (and, when the bug hits, failed to get a lease), then keep checking so a
+# dropped lease is restored within ~1 minute - at boot or at runtime.
+OnBootSec=120
+OnUnitActiveSec=60
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

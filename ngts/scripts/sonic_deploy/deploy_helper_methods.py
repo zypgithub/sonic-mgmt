@@ -1125,6 +1125,14 @@ class DeployBmcHelper:
             with allure.step('Wait for BMC SONiC DB to be ready'):
                 DeployBmcHelper._wait_bmc_sonic_db_ready(bmc_params)
 
+            # Install the DHCP recovery workaround before the reboot below, so this
+            # reboot (and every later reboot / power-cycle during tests) self-heals
+            # eth0 when the ftgmac100 driver comes up without a DHCP lease.
+            # Tracked by Redmine #5091238; drops automatically once it is fixed.
+            if is_redmine_issue_active([5091238])[0]:
+                with allure.step('Install BMC DHCP recovery workaround service'):
+                    DeployBmcHelper._install_dhcp_recovery_service(bmc_params)
+
             # Reboot the BMC to apply the config changes.
             with allure.step('Power-cycle BMC to apply the config changes'):
                 context.primary_cli_obj.remote_reboot(
@@ -1483,6 +1491,69 @@ class DeployBmcHelper:
             logger.info("BMC SONiC CONFIG_DB is ready")
 
         retry_call(_check, tries=tries, delay=delay, logger=logger)
+
+    @staticmethod
+    def _install_dhcp_recovery_service(bmc_params):
+        """
+        Install and enable a systemd timer that recovers eth0's DHCP lease after a
+        BMC reboot / power-cycle (and at runtime).
+
+        Known issue: on the AST2700 BMC the ftgmac100 NIC reports "Link is Up"
+        after a (re)boot but no DHCP offer ever arrives, so eth0 stays without an
+        IPv4 address and the BMC is unreachable over the network. Reloading the
+        driver and re-running dhclient restores connectivity. Because the BMC has
+        no IP at that point it cannot be fixed remotely, so the recovery has to
+        run locally - hence a systemd unit instead of a per-test step.
+
+        A oneshot at boot is not enough: eth0 can briefly carry an early lease at
+        the moment a boot-time check runs (so it no-ops) and then drop it, and the
+        lease can also be lost at runtime. So the recovery script is driven by a
+        timer that re-checks periodically and reloads the driver only when eth0
+        has no IPv4 address.
+
+        The script and units are staged in ngts/common/; this copies them to the
+        BMC, installs them and enables the timer.
+        """
+        common_dir = os.path.join(os.path.dirname(__file__), "..", "..", "common")
+        script_src = os.path.join(common_dir, BmcDeployConstants.BMC_DHCP_WA_SCRIPT_SRC)
+        service_src = os.path.join(common_dir, BmcDeployConstants.BMC_DHCP_WA_SERVICE_SRC)
+        timer_src = os.path.join(common_dir, BmcDeployConstants.BMC_DHCP_WA_TIMER_SRC)
+
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+
+        # Stage the files in /tmp (writable for the admin user), then move them
+        # into place with sudo.
+        for src, dst, mode in (
+            (script_src, BmcDeployConstants.BMC_DHCP_WA_SCRIPT_DST, "0755"),
+            (service_src, BmcDeployConstants.BMC_DHCP_WA_SERVICE_DST, "0644"),
+            (timer_src, BmcDeployConstants.BMC_DHCP_WA_TIMER_DST, "0644"),
+        ):
+            staged = os.path.basename(src)
+            engine.copy_file(
+                source_file=src, dest_file=staged,
+                file_system="/tmp/", overwrite_file=True, verify_file=True,
+            )
+            engine.run_cmd(f"sudo install -m {mode} /tmp/{staged} {dst}")
+
+        engine.run_cmd("sudo systemctl daemon-reload")
+        # Enable + start the timer (the service is triggered by the timer).
+        engine.run_cmd(
+            f"sudo systemctl enable --now {BmcDeployConstants.BMC_DHCP_WA_TIMER_NAME}"
+        )
+
+        enabled = engine.run_cmd(
+            f"sudo systemctl is-enabled {BmcDeployConstants.BMC_DHCP_WA_TIMER_NAME}"
+        ).strip()
+        logger.info(f"BMC DHCP recovery timer is-enabled: '{enabled}'")
+        if "enabled" not in enabled:
+            raise RuntimeError(
+                f"Failed to enable {BmcDeployConstants.BMC_DHCP_WA_TIMER_NAME} "
+                f"on the BMC; 'systemctl is-enabled' returned '{enabled}'"
+            )
 
     @staticmethod
     def _wait_bmc_containers_running(bmc_params, tries=30, delay=10):

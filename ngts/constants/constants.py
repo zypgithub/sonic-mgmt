@@ -1487,6 +1487,21 @@ class BmcDeployConstants:
     # BMC DEVICE_METADATA
     BMC_DEVICE_METADATA_TYPE = "NetworkBmc"
 
+    # DHCP recovery workaround (Redmine #5091238): after a reboot / power-cycle
+    # the ftgmac100 NIC reports link up but no DHCP offer arrives, so eth0 never
+    # gets a lease. A systemd timer periodically reloads the driver and re-runs
+    # dhclient whenever eth0 has no IPv4 address (a oneshot at boot is not enough
+    # - the IP can flap right after boot and the lease can drop at runtime). The
+    # script and units are staged in ngts/common/ and installed during the BMC
+    # deploy; the timer is what gets enabled.
+    BMC_DHCP_WA_TIMER_NAME = "bmc-net-recover.timer"
+    BMC_DHCP_WA_SCRIPT_SRC = "bmc_net_recover.sh"
+    BMC_DHCP_WA_SERVICE_SRC = "bmc-net-recover.service"
+    BMC_DHCP_WA_TIMER_SRC = "bmc-net-recover.timer"
+    BMC_DHCP_WA_SCRIPT_DST = "/usr/local/bin/bmc_net_recover.sh"
+    BMC_DHCP_WA_SERVICE_DST = "/etc/systemd/system/bmc-net-recover.service"
+    BMC_DHCP_WA_TIMER_DST = "/etc/systemd/system/bmc-net-recover.timer"
+
     # AST HW types allowed to run a SONiC BMC image. AST2600 is
     # OpenBMC-only. AST2700-A1 is here temporarily; drop it once
     # AST2700-A1 is moved to OpenBMC-only.
