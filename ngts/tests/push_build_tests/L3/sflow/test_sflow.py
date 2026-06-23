@@ -32,9 +32,8 @@ def sflow_config_cleanup(engines, cli_objects, interfaces):
     cli_obj.general.delete_redis_sub_keys_from_table(redis_changed_keys_dict)
 
 
-@pytest.mark.build
-@pytest.mark.physical_coverage
 @pytest.mark.push_gate
+@pytest.mark.sflow
 def test_basic_sflow_function(engines, cli_objects, interfaces, topology_obj, ha_dut_1_mac, dut_ha_1_mac):
     """
     Test sflow functionality under reboot/fast reboot/warm reboot/config reload
