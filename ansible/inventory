@@ -3438,8 +3438,8 @@ ptf-bobcat-10 ansible_host=10.220.73.41 ansible_ssh_user="{{ lookup('env','PTF_U
 ptf-slm-chipless-2700a1-146 ansible_host=10.213.86.104 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 10.213.86.104 ansible_host=10.213.86.104 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
-# canonical testbed sonic_salamandra_r_salamandra-1 topologies
-ptf-r_salamandra-1 ansible_host=10.213.86.105 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+# canonical testbed sonic_salamandra_r-salamandra-1 topologies
+ptf-r-salamandra-1 ansible_host=10.213.86.105 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 10.213.86.105 ansible_host=10.213.86.105 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
