@@ -962,16 +962,17 @@ def validate_enabled_stream_output(
             f"Successfully verified {len(counter_matches)} counter values "
             f"are > {min_counter_value}")
 
-    # Always extract Msg/s values; strict rate validation is optional.
-    msg_pattern = r'Msg/s:\s+(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
-    msg_per_sec_matches = re.findall(msg_pattern, stable_output)
+    # Validate Msg/s if poll_interval is provided
+    msg_per_sec_matches = []
     msg_validation_result = None
 
-    if msg_per_sec_matches:
-        msg_values = [float(m) for m in msg_per_sec_matches]
-        logger.info(f"Individual Msg/s values: {msg_values}")
+    if expected_poll_interval:
+        msg_pattern = r'Msg/s:\s+(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
+        msg_per_sec_matches = re.findall(msg_pattern, stable_output)
 
-        if expected_poll_interval:
+        if msg_per_sec_matches:
+            msg_values = [float(m) for m in msg_per_sec_matches]
+
             # Calculate expected Msg/s from poll_interval (microseconds)
             expected_msg_per_sec = 1000000.0 / expected_poll_interval
 
@@ -982,6 +983,9 @@ def validate_enabled_stream_output(
 
             # Calculate average Msg/s for validation (data may be uneven)
             avg_msg_per_sec = sum(msg_values) / len(msg_values)
+
+            # Log individual values and average for debugging
+            logger.info(f"Individual Msg/s values: {msg_values}")
             logger.info(f"Average Msg/s: {avg_msg_per_sec: .2f}, Expected: {expected_msg_per_sec: .2f}")
 
             # Validate the average against expected range
@@ -1002,39 +1006,34 @@ def validate_enabled_stream_output(
                 f"Average: {avg_msg_per_sec: .2f}, "
                 f"Individual range: {min(msg_values): .2f} - {max(msg_values): .2f}")
         else:
-            logger.info(
-                f"Extracted {len(msg_values)} Msg/s values "
-                f"(strict rate validation skipped)")
-            msg_validation_result = any(m > 0 for m in msg_values)
-    elif expected_poll_interval:
-        # Debug logging to help diagnose Msg/s issues when rate validation is required
-        logger.warning(
-            "No Msg/s values found in stable output")
-        logger.info(f"Searching for Msg/s pattern: {msg_pattern}")
-        logger.info(f"Stable output length: {len(stable_output)} characters")
-        if "Msg/s" in stable_output:
-            logger.info("Found 'Msg/s' text in stable output")
-            # Show a snippet around each Msg/s occurrence
-            msg_positions = []
-            start = 0
-            while True:
-                pos = stable_output.find("Msg/s", start)
-                if pos == -1:
-                    break
-                msg_positions.append(pos)
-                start = pos + 1
+            # Debug logging to help diagnose Msg/s issues
+            logger.warning(
+                "No Msg/s values found in stable output")
+            logger.info(f"Searching for Msg/s pattern: {msg_pattern}")
+            logger.info(f"Stable output length: {len(stable_output)} characters")
+            if "Msg/s" in stable_output:
+                logger.info("Found 'Msg/s' text in stable output")
+                # Show a snippet around each Msg/s occurrence
+                msg_positions = []
+                start = 0
+                while True:
+                    pos = stable_output.find("Msg/s", start)
+                    if pos == -1:
+                        break
+                    msg_positions.append(pos)
+                    start = pos + 1
 
-            for i, pos in enumerate(msg_positions[:3]):  # Show first 3 occurrences
-                snippet_start = max(0, pos - 50)
-                snippet_end = min(len(stable_output), pos + 50)
-                snippet = stable_output[snippet_start:snippet_end]
-                logger.info(f"Msg/s occurrence {i+1}: ...{snippet}...")
-        else:
-            logger.warning("No 'Msg/s' text found in stable output")
-            # Show a sample of the stable output for debugging
-            sample_length = min(500, len(stable_output))
-            logger.info(f"Stable output sample (first {sample_length} chars): {stable_output[:sample_length]}")
-        msg_validation_result = False
+                for i, pos in enumerate(msg_positions[:3]):  # Show first 3 occurrences
+                    snippet_start = max(0, pos - 50)
+                    snippet_end = min(len(stable_output), pos + 50)
+                    snippet = stable_output[snippet_start:snippet_end]
+                    logger.info(f"Msg/s occurrence {i+1}: ...{snippet}...")
+            else:
+                logger.warning("No 'Msg/s' text found in stable output")
+                # Show a sample of the stable output for debugging
+                sample_length = min(500, len(stable_output))
+                logger.info(f"Stable output sample (first {sample_length} chars): {stable_output[:sample_length]}")
+            msg_validation_result = False
 
     # Check for specific objects if provided
     object_matches = {}
