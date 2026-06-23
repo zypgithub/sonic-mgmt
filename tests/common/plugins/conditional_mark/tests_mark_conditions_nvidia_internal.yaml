@@ -562,18 +562,6 @@ dash/test_dash_crm.py::TestDashCRM::test_dash_crm_cleanup:
     conditions:
     - "https://redmine.mellanox.com/issues/4531681"
 
-dash/test_dash_privatelink_redirect.py::TestPrivateLinkRedirectFNIC::test_dst_port_above_port_map_range:
-  xfail:
-    reason: "Xfail the test for RM issue https://redmine.mellanox.com/issues/4964882"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4964882"
-
-dash/test_dash_privatelink_redirect.py::TestPrivateLinkRedirectPLNSG::test_dst_port_above_port_map_range:
-  xfail:
-    reason: "Xfail the test for RM issue https://redmine.mellanox.com/issues/4964882"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4964882"
-
 dhcp_relay/test_dhcpv4_relay.py::test_dhcp_relay_with_non_default_vrf:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5041721"
