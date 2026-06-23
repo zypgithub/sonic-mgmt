@@ -18,6 +18,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.test_system_health import verify_health_status_and_led
+from ngts.tests_nvos.helpers import redmine_helpers
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 
@@ -298,7 +299,9 @@ def test_show_platform_environment_temperature(engines, devices, random_api):
                                   PlatformConsts.ENV_TEMP_MAX)
 
     verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_CPU)
-    verify_sensor_group_by_tolerance(output, PlatformConsts.FW_ASIC)
+    
+    if not redmine_helpers.is_bug_active(5070648):  # RM 5070648: ASIC temp tolerance flap
+        verify_sensor_group_by_tolerance(output, PlatformConsts.FW_ASIC)
     if devices.dut.psu_list:
         verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
 
