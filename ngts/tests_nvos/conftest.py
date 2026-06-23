@@ -321,7 +321,7 @@ def check_ib_output(request):
 
 
 @pytest.fixture(autouse=True)
-def track_serial_console(request, topology_obj, engines, devices):
+def track_serial_console(request, topology_obj, engines, devices, is_air):
     """
     fixture to track serial console during test run,
         and if the test is failing, attach the serial console output to allure report (for better debug).
@@ -329,7 +329,7 @@ def track_serial_console(request, topology_obj, engines, devices):
     This will apply for all test that has any of the defined interesting markers below.
     """
     interesting_markers = ['track_serial_console', 'reboot', 'factory_reset', 'reset_factory']
-    should_track_serial_console = any(is_cur_test_has_marker(request, marker) for marker in interesting_markers)
+    should_track_serial_console = not is_air and any(is_cur_test_has_marker(request, marker) for marker in interesting_markers)
 
     if should_track_serial_console:
         with allure.step('start tracking serial console into file'):
