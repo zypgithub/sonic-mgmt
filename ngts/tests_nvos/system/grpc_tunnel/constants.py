@@ -12,6 +12,8 @@ class GrpcTunnelConstants:
     TARGET_NAME = "target-name"
     ADDRESS = "address"
     PORT = "port"
+    CA_CERTIFICATE = "ca-certificate"
+    CERTIFICATE = "certificate"
     CONNECTION = "connection"
     SUBSCRIPTION_THRESHOLD = 10
     STRESS_TUNNEL_SETTLE_WAIT_SEC = 40

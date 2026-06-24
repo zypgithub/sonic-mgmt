@@ -200,7 +200,9 @@ def clear_cl_conf(dut_engine, markers=None, dut=None):
         if diff_config:
             active_port = None
             if NvosConst.INTERFACE in diff_config.keys():
-                result = RandomizationTool.select_random_ports(num_of_ports_to_select=1, dut_engine=dut_engine)
+                result = RandomizationTool.select_random_ports(
+                    num_of_ports_to_select=1, dut_engine=dut_engine
+                )
                 if result.result:
                     active_port = result.returned_value[-1]
                 else:

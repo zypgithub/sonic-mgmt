@@ -1158,6 +1158,26 @@ def skip_coredump_check(request):
     pytest.skip_coredump_check = request.config.getoption('--skip_coredump_check')
 
 
+def _parse_coredump_ls_output(raw: str) -> list:
+    """Drop bash prompt noise that mlx shells append after ``ls`` (e.g. cen* permission errors)."""
+    names = []
+    for line in (raw or '').splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if (
+            line.startswith('sudo ') or
+            line.startswith('-bash:') or
+            line.startswith('rm:') or
+            'cumulus@' in line or
+            'Permission denied' in line or
+            ':' in line
+        ):
+            continue
+        names.append(line)
+    return names
+
+
 @pytest.fixture(scope='function', autouse=True)
 def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
     yield
@@ -1165,9 +1185,11 @@ def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
         logger.info('NVOS: Skip coredump check')
         return
     else:
-        files = engines.dut.run_cmd(f"sudo ls {CoreDumpConsts.COREDUMP_PATH}").strip().split("\n")
+        files = _parse_coredump_ls_output(
+            engines.dut.run_cmd('sudo ls -1 %s 2>/dev/null' % (CoreDumpConsts.COREDUMP_PATH,), validate=False)
+        )
 
-        if not files or files == ['']:
+        if not files:
             logger.info(f'No core dumps found in {pytest.test_name}')
         else:
             for file in files:

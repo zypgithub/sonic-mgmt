@@ -87,6 +87,9 @@ class GrpcTunnelServer:
         tls_key_file: Optional[str] = None,
         tls_ca_file: Optional[str] = None,
         tls_client_auth: str = '',
+        gnmi_tls_ca_file: Optional[str] = None,
+        gnmi_tls_cert_file: Optional[str] = None,
+        gnmi_tls_key_file: Optional[str] = None,
         gnmi_target: Optional[str] = None,
         cmd_time: int = 30,
         print_outputs: bool = True,
@@ -113,6 +116,9 @@ class GrpcTunnelServer:
             self.tls_key_file = tls_key_file
         self.tls_ca_file = tls_ca_file
         self.tls_client_auth = tls_client_auth
+        self.gnmi_tls_ca_file = gnmi_tls_ca_file
+        self.gnmi_tls_cert_file = gnmi_tls_cert_file
+        self.gnmi_tls_key_file = gnmi_tls_key_file
         self.gnmi_target = gnmi_target
         self.cmd_time = cmd_time
         self.cmd_runner = CmdRunner('GrpcTunnelServer', cmd_time, print_outputs)
@@ -249,6 +255,19 @@ class GrpcTunnelServer:
         ip = collector_ip or self.dut_ip
         assert ip, 'pass collector_ip= or set dut_ip= in the constructor'
         return self.collector_endpoint(ip)
+
+    def gnmi_mtls_cli_suffix(self) -> str:
+        """SSIM ``GnmiCollectorDialOutVX`` mtls parity for tunneled gnmi-server (:9339)."""
+        if not (self.gnmi_tls_ca_file and self.gnmi_tls_cert_file and self.gnmi_tls_key_file):
+            return ''
+        return (
+            ' --tls-ca %s --tls-cert %s --tls-key %s --auth-scheme Basic'
+            % (
+                shlex.quote(self.gnmi_tls_ca_file),
+                shlex.quote(self.gnmi_tls_cert_file),
+                shlex.quote(self.gnmi_tls_key_file),
+            )
+        )
 
     def _gnmic_base(self) -> str:
         """

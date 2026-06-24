@@ -41,6 +41,7 @@ from ngts.nvos_tools.system.SnmpServer import SnmpServer
 from ngts.nvos_tools.system.Stats import Stats
 from ngts.nvos_tools.system.Syslog import Syslog
 from ngts.nvos_tools.system.Techsupport import TechSupport
+from ngts.nvos_tools.system.Telemetry import Telemetry
 from ngts.nvos_tools.system.Version import Version
 from ngts.nvos_tools.system.Ztp import Ztp
 from ngts.nvos_tools.system.Dns import Dns
@@ -67,6 +68,7 @@ class System(BaseComponent):
         self.serial_console = BaseComponent(self, path='/serial-console')
         self.syslog = Syslog(self)
         self.ntp = Ntp(self)
+        self.telemetry = Telemetry(self)
         self.ztp = Ztp(self)
         self.stats = Stats(self, devices_dut)
         self.techsupport = TechSupport(self)

@@ -1909,6 +1909,112 @@ class NtpConsts:
     }
 
 
+class TelemetryConsts:
+    """Constants for `nv … system telemetry …` commands.
+
+    Field names (constants ending without _* suffix) are exactly the kebab-case
+    keys used both in the CLI command words and the `--output json` payloads.
+    """
+
+    # --- Field names (used as op_param_name in BaseComponent.set/unset, and as JSON keys) ---
+    STATE = 'state'
+    SAMPLE_INTERVAL = 'sample-interval'
+    VRF = 'vrf'
+    INSECURE = 'insecure'
+    CERTIFICATE = 'certificate'
+    CLIENT_CERTIFICATE = 'client-certificate'
+    PORT = 'port'
+    ENCODING = 'encoding'
+    STATS_GROUP = 'stats-group'
+    DESCRIPTION = 'description'
+
+    # --- Top-level telemetry subtree node names (JSON keys when calling
+    # `nv show system telemetry --output json`) ---
+    EXPORT = 'export'
+    OTLP = 'otlp'
+    GRPC = 'grpc'
+    HTTP = 'http'
+    DESTINATION = 'destination'
+    LABEL = 'label'
+    INTERFACE_STATS = 'interface-stats'
+    PEER_PORT_STATS = 'peer-port-stats'
+    IB_ROUTER_STATS = 'ib-router-stats'
+    PLATFORM_STATS = 'platform-stats'
+    CLASS = 'class'
+    PHY = 'phy'
+
+    # Tuple of all stats subtree names. Useful for iterating over every family
+    # (interface / peer-port / ib-router / platform) in tests or helpers.
+    ALL_STATS_SUBTREES = (
+        INTERFACE_STATS,
+        PEER_PORT_STATS,
+        IB_ROUTER_STATS,
+        PLATFORM_STATS,
+    )
+
+    # --- Enums ---
+    class State(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    class Encoding(Enum):
+        PROTO = 'proto'
+        JSON = 'json'
+
+    # --- Platform-stats class names (each is a child of `platform-stats class`) ---
+    PLATFORM_CLASS_CPU = 'cpu'
+    PLATFORM_CLASS_DISK = 'disk'
+    PLATFORM_CLASS_MEMORY = 'memory'
+    PLATFORM_CLASS_HEALTH_INFO = 'health-info'
+    PLATFORM_CLASS_ASIC_POWER = 'asic-power'
+    PLATFORM_CLASS_PLATFORM_INFO = 'platform-info'
+    PLATFORM_CLASS_ENVIRONMENT_SENSOR = 'environment-sensor'
+    PLATFORM_CLASS_TRANSCEIVER_INFO = 'transceiver-info'
+
+    PLATFORM_CLASSES = [
+        PLATFORM_CLASS_CPU,
+        PLATFORM_CLASS_DISK,
+        PLATFORM_CLASS_MEMORY,
+        PLATFORM_CLASS_HEALTH_INFO,
+        PLATFORM_CLASS_ASIC_POWER,
+        PLATFORM_CLASS_PLATFORM_INFO,
+        PLATFORM_CLASS_ENVIRONMENT_SENSOR,
+        PLATFORM_CLASS_TRANSCEIVER_INFO,
+    ]
+
+    # --- Numeric ranges (per the CLI grammar) ---
+    SAMPLE_INTERVAL_MIN = 1
+    SAMPLE_INTERVAL_MAX = 86400
+    PLATFORM_SAMPLE_INTERVAL_MIN = 60
+    PLATFORM_SAMPLE_INTERVAL_MAX = 86400
+    PORT_MIN = 1
+    PORT_MAX = 65535
+
+    # --- Factory defaults (observed via `nv show system telemetry` on a fresh system) ---
+    class Defaults:
+        EXPORT_VRF = 'default'
+        OTLP_STATE = 'disabled'
+        GRPC_INSECURE = 'disabled'
+        GRPC_PORT = 4317
+        HTTP_INSECURE = 'disabled'
+        HTTP_PORT = 4318
+        HTTP_ENCODING = 'proto'
+
+        # Default `state` for export and class.phy nodes of interface-stats / peer-port-stats /
+        # ib-router-stats / platform-stats.export
+        STATS_STATE = 'disabled'
+
+        # Top-level sample-interval default for interface-stats / peer-port-stats / ib-router-stats
+        STATS_SAMPLE_INTERVAL = 1
+
+        # platform-stats has no top-level sample-interval; it lives under export
+        PLATFORM_EXPORT_SAMPLE_INTERVAL = 60
+
+        # platform-stats class categories (cpu, disk, memory, ...) default to enabled — this is the
+        # one exception to the "everything starts disabled" rule
+        PLATFORM_CLASS_STATE = 'enabled'
+
+
 class RebootConsts:
     WAIT_TIME_BEFORE_REBOOT = 120
     HALT = "halt"
