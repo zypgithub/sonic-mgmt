@@ -989,6 +989,12 @@ platform_tests/test_sequential_restart.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/test_sequential_restart.py::test_restart_swss:
+  xfail:
+    reason: "Testcase expected to fail due to module issue after swss restart, RM issue: https://redmine.mellanox.com/issues/5072472"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5072472 and ('r-leopard-41' in testbed or 'leopard-1288' in testbed)"
+
 platform_tests/cli/test_show_platform.py::test_show_platform_syseeprom:
   skip:
     reason: "When deploying image, Simx will generate dynamic MAC"
