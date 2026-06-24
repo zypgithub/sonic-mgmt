@@ -3538,6 +3538,7 @@
     - r-bison-04
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-04-t1-isolated-v6-d56u1-lag
   group-name: vm-t1
@@ -3764,6 +3765,21 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: r-bison-06-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-06
+  ptf_ip: 10.215.49.42/20
+  ptf_ipv6:
+  server: server_90
+  vm_base: VM6325
+  dut:
+    - r-bison-06
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
+
 - conf-name: r-bison-06-t1-isolated-d510u2
   group-name: vm-t1
   topo: t1-isolated-d510u2
@@ -3947,6 +3963,21 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: r-bison-08-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-08
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_95
+  vm_base: VM5557
+  dut:
+    - r-bison-08
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
+
 - conf-name: r-bison-08-t1-isolated-d510u2
   group-name: vm-t1
   topo: t1-isolated-d510u2
@@ -4101,6 +4132,21 @@
     - r-bison-16
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.34.2/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-16-t1-isolated-d510u2
   group-name: vm-t1
@@ -4284,6 +4330,21 @@
     - r-bison-18
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-18-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-18
+  ptf_ip: 10.215.60.122/16
+  ptf_ipv6:
+  server: server_97
+  vm_base: VM7773
+  dut:
+    - r-bison-18
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-18-t1-isolated-d28u1
   group-name: vm-t1
@@ -4482,6 +4543,22 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: r-bison-20-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-20
+  ptf_ip: 10.215.20.3/16
+  ptf_ipv6: null
+  server: server_98
+  vm_base: VM8285
+  dut:
+  - r-bison-20
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
+
+
 - conf-name: r-bison-20-t1-isolated-d28u1
   group-name: vm-t1
   topo: t1-isolated-d28u1
@@ -4663,6 +4740,21 @@
   - r-bison-22
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-22-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-22
+  ptf_ip: 10.215.206.3/16
+  ptf_ipv6: null
+  server: server_99
+  vm_base: VM9917
+  dut:
+  - r-bison-22
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-22-t1-isolated-d28u1
   group-name: vm-t1
