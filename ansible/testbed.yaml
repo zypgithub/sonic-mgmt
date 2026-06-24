@@ -3440,6 +3440,7 @@
     - r-bison-04
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-04-t1
   group-name: vm-t1
