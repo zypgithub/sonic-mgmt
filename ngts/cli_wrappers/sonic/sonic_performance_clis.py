@@ -11,7 +11,8 @@ from devts.infra.tools.exceptions.test_issue import TestIssue
 from jsonmerge import merge
 import allure
 from ngts.helpers.system_helpers import copy_files_to_syncd
-from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst
+from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst, \
+    IndependentModuleConst
 from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts, MongoDbConsts, PortMappingOptionsConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from ngts.helpers.performance.sensors_power_parse import (
@@ -417,14 +418,20 @@ class SonicPerformanceCli(PerformanceCommon):
     def restore_im_on_tg(self):
         """
         Re-enable Independent Module (IM) on traffic generators after test finishes.
-        During setup, IM is disabled on TGs. This restores it by
-        writing the SAI attribute back, reloading config, and verifying dockers.
+        During setup IM is disabled on TGs via `cmis_host_mgmt.py --disable`. This restores it
+        with the symmetric `cmis_host_mgmt.py --enable`, passing the SKU media_settings.json and
+        optics_si_settings.json paths, then reloads config and verifies dockers.
         Only runs on traffic generators.
         """
         if self.dut_alias in PerfConsts.TG_ALIAS_LIST:
             with allure.step(f'Restore IM on {self.dut_alias}'):
                 logging.info(f"Re-enabling IM on {self.dut_alias}")
-                self.cli_obj.im.enable_im_in_sai()
+                platform_summary = self.cli_obj.chassis.parse_platform_summary()
+                sku_dir = os.path.dirname(SonicConst.SAI_PROFILE_FILE_PATH.format(
+                    PLATFORM=platform_summary["Platform"], HWSKU=platform_summary["HwSKU"]))
+                media_settings = os.path.join(sku_dir, IndependentModuleConst.MEDIA_SETTINGS_FILE_NAME)
+                optics_si_settings = os.path.join(sku_dir, IndependentModuleConst.OPTICS_SI_SETTINGS_FILE_NAME)
+                self.execute_cmd(f"sudo cmis_host_mgmt.py --enable {media_settings} {optics_si_settings}")
                 self.cli_obj.general.reload_configuration(force=True)
                 self.cli_obj.general.verify_dockers_are_up()
 
