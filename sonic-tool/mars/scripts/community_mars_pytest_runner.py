@@ -63,10 +63,6 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                               help="Decide the pytest marker we want to use in the CI test")
         self.add_cmd_argument("--run_test_on_dpu_only", required=False, default=False, dest="run_test_on_dpu_only",
                               help="run tests only on smartswitch dpu")
-        self.add_cmd_argument("--run_test_on_bmc_only", required=False, default="False",
-                              dest="run_test_on_bmc_only",
-                              help="run tests on BMC host instead of the switch. When 'True', override "
-                                   "--host-pattern to '{dut}-bmc' and --testbed to '{dut}-bmc-dual-mgmt'")
 
     def _parse_junit_xml(self, content):
 
@@ -284,45 +280,15 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             self.dut_name = random.choice(dpu_duts)
             self.Logger.info(f"the dpu dut is  :{self.dut_name}")
 
-        if self.run_test_on_bmc_only == "True":
-            # Run tests against the BMC host instead of the switch.
-            #
-            # By default the upstream logic above sets:
-            #     testbed       = f'{dut_name}-{sonic_topo}'      (or setup_name based for HA/dualtor)
-            #     --host-pattern = dut_name (used later when formatting the pytest cmd)
-            #
-            # For BMC tests we want both values to point to the BMC entry in ansible/testbed.yaml,
-            # regardless of which sonic_topo MARS deployed with. The overrides below collapse
-            # the two deploy flows (Canonical / Community) into the same target.
-            #
-            # Example 1 - Canonical setup (deploy uses --sonic-topo=ptf-any):
-            #   Before:
-            #     sonic_topo  = ptf-any
-            #     dut_name    = r-salamandra-01
-            #     testbed     = r-salamandra-01-ptf-any           (built from dut_name + sonic_topo)
-            #   After:
-            #     testbed     = r-salamandra-01-bmc-dual-mgmt     (matches conf-name in testbed.yaml)
-            #     dut_name    = r-salamandra-01-bmc               (matches dut: entry in testbed.yaml
-            #                                                      and host entry in ansible/inventory)
-            #
-            # Example 2 - Community setup (deploy uses --sonic-topo=bmc-dual-mgmt):
-            #   Before:
-            #     sonic_topo  = bmc-dual-mgmt
-            #     dut_name    = r-salamandra-01
-            #     testbed     = r-salamandra-01-bmc-dual-mgmt     (already correct by accident)
-            #   After:
-            #     testbed     = r-salamandra-01-bmc-dual-mgmt     (re-computed, same value)
-            #     dut_name    = r-salamandra-01-bmc               (still needs the -bmc suffix)
-            #
-            # The overridden values are consumed below when formatting the pytest command:
-            #   - `testbed`        -> --testbed {TESTBED}        (pytest selects the bmc testbed
-            #                                                     entry from ansible/testbed.yaml)
-            #   - `self.dut_name`  -> --host-pattern {DUT_NAME}  (pytest-ansible resolves it to
-            #                                                     the BMC host in ansible/inventory)
-            self.Logger.info(f"BMC mode: original testbed={testbed}, dut_name={self.dut_name}")
-            testbed = f'{self.dut_name}-bmc-dual-mgmt'
+        if self.sonic_topo == "bmc-dual-mgmt":
+            # BMC tests run against the BMC host, not the switch. Mars provides the bare switch
+            # dut_name (e.g. slm-chipless-2700a1-146), while the BMC host registered in
+            # ansible/inventory (and as the testbed 'dut:' entry) is '<dut>-bmc'. The testbed name
+            # is already '<dut>-bmc-dual-mgmt' (computed above from dut_name + sonic_topo), so only
+            # --host-pattern (driven by dut_name) needs the -bmc suffix.
+            self.Logger.info(f"BMC mode: original dut_name={self.dut_name}, testbed={testbed}")
             self.dut_name = f'{self.dut_name}-bmc'
-            self.Logger.info(f"BMC mode: overridden testbed={testbed}, dut_name={self.dut_name}")
+            self.Logger.info(f"BMC mode: overridden dut_name={self.dut_name}")
 
         if is_smartswitch_test:
             if '--dpu-pattern' in self.raw_options:
