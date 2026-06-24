@@ -6,7 +6,6 @@ import logging
 import pytest
 import re
 import time
-from contextlib import contextmanager, nullcontext
 from tests.common.cisco_data import is_cisco_device
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.platform.processes_utils import wait_critical_processes
@@ -68,27 +67,6 @@ def ensure_dpus_up_after_test(duthosts,
             logging.info("All DPUs are online after test. No recovery needed.")
     except Exception as e:
         logging.warning("DPU recovery in teardown failed (non-fatal): %s", e)
-
-
-@contextmanager
-def mellanox_dpu_shutdown_check(duthost, dpu_on_list):
-    """Rotate logs before DPU reboot and validates DPU shutdown times after."""
-    duthost.shell("/usr/sbin/logrotate -f /etc/logrotate.conf > /dev/null 2>&1")
-
-    yield
-
-    dpu_down_log_pattern = r"dpuctl_plat.*(dpu\d).*Total time taken = (\d+\.\d+) for going down"
-    syslog = duthost.shell("sudo cat /var/log/syslog")['stdout']
-    matches = re.findall(dpu_down_log_pattern, syslog)
-    logging.info(f"Found {len(matches)} DPU down logs")
-    logging.info(f"Time taken for DPUs to shutdown: {matches}")
-    if len(matches) != len(dpu_on_list):
-        pytest_assert(False, "Didn't find expected number of DPU down logs.")
-    dpu_down_times = [float(match[1]) for match in matches]
-    max_dpu_down_time = max(dpu_down_times)
-    min_dpu_down_time = min(dpu_down_times)
-    pytest_assert(max_dpu_down_time - min_dpu_down_time < 20,
-                  "The DPUs shutdown time should not differ too much")
 
 
 def test_dpu_status_post_switch_reboot(duthosts, dpuhosts,
@@ -425,24 +403,36 @@ def test_cold_reboot_dpus(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname,
     # For Nvidia smartswitch, the DPUs shutdown time should not differ too much.
     # We will check it in post_test_dpus_check.
     # Rotate the log to make sure the DPU down logs in syslog are what we want.
-    additional_checks = mellanox_dpu_shutdown_check(duthost, dpu_on_list) \
-        if is_mellanox_devices(duthost.facts['hwsku']) \
-        else nullcontext()
+    if is_mellanox_devices(duthost.facts['hwsku']):
+        duthost.shell("/usr/sbin/logrotate -f /etc/logrotate.conf > /dev/null 2>&1")
 
-    with additional_checks:
-        with SafeThreadPoolExecutor(max_workers=num_dpu_modules) as executor:
-            logging.info("Rebooting all DPUs in parallel")
-            for dpu_name in dpu_on_list:
-                executor.submit(perform_reboot, duthost, REBOOT_TYPE_COLD, dpu_name, invocation_type,
-                                ptf_gnoi=gnmi_tls.gnoi)
+    with SafeThreadPoolExecutor(max_workers=num_dpu_modules) as executor:
+        logging.info("Rebooting all DPUs in parallel")
+        for dpu_name in dpu_on_list:
+            executor.submit(perform_reboot, duthost, REBOOT_TYPE_COLD, dpu_name, invocation_type,
+                            ptf_gnoi=gnmi_tls.gnoi)
 
-        logging.info("Executing post test dpu check")
-        post_test_dpus_check(duthost, dpuhosts,
-                             dpu_on_list, ip_address_list,
-                             num_dpu_modules,
-                             re.compile(r"reboot|Non-Hardware",
-                                        re.IGNORECASE),
-                             pre_boot_times=pre_boot_times)
+    logging.info("Executing post test dpu check")
+    post_test_dpus_check(duthost, dpuhosts,
+                         dpu_on_list, ip_address_list,
+                         num_dpu_modules,
+                         re.compile(r"reboot|Non-Hardware",
+                                    re.IGNORECASE),
+                         pre_boot_times=pre_boot_times)
+
+    if is_mellanox_devices(duthost.facts['hwsku']):
+        dpu_down_log_pattern = r"dpuctl_plat.*(dpu\d).*Total time taken = (\d+\.\d+) for going down"
+        syslog = duthost.shell("sudo cat /var/log/syslog")['stdout']
+        matches = re.findall(dpu_down_log_pattern, syslog)
+        logging.info(f"Found {len(matches)} DPU down logs")
+        logging.info(f"Time taken for DPUs to shutdown: {matches}")
+        if len(matches) != len(dpu_on_list):
+            pytest_assert(False, "Didn't find expected number of DPU down logs.")
+        dpu_down_times = [float(match[1]) for match in matches]
+        max_dpu_down_time = max(dpu_down_times)
+        min_dpu_down_time = min(dpu_down_times)
+        pytest_assert(max_dpu_down_time - min_dpu_down_time < 20,
+                      "The DPUs shutdown time should not differ too much")
 
 
 def test_cold_reboot_switch(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname,
