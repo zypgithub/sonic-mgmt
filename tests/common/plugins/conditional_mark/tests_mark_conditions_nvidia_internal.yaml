@@ -958,6 +958,7 @@ platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
     - "https://redmine.mellanox.com/issues/4846747 and 'bison-1323' in testbed"
     - "https://redmine.mellanox.com/issues/4846747 and 'bison-1211' in testbed"
     - "https://redmine.mellanox.com/issues/4846747 and 'bison-1212' in testbed"
+    - "https://redmine.mellanox.com/issues/5093016 and 'sn5600' in platform"
 
 platform_tests/test_xcvr_info_in_db.py:
   skip:
