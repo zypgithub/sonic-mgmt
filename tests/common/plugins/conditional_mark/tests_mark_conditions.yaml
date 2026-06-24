@@ -3102,6 +3102,13 @@ gnmi/test_gnmi_countersdb.py:
     conditions:
       - "is_multi_asic==True"
 
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_subscribe_authenticate:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
 gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_polling_01:
   skip:
     reason: "Test relies on COUNTERS_PORT_NAME_MAP populated by syncd; not applicable on BMC"
