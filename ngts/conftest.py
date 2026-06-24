@@ -784,7 +784,7 @@ def is_code_coverage_run(topology_obj, should_skip_checking_fixture):
         return pytest.is_code_coverage
 
     try:
-        pytest.is_code_coverage = bool(topology_obj.players['dut']['cli'].general.echo('${COVERAGE_FILE}'))
+        pytest.is_code_coverage = bool(topology_obj.players['dut']['cli'].general.echo('${COVERAGE_FILE}').strip())
         logger.info(f'Code coverage image: {pytest.is_code_coverage}')
     except SSHException as err:
         logger.warning(f'Unable to check if its code coverage run. Assuming that the device is not reachable. '
