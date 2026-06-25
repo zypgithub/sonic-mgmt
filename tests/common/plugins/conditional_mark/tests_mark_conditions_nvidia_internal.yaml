@@ -961,7 +961,7 @@ platform_tests/sfp/test_sfputil.py:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
-    - "https://redmine.mellanox.com/issues/5090286 and 'bobcat-10' in testbed"
+    - "https://redmine.mellanox.com/issues/5090286 and ('bobcat-10' in testbed or 'r-bison-12' in testbed)"
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_low_power_mode:
   skip:
