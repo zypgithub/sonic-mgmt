@@ -574,6 +574,12 @@ dash/nasa_debug/test_nasa_debug.py::test_nasa_debug_action:
     conditions:
     - "https://redmine.mellanox.com/issues/5099209"
 
+dhcp_relay/test_dhcp_relay.py::test_dhcp_broadcast_not_flooded:
+  xfail:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100749"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5100749"
+
 dhcp_relay/test_dhcpv4_relay.py::test_dhcp_relay_with_non_default_vrf:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5041721"
