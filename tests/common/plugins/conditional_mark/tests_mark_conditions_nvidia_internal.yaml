@@ -590,6 +590,30 @@ dash/nasa_debug/test_nasa_debug.py::test_nasa_debug_action:
     conditions:
     - "https://redmine.mellanox.com/issues/5099209"
 
+dash/test_dash_privatelink_redirect.py::TestPrivateLinkRedirectFNIC::test_dst_port_above_port_map_range:
+  xfail:
+    reason: "Xfail the test for RM issue https://redmine.mellanox.com/issues/5095761"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5095761"
+
+dash/test_dash_privatelink_redirect.py::TestPrivateLinkRedirectFNIC::test_dst_port_below_port_map_range:
+  xfail:
+    reason: "Xfail the test for RM issue https://redmine.mellanox.com/issues/5095761"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5095761"
+
+dash/test_dash_privatelink_redirect.py::TestPrivateLinkRedirectPLNSG::test_dst_port_above_port_map_range:
+  xfail:
+    reason: "Xfail the test for RM issue https://redmine.mellanox.com/issues/5095761"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5095761"
+
+dash/test_dash_privatelink_redirect.py::TestPrivateLinkRedirectPLNSG::test_dst_port_below_port_map_range:
+  xfail:
+    reason: "Xfail the test for RM issue https://redmine.mellanox.com/issues/5095761"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5095761"
+
 ha/test_ha_npu_process_crash.py:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5138419"
