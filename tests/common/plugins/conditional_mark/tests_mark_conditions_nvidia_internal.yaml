@@ -45,6 +45,12 @@ tests/nightly/route/test_async_route.py:
     - "'simx' in platform"
     - "'ASAN' in build_version"
 
+tests/nightly/route/test_async_route.py::test_adding_routes[ipv4-static_routes_ipv4]:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/5089669"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5089669"
+
 tests/nightly/fec/test_fec.py::TestFec::test_fec_bug_2705016:
   xfail:
     reason: "May fail due to RM 3971501 on r-leopard-56 or due to RM 3969985 on SPC4"
