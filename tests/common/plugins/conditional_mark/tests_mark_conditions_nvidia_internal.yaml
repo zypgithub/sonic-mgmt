@@ -945,9 +945,11 @@ platform_tests/mellanox/test_check_sfp_plug_in_out_sim.py:
 
 platform_tests/sfp/test_sfputil.py:
   skip:
-    reason: "QSFP eeprom emulation is not supported currently."
+    reason: "QSFP eeprom emulation is not supported currently. Also the test will hang and cause timeout due to RM issue: https://redmine.mellanox.com/issues/5090286"
+    conditions_logical_operator: or
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
+    - "https://redmine.mellanox.com/issues/5090286 and 'bobcat-10' in testbed"
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_low_power_mode:
   skip:
