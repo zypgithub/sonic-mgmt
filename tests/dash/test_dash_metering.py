@@ -175,15 +175,21 @@ def test_fnic_dash_metering(localhost, duthost, ptfhost, ptfadapter, dash_pl_con
         # need a lot of packets to check ECMP distribution
         num_packets = 1000
 
-    # For PL Rx packets, in case of PT (6to4), adjust packet length field used
-    # for metering and vnic stats such that the translation is also taken into consideration.
-    # Default PL rx inner packet length is 100 bytes.
-    # Expected Meter Rx Bytes = 100 - 20(IPv6 headerlen 40 bytes - IPv4 header len 20 bytes)
-    # so expected Rx packet meter is 80 bytes.
-    exp_rx_bytes = num_packets * 80
+    # Per the FNIC + PrivateLink metering clarification (SONiC HLD PR #2361), every packet that
+    # lands on the DPU increments the matched bucket's inbound (rx) bytes, and every packet sent
+    # by the DPU increments its outbound (tx) bytes. A full round trip touches the same bucket
+    # with four packets. The default inner packet length is 100 bytes, and the 4to6/6to4 IP
+    # transforms grow/shrink the inner L3 by 20 bytes:
+    #   vm_to_dpu  : 100 B IPv4 (lands on DPU  -> inbound)
+    #   dpu_to_pe  : 120 B IPv6 (sent by DPU,  4to6 +20 -> outbound)
+    #   pe_to_dpu  : 100 B IPv6 (lands on DPU  -> inbound)
+    #   dpu_to_vm  :  80 B IPv4 (sent by DPU,  6to4 -20 -> outbound)
+    #
+    # Inbound (rx) bytes per round trip: vm_to_dpu (100) + pe_to_dpu (100) = 200 bytes
+    exp_rx_bytes = num_packets * 200
 
-    # Default Tx inner packet length is 100 bytes
-    exp_tx_bytes = num_packets * 100
+    # Outbound (tx) bytes per round trip: dpu_to_pe (120) + dpu_to_vm (80) = 200 bytes
+    exp_tx_bytes = num_packets * 200
 
     # Associate Route-Group2 with ENI
     if metering_tc == 'ROUTE_METERCLASS_OR_HIT' or metering_tc == 'ROUTE_MAPPING_METERCLASS_OR_HIT':
