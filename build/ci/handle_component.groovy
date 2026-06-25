@@ -14,6 +14,9 @@ def set_bat_skip(name, skip_list) {
             case "SPC_SIMX":
                 env.SKIP_SONIC_SIMX_SPC_BAT = "true"
                 break
+            case "SPC_AIR":
+                env.SKIP_AIR = "true"
+                break
             case "QTM2":
                 env.SKIP_NVOS_BAT = "true"
                 break
@@ -32,7 +35,9 @@ def pre(name) {
 def run_step(name) {
     def SONIC_CANONICAL_HW_BAT = ["SPC_HW", "SS_HW"]
     def SONIC_CANONICAL_SIMX_BAT = ["SPC_SIMX"]
-    def SONIC_CANONICAL_BAT = SONIC_CANONICAL_HW_BAT + SONIC_CANONICAL_SIMX_BAT
+    def SONIC_CANONICAL_AIR_BAT = ["SPC_AIR"]
+    def SONIC_CANONICAL_VIRTUAL_BAT = SONIC_CANONICAL_SIMX_BAT + SONIC_CANONICAL_AIR_BAT
+    def SONIC_CANONICAL_BAT = SONIC_CANONICAL_HW_BAT + SONIC_CANONICAL_VIRTUAL_BAT
     def SONIC_COMMUNITY_BAT = ["ETH_COMMUNITY"]
     def NVOS_BAT = ["QTM2"]
     try {
@@ -55,7 +60,7 @@ def run_step(name) {
             set_bat_skip(name, SONIC_CANONICAL_BAT)
         }
 
-        //If only yaml changed, only run SONIC SIMX SPC BAT
+        //If only yaml changed, only run SONIC SIMX SPC BAT and AIR SPC BAT
         if (env.CHANGED_COMPONENTS && env.CHANGED_COMPONENTS.contains("COMMON_BAT_ONLY") && !env.CHANGED_COMPONENTS.contains("SONIC_BAT_ONLY")
                 && !env.CHANGED_COMPONENTS.contains("NVOS_BAT_ONLY") && !env.CHANGED_COMPONENTS.contains("NoMatch")){
             print "Checking whether the changes are only in the error/skip yaml files."
@@ -79,9 +84,9 @@ def run_step(name) {
                 }
             }
             if (env.CHECK_YAML_ONLY == "true"){
-                print "The changes are only in the error/skip yaml files, run only the yaml validation test on SPC SIMX."
-                // Only run one SPC SIMX setup
-                set_bat_skip(name, SONIC_CANONICAL_BAT + NVOS_BAT - "SPC_SIMX")
+                print "The changes are only in the error/skip yaml files, run only the yaml validation test on SPC SIMX and AIR SPC."
+                // Only run one SPC SIMX setup and one AIR SPC setup
+                set_bat_skip(name, (SONIC_CANONICAL_BAT + NVOS_BAT) - SONIC_CANONICAL_VIRTUAL_BAT)
                 env.SIMX_NONE_BLOCKER = "false"
             }
         }
