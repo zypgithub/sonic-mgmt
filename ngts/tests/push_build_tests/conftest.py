@@ -38,6 +38,7 @@ from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 PRE_UPGRADE_CONFIG = '/tmp/config_db_{}_base.json'
 POST_UPGRADE_CONFIG = '/tmp/config_db_{}_target.json'
 FRR_CONFIG_FOLDER = os.path.dirname(os.path.abspath(__file__))
+TRACE_DROPMON_SCRIPT_PATH = os.path.join(FRR_CONFIG_FOLDER, 'trace_dropmon.sh')
 logger = logging.getLogger()
 ROCEV2_ACL_COUNTER_PATH = os.path.join(FRR_CONFIG_FOLDER, "L3/rocev2_acl_counter")
 
@@ -77,6 +78,26 @@ def apply_dns_servers_resolve_conf(dut_engine):
     dut_engine.run_cmd(f'sudo echo "nameserver {SonicConst.NVIDIA_LAB_DNS_THIRD}" >> {tmp_resolv_conf_path}')
     dut_engine.run_cmd(f'sudo echo "search {SonicConst.NVIDIA_LAB_DNS_SEARCH}" >> {tmp_resolv_conf_path}')
     dut_engine.run_cmd(f'sudo mv {tmp_resolv_conf_path} {SonicConst.RESOLV_CONF_PATH}')
+
+
+@pytest.fixture(scope="module", autouse=True)
+def trace_dropmon(request, engines):
+    if not request.module.__name__.endswith("test_wjh"):
+        yield
+        return
+
+    engines.dut.copy_file(source_file=TRACE_DROPMON_SCRIPT_PATH,
+                          dest_file='trace_dropmon.sh', file_system='/tmp',
+                          overwrite_file=True, verify_file=False)
+    engines.dut.run_cmd(f"chmod +x /tmp/trace_dropmon.sh")
+    engines.dut.run_cmd("modprobe drop_monitor")
+    engines.dut.run_cmd("sudo nohup bash /tmp/trace_dropmon.sh > /tmp/trace_dropmon.out 2>&1 & disown")
+    time.sleep(3)
+
+    yield
+
+    engines.dut.run_cmd("pkill -f 'bpftrace.*dropmon' || true")
+    engines.dut.run_cmd("pkill -f trace_dropmon.sh || true")
 
 
 @pytest.fixture(scope='package', autouse=True)

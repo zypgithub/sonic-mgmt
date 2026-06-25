@@ -5,6 +5,7 @@
 set -euo pipefail
 LOG=/var/log/bpftrace.log
 MODULE=drop_monitor
+apt update
 apt install bpftrace -y
 # offsetof(per_cpu_dm_data, drop_queue) + offsetof(sk_buff_head, qlen).
 # 32 holds when lock-debugging is off; verify with:
