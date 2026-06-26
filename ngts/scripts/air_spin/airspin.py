@@ -1,12 +1,14 @@
 import os
 import json
 import subprocess
-import re
+import importlib
 
 from jinja2 import Environment, FileSystemLoader
 from .message import Message
 from .config import AIR_WEBSITE_SIMULATIONS_URL, SETUPS_FOLDER_PATH, TOPO_FOLDER_PATH, TEMPLATE_FOLDER_PATH
 from .config import SETUP_TEMPLATE_FILE, TOPO_TEMPLATE_FILE, SPIN_AIR_RESULTS_FOLDER_PATH, STM, STM_PASSWORD, STM_USER
+module = importlib.import_module("sonic-tool.mars.scripts.lib.constants")
+DOCKER_NGTS_DEFAULT_TAG = module.DOCKER_NGTS_DEFAULT_TAG
 
 msg = Message()
 
@@ -40,7 +42,7 @@ class AirSpin:
         self.force_clean_up_dockers()
 
     def create_simulation(self):
-        msg.info(f"Starting to create AIR SIMULATION named:'{self.setup_name}' for user:{self.username}")
+        msg.info(f"Starting to create AIR SIMULATION named: '{self.setup_name}' for user: {self.username}")
         msg.info(f"You can find your simulation in Air website: {AIR_WEBSITE_SIMULATIONS_URL} after it's created successfully.")
         default_db = f"{self.topology_type}/airspin_default.db"
         db_list = [default_db]
@@ -52,37 +54,12 @@ class AirSpin:
         self._create_files()
         self._run_simulation_with_mini_mars()
 
-    def _get_default_docker_tag(self):
-        """Get default docker tag from update_docker.py without importing it"""
-        update_docker_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "..", "..", "..",  # Go up to sonic-mgmt
-            "sonic-tool", "mars", "scripts", "update_docker.py"
-        )
-        update_docker_path = os.path.normpath(update_docker_path)
-        try:
-            msg.info(f"Reading update_docker.py for the docker-ngts tag...")
-            with open(update_docker_path, 'r') as f:
-                content = f.read()
-            # Find the default_list dictionary in the file
-            # Match pattern like: 'docker-ngts': '1.2.500'
-            pattern = r"{.*docker-ngts.*(1\.\d\.\d+).*}"
-            match = re.search(pattern, content)
-            if match:
-                return match.group(1)
-            else:
-                msg.warning(f"Could not find default tag for docker-ngts, using 'latest'")
-                return "latest"
-        except Exception as e:
-            msg.warning(f"Could not read update_docker.py: {e}, using 'latest'")
-            return "latest"
-
     def get_simulations(self):
-        docker_tag = self._get_default_docker_tag()
-        msg.info(f"Pulling ngts docker image: {docker_tag} on STM:{STM}, this may take a few minutes...")
+        docker_tag = DOCKER_NGTS_DEFAULT_TAG
+        msg.info(f"Pulling ngts docker image: {docker_tag} on STM: {STM}, this may take a few minutes...")
         docker_image = f"harbor.mellanox.com/sonic/docker-ngts:{docker_tag}"
         self._run_cmd_in_stm(f"docker pull {docker_image}")
-        msg.info(f"Pulled ngts docker image successfully.")
+        msg.info("Pulled ngts docker image successfully.")
         try:
             service_key = os.environ.get("SONIC_AIR_SERVICE_KEY", "")
             self._run_cmd_in_stm(f"docker run -dt --privileged --entrypoint bash --name {self.ngts_docker_name} -e SONIC_AIR_SERVICE_KEY={service_key} {docker_image}")
@@ -118,9 +95,9 @@ class AirSpin:
         res = self._run_cmd_in_stm(cmd, validate=False, terminal=True)
         if res.returncode != 0:
             self.force_clean_up_dockers()
-            raise Exception(f"Start Airspin simulation failed.")
+            raise Exception("Start Airspin simulation failed.")
 
-        msg.success(f"Simulation completed successfully")
+        msg.success("Simulation completed successfully")
 
     def prepare_results_dir(self):
         setup_path = os.path.join(SPIN_AIR_RESULTS_FOLDER_PATH, self.setup_name)
@@ -199,11 +176,11 @@ class AirSpin:
                 self._run_cmd_in_stm(f"docker rm -f {self.ngts_docker_name}", validate=False)
             if hasattr(self, "mars_docker_name"):
                 self._run_cmd_in_stm(f"docker rm -f {self.mars_docker_name}", validate=False)
-        except Exception as e:
+        except Exception:
             pass
 
     def _run_cmd_in_stm(self, cmd, validate=True, terminal=False):
-        ssh_cmd = f'sshpass -p {STM_PASSWORD} ssh {STM_USER}@{STM} \"{cmd}\"'
+        ssh_cmd = f'sshpass -p {STM_PASSWORD} ssh -o ConnectTimeout=20 {STM_USER}@{STM} \"{cmd}\"'
 
         class Result:
             def __init__(self, returncode, stdout, stderr):
