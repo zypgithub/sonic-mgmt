@@ -50,11 +50,23 @@
     </test>
 
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_steady_state_fnic.cases </cases>
+    </test>
+
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_planned_shutdown.cases </cases>
     </test>
 
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_planned_shutdown_fnic.cases </cases>
+    </test>
+
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_planned_swo.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_planned_swo_fnic.cases </cases>
     </test>
 
     <test>
@@ -66,11 +78,31 @@
     </test>
 
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_repairing_dpu.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_link_failure.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_bgp_down.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_dpu_process_crash.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_npu_process_crash.cases </cases>
+    </test>
+
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_dpu_power_down.cases </cases>
     </test>
 
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_repairing_dpu.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_npu_reboot.cases </cases>
     </test>
 
 </DBDEF>
