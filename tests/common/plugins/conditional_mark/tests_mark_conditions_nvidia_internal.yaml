@@ -491,11 +491,12 @@ acl/test_acl.py::TestMultiBindingAcl:
     conditions:
     - "https://redmine.mellanox.com/issues/5089623"
 
-autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-26-None-teamd]:
+autorestart.test_container_autorestart.py::test_containers_autorestart.*dhcp_server.*:
+  regex: true
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3587377"
+    reason: "Testcase is skipped due to RM issue: https://redmine.mellanox.com/issues/5100919"
     conditions:
-    - "https://redmine.mellanox.com/issues/3587377"
+    - "https://redmine.mellanox.com/issues/5100919"
 
 autorestart.test_container_autorestart.py::test_containers_autorestart\[.*-bgp\]:
   regex: true
@@ -1292,6 +1293,14 @@ process_monitoring/test_critical_process_monitoring.py:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3464488 and standalone dpu platform"
     conditions:
     - "https://redmine.mellanox.com/issues/3464488 and 'nvda_bf-9009' in platform"
+
+process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical_processes:
+  xfail:
+    reason: "Testcase expected to fail on bobcat t1 or ptf-any setups due to RM issue: https://redmine.mellanox.com/issues/5100919"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5100919"
+    - "'bobcat' in testbed"
+    - "'ptf' in topo_name or 't1' in topo_name"
 
 process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat:
   skip:
