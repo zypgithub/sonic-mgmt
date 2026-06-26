@@ -8,6 +8,10 @@ from tests.common.errors import RunAnsibleModuleFail
 from tests.common.helpers.parallel import parallel_run, reset_ansible_local_tmp
 from .bug_handler_helper import get_bughandler_instance
 
+ANALYZE_LOGS_TIMEOUT_SECONDS = 240
+ORPHANED_ANSIBLE_PROCESS_MIN_ETIME_SECONDS = ANALYZE_LOGS_TIMEOUT_SECONDS
+
+
 def _cleanup_orphaned_ansible_processes(timed_out_duts):
     """Kill orphaned ansible processes on DUTs whose analyze_logs did not complete.
 
@@ -18,40 +22,13 @@ def _cleanup_orphaned_ansible_processes(timed_out_duts):
         -> sudo ...                                                 (has BECOME-SUCCESS)
           -> /usr/bin/python3                                       (no distinguishing args)
     We match BECOME-SUCCESS on the parent to get the PGID, then kill the entire
-    process group. etimes > 60 avoids killing the current cleanup session itself.
+    process group. Reusing the analyze_logs timeout as the etimes floor avoids
+    killing the current cleanup session itself and other short-lived ansible jobs.
     """
     kill_cmd = (
         "ps -eo pgid,etimes,args --no-headers"
-        " | awk '$2 > 60 && $1 > 1 && (/AnsiballZ/ || /BECOME-SUCCESS/) {print $1}'"
-        " | sort -un"
-        " | xargs -r -I{} kill -9 -{} 2>/dev/null;"
-        " true"
-    )
-
-    for duthost in timed_out_duts:
-        try:
-            duthost.shell(kill_cmd, module_ignore_errors=True)
-            logging.info("Cleaned up orphaned ansible processes on %s", duthost.hostname)
-        except Exception:
-            logging.warning("Failed to clean up orphaned ansible processes on %s", duthost.hostname)
-
-
-def _cleanup_orphaned_ansible_processes(timed_out_duts):
-    """Kill orphaned ansible processes on DUTs whose analyze_logs did not complete.
-
-    When parallel_run kills the local controller process on timeout, the remote
-    ansible module (e.g. slurp) keeps running on the DUT, consuming memory.
-    The orphan process tree looks like:
-      sh -c sudo ... 'echo BECOME-SUCCESS-xxx ; /usr/bin/python3'  (has BECOME-SUCCESS)
-        -> sudo ...                                                 (has BECOME-SUCCESS)
-          -> /usr/bin/python3                                       (no distinguishing args)
-    We match log analyzer commands on the parent to get the PGID, then kill the entire
-    process group. etimes > 60 avoids killing the current cleanup session itself.
-    """
-    kill_cmd = (
-        "ps -eo pgid,etimes,args --no-headers"
-        " | awk '$2 > 60 && $1 > 1 && "
-        "(/AnsiballZ_extract_log\\.py/ || /\\/tmp\\/loganalyzer\\.py/) {print $1}'"
+        f" | awk -v min_etime={ORPHANED_ANSIBLE_PROCESS_MIN_ETIME_SECONDS} "
+        "'$2 > min_etime && $1 > 1 && (/AnsiballZ/ || /BECOME-SUCCESS/) {print $1}'"
         " | sort -un"
         " | xargs -r -I{} kill -9 -{} 2>/dev/null;"
         " true"
@@ -200,7 +177,7 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
         [analyzers, markers],
         {'fail_test': fail_test, 'store_la_logs': store_la_logs},
         analyzer_hosts,
-        timeout=240
+        timeout=ANALYZE_LOGS_TIMEOUT_SECONDS
     )
 
     timed_out_duts = [dut for dut in duthosts if dut.hostname not in la_results]
