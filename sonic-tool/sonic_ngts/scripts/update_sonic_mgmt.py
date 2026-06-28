@@ -54,7 +54,8 @@ class TestbedYAML:
             f"  server: server_54\n"
             f"  vm_base: VM0000\n"
             f"  dut:\n"
-            f"     - {dut_name}\n"
+            f"    - {dut_name}\n"
+            f"  inv_name: lab\n"
             f"  comment: NvidiaAir testbed"
         )
         with open(self.testbed_yaml, "w") as testbed_file:
@@ -90,6 +91,9 @@ class Inventory:
                 f"{host_entry_ptf_any}\n"
                 f"{host_entry}\n"
                 f"\n"
+                f"[sonic:children]\n"
+                f"sonic_latest\n"
+                f"\n"
                 f"[lab]\n"
                 f"{dut_name}-ptf-any\n"
                 f"{dut_name}\n"
@@ -114,6 +118,17 @@ class Lab:
                 f"[sonic_latest]\n"
                 f"{dut_name}      ansible_host={ansible_host} ansible_port={ansible_port} "
                 f"sonic_version=v2 sonic_hwsku={hwsku}\n"
+                f"\n"
+                f"[sonic:children]\n"
+                f"sonic_latest\n"
+                f"\n"
+                f"[lab:children]\n"
+                f"sonic\n"
+                f"fanout\n"
+                f"\n"
+                f"[lab:vars]\n"
+                f"mgmt_subnet_mask_length=\"24\"\n"
+                f"\n"
             )
 
 
