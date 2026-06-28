@@ -184,7 +184,7 @@ def create_secrets_vars_script(conn, parsed_mars_docker_env_secrets, container_n
 # there's a similar issue reported https://github.com/paramiko/paramiko/issues/998
 @retry(ThreadException, tries=3, delay=10)
 def create_and_start_container(conn, image_name, image_tag, container_name, mac_address, skip_weekend_cases, air_setup,
-                               setup_name, enable_ipv6=False):
+                               enable_ipv6=False, topology_file_path=''):
     """
     @summary: Create and start specified container from specified image
     @param conn: Fabric connection to the host server
@@ -194,15 +194,15 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     @param mac_address: MAC address of the container's management interface
     @param skip_weekend_cases: Skip weekend cases
     @param air_setup: Air setup
-    @param setup_name: Setup name (used to detect project type via _get_os_type)
     @param enable_ipv6: If True, configure default IPv6 route for dual-stack switch access
+    @param topology_file_path: topology file path (used to detect project type via get_setup_type)
     """
     container_iface_mac = mac_address
     create_mgmt_network(conn)
     mountpoints = dict(constants.COMMON_MOUNTPOINTS)
     if not air_setup:
         mountpoints.update(constants.BARE_METAL_MOUNTPOINTS)
-    if _get_os_type(setup_name) == NVOS:
+    if get_setup_type(topology_file_path) == NVOS:
         mountpoints.update(constants.NVOS_MOUNTPOINTS)
     else:
         mountpoints.update(constants.SONIC_MOUNTPOINTS)
@@ -210,20 +210,6 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
         mountpoints.update(constants.SONIC_MGMT_MOUNTPOINTS_MTBC)
     if conn.host in constants.MTL_NVOS_SERVER_LIST:
         mountpoints.update(constants.MTL_NVOS_MOUNTPOINTS)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     container_mountpoints_list = []
     for key, value in mountpoints.items():
@@ -387,8 +373,8 @@ def cleanup_dangling_docker_images(test_server):
     """
     test_server.run("docker system prune --all -f", warn=True)
 
-def _get_os_type(setup_name):
-    if setup_name and NVOS in setup_name:
+def get_setup_type(topology_file_path):
+    if topology_file_path and 'stm_nvos' in topology_file_path:
         return NVOS
     else:
         return SONIC
@@ -401,7 +387,7 @@ def get_test_server_device(args, topo):
     test_server_device_password = os.getenv("TEST_SERVER_PASSWORD")
 
     if args.air_setup:
-        setup_type = _get_os_type(args.setup_name)
+        setup_type = get_setup_type(args.topo)
         logger.info("Setup type: {}".format(setup_type))
         simulation_details_path = '{}/{}/simulation_details.json'.format(SETUPS_LOCATION[setup_type], args.setup_name)
         with open(simulation_details_path, 'r') as file:
@@ -485,7 +471,7 @@ def main():
     logger.info("Need to create and start sonic-mgmt container")
     create_and_start_container(test_server, "{}/{}".format(registry_url, docker_image_name),
                                docker_tag, container_name, mac, args.skip_weekend_cases, args.air_setup,
-                               args.setup_name, enable_ipv6)
+                               enable_ipv6, args.topo)
 
     logger.info("Try to delete dangling docker images to save space")
     cleanup_dangling_docker_images(test_server)
