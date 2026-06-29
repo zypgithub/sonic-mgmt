@@ -122,6 +122,7 @@ def cleanup_shared_json_file(players):
 
 @pytest.fixture(scope='function', autouse=True)
 def update_test_data_in_mongo_db(request, players):
+    test_name = None
     try:
         test_name = get_perf_test_name(request)
         time_now = datetime.now().strftime(MongoDbConsts.TIME_REGEX_FORMAT)
@@ -131,22 +132,34 @@ def update_test_data_in_mongo_db(request, players):
     except Exception as e:
         raise e
     finally:
+        if test_name is None:
+            test_name = get_perf_test_name(request)
         if re.search('optimize', test_name, re.IGNORECASE):
             return
-        else:
-            rep_call = getattr(request.node, 'rep_call', None)
-            if rep_call is not None:
-                if rep_call.failed:
-                    test_state = "failed"
-                    longrepr = rep_call.longrepr
-                    crash_report = getattr(longrepr, 'reprcrash', None)
-                    failure_text = crash_report.message if crash_report else str(longrepr)
+        # rep_call is None when setup failed/skipped before the test body ran;
+        # fall back to rep_setup in that case. rep_teardown is not yet set here.
+        rep_call = getattr(request.node, 'rep_call', None)
+        rep_setup = getattr(request.node, 'rep_setup', None)
+        report = rep_call if rep_call is not None else rep_setup
+        if report is not None:
+            if getattr(report, 'failed', False):
+                test_state = "failed"
+                longrepr = getattr(report, 'longrepr', "")
+                crash_report = getattr(longrepr, 'reprcrash', None)
+                state_info = getattr(crash_report, 'message', None) or str(longrepr)
+            elif getattr(report, 'skipped', False):
+                test_state = "skipped"
+                longrepr = getattr(report, 'longrepr', "")
+                if isinstance(longrepr, tuple) and len(longrepr) >= 3:
+                    state_info = str(longrepr[2])
                 else:
-                    test_state = "passed"
-                    failure_text = ""
-                add_test_mongo_metadata(test_name, {MongoDbConsts.TEST_STATE: test_state,
-                                                    MongoDbConsts.FAILURE: failure_text})
-            create_test_validation_entry_to_db(players, test_name)
+                    state_info = str(longrepr)
+            else:
+                test_state = "passed"
+                state_info = ""
+            add_test_mongo_metadata(test_name, {MongoDbConsts.TEST_STATE: test_state,
+                                                MongoDbConsts.STATE_INFO: state_info})
+        create_test_validation_entry_to_db(players, test_name)
 
 
 def get_all_players_ports(players, right_split_num=1, left_split_num=1):

@@ -474,7 +474,7 @@ class MongoDbConsts:
     TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES = "trimmedUntrimmedDroppedPercentages"
     CONF_NAME = "configurationName"
     TEST_STATE = "testState"
-    FAILURE = "failure"
+    STATE_INFO = "stateInfo"
     COLLECTION = ":COLLECTION:SwitchPerformanceCollection\n"
     CRITERIA = ":CRITERIA_FIELD:testType\n"
     MONGO_DB_DICT_PATH = "/auto/sw_system_project/switch_performance/results/mongodb/"
