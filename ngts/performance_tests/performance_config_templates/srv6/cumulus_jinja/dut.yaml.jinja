@@ -140,7 +140,7 @@
               l2: {}
               l3: {}
               tunnel: {}
-        state: disabled
+        state: {% if parameter_dict.chip_type == 'SPC4' %}disabled{% else %}enabled{% endif %}
     vrf:
       default:
         router:

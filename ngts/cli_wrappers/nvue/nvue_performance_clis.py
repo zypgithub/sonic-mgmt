@@ -688,6 +688,7 @@ class NvuePerformanceCli(PerformanceCommon):
             "link_phy_autoneg": conf_args.get("link_phy_autoneg"),
             "link_phy_speed": conf_args.get("link_phy_speed"),
             "dut_left_ports_num": conf_args.get("dut_left_ports_num"),
+            "chip_type": conf_args.get("chip_type"),
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
         try:
