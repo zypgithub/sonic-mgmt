@@ -3,7 +3,7 @@
     "vendor_name": "PINEWAVE",
     "vendor_pn": "T-OH8CNT-NMT",
     "cmis_revision": "5.2",
-    "gold_firmware_version": "36.229.0"
+    "gold_firmware_version": "36.233.0"
   },
   "Ethernet0:256:8": {
     "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x1-0x1"
