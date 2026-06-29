@@ -171,11 +171,17 @@ def get_show_lldp_table_output(duthost):
 
 
 def get_lldp_data(duthost, db_instance):
-    # Fetch interfaces from LLDP_ENTRY_TABLE
-    lldp_entry_keys = get_lldp_entry_keys(db_instance)
-    show_lldp_table_int_list = get_show_lldp_table_output(duthost)
-    lldpctl_output = get_lldpctl_output(duthost)
-    return lldp_entry_keys, show_lldp_table_int_list, lldpctl_output
+    """Fetch LLDP data, retrying until DB keys and CLI output converge."""
+    lldp_data = {}
+
+    def _fetch_and_check():
+        lldp_data['entry_keys'] = get_lldp_entry_keys(db_instance)
+        lldp_data['cli_list'] = get_show_lldp_table_output(duthost)
+        lldp_data['lldpctl'] = get_lldpctl_output(duthost)
+        return set(lldp_data['entry_keys']) == set(lldp_data['cli_list'])
+
+    wait_until(10, 1, 0, _fetch_and_check)
+    return lldp_data['entry_keys'], lldp_data['cli_list'], lldp_data['lldpctl']
 
 
 def check_lldp_table_keys(duthost, db_instance):
