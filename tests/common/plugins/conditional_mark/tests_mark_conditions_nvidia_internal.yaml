@@ -1635,6 +1635,12 @@ system_health/test_system_health.py::test_service_checker_with_process_exit:
     conditions:
     - "https://redmine.mellanox.com/issues/4988548"
 
+system_health/test_system_status.py::test_system_is_running:
+  xfail:
+    reason: "Xfail on BMC due to https://redmine.mellanox.com/issues/5064616"
+    conditions:
+    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5064616"
+
 ########################## IGNORE WARM REBOOT ON SN6600_LD START ##########################
 arp/test_wr_arp.py:
   skip:
