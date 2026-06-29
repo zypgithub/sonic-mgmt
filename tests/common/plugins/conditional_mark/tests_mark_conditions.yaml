@@ -4338,6 +4338,12 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_info:
     conditions:
     - "https://github.com/sonic-net/sonic-buildimage/issues/23426 and ('sn4700' in platform or 'sn4280' in platform)"
 
+platform_tests/counterpoll/test_counterpoll_watermark.py:
+  xfail:
+    reason: "Testcase fails sporadically due to github issue: https://github.com/sonic-net/sonic-mgmt/issues/24900"
+    conditions:
+    - "https://github.com/sonic-net/sonic-mgmt/issues/24900 and 'ptf' in topo_name and 'sn5640' in platform"
+
 platform_tests/test_advanced_reboot.py:
   skip:
     reason: "Advanced reboot tests are not supported on lossy topologies."
