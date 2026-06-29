@@ -134,6 +134,18 @@ def update_test_data_in_mongo_db(request, players):
         if re.search('optimize', test_name, re.IGNORECASE):
             return
         else:
+            rep_call = getattr(request.node, 'rep_call', None)
+            if rep_call is not None:
+                if rep_call.failed:
+                    test_state = "failed"
+                    longrepr = rep_call.longrepr
+                    crash_report = getattr(longrepr, 'reprcrash', None)
+                    failure_text = crash_report.message if crash_report else str(longrepr)
+                else:
+                    test_state = "passed"
+                    failure_text = ""
+                add_test_mongo_metadata(test_name, {MongoDbConsts.TEST_STATE: test_state,
+                                                    MongoDbConsts.FAILURE: failure_text})
             create_test_validation_entry_to_db(players, test_name)
 
 

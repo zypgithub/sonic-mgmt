@@ -473,6 +473,8 @@ class MongoDbConsts:
     VALIDATOR_RESULTS = "validatorResults"
     TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES = "trimmedUntrimmedDroppedPercentages"
     CONF_NAME = "configurationName"
+    TEST_STATE = "testState"
+    FAILURE = "failure"
     COLLECTION = ":COLLECTION:SwitchPerformanceCollection\n"
     CRITERIA = ":CRITERIA_FIELD:testType\n"
     MONGO_DB_DICT_PATH = "/auto/sw_system_project/switch_performance/results/mongodb/"
