@@ -25,7 +25,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                             wjh_deb_url, verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
                             serial_log_analyzers, fanout_target_version, request, is_air,
                             deploy_testbed_in_parallel, deploy_image_only, deploy_chipless,
-                            deploy_sequential, base_version_bmc):
+                            deploy_sequential, base_version_bmc, neighbor_mode):
     """
         Deploy SONiC/NVOS testing topology and upgrade switch
 
@@ -74,6 +74,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
         :param deploy_testbed_in_parallel: deploy_testbed_in_parallel fixture
         :param deploy_image_only: deploy_image_only fixture
         :param deploy_sequential: deploy_sequential fixture
+        :param neighbor_mode: neighbor_mode fixture
         :raise AssertionError: in case of script failure.
     """
     try:
@@ -92,7 +93,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             serial_log_analyzers=serial_log_analyzers, fanout_target_version=fanout_target_version,
             request=request, is_air=is_air, deploy_testbed_in_parallel=deploy_testbed_in_parallel,
             deploy_image_only=deploy_image_only, deploy_chipless=deploy_chipless,
-            deploy_sequential=deploy_sequential, base_version_bmc=base_version_bmc
+            deploy_sequential=deploy_sequential, base_version_bmc=base_version_bmc, neighbor_mode=neighbor_mode
         )
 
         # Execute deployment using orchestrator

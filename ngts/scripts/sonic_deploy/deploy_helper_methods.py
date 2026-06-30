@@ -59,7 +59,7 @@ class DeploymentContext:
                  verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
                  serial_log_analyzers, fanout_target_version, request, is_air,
                  deploy_testbed_in_parallel=False, deploy_image_only=False, deploy_chipless=False,
-                 deploy_sequential=False, base_version_bmc=""):
+                 deploy_sequential=False, base_version_bmc="", neighbor_mode=""):
         """
         Initialize DeploymentContext with all parameters.
 
@@ -104,6 +104,7 @@ class DeploymentContext:
         self.deploy_chipless = deploy_chipless
         self.deploy_sequential = deploy_sequential
         self.base_version_bmc = base_version_bmc
+        self.neighbor_mode = neighbor_mode
         # True when a BMC image is provided and BMC installation should run
         self.deploy_bmc = bool(base_version_bmc)
         # True when a switch base/target image is provided and switch deployment should run
@@ -432,17 +433,22 @@ class DeployTopologyHelper:
                 return hwsku_data[setup_name]['default_hwsku']
 
     @staticmethod
-    def filter_testbed_yaml_file(setup_info):
+    def customize_testbed_yaml_file(setup_info, sonic_topo, neighbor_mode):
         """
         Remove from testbed.yaml file all configurations, which not relevant to setup.
+        And set neighbor mode if provided.
         This action will save us ~1.5 minutes of runtime in the first test,
          where need to get basic_facts in the first time.
         :param setup_info: setup_info dictionary
+        :param neighbor_mode: neighbor mode to use for the dual-tor deployment
         """
 
-        duts = []
-        for dut in setup_info['duts']:
-            duts.append(dut['dut_name'])
+        # neighbor mode is only supported for dual-tor deployment
+        is_dualtor = 'dualtor' in sonic_topo
+        if is_dualtor and neighbor_mode not in ['host-route', 'prefix-route', '']:
+            raise ValueError(f"Invalid neighbor mode: {neighbor_mode}, valid values are: host-route, prefix-route, ''")
+
+        dut_names = {dut['dut_name'] for dut in setup_info['duts']}
         testbed_yaml_file_path = os.path.join(os.path.dirname(__file__), "../../../ansible/testbed.yaml")
         testbed_yaml_backup_file_path = os.path.join(os.path.dirname(__file__), "../../../ansible/testbed.yaml.backup")
         # backup of original file
@@ -451,15 +457,17 @@ class DeployTopologyHelper:
         with open(testbed_yaml_file_path, 'r') as f:
             data = yaml.safe_load(f)
         # entry should include at least one on switch name
-        filtered_data = []
+        customized_data = []
         for entry in data:
-            for device in entry['dut']:
-                if device in duts:
-                    filtered_data.append(entry)
-                    break
-        # store filtered data
+            entry_duts = entry.get('dut') or []
+            if not any(device in dut_names for device in entry_duts):
+                continue
+            if is_dualtor and neighbor_mode:
+                entry['neighbor_mode'] = neighbor_mode
+            customized_data.append(entry)
+        # store customized data
         with open(testbed_yaml_file_path, 'w') as out_file:
-            yaml.dump(filtered_data, out_file, default_flow_style=False)
+            yaml.dump(customized_data, out_file, default_flow_style=False)
 
 
 class DeployConnectionHelper:
@@ -680,6 +688,8 @@ class DeployOrchestrator:
                 deploy_sequential=self.context.deploy_sequential
             )
 
+        DeployTopologyHelper.customize_testbed_yaml_file(self.context.setup_info, self.context.sonic_topo, self.context.neighbor_mode)
+
         return self.pre_install_threads
 
     def execute_installation(self):
@@ -790,8 +800,6 @@ class DeployOrchestrator:
                 self.context.is_performance,
                 deploy_sequential=self.context.deploy_sequential
             )
-
-        DeployTopologyHelper.filter_testbed_yaml_file(self.context.setup_info)
 
     def execute_dpu_post_installation_steps(self):
         cli_obj = self.context.primary_cli_obj

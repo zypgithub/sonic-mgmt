@@ -119,6 +119,9 @@ def pytest_addoption(parser):
                      help="URL or path to the SONiC BMC image tarball "
                           "(containing sonic_tftp_install.fit and sonic-aspeed-arm64-emmc.img.gz). "
                           "Empty value skips BMC installation.")
+    logger.info('Parsing neighbor_mode')
+    parser.addoption("--neighbor_mode", action="store", default="",
+                     help="Neighbor mode to use for the dual-tor deployment")
 
 
 @pytest.fixture(scope="module")
@@ -443,3 +446,13 @@ def base_version_bmc(request):
     :return: BMC base version (URL or path); empty string when not provided
     """
     return request.config.getoption('--base-version-bmc')
+
+
+@pytest.fixture(scope="module")
+def neighbor_mode(request):
+    """
+    Method for getting neighbor mode from pytest arguments for dual-tor deployment
+    :param request: pytest builtin
+    :return: neighbor mode; empty string when not provided
+    """
+    return request.config.getoption('--neighbor_mode')
