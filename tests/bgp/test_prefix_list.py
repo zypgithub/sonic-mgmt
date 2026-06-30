@@ -335,7 +335,7 @@ def verify(duthost, announced_neighbors, not_announced_neighbors, ip_version, ne
     return result
 
 
-def test_prefix_list_tsa(common_setup_and_teardown, localhost, tbinfo, ptfhost, request):
+def test_prefix_list_tsa(skip_t2_isolated_topo, common_setup_and_teardown, localhost, tbinfo, ptfhost, request):
     (anchor_prefixes, anchor_contributing_routes, announced_neighbors, not_announced_neighbors,
      downstream_nbr_names, ip_version, duthost) = common_setup_and_teardown
     neighbor_type = request.config.getoption("neighbor_type")
@@ -382,7 +382,7 @@ def test_prefix_list_tsa(common_setup_and_teardown, localhost, tbinfo, ptfhost, 
                   "Prefix announcing is unexpected after TSB: {}".format(result["prefix_announcing"]))
 
 
-def test_prefix_list_specific_routes(common_setup_and_teardown, localhost, tbinfo, ptfhost,
+def test_prefix_list_specific_routes(skip_t2_isolated_topo, common_setup_and_teardown, localhost, tbinfo, ptfhost,
                                      request):
     (anchor_prefixes, anchor_contributing_routes, announced_neighbors, not_announced_neighbors,
      downstream_nbr_names, ip_version, duthost) = common_setup_and_teardown
