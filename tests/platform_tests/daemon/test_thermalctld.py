@@ -101,10 +101,10 @@ class TestThermalctldDaemon:
                               f"leak_sensor_status '{sensor_status}' "
                               f"not in ['Good', 'Fault']")
 
-            leak_severity = fields.get('leak_severity', '').strip()
-            if leak_severity:
-                pytest_assert(leak_severity in ['MINOR', 'CRITICAL'],
-                              f"leak_severity '{leak_severity}' not in ['MINOR', 'CRITICAL']")
+            leak_severity = fields.get('leak_severity', 'none').strip()
+            if leak_severity.lower() != "none":
+                pytest_assert(leak_severity in ['LeakSeverity.MINOR', 'LeakSeverity.CRITICAL'],
+                              f"leak_severity '{leak_severity}' not in ['LeakSeverity.MINOR', 'LeakSeverity.CRITICAL']")
 
             sensor_type = fields.get('type', '').strip()
             if sensor_type:
