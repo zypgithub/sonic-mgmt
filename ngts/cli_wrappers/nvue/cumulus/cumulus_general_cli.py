@@ -68,10 +68,12 @@ class CumulusGeneralCli(NvueGeneralCli):
             self.engine.run_cmd('sudo apt-get update -y', timeout=60, retry_run=True)
             self.engine.run_cmd('sudo apt install python3.11 -y', timeout=60, retry_run=True)
             self.engine.run_cmd('sudo mkdir /home/cumulus/venv', timeout=20, retry_run=True)
-            self.engine.run_cmd('sudo apt install python3.11-venv -y', timeout=120, retry_run=True)
-            self.engine.run_cmd('python -m venv sdk_env --system-site-packages', timeout=120, retry_run=True)
-            self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install --upgrade pip --root-user-action=ignore', timeout=120, retry_run=True)
-            self.engine.send_cmd_with_retry('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore', retries=5, timeout=120)
+            self.engine.run_cmd('virtualenv --python=python3.11 --system-site-packages /home/cumulus/sdk_env',
+                                timeout=120, retry_run=True, validate=True)
+            self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install --upgrade pip --root-user-action=ignore',
+                                timeout=120, retry_run=True, validate=True)
+            self.engine.send_cmd_with_retry('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore',
+                                            retries=5, timeout=120)
 
     def install_apt_get_pkg(self):
         with allure.step('Install apt-get packages'):
