@@ -936,6 +936,7 @@ class DeployOrchestrator:
             # TODO: WA for RM#4946685, power cycle duts
             if "03-04-ha" in self.context.setup_name:
                 with allure.step("Power cycle the DUTs if it's HA setup"):
+                    time.sleep(30)
                     for dut in self.context.setup_info["duts"]:
                         dut["cli_obj"].remote_reboot(self.context.topology_obj, dut_alias=dut["dut_alias"])
                     time.sleep(120)
