@@ -26,7 +26,7 @@ import pytest
 import yaml
 
 import ngts.tools.test_utils.allure_utils as allure
-from infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.linux_tools.linux_tools import scp_file
 
 from ngts.nvos_constants.constants_nvos import TelemetryConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent

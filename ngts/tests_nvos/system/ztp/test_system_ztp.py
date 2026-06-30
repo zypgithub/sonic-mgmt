@@ -4,7 +4,7 @@ from functools import partial
 
 import pytest
 import retry
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.ngts_types import CleanUpT, DevicesT, EnginesT, TopologyT

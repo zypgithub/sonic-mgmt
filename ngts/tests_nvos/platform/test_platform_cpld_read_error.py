@@ -6,7 +6,7 @@ import pytest
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 

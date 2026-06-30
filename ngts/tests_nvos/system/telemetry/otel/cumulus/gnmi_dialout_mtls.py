@@ -13,7 +13,7 @@ from typing import Optional, Tuple
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
-from infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.linux_tools.linux_tools import scp_file
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.mtls.generic_testing.constants import CA_CERTIFICATE

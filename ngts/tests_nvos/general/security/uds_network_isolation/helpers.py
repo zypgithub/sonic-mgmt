@@ -5,7 +5,7 @@ import shlex
 from dataclasses import dataclass
 from typing import List, Set, Tuple
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 # ``check_can_write`` markers: must not be substrings of each other (unlike
 # WRITABLE / NOT_WRITABLE). Compared against the last non-empty line of SSH

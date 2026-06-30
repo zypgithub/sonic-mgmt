@@ -23,8 +23,8 @@ from typing import Optional, Set
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.linux_tools.linux_tools import scp_file
 
 from ngts.tests_nvos.system.telemetry.otel.constants import OtelCollectorConst, OtelCollectorLabel
 

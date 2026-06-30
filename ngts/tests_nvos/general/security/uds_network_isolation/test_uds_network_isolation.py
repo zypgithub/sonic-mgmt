@@ -22,7 +22,7 @@ from typing import Dict, List
 
 import pytest
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 from ngts.nvos_tools.infra.NvBridgeTool import NvBridgeConsts, NvBridgeTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
