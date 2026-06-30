@@ -8,6 +8,7 @@ import random
 import re
 import sys
 import shutil
+import tempfile
 
 import pytest
 import yaml
@@ -3967,7 +3968,11 @@ def update_golden_config_tsa_enabled(duthost, tsa_enabled=True):
         golden_config_db.setdefault("BGP_DEVICE_GLOBAL", {}) \
                         .setdefault("STATE", {})["tsa_enabled"] = tsa_enabled_str
 
-    duthost.copy(content=json.dumps(golden_config_db, indent=4), dest=GOLDEN_CONFIG_DB_PATH)
+    tmp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+    json.dump(golden_config_db, tmp_file, indent=4)
+    tmp_file.flush()
+    tmp_file.close()
+    duthost.copy(src=tmp_file.name, dest=GOLDEN_CONFIG_DB_PATH)
 
 
 @pytest.fixture(scope="module", autouse=True)
