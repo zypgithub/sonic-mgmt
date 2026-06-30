@@ -19,6 +19,8 @@ class AirSpin:
         self.topology_type = kwargs.get("topology_type")
         self.organization_name = kwargs.get("organization_name")
         self.dut_name = kwargs.get("dut_name") if kwargs.get("dut_name") else self.setup_name
+        if self.dut_name:
+            self.dut_name = self.dut_name.replace('_', '-')
         self.dut_hwsku = kwargs.get("dut_hwsku")
         self.base_version = kwargs.get("base_version")
         self.custom_tarball_name = kwargs.get("custom_tarball_name")
