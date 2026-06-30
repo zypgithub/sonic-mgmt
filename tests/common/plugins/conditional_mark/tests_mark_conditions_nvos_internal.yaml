@@ -1,5 +1,59 @@
 ########################## NVOS IGNORE START ##########################
 
+tests_nvos/interfaces/lldp/test_lldp.py::test_lldp_disable_dhcp:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
+tests_nvos/system/test_system_log.py::test_log_idle:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
+tests_nvos/interfaces/test_2_mgmt_interfaces.py::test_table_seperation_switch_client:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
+tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_configure_mgmt_port_ipv4:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
+tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_configure_mgmt_port_ipv6:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
+tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_ip_address:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
+tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_dhcp_hostname:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
+tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_dhcp_lease_properties:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
+tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_mgmt_interface_dhcp_option_60:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
 tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py:
   skip:
     reason: Testcase skipped on gorilla systems - feature is pruned on gorilla
