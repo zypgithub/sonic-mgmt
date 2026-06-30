@@ -720,7 +720,7 @@ class PowerConsts:
             r"VCORE TILES \d & \d \(VDD_Tx\)": 17,
             r"DVDD TILES \d & \d \(DVDD_Tx\)": 18.13,
             r"HVDD TILES \(HVDD_T\d+\)": 124,
-            r"VDDSCC": 46,
+            r"VDDSCC": 47,
             r"VCORE MAIN \(VDD_M\)": 345,
             "TOTAL": 754,
             "HVDD_TILES_TH": 243
