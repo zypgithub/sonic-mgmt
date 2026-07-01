@@ -17,7 +17,7 @@ from constants import (
     REMOTE_PTF_SEND_INTF,
 )
 from gnmi_utils import apply_messages
-from packets import inbound_pl_packets, outbound_pl_packets
+from ha_packets import inbound_pl_packets, outbound_pl_packets
 from ha_utils import verify_ha_state, set_dash_ha_scope
 
 logger = logging.getLogger(__name__)
