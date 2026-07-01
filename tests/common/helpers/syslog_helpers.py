@@ -3,7 +3,6 @@ import logging
 import pytest
 import time
 from scapy.all import rdpcap
-from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 DUT_PCAP_FILEPATH = "/tmp/test_syslog_tcpdump.pcap"
 DOCKER_TMP_PATH = "/tmp/"
@@ -19,17 +18,11 @@ def check_default_route(rand_selected_dut):
     duthost = rand_selected_dut
     ret = {'IPv4': False, 'IPv6': False}
 
-    # Workaround for Redmine #5057197 and BMC
-    if duthost.is_bmc() and is_redmine_issue_active([5057197])[0]:
-        routing_table = "main"
-    else:
-        routing_table = "default"
-
     logger.info("Checking DUT default route")
-    result = duthost.shell(f"ip route show default table {routing_table} | grep via", module_ignore_errors=True)['rc']
+    result = duthost.shell("ip route show default table default | grep via", module_ignore_errors=True)['rc']
     if result == 0:
         neigh_ip = duthost.shell(
-            f"ip route show default table {routing_table} | cut -d ' ' -f 3", module_ignore_errors=True)['stdout']
+            "ip route show default table default | cut -d ' ' -f 3", module_ignore_errors=True)['stdout']
 
         # We ping here to make sure that the neigh_ip is not stale before checking for reachability
         duthost.shell("ping -c 1 {}".format(neigh_ip), module_ignore_errors=True)
@@ -38,10 +31,10 @@ def check_default_route(rand_selected_dut):
             "ip -4 neigh show {} | grep REACHABLE".format(neigh_ip), module_ignore_errors=True)['rc']
         if result == 0:
             ret['IPv4'] = True
-    result = duthost.shell(f"ip -6 route show default table {routing_table} | grep via", module_ignore_errors=True)['rc']
+    result = duthost.shell("ip -6 route show default table default | grep via", module_ignore_errors=True)['rc']
     if result == 0:
         neigh_ip = duthost.shell(
-            f"ip -6 route show default table {routing_table} | cut -d ' ' -f 3", module_ignore_errors=True)['stdout']
+            "ip -6 route show default table default | cut -d ' ' -f 3", module_ignore_errors=True)['stdout']
 
         # We ping here to make sure that the neigh_ip is not stale before checking for reachability
         duthost.shell("ping -c 1 {}".format(neigh_ip), module_ignore_errors=True)
