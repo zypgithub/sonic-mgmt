@@ -869,6 +869,10 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_psus:
     - "'sn5810_ld' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_sfps:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5090286"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5090286"
   xfail:
     reason: "sfp test should be updated according to the CPO software control design implementation on sn5810_ld and sn6810_ld platforms"
     conditions_logical_operator: or
@@ -956,13 +960,19 @@ platform_tests/mellanox/test_check_sfp_plug_in_out_sim.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/mellanox/test_check_sfp_eeprom.py::test_check_sfp_eeprom_with_option_dom:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5090286"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5090286"
+
 platform_tests/sfp/test_sfputil.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently. Also the test will hang and cause timeout due to RM issue: https://redmine.mellanox.com/issues/5090286"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
-    - "https://redmine.mellanox.com/issues/5090286 and ('bobcat-10' in testbed or 'r-bison-12' in testbed)"
+    - "https://redmine.mellanox.com/issues/5090286"
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_low_power_mode:
   skip:
@@ -983,9 +993,11 @@ platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
 
 platform_tests/test_xcvr_info_in_db.py:
   skip:
-    reason: "QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2"
+    reason: "QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2. Also skipped due to RM issue: https://redmine.mellanox.com/issues/5090286"
+    conditions_logical_operator: or
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
+    - "https://redmine.mellanox.com/issues/5090286"
   xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4989247 or https://redmine.mellanox.com/issues/4989326"
     conditions_logical_operator: or
@@ -1126,6 +1138,12 @@ platform_tests/api/test_sfp.py:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
+
+platform_tests/api/test_sfp.py::TestSfpApi:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5090286"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5090286"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_lpmode_support:
   skip:
