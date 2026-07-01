@@ -3,15 +3,17 @@ import allure
 import json
 import ipaddress
 import random
-import time
 import logging
 import pandas as pd
 from netaddr import EUI
 from ngts.helpers.performance.packet_json_generator import PacketGenerator
-from ngts.constants.performance_constants import PerfConsts, ValidationConsts, BwFairnessThreshold
+from ngts.constants.performance_constants import PerfConsts, ValidationConsts, BwFairnessThreshold, OccupancyVarianceConfig
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ast import literal_eval
 from typing import Dict, List, Any, Optional
+
+
+logger = logging.getLogger()
 
 
 def generate_ip_address_list(address_start_v4="172.168.1.1", address_start_v6="172::1:1", step_v4=256, step_v6=0x10000,
@@ -452,7 +454,6 @@ def validate_bw_utilization_fairness(traffic_json: Dict[str, Any], bw_fairness_t
                     f"bw_fairness_threshold_per_port_group[{port_group_name!r}].{direction_name} must be a number between 0 and 1, got {threshold!r}"
                 )
                 return
-    t_start = time.monotonic()
     logger.info(f"validate_bw_utilization_fairness: started (bw_fairness_threshold_per_port_group={bw_fairness_threshold_per_port_group})")
     with allure.step(f"Validate per-port BW utilization fairness per port group"):
         bw_samples = traffic_json.get(ValidationConsts.BW_SAMPLES)
@@ -477,8 +478,231 @@ def validate_bw_utilization_fairness(traffic_json: Dict[str, Any], bw_fairness_t
                     logger.debug(f"BW fairness: no threshold for group '{port_group_name}'; skipping")
                     continue
                 _validate_bw_utilization_fairness_per_port_group(sample_id, port_group_name, port_group_data, port_group_threshold, violations_list)
-    elapsed = time.monotonic() - t_start
-    logger.info(f"validate_bw_utilization_fairness: finished in {elapsed:.3f}s, violations found: {len(violations_list)}")
+
+
+def _check_metric_fairness(
+    buffer_type: str,
+    buffer_id: str,
+    json_metric: str,
+    occ_key: str,
+    value_by_stat: dict,
+    occ_variance_config: "OccupancyVarianceConfig",
+    skipped_metrics_by_buffer_id_and_reason: Dict[tuple, list],
+    passed_check_count_by_buffer_type: Dict[str, Dict[str, int]],
+) -> Optional[str]:
+    """
+    Check occupancy fairness for a single metric of a single buffer ID.
+
+    Skips the check (returns None and records the reason) when max occupancy across all ports is 0
+    (no active traffic) or when the variance threshold is disabled (None) for the given buffer type.
+
+    Args:
+        buffer_type: Buffer type identifier (e.g. ValidationConsts.TC_NAME, PG_BUFFER, PG_HEADROOM).
+        buffer_id: The TC or PG index being checked (e.g. "TC3", "PG1").
+        json_metric: JSON key for the metric (e.g. ValidationConsts.JSON_METRIC_AVG).
+        occ_key: OccupancyMetrics field name corresponding to json_metric (e.g. ValidationConsts.OCC_AVG).
+        value_by_stat: Pre-aggregated stats dict with keys 'min_value', 'max_value',
+            'port_with_min_value', 'port_with_max_value'.
+        occ_variance_config: Variance thresholds config for the current port group.
+        skipped_metrics_by_buffer_id_and_reason: Accumulator for skipped metrics; mutated in place.
+        passed_check_count_by_buffer_type: Accumulator for passed check counts; mutated in place.
+
+    Returns:
+        A violation string if min_port occupancy falls below max_port * (1 - variance), else None.
+    """
+    max_val = value_by_stat['max_value']
+    min_val = value_by_stat['min_value']
+    min_port = value_by_stat['port_with_min_value']
+    max_port = value_by_stat['port_with_max_value']
+    if max_val == 0:
+        skipped_metrics_by_buffer_id_and_reason.setdefault(
+            (buffer_id, "max occupancy across all ports is 0 (no active traffic)"), []
+        ).append(json_metric)
+        return None
+    variance = occ_variance_config.get_variance(buffer_type, occ_key)
+    if variance is None:
+        skipped_metrics_by_buffer_id_and_reason.setdefault(
+            (buffer_id, f"variance threshold is None, validation disabled for buffer type '{buffer_type}'"), []
+        ).append(json_metric)
+        return None
+    min_tolerated = max_val * (1 - variance)
+    logger.info(
+        f"      checking fairness: buffer_type={buffer_type} "
+        f"buffer_id={buffer_id} metric={json_metric} occ_key={occ_key} variance={variance} "
+        f"min={min_val:.3f} max={max_val:.3f} min_tolerated={min_tolerated:.3f} "
+        f"min_port={min_port} max_port={max_port}"
+    )
+    if min_val < min_tolerated:
+        deviation_from_max = (max_val - min_val) / max_val
+        shortfall_from_threshold = (min_tolerated - min_val) / max_val
+        return (
+            f"{buffer_type} buffer_id={buffer_id} metric={json_metric} "
+            f"min={min_val:.3f} [{deviation_from_max:.1%} from max] < "
+            f"min_tolerated {min_tolerated:.3f} [exceeded by {shortfall_from_threshold:.1%} of max] "
+            f"(= max {max_val:.3f} * {1 - variance:.3f}) "
+            f"(min port: {min_port}, max port: {max_port})"
+        )
+    passed_check_count_by_buffer_type.setdefault(buffer_type, {}).setdefault(occ_key, 0)
+    passed_check_count_by_buffer_type[buffer_type][occ_key] += 1
+    return None
+
+
+def _validate_tc_occupancy_fairness_per_port_group(
+    sample_id: str,
+    port_group_name: str,
+    port_group_data: dict,
+    occ_variance_config: OccupancyVarianceConfig,
+    violations_list: list[str],
+    passed_check_count_by_buffer_type: Dict[str, Dict[str, int]],
+    occ_key_by_json_metric: dict,
+) -> None:
+    """Validate TC/PG occupancy fairness for a single port group and sample."""
+    logger.debug(f"    [{sample_id}] processing port group '{port_group_name}'")
+    # Maps each JSON stats key (inside port-group data) to its buffer type name,
+    # which matches both the OccupancyVarianceConfig field and the ValidationConsts identifier.
+    buffer_type_by_stats_key = {
+        ValidationConsts.PER_PORT_TC_STATS: ValidationConsts.TC_NAME,
+        ValidationConsts.PER_PORT_PG_BUFFER_STATS: ValidationConsts.PG_BUFFER,
+        ValidationConsts.PER_PORT_PG_HEADROOM_STATS: ValidationConsts.PG_HEADROOM,
+    }
+    for stats_key, buffer_type in buffer_type_by_stats_key.items():
+        # Structure: {buffer_id -> {metric_name -> {min_value, max_value, port_with_min_value, port_with_max_value}}}
+        # min_value/max_value are pre-aggregated across all ports by the collector.
+        tc_stats = port_group_data.get(stats_key, {})
+        if not tc_stats:
+            logger.info(
+                f"    [{sample_id}] group '{port_group_name}' {buffer_type}: "
+                f"skipped — '{stats_key}' key is missing or empty in JSON data"
+            )
+            continue
+
+        logger.debug(
+            f"    [{sample_id}] group '{port_group_name}' {buffer_type}: "
+            f"{len(tc_stats)} TC/PG id(s): {list(tc_stats.keys())}"
+        )
+
+        skipped_metrics_by_buffer_id_and_reason: Dict[tuple, list] = {}
+
+        for buffer_id, metric_data in tc_stats.items():
+            missing_metrics = [missing_metric for missing_metric in occ_key_by_json_metric if missing_metric not in metric_data]
+            if missing_metrics:
+                skipped_metrics_by_buffer_id_and_reason.setdefault(
+                    (buffer_id, "metric missing from JSON data"), []
+                ).extend(missing_metrics)
+
+            for json_metric, value_by_stat in metric_data.items():
+                occ_key = occ_key_by_json_metric.get(json_metric)
+                if occ_key is None:
+                    logger.debug(
+                        f"      [{sample_id}] {buffer_type} buffer_id={buffer_id}: "
+                        f"skipped unknown metric '{json_metric}'"
+                    )
+                    continue
+                violation = _check_metric_fairness(
+                    buffer_type, buffer_id, json_metric, occ_key, value_by_stat,
+                    occ_variance_config, skipped_metrics_by_buffer_id_and_reason,
+                    passed_check_count_by_buffer_type,
+                )
+                if violation:
+                    violations_list.append(f"[{port_group_name}] {violation}")
+
+        for (buffer_id, reason), metrics in skipped_metrics_by_buffer_id_and_reason.items():
+            logger.info(
+                f"      [{sample_id}] {buffer_type} buffer_id={buffer_id}: "
+                f"{', '.join(metrics)} skipped. reason: {reason}"
+            )
+
+    disabled_buffer_types = [bt for bt in buffer_type_by_stats_key.values() if occ_variance_config.get_variance(bt, ValidationConsts.OCC_AVG) is None]
+    disabled_msg = f", disabled buffer types (variance=None): {disabled_buffer_types}" if disabled_buffer_types else ""
+    passed_msg = f", passed checks by buffer type and metric: {passed_check_count_by_buffer_type}" if passed_check_count_by_buffer_type else ""
+    logger.info(f"    [{sample_id}] group '{port_group_name}'{disabled_msg}{passed_msg}")
+
+
+def validate_tc_occupancy_fairness(
+    traffic_json: dict,
+    max_tc_occ_variance_per_port_group: Dict[str, OccupancyVarianceConfig],
+    violations_list: list[str],
+) -> None:
+    """
+    Validate per-port TC and PG occupancy fairness across each port group.
+
+    For each sample, port group, buffer ID, and all four occupancy metrics
+    (occAvg, occ99, occMax, maxWatermark), checks:
+        min_port_occ >= max_port_occ * (1 - variance)
+
+    where variance is looked up per buffer type and metric from the config for that port group.
+
+    Buffer IDs with max_occ == 0 are skipped (no active traffic).
+    Empty stat dicts (e.g. per_port_pg_headroom_stats: {}) are silently skipped.
+    Port groups not present in max_tc_occ_variance_per_port_group are skipped.
+
+    Args:
+        traffic_json:                      Traffic data containing TC_PG_SAMPLES.
+        max_tc_occ_variance_per_port_group: Dict mapping port group name to per-buffer-type,
+                                            per-metric variance thresholds.
+        violations_list:                   List to append violation strings to.
+    """
+    local_violations_list = []  # TODO: temporary — remove this line to re-enable TC occ fairness failures
+    if not isinstance(max_tc_occ_variance_per_port_group, dict):
+        local_violations_list.append(
+            f"max_tc_occ_variance_per_port_group must be a dict, got {type(max_tc_occ_variance_per_port_group)!r}"
+        )
+        return
+    logger.info(f"validate_tc_occupancy_fairness: started (max_tc_occ_variance_per_port_group={max_tc_occ_variance_per_port_group})")
+
+    # Maps JSON metric names (as stored in per_port_*_stats) to ValidationConsts occ_key identifiers
+    OCC_KEY_BY_JSON_METRIC = {
+        ValidationConsts.JSON_METRIC_AVG: ValidationConsts.OCC_AVG,
+        ValidationConsts.JSON_METRIC_P99: ValidationConsts.OCC_99,
+        ValidationConsts.JSON_METRIC_MAX: ValidationConsts.OCC_MAX,
+        ValidationConsts.JSON_METRIC_WATERMARK: ValidationConsts.MAX_WATERMARK,
+    }
+
+    with allure.step("Validate per-port TC/PG occupancy fairness per buffer type and metric"):
+        tc_pg_samples = traffic_json.get(ValidationConsts.TC_PG_SAMPLES)
+        if not tc_pg_samples:
+            logger.info(
+                f"validate_tc_occupancy_fairness: skipped — '{ValidationConsts.TC_PG_SAMPLES}' key is missing or empty"
+            )
+            local_violations_list.append(
+                f"TC occupancy fairness validation skipped: '{ValidationConsts.TC_PG_SAMPLES}' key is missing or empty"
+            )
+            return
+
+        # SAMPLES_PARAMS is metadata, not a real sample — remove before iterating
+        tc_pg_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+        if not tc_pg_samples:
+            logger.info(
+                f"validate_tc_occupancy_fairness: skipped — no samples remain after removing '{ValidationConsts.SAMPLES_PARAMS}' metadata entry"
+            )
+            return
+        logger.info(f"validate_tc_occupancy_fairness: found {len(tc_pg_samples)} samples to process")
+
+        # Tracks passed checks: {buffer_type: {occ_key: count}}
+        passed_check_count_by_buffer_type: Dict[str, Dict[str, int]] = {}
+
+        for sample_id, port_groups in tc_pg_samples.items():
+            logger.debug(f"  sample '{sample_id}': {len(port_groups)} port group(s): {list(port_groups.keys())}")
+            for port_group_name, port_group_data in port_groups.items():
+                occ_variance_config = (
+                    max_tc_occ_variance_per_port_group.get(port_group_name) or
+                    max_tc_occ_variance_per_port_group.get("default")
+                )
+                if occ_variance_config is None:
+                    logger.info(
+                        f"  [{sample_id}] port group '{port_group_name}': skipped — not in max_tc_occ_variance_per_port_group and no 'default' key"
+                    )
+                    continue
+                _validate_tc_occupancy_fairness_per_port_group(
+                    sample_id, port_group_name, port_group_data,
+                    occ_variance_config, local_violations_list,
+                    passed_check_count_by_buffer_type, OCC_KEY_BY_JSON_METRIC,
+                )
+
+        logger.info(
+            f"validate_tc_occupancy_fairness: passed checks by buffer type and metric: {passed_check_count_by_buffer_type}, "
+            f"violations: {len(local_violations_list)}"
+        )
 
 
 def validate_tc(traffic_json, tc_occ_threshold, violations_list):

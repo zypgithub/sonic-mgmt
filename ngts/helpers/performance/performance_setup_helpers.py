@@ -3,17 +3,20 @@ import logging.config
 import allure
 import os
 import json
+import time
 import pytest
 import shutil
 from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, Cl_Consts, BwFairnessThreshold
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, Cl_Consts, BwFairnessThreshold, OccupancyVarianceConfig
 from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import validate_bw, validate_bw_utilization_fairness, validate_tc, validate_counters, validate_no_drops_on_tg_ports, validate_required_counters
+from ngts.helpers.performance.traffic_helpers import (validate_bw, validate_bw_utilization_fairness, validate_tc,
+                                                      validate_counters, validate_no_drops_on_tg_ports,
+                                                      validate_required_counters, validate_tc_occupancy_fairness)
 from ngts.helpers.performance.performance_counter_helpers import validate_performance_counters
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
@@ -79,6 +82,10 @@ class ValidationConfig:
             Defaults to DUT only. Can be set to TG aliases for traffic generator validation.
         required_counters_port_group (str, optional): Port group to check for required counters.
             If None, all port groups are checked.
+        max_tc_occ_variance_per_port_group (Dict[str, OccupancyVarianceConfig]): Derived automatically
+            from tc_occ_threshold. None when tc_occ_threshold is None (disables this validation).
+            Per-port-group dict when tc_occ_threshold is keyed by port group, otherwise
+            {"default": OccupancyVarianceConfig()} applied to all port groups.
     """
     players: Any
     test_name: str
@@ -103,6 +110,10 @@ class ValidationConfig:
     skip_first_counters_iteration: Optional[bool] = False
     additional_validations: Optional[List[Validation]] = field(default_factory=dict)
     players_to_be_validated: List[str] = field(default_factory=lambda: PerfConsts.PERF_SETUP_DUT_ALIASES)
+    max_tc_occ_variance_per_port_group: Optional[Dict[str, OccupancyVarianceConfig]] = field(init=False)
+
+    def __post_init__(self):
+        self.max_tc_occ_variance_per_port_group = OccupancyVarianceConfig.from_tc_occ_threshold(self.tc_occ_threshold)
 
     def get_validations(self) -> Dict[str, Validation]:
         """
@@ -137,6 +148,11 @@ class ValidationConfig:
                 'tc', validate_tc,
                 lambda: {'tc_occ_threshold': self.tc_occ_threshold},
                 lambda: not is_simx and self.tc_occ_threshold is not None,
+            ),
+            _validation_spec(
+                'tc_occ_fairness', validate_tc_occupancy_fairness,
+                lambda: {'max_tc_occ_variance_per_port_group': self.max_tc_occ_variance_per_port_group},
+                lambda: not is_simx and bool(self.max_tc_occ_variance_per_port_group),
             ),
             _validation_spec(
                 'temperature', validate_temperature,
@@ -496,7 +512,11 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
 
             for name, validation in validations_to_run.items():
                 logger.info(f"Running validation: {name}")
+                violations_before = len(player_violations)
+                t_start = time.monotonic()
                 validation.func(traffic_json, **(validation.extra_args or {}), violations_list=player_violations)
+                elapsed = time.monotonic() - t_start
+                logger.info(f"Running validation: {name}: finished in {elapsed:.3f}s, violations found: {len(player_violations) - violations_before}")
 
             if player_violations:
                 player_header = f"Validation failures on {player_alias}:"

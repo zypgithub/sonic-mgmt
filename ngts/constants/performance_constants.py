@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import Dict, List, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field, fields
 from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
@@ -23,6 +23,9 @@ class ValidationConsts:
     TC_DATAFRAME = "tc_dataframe"
     PG_HEADROOM_DATAFRAME = "pg_headroom_dataframe"
     PG_BUFFER_DATAFRAME = "pg_buffer_dataframe"
+    PER_PORT_TC_STATS = "per_port_tc_stats"
+    PER_PORT_PG_BUFFER_STATS = "per_port_pg_buffer_stats"
+    PER_PORT_PG_HEADROOM_STATS = "per_port_pg_headroom_stats"
     TC_PG_SAMPLES = "TC_PG_samples"
     TC_SAMPLES = "TC_samples"
     TC_NAME = "tc"
@@ -33,6 +36,10 @@ class ValidationConsts:
     OCC_99 = "occ99"
     OCC_MAX = "occMax"
     MAX_WATERMARK = "maxWatermark"
+    JSON_METRIC_AVG = "avg"
+    JSON_METRIC_P99 = "percentile_99"
+    JSON_METRIC_MAX = "max"
+    JSON_METRIC_WATERMARK = "max_watermark"
     TX_RATE = "txRate"
     RX_RATE = "rxRate"
     TC_LATENCY_SAMPLES = "TC_latency_samples"
@@ -125,6 +132,7 @@ class PerfConsts:
     SDK_GENERATION_SECONDS_THRESHOLD = 30
     PERF_COUNTERS_ALLOWED_DEVIATION = 2.5
     DEFAULT_FAIRNESS_THRESHOLD = 0.05
+    DEFAULT_TC_OCC_FAIRNESS_THRESHOLD = 0.05
 
     # CLI Types
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes
@@ -428,6 +436,107 @@ class MultiNosSharedData:
     DEFAULT_SHARED_JSON = "shared_communication.json"
     ALIBABA_ACL_DUMP_PATH = 'alibaba_acl_path'
     ALIBABA_ACL_DUMP_NAME = 'alibaba_acl_name'
+
+
+@dataclass
+class OccupancyMetrics:
+    """Per-metric variance thresholds for a single buffer type."""
+    avg: float = PerfConsts.DEFAULT_TC_OCC_FAIRNESS_THRESHOLD
+    percentile_99: float = PerfConsts.DEFAULT_TC_OCC_FAIRNESS_THRESHOLD
+    max: float = PerfConsts.DEFAULT_TC_OCC_FAIRNESS_THRESHOLD
+    max_watermark: float = PerfConsts.DEFAULT_TC_OCC_FAIRNESS_THRESHOLD
+
+
+@dataclass
+class OccupancyVarianceConfig:
+    """
+    Per-buffer-type variance thresholds for TC occupancy fairness validation.
+
+    Each field holds an OccupancyMetrics instance with per-metric thresholds for that buffer type.
+    Setting a field to None disables variance validation entirely for that buffer type.
+
+    Attributes:
+        tc (OccupancyMetrics, optional): Variance thresholds for TC buffer occupancy.
+            None means TC occupancy variance will not be validated.
+        pg_headroom (OccupancyMetrics, optional): Variance thresholds for PG headroom occupancy.
+            None means PG headroom occupancy variance will not be validated.
+        pg_buffer (OccupancyMetrics, optional): Variance thresholds for PG buffer occupancy.
+            None means PG buffer occupancy variance will not be validated.
+    """
+    tc: Optional[OccupancyMetrics] = field(default_factory=OccupancyMetrics)
+    pg_headroom: Optional[OccupancyMetrics] = field(default_factory=OccupancyMetrics)
+    pg_buffer: Optional[OccupancyMetrics] = field(default_factory=OccupancyMetrics)
+
+    _occupancy_metrics_field_by_occ_key = {
+        ValidationConsts.OCC_AVG: ValidationConsts.JSON_METRIC_AVG,
+        ValidationConsts.OCC_99: ValidationConsts.JSON_METRIC_P99,
+        ValidationConsts.OCC_MAX: ValidationConsts.JSON_METRIC_MAX,
+        ValidationConsts.MAX_WATERMARK: ValidationConsts.JSON_METRIC_WATERMARK,
+    }
+
+    def get_variance(self, buffer_type: str, occ_key: str) -> Optional[float]:
+        """
+        Return the variance threshold for a given buffer type and occupancy metric key.
+
+        Args:
+            buffer_type: One of the dataclass fields ('tc', 'pg_headroom', 'pg_buffer').
+            occ_key: An occupancy metric key (e.g. ValidationConsts.OCC_AVG).
+
+        Returns:
+            The variance threshold as a float, or None if variance validation is disabled
+            for the given buffer type (i.e. the field is set to None).
+
+        Raises:
+            ValueError: If buffer_type is not a recognized field or occ_key is not a
+                known occupancy metric key. The exception message includes the allowed values.
+        """
+        try:
+            metrics: Optional[OccupancyMetrics] = getattr(self, buffer_type)
+        except AttributeError as attr_error:
+            allowed = [f.name for f in fields(self) if not f.name.startswith('_')]
+            raise AttributeError(
+                f"{attr_error}.\nUnknown buffer_type '{buffer_type}'. Allowed values: {allowed}"
+            )
+        if metrics is None:
+            logging.getLogger(__name__).debug(
+                f"get_variance: buffer_type='{buffer_type}' is None — variance validation disabled for this buffer type"
+            )
+            return None
+        field_name = self._occupancy_metrics_field_by_occ_key.get(occ_key)
+        if field_name is None:
+            allowed_keys = list(self._occupancy_metrics_field_by_occ_key.keys())
+            raise ValueError(
+                f"Unknown occ_key '{occ_key}'. Allowed values: {allowed_keys}"
+            )
+        return getattr(metrics, field_name)
+
+    @classmethod
+    def from_tc_occ_threshold(cls, tc_occ_threshold) -> Optional[Dict[str, 'OccupancyVarianceConfig']]:
+        """
+        Derive a per-port-group variance config dict from a tc_occ_threshold value.
+
+        - None               → None (disables tc_occ_fairness validation)
+        - {port_group: dict} → {port_group: OccupancyVarianceConfig()} per port group
+        - {occ_key: value}   → {"default": OccupancyVarianceConfig()} applied to all port groups
+        - non-dict           → raises ValueError
+        """
+        logger.debug(f"from_tc_occ_threshold: input tc_occ_threshold={tc_occ_threshold!r}")
+        if tc_occ_threshold is None:
+            logger.debug("from_tc_occ_threshold: tc_occ_threshold is None — disabling tc_occ_fairness validation, returning None")
+            return None
+        if not isinstance(tc_occ_threshold, dict):
+            raise ValueError(
+                f"tc_occ_threshold must be a dict or None, got {type(tc_occ_threshold).__name__!r}: {tc_occ_threshold!r}"
+            )
+        # Peek at the first value to detect the dict shape:
+        # - values are dicts  → per-port-group config: {port_group: {occ_key: value, ...}, ...}
+        # - values are scalars → flat/global config:    {occ_key: value, ...}
+        if isinstance(next(iter(tc_occ_threshold.values()), None), dict):
+            result = {pg: cls() for pg in tc_occ_threshold}
+            logger.debug(f"from_tc_occ_threshold: detected per-port-group shape — returning per-port-group config: {list(result.keys())}")
+            return result
+        logger.debug("from_tc_occ_threshold: detected flat/global shape — returning {'default': OccupancyVarianceConfig()} applied to all port groups")
+        return {"default": cls()}
 
 
 @dataclass
