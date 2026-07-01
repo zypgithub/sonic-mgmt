@@ -163,18 +163,8 @@ class SonicInstallationSteps:
                                                     setup_name=setup_name,
                                                     dut_names=[dut_name],
                                                     sonic_topo=sonic_topo)
-        if not deploy_image_only:
-            add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type,
-                                                                       ptf_tag, hwsku, parallel)
-            if sonic_topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST:
-                add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT_SCALE
-            else:
-                add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT
-            logger.info(f"Using add topology timeout: {add_topo_timeout}s for topology: {sonic_topo}")
-            run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=add_topo_timeout,
-                                           exec_path=ansible_path, deploy_sequential=deploy_sequential)
-        else:
-            logger.info("Skipping add-topo as deploy_image_only is True")
+        is_scale_topo = sonic_topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST
+        is_bgp_scale_topo = sonic_topo in SonicDeployConstants.BGP_SCALE_TOPOLOGIES_LIST
 
         if (not is_dualtor_topo(sonic_topo) and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
@@ -184,8 +174,27 @@ class SonicInstallationSteps:
                 not setup_name.endswith('-ha') and
                 "r-bison-18" != dut_name and "r-bison-08" != dut_name):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
-            run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
+            if is_scale_topo:
+                logger.info(f"Scale topo {sonic_topo}: running gen-mg foreground to avoid a race condition with add-topo for converged topos")
+                execute_script(gen_mg_cmd, ansible_path)
+            else:
+                run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
+                                               exec_path=ansible_path, deploy_sequential=deploy_sequential)
+
+        if not deploy_image_only:
+            add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type,
+                                                                       ptf_tag, hwsku, parallel)
+            if is_scale_topo:
+                add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT_SCALE
+            elif is_bgp_scale_topo:
+                add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT_BGP_SCALE
+            else:
+                add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT
+            logger.info(f"Using add topology timeout: {add_topo_timeout}s for topology: {sonic_topo}")
+            run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=add_topo_timeout,
                                            exec_path=ansible_path, deploy_sequential=deploy_sequential)
+        else:
+            logger.info("Skipping add-topo as deploy_image_only is True")
 
     @staticmethod
     def copy_csv_inventory_lab(setup_name, destination_hwsku, is_air=False):
@@ -383,7 +392,7 @@ class SonicInstallationSteps:
                 logger.info("Running CMD: {}".format(cmd))
 
                 # Get timeout based on topology type
-                if topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST:
+                if topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST or topo in SonicDeployConstants.BGP_SCALE_TOPOLOGIES_LIST:
                     remove_timeout = SonicDeployConstants.REMOVE_TOPO_TIMEOUT_SCALE
                 else:
                     remove_timeout = SonicDeployConstants.REMOVE_TOPO_TIMEOUT

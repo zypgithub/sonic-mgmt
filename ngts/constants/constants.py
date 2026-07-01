@@ -1336,7 +1336,7 @@ class MarsConstants:
         "t0-56-po2vlan", "t0", "t0-16", "t1-lag", "t1-lag-c224o8", "t1-28-lag", "t1-32-lag", "ptf32",
         "t0-64", "t0-64-256", "t0-c256", "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120",
         "t0-256", "t1-56-lag", "t1-isolated-d32u1s2", "t1-isolated-d82u1", "t1-isolated-d224u8", "t1-isolated-d448u15-lag", "t0-isolated-d128u128s1",
-        "t0-isolated-d16u16s1", "t0-isolated-d16u16s2", "t0-28", "dualtor", "dualtor-64",
+        "t0-isolated-d16u16s1", "t0-isolated-d16u16s2", "t0-28", "dualtor", "dualtor-64", "t0-isolated-d256u256s2",
         "dualtor-aa", "t0-isolated-d2u254s1", "t1-isolated-d254u2s1", "dualtor-64-breakout",
         "dualtor-aa-64-breakout", "t0-88-o8c80", "ptp-256", "ptp-130", "t1-isolated-d28u1", 't1-isolated-d28u4',
         "t1-isolated-d56u2", "t0-isolated-d32u32s2", "t0-isolated-v6-d32u32s2", "t0-isolated-d2u254s2", "t0-isolated-d32u32s2-mix",
@@ -1439,12 +1439,14 @@ class SonicDeployConstants:
     SINGLE_SERVICE_PORT_PLATFORMS = [PlatformTypesConstants.PLATFORM_MOOSE_SIMX]
     ADD_TOPO_TIMEOUT = 3600
     ADD_TOPO_TIMEOUT_FACTOR = 1
-    ADD_TOPO_TIMEOUT_SCALE = 14400
+    ADD_TOPO_TIMEOUT_SCALE = 7200
+    ADD_TOPO_TIMEOUT_BGP_SCALE = 14400
     REMOVE_TOPO_TIMEOUT = 600
     REMOVE_TOPO_TIMEOUT_SCALE = 3600
     SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't1-isolated-d448u15-lag',
                              't0-isolated-d2u510s2', 't1-isolated-d510u2', 't1-isolated-v6-d56u1-lag',
                              't0-isolated-d256u256s2', 't1-isolated-d508u1s2', 't2-isolated-d128s2']
+    BGP_SCALE_TOPOLOGIES_LIST = ['t0-isolated-d2u510s2']
     # 'slm-' DUTs are excluded from gen-mg in start_community_background_threads by default.
     # BMC setups (e.g. bmc-dual-mgmt) still need their minigraph generated, so list the
     # 'slm-' DUT names that must run gen-mg here. Value is the DUT name used to build the
