@@ -616,3 +616,6 @@ r, ".* ERR ctrmgrd\.py:.*\[WARNING SystemVerification\]:.*Docker version is not 
 
 # Ignore SPC6 Egress mirroring not supported failures on SPC6 mellanox platform
 r, ".*ERR syncd#SDK: \[SAI_PORT.ERR\] .*mlnx_sai_port.c\[.*\]- mlnx_port_samplepacket_session_get: Egress mirroring is not supported on SPC6.*"
+
+# Ignore loganalyzer add marker logs in case the test name matches an error pattern
+r, ".*INFO.*ansible.*loganalyzer.py.*--action add.*marker.*"
