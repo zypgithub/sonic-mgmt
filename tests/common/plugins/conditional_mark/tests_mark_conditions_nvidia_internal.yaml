@@ -284,6 +284,12 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
     conditions:
     - "'simx' in platform"
 
+tests/nightly/sanity_checker/test_sanity_checker.py::test_cable_connection_for_canonical_check:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5093036 on sn6600 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5093036 and 'sn6600' in platform"
+
 tests/nightly/sensors/test_psu.py:
   skip:
     reason: "SPC6 simx and liquid cooling platforms are DC and don't have PSUs"
