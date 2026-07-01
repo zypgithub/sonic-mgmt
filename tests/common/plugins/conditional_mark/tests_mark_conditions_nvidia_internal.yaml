@@ -1301,6 +1301,10 @@ process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical
     - "https://redmine.mellanox.com/issues/5100919"
     - "'bobcat' in testbed"
     - "'ptf' in topo_name or 't1' in topo_name"
+  skip:
+    reason: "BMC does not support power cycle until FR https://redmine.mellanox.com/issues/4941740 ready"
+    conditions:
+    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/4941740"
 
 process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat:
   skip:
