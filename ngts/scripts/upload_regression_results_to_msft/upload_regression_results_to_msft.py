@@ -670,7 +670,7 @@ class ReleaseResultsUploader:
         filtered_sessions = []
         for session in sessions:
             session_hwsku = self.sessions_testbed_properties[session]['hwsku']
-            if any([platform in session_hwsku for platform in self.platform_list]):
+            if any([platform.upper() in session_hwsku for platform in self.platform_list]):
                 filtered_sessions.append(session)
                 self.hosts.add(self.sessions_testbed_properties[session]['host'])
         assert filtered_sessions, f"No sessions remained after applying platform filter for: {self.platform_list}"
