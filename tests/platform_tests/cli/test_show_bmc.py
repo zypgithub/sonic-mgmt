@@ -89,7 +89,7 @@ class TestBmcCliCommands:
         has_shutdown_timeout = 'shutdown-timeout (sec)' in output_lower
         pytest_assert(has_shutdown_timeout,
                       "show chassis module status: missing 'Shutdown-Timeout (sec)' column on BMC")
-        logger.info(f"show chassis module status output:\n{output}")
+        logger.info(f"show chassis module status output: \n{output}")
 
     def test_show_platform_temperature(self):
         """
@@ -119,7 +119,7 @@ class TestBmcCliCommands:
 
         has_threshold = any(term in output_lower for term in ['high th', 'crit', 'threshold'])
         logger.info(f"show platform temperature: threshold columns present={has_threshold}")
-        logger.info(f"show platform temperature output:\n{output}")
+        logger.info(f"show platform temperature output: \n{output}")
 
         # Cross-check: BMC must surface paired Switch-Host sensors. Skip if Switch-Host unreachable.
         host = get_switch_host_or_skip_test(self.duthost)
@@ -139,7 +139,7 @@ class TestBmcCliCommands:
                       "Switch-Host 'show platform temperature' returned no sensor rows")
         overlap = host_sensors & bmc_sensors
         pytest_assert(overlap,
-                      f"BMC 'show platform temperature' must include ≥1 Switch-Host sensor; "
+                      f"BMC 'show platform temperature' must include ≥1 Switch-Host sensor. "
                       f"switch_host={sorted(host_sensors)} bmc={sorted(bmc_sensors)}")
         logger.info(f"BMC surfaces {len(overlap)} Switch-Host sensor(s): {sorted(overlap)}")
 
@@ -418,6 +418,7 @@ class TestBmcCliCommands:
         for field in expected_fields:
             pytest_assert(field.lower() in parsed_fields,
                           f"{cmd!r} output missing expected column '{field}' (available: {parsed_fields})")
+
 
 def test_show_version_serial_numbers_bmc(duthosts, enum_rand_one_per_hwsku_hostname, request):
     """
