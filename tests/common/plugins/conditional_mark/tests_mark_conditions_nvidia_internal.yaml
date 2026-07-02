@@ -1023,6 +1023,19 @@ platform_tests/test_sequential_restart.py:
     conditions:
     - "'simx' in platform"
 
+lldp/test_lldp_syncd.py::test_lldp_entry_table_after_syncd_orchagent:
+  xfail:
+    reason: "Testcase expected to fail due to module issue after swss/syncd restart, RM issue: https://redmine.mellanox.com/issues/5072472"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5072472 and ('bobcat-1250' in testbed or 'r-bobcat-09' in testbed or'bobcat-1254' in testbed or 'r-bobcat-10' in testbed)"
+
+autorestart.test_container_autorestart.py::test_containers_autorestart.*(swss|syncd).*:
+  regex: true
+  xfail:
+    reason: "Testcase expected to fail due to module issue after swss/syncd restart, RM issue: https://redmine.mellanox.com/issues/5072472"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5072472 and ('bobcat-1250' in testbed or 'r-bobcat-09' in testbed or'bobcat-1254' in testbed or 'r-bobcat-10' in testbed)"
+
 platform_tests/test_sequential_restart.py::test_restart_swss:
   xfail:
     reason: "Testcase expected to fail due to module issue after swss restart, RM issue: https://redmine.mellanox.com/issues/5072472"
