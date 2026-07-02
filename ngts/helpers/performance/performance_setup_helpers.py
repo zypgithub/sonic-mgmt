@@ -13,7 +13,7 @@ from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc, validate_counters, validate_no_drops_on_tg_ports
+from ngts.helpers.performance.traffic_helpers import validate_bw, validate_bw_utilization_fairness, validate_tc, validate_counters, validate_no_drops_on_tg_ports
 from ngts.helpers.performance.performance_counter_helpers import validate_performance_counters
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
@@ -82,6 +82,7 @@ class ValidationConfig:
     test_name: str
     scenario: str
     chip_type: str
+    max_bw_utilization_variance: float = PerfConsts.DEFAULT_FAIRNESS_THRESHOLD
     run_validate_counters: bool = True
     run_validate_no_drops_on_tg_ports: bool = True
     validate_bw_rx: bool = True
@@ -122,6 +123,11 @@ class ValidationConfig:
                 'bandwidth', validate_bw,
                 lambda: {'bw_threshold': self.bw_threshold, 'validate_bw_rx': self.validate_bw_rx},
                 lambda: not is_simx and self.bw_threshold is not None,
+            ),
+            _validation_spec(
+                'bw_fairness', validate_bw_utilization_fairness,
+                lambda: {'max_bw_utilization_variance': self.max_bw_utilization_variance},
+                lambda: not is_simx and self.max_bw_utilization_variance is not None,
             ),
             _validation_spec(
                 'tc', validate_tc,
