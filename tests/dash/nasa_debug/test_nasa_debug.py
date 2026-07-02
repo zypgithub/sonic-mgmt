@@ -5,11 +5,12 @@ import pytest
 from shlex import quote
 from collections.abc import Iterable
 
-from ngts.tools.nasa_debug.nasa_debug_plugin import NASA_DEBUG_ENTITY, NASA_DEBUG_DUMP_DIR, nasa_entity_debug_set
-from ngts.tools.nasa_debug.nasa_debug_plugin import get_nasa_entity_debug_enabled, get_nasa_entity_debug_file
-from ngts.tools.nasa_debug.nasa_debug_plugin import nasa_debuggability_enable, nasa_debuggability_disable
-from ngts.tools.nasa_debug.nasa_debug_plugin import get_file_size
-from ngts.constants.constants import PytestConst
+from tests.common.plugins.nasa_debug import NASA_DEBUG_ENTITY, NASA_DEBUG_DUMP_DIR, nasa_entity_debug_set
+from tests.common.plugins.nasa_debug import get_nasa_entity_debug_enabled, get_nasa_entity_debug_file
+from tests.common.plugins.nasa_debug import nasa_debuggability_enable, nasa_debuggability_disable
+from tests.common.plugins.nasa_debug import get_file_size
+# NASA debug: env var key to suppress sysdump collection during nested pytest runs
+GET_DUMP_AT_TEST_FAILURE_ENV = "GET_DUMP"
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,6 @@ def nasa_debug_cleanup(dpuhost):
     nasa_debuggability_disable(dpuhost)
 
 # these tests are parametrized by the config record and packet drop, since the CLI commands are very similar
-@pytest.mark.nasa_debuggability_tests
 @pytest.mark.parametrize("entity", NASA_DEBUG_ENTITY)
 def test_nasa_debug_enabled(dpuhost, entity):
     assert not get_nasa_entity_debug_enabled(dpuhost, entity), f"Expected {entity.value.title} to be disabled at the beginning"
@@ -64,14 +64,11 @@ def test_nasa_debug_enabled(dpuhost, entity):
     # Get the last 2 files from the debug directory, catch any extra empty files, that should not be there
     result = dpuhost.shell(f"ls {quote(debug_dir)}/* | tail -2")
     found_files = result['stdout_lines']
-    from infra.tools.redmine.redmine_api import is_redmine_issue_active
-    if not is_redmine_issue_active([4545888])[0]:
-        assert len(found_files) == 2, f"Expected at least 2 files in the debug directory, but got {len(found_files)}"
-        assert found_files[0] == debug_files[0], f"Expected the first file to be the first debug file"
-        assert found_files[1] == debug_file, f"Expected the second file to be the debug file after disabling and re-enabling"
+    assert len(found_files) == 2, f"Expected at least 2 files in the debug directory, but got {len(found_files)}"
+    assert found_files[0] == debug_files[0], f"Expected the first file to be the first debug file"
+    assert found_files[1] == debug_file, f"Expected the second file to be the debug file after disabling and re-enabling"
 
 
-@pytest.mark.nasa_debuggability_tests
 @pytest.mark.parametrize("entity", NASA_DEBUG_ENTITY)
 def test_nasa_debug_disabled(dpuhost, entity):
     # expect the feature to be disabled and remain disabled after disabling
@@ -123,13 +120,12 @@ def run_external_pytest(params):
        With the disabled sysdump generation
     """
     env_saved = os.environ.copy()
-    os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
+    os.environ[GET_DUMP_AT_TEST_FAILURE_ENV] = "False"
     result = pytest.main(params)
     os.environ = env_saved
     return result
 
 
-@pytest.mark.nasa_debuggability_tests
 def test_nasa_debug_action(dpuhost, eni_counter_test_params):
     """Test the NASA debuggability action, by running the ENI counter test with the NASA debuggability enabled, and checking the debug files
     The test has multiple steps:
@@ -204,7 +200,6 @@ def get_nasa_debug_dump_files(dpuhost):
     return files_list
 
 
-@pytest.mark.nasa_debuggability_tests
 def test_nasa_debug_tech_support(dpuhost, eni_counter_test_params_debug):
     """This test will run the ENI counter test with the NASA debuggability enabled,
        by CLI option.
