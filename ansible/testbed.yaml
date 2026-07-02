@@ -14891,6 +14891,20 @@
   inv_name: lab
   comment: Mellanox MEC testbed
 
+- conf-name: sws-cham6s-7-t1-d118u8s2
+  group-name: vm-t1
+  topo: t1-d118u8s2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-sws-cham6s-7
+  ptf_ip: 10.220.188.121/22
+  ptf_ipv6:
+  server: server_30
+  vm_base: VM3000
+  dut:
+    - sws-cham6s-7
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
 - conf-name: sws-cham6s-7-ptp-126
   group-name: vm-t1
   topo: ptp-126
