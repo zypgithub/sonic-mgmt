@@ -13,7 +13,7 @@ from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import validate_bw, validate_bw_utilization_fairness, validate_tc, validate_counters, validate_no_drops_on_tg_ports
+from ngts.helpers.performance.traffic_helpers import validate_bw, validate_bw_utilization_fairness, validate_tc, validate_counters, validate_no_drops_on_tg_ports, validate_required_counters
 from ngts.helpers.performance.performance_counter_helpers import validate_performance_counters
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
@@ -77,6 +77,8 @@ class ValidationConfig:
         additional_validations (List[Validation], optional): Additional validations to run from test
         players_to_be_validated (List[str], optional): List of player aliases to run validation on.
             Defaults to DUT only. Can be set to TG aliases for traffic generator validation.
+        required_counters_port_group (str, optional): Port group to check for required counters.
+            If None, all port groups are checked.
     """
     players: Any
     test_name: str
@@ -96,6 +98,8 @@ class ValidationConfig:
     power_threshold: Optional[float] = None
     port_list: Optional[List[str]] = None
     ignore_counter_list: List = field(default_factory=list)
+    required_counter_list: List = field(default_factory=list)
+    required_counters_port_group: Optional[str] = None
     skip_first_counters_iteration: Optional[bool] = False
     additional_validations: Optional[List[Validation]] = field(default_factory=dict)
     players_to_be_validated: List[str] = field(default_factory=lambda: PerfConsts.PERF_SETUP_DUT_ALIASES)
@@ -116,7 +120,7 @@ class ValidationConfig:
             _validation_spec(
                 'counters', validate_counters,
                 lambda: {'skip_first_counters_iteration': self.skip_first_counters_iteration,
-                         ValidationConsts.IGNORE_COUNTER_LIST: self.ignore_counter_list},
+                         ValidationConsts.IGNORE_COUNTER_LIST: self.ignore_counter_list + self.required_counter_list},
                 lambda: not is_simx and self.run_validate_counters,
             ),
             _validation_spec(
@@ -161,6 +165,12 @@ class ValidationConfig:
                 'tx_rx_counters', _validate_simx_tx_rx_validation,
                 lambda: {'players': self.players},
                 lambda: is_simx,
+            ),
+            _validation_spec(
+                'required_counters', validate_required_counters,
+                lambda: {'required_counter_list': self.required_counter_list,
+                         'port_group_name': self.required_counters_port_group},
+                lambda: not is_simx and bool(self.required_counter_list),
             ),
         ]
         validations = {

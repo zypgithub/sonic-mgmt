@@ -753,6 +753,34 @@ def validate_counters(traffic_json, skip_first_counters_iteration, ignore_counte
         validate_counters_sample(sample_id, port_groups_samples, ignore_counter_list, violations_list)
 
 
+def validate_required_counters(traffic_json, required_counter_list, violations_list, port_group_name):
+    """Validates that required counters are > 0 in all samples.
+
+    Args:
+        traffic_json (dict): Traffic validation data containing counter samples.
+        required_counter_list (list): Counters that must be > 0 in every sample.
+        violations_list (list): List to append violation messages to.
+        port_group_name (str, optional): Port group to check. If None, all port groups are checked.
+    """
+    if not required_counter_list:
+        return
+    counters_samples = traffic_json[ValidationConsts.COUNTERS_SAMPLES]
+    counters_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+
+    for counter in required_counter_list:
+        for sample_id, port_groups_samples in counters_samples.items():
+            found_in_sample = False
+            for sample_port_group_name, port_group_data in port_groups_samples.items():
+                if port_group_name is not None and sample_port_group_name != port_group_name:
+                    continue
+                counters_df = pd.DataFrame(port_group_data[ValidationConsts.COUNTERS_DATAFRAME])
+                if counter in counters_df.columns and counters_df[counter].gt(0).any():
+                    found_in_sample = True
+                    break
+            if not found_in_sample:
+                violations_list.append(f"Required counter '{counter}' was 0 in sample {sample_id} in port group {port_group_name}")
+
+
 def validate_counters_sample(sample_id, counters_sample, ignore_counter_list, violations_list):
     """
     Validates a single counter sample for any non-zero counter values.
