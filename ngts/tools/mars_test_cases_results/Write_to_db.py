@@ -1,22 +1,24 @@
 from dataclasses import dataclass
 from .Connect_to_MSSQL import ConnectMSSQL
 from datetime import datetime
+from ngts.constants.constants import DbConstants
 import logging
 logger = logging.getLogger()
 
 
 class MarsRespondDB(ConnectMSSQL):
-    def __init__(self, server, database, username, password):
+    def __init__(self, server, database, username, password, table_name=DbConstants.MARS_RESPOND_TABLE):
         ConnectMSSQL.__init__(self, server, database, username, password)
         self.server = server
         self.database = database
         self.username = username
         self.password = password
+        self.table_name = table_name
         self.cursor = None
         self.conn = None
         self.session_id = 0
         self.is_connected = False
-        self.columns = self.get_table_column_names('mars_respond')
+        self.columns = self.get_table_column_names(self.table_name)
         self.keys_not_in_mars_respond = ["log_analyzer_redmine_issues"]
 
     def write_json_to_db(self, mars_data_list):
@@ -58,16 +60,17 @@ class MarsRespondDB(ConnectMSSQL):
         columns_string = columns_string.rstrip(", ")
         values_string = values_string.rstrip(", ")
 
-        insert_query = f"INSERT INTO [dbo].[mars_respond] ({columns_string}) OUTPUT inserted.mars_respond_id VALUES ({values_string})"
+        insert_query = f"INSERT INTO [dbo].[{self.table_name}] ({columns_string}) OUTPUT inserted.mars_respond_id VALUES ({values_string})"
         logger.info('Inserting: {} to MARS SQL DB'.format(insert_query))
         try:
             la_table_id = self.query_insert_return_la_table_id(insert_query)
-            for la_issue in row.get("log_analyzer_redmine_issues", []):
-                insert_la_issue = r"INSERT INTO [dbo].[log_analyzer_redmine_issues]([mars_respond_id], " \
-                                  r"[log_analyzer_redmine_issue]) VALUES (" + str(la_table_id) + ", " + \
-                                  str(la_issue) + ")"
-                logger.info('Inserting: {} to MARS SQL LA Table'.format(insert_la_issue))
-                self.query_insert(insert_la_issue)
+            if self.table_name == DbConstants.MARS_RESPOND_TABLE:
+                for la_issue in row.get("log_analyzer_redmine_issues", []):
+                    insert_la_issue = r"INSERT INTO [dbo].[log_analyzer_redmine_issues]([mars_respond_id], " \
+                                      r"[log_analyzer_redmine_issue]) VALUES (" + str(la_table_id) + ", " + \
+                                      str(la_issue) + ")"
+                    logger.info('Inserting: {} to MARS SQL LA Table'.format(insert_la_issue))
+                    self.query_insert(insert_la_issue)
         except Exception as e:
             logger.error(e)
             raise Exception(e)

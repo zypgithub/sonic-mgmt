@@ -241,6 +241,9 @@ class DbConstants:
                                     'username': os.getenv("SKYNET_SERVER_USER"),
                                     'password': os.getenv("SKYNET_SERVER_PASSWORD")}}
 
+    MARS_RESPOND_TABLE = 'mars_respond'
+    MARS_RESPOND_CI_TABLE = 'mars_respond_ci'
+
 
 class InfraConst:
     DOCKER_EXEC_BASH_CMD = "docker exec -it {DOCKER} bash -c"
