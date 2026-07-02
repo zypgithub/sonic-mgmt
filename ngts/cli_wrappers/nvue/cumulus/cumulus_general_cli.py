@@ -42,8 +42,7 @@ class CumulusGeneralCli(NvueGeneralCli):
             if latest_version:
                 sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version, sdk_branch=sdk_branch)
 
-            deb_file_path = os.path.join(Cl_Consts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version),
-                                         PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version))
+            deb_file_path = self.resolve_sdk_git_deb_path(sdk_version)
             self.engine.copy_file(source_file=f'{deb_file_path}',
                                   dest_file=f'{PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)}',
                                   file_system='/tmp/', overwrite_file=True, verify_file=False)

@@ -61,6 +61,52 @@ class SdkCliCommon():
 
         return sdk_version
 
+    @staticmethod
+    def _kernel_dir_sort_key(kernel_dir):
+        """Sort key for kernel folders by their leading numeric version (e.g. '6.12.41-...' -> (6, 12, 41))."""
+        match = re.match(r'(\d+)\.(\d+)\.(\d+)', kernel_dir)
+        return tuple(int(part) for part in match.groups()) if match else (0, 0, 0)
+
+    def resolve_sdk_git_deb_path(self, sdk_version):
+        """Resolve the absolute path to the sys-sdk-git .deb, discovering the
+        kernel-specific DEBS subdirectory at runtime.
+
+        Release builds lay the deb out as ``DEBS/<kernel>/sys-sdk-git_*.deb`` and
+        the set of ``<kernel>`` folders changes between SDK versions (e.g. the
+        4.10.0300 build shipped ``6.1.0-29-2-amd64`` while 4.10.0964 dropped it in
+        favor of ``6.12.41-deb13-dvs-amd64``). Assuming a fixed kernel folder
+        breaks whenever that happens, so we prefer the folder matching the DUT
+        kernel and otherwise fall back to the newest folder that actually contains
+        the deb.
+        """
+        deb_file_name = PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)
+        debs_root = os.path.join(PerfConsts.SDK_VERSION_PATH, f"sx_sdk_eth-{sdk_version}", "DEBS")
+        if not os.path.isdir(debs_root):
+            raise TestIssue(f"SDK DEBS directory not found: {debs_root}")
+
+        candidates = [
+            kernel_dir for kernel_dir in os.listdir(debs_root)
+            if os.path.isfile(os.path.join(debs_root, kernel_dir, deb_file_name))
+        ]
+        if not candidates:
+            raise TestIssue(
+                f"No '{deb_file_name}' found under any kernel folder in {debs_root}. "
+                f"Available folders: {sorted(os.listdir(debs_root))}"
+            )
+
+        dut_kernel_version = self.get_kernel_version()
+        chosen = next((kernel_dir for kernel_dir in candidates
+                       if kernel_dir.startswith(dut_kernel_version)), None)
+        if chosen is None:
+            chosen = sorted(candidates, key=self._kernel_dir_sort_key, reverse=True)[0]
+            logger.warning(
+                f"No SDK deb built for DUT kernel '{dut_kernel_version}' in {debs_root}; "
+                f"falling back to '{chosen}' (available: {sorted(candidates)})"
+            )
+        deb_path = os.path.join(debs_root, chosen, deb_file_name)
+        logger.info(f"Resolved SDK git deb for version {sdk_version} to: {deb_path}")
+        return deb_path
+
     def get_perf_sys_sdk_tar_file_name(self, sdk_branch):
         file_name = PerfConsts.PERF_SYS_SDK_TAR_FILE_TEMPLATE.format(SDK_BRANCH=sdk_branch)
         path = PerfConsts.PERF_SYS_SDK_TAR_FILE_PATH
