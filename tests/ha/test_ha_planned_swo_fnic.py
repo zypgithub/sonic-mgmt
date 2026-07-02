@@ -1,4 +1,3 @@
-import concurrent.futures
 import logging
 import queue
 import threading
@@ -9,16 +8,16 @@ import ptf.packet as scapy
 import ptf.testutils as testutils
 import pytest
 from tests.common.helpers.assertions import pytest_assert
-from tests.common.config_reload import config_reload
 from tests.common.dash_utils import verify_tunnel_packets
+from tests.ha.conftest import apply_dash_pl_pipeline_config
 from constants import (
     LOCAL_PTF_INTF,
     REMOTE_PTF_RECV_INTF,
     REMOTE_PTF_SEND_INTF,
 )
-from gnmi_utils import apply_messages
-from ha_packets import inbound_pl_packets, outbound_pl_packets
-from ha_utils import verify_ha_state, set_dash_ha_scope
+from ha_dash_flow_utils import compare_flow_tables
+from ha_packets import inbound_pl_packets, outbound_pl_packets, bootstrap_pl_tcp_flow_outbound
+from ha_utils import verify_ha_state, set_dash_ha_scope, parallel_config_reload_dpuhosts
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ pytestmark = [
 
 PLANNED_SWO_OUTER_ENCAP = "vxlan"
 
-# Fixed inner UDP ports for the single repeated floating-NIC flow.
+# Fixed inner L4 ports for the single repeated floating-NIC flow.
 FNIC_INNER_SPORT = 6789
 FNIC_INNER_DPORT = 4567
 
@@ -51,62 +50,10 @@ def common_setup_teardown(
     if skip_config:
         return
 
-    for i in range(len(duthosts)):
-        duthost = duthosts[i]
-        dpuhost = dpuhosts[i]
-        base_config_messages = {
-            **pl.APPLIANCE_FNIC_CONFIG,
-            **pl.ROUTING_TYPE_PL_CONFIG,
-            **pl.ROUTING_TYPE_VNET_CONFIG,
-            **pl.VNET_CONFIG,
-            **pl.ROUTE_GROUP1_CONFIG,
-            **pl.METER_POLICY_V4_CONFIG,
-            **pl.TUNNEL1_CONFIG,
-        }
-        logger.info(f"configure on {duthost.hostname} dpu {dpuhost.dpu_index} {base_config_messages}")
-
-        apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index)
-
-        route_and_mapping_messages = {
-            **pl.PE_VNET_MAPPING_CONFIG,
-            **pl.PE_SUBNET_ROUTE_CONFIG,
-            **pl.VM_VNET_MAPPING_CONFIG,
-            **pl.VM_SUBNET_ROUTE_WITH_TUNNEL_SINGLE_ENDPOINT,
-        }
-
-        logger.info(route_and_mapping_messages)
-        apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpuhost.dpu_index)
-
-        if 'pensando' not in dpuhost.facts['asic_type']:
-            route_rule_messages = {
-                **pl.VM_VNI_ROUTE_RULE_CONFIG,
-                **pl.INBOUND_VNI_ROUTE_RULE_CONFIG,
-                **pl.TRUSTED_VNI_ROUTE_RULE_CONFIG,
-            }
-            logger.info(route_rule_messages)
-            apply_messages(localhost, duthost, ptfhost, route_rule_messages, dpuhost.dpu_index)
-
-        meter_rule_messages = {
-            **pl.METER_RULE1_V4_CONFIG,
-            **pl.METER_RULE2_V4_CONFIG,
-        }
-        logger.info(meter_rule_messages)
-        apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpuhost.dpu_index)
-
-        logger.info(pl.ENI_FNIC_CONFIG)
-        apply_messages(localhost, duthost, ptfhost, pl.ENI_FNIC_CONFIG, dpuhost.dpu_index)
-
-        logger.info(pl.ENI_ROUTE_GROUP1_CONFIG)
-        apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
+    apply_dash_pl_pipeline_config(localhost, duthosts, dpuhosts, ptfhost, floating_nic=True)
 
     yield
-
-    def _reload(host):
-        logger.info(f"config reload on {host.hostname}")
-        config_reload(host, safe_reload=True, yang_validate=False)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(dpuhosts)) as executor:
-        list(executor.map(_reload, dpuhosts))
+    parallel_config_reload_dpuhosts(dpuhosts)
 
 
 def _planned_swo_phase(
@@ -131,6 +78,7 @@ def _planned_swo_phase(
     send_pe_ptf_intf=None,
     t2_ports=None,
     tunnel_endpoint_ips=None,
+    dpuhosts=None,
 ):
     """Run one planned-switchover phase using floating-NIC traffic: send traffic, trigger SWO, verify HA state.
 
@@ -180,15 +128,32 @@ def _planned_swo_phase(
     ptfadapter.dataplane.flush()
     time.sleep(1)
     send_count = 0
+    outbound_loss_count = 0
+    return_path_loss_count = 0
+    first_outbound_received = False
+    first_return_path_received = False
 
     while not reached_max_time:
         testutils.send(ptfadapter, send_ptf_intf, vm_to_dpu_pkt, 1)
-        testutils.verify_packet_any_port(ptfadapter, exp_dpu_to_pe_pkt, rcv_outbound_pl_ports)
-        testutils.send(ptfadapter, send_pe_ptf_intf, pe_to_dpu_pkt, 1)
-        verify_tunnel_packets(ptfadapter, t2_ports, exp_dpu_to_vm_pkt, tunnel_endpoint_counts)
+        try:
+            testutils.verify_packet_any_port(ptfadapter, exp_dpu_to_pe_pkt, rcv_outbound_pl_ports)
+            if not first_outbound_received:
+                logger.info("First outbound packet received")
+                first_outbound_received = True
+        except (Exception, pytest.fail.Exception) as e:
+            outbound_loss_count += 1
+            logger.info("%s outbound packet dropped: %s", label, e)
 
-        if send_count == 0:
-            logger.info("First outbound packet received")
+        testutils.send(ptfadapter, send_pe_ptf_intf, pe_to_dpu_pkt, 1)
+        try:
+            verify_tunnel_packets(ptfadapter, t2_ports, exp_dpu_to_vm_pkt, tunnel_endpoint_counts)
+            if not first_return_path_received:
+                logger.info("First return-path packet received")
+                first_return_path_received = True
+        except (Exception, pytest.fail.Exception) as e:
+            return_path_loss_count += 1
+            logger.info("%s return-path packet dropped: %s", label, e)
+
         send_count += 1
         if send_count == initial_send_count:
             logging.info("Awake SWO action thread")
@@ -201,13 +166,34 @@ def _planned_swo_phase(
     swo_thread.join()
     time.sleep(1)
 
+    total_loss_count = outbound_loss_count + return_path_loss_count
+    logging.info(
+        "%s planned switchover traffic complete: sent=%d, lost=%d "
+        "(outbound=%d, return-path=%d, return-path endpoints=%s)",
+        label, send_count, total_loss_count, outbound_loss_count, return_path_loss_count, tunnel_endpoint_counts,
+    )
+
     pytest_assert(verify_ha_state(swo_duthost, swo_scope_key, expected_swo_state),
                   f"{label} HA state is not {expected_swo_state} after planned switchover")
     pytest_assert(verify_ha_state(peer_duthost, peer_scope_key, expected_peer_state),
                   f"Peer HA state is not {expected_peer_state} after {label} planned switchover")
 
+    if dpuhosts is not None:
+        try:
+            flow_ok = compare_flow_tables(dpuhosts[0], dpuhosts[1], verbose=True, flow_state=True)
+            if not flow_ok:
+                logger.warning("%s flow tables differ after planned switchover", label)
+        except Exception as e:
+            logger.warning("%s failed to dump/compare flow tables after planned switchover: %s", label, e)
+
+    pytest_assert(
+        total_loss_count == 0,
+        f"{label} planned switchover lost {total_loss_count} packets "
+        f"(outbound={outbound_loss_count}, return-path={return_path_loss_count})",
+    )
+
     logging.info(
-        "%s planned switchover complete, all %d packets received (return-path: %s)",
+        "%s planned switchover complete, all %d packet pairs received (return-path: %s)",
         label, send_count, tunnel_endpoint_counts,
     )
 
@@ -217,6 +203,7 @@ def test_ha_planned_swo_fnic(
     localhost,
     duthosts,
     ptfhost,
+    dpuhosts,
     activate_dash_ha_from_json,
     ha_owner,
     dash_pl_config,
@@ -249,6 +236,19 @@ def test_ha_planned_swo_fnic(
     send_pe_ptf_intf = dash_pl_config[0][REMOTE_PTF_SEND_INTF]
     t2_ports = get_t2_info[duthosts[0].hostname] + get_t2_info[duthosts[1].hostname]
 
+    # Default HA traffic is TCP. Bootstrap the stateful flow with SYN so repeated
+    # outbound/inbound ACK packets match the established connection across SWO.
+    bootstrap_pl_tcp_flow_outbound(
+        ptfadapter,
+        dash_pl_config[0],
+        PLANNED_SWO_OUTER_ENCAP,
+        recv_ports=rcv_outbound_pl_ports,
+        floating_nic=True,
+        inner_sport=FNIC_INNER_SPORT,
+        inner_dport=FNIC_INNER_DPORT,
+        vni=pl.ENI_TRUSTED_VNI,
+    )
+
     _planned_swo_phase(
         ptfadapter=ptfadapter,
         localhost=localhost,
@@ -270,6 +270,7 @@ def test_ha_planned_swo_fnic(
         send_pe_ptf_intf=send_pe_ptf_intf,
         t2_ports=t2_ports,
         tunnel_endpoint_ips=pl.TUNNEL1_ENDPOINT_IPS,
+        dpuhosts=dpuhosts,
     )
 
     _planned_swo_phase(
@@ -293,4 +294,5 @@ def test_ha_planned_swo_fnic(
         send_pe_ptf_intf=send_pe_ptf_intf,
         t2_ports=t2_ports,
         tunnel_endpoint_ips=pl.TUNNEL1_ENDPOINT_IPS,
+        dpuhosts=dpuhosts,
     )
