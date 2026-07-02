@@ -297,13 +297,17 @@ def test_bgp_session_status_check(topology_obj):
 
 @pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_canonical
-def test_cable_connection_for_canonical_check(topology_obj, sonic_topo):
+def test_cable_connection_for_canonical_check(topology_obj, sonic_topo, platform_params):
     """
     This test is verify that the cable connection for canonical setup is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
     if sonic_topo != "ptf-any":
         pytest.skip(f"The topo {sonic_topo} does not support the case ")
+    # TODO workaround due to service port issue on sn6600 platform
+    from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+    if 'sn6600' in platform_params.platform and is_redmine_issue_active([5093036])[0]:
+        pytest.skip("Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5093036 on sn6600 platform")
     dut_cli_object = topology_obj.players['dut']['cli']
     lldp_table_info = dut_cli_object.lldp.parse_lldp_table_info()
 
