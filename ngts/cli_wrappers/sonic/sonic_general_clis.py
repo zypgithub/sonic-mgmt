@@ -475,7 +475,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         """
         # Get default docker list if not provided
         if dockers_list is None:
-            dockers_list = self._get_default_dockers_list()
+            dockers_list = self._get_default_dockers_list(running_config=running_config)
 
         # Filter dockers based on SONiC branch version
         dockers_list = self._filter_dockers_by_branch(dockers_list)
