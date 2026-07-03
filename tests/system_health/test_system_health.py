@@ -73,21 +73,6 @@ DEFAULT_LED_CONFIG = {
 }
 
 
-# Similar colors treated as equivalent fault indicators (e.g. red/orange/amber).
-FAULT_COLOR_GROUPS = [
-    {'red', 'orange', 'amber'},
-    {'red_blink', 'orange_blink', 'amber_blink'},
-]
-
-
-def _get_color_group(color):
-    """Return the color group for the given color, or None."""
-    for group in FAULT_COLOR_GROUPS:
-        if color in group:
-            return group
-    return None
-
-
 @pytest.fixture(autouse=True, scope="module")
 def check_image_version(duthost):
     """Skip the test for unsupported images."""
@@ -564,6 +549,29 @@ def check_system_health_info(duthost, category, expected_value):
         duthost, STATE_DB, HEALTH_TABLE_NAME, category)
     return value == expected_value
 
+def check_system_health_led_info(duthost):
+    system_health_summary = duthost.shell('show system-health summary')['stdout']
+
+    "System status LED  red"
+    system_led_res = re.findall(r"System status LED\s+(\w+)", system_health_summary)
+    if system_led_res:
+        system_led_status = system_led_res[0].strip()
+    logger.info(f"System status LED is {system_led_status}")
+
+    # Regex to find all status names and values
+    status_data = re.findall(r"(\w+):\s+Status:\s+(\w+)", system_health_summary)
+    status_dict = {name: status for name, status in status_data}
+    logger.info(f"Status dict is {status_dict}")
+
+    if all(status == "OK" for status in status_dict.values()):
+        assert system_led_status.lower() == 'green', \
+            f"System status LED is not green, but it is {system_led_status}"
+    else:
+        assert system_led_status.lower() in ["yellow", "amber", "red"], \
+            f"System status LED is not yellow, amber, or red, but it is {system_led_status}"
+
+    return True
+
 
 def check_health_field_contains(duthost, field, expected):
     """Check that STATE_DB HEALTH_TABLE field contains expected substring."""
@@ -609,12 +617,8 @@ def check_system_health_led_info(duthost):
         assert system_status_lower == expected_normal, \
             f"System status LED is not the configured 'normal' color ({expected_normal}), but it is {system_led_status}"
     else:
-        # Faulted system: LED must match a configured non-normal color or similar equivalent.
+        # Logic for faulted system: Iterate through led_cfg to find a match among non-normal keys
         not_normal = {color for key, color in led_cfg.items() if key != "normal"}
-        for color in list(not_normal):
-            color_group = _get_color_group(color)
-            if color_group:
-                not_normal.update(color_group)
         assert system_status_lower in not_normal, \
             f"System status LED '{system_led_status}' does not match any colors defined in config: {not_normal}"
 
