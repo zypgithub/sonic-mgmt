@@ -337,18 +337,24 @@ class TestSfpApi(PlatformApiTestBase):
         elif xcvr_info_dict["type"] == "CPO":
             return True
         else:
-            spec_compliance_dict = ast.literal_eval(xcvr_info_dict["specification_compliance"])
-            if xcvr_info_dict["type_abbrv_name"] == "SFP":
-                compliance_code = spec_compliance_dict.get("SFP+CableTechnology")
-                if compliance_code == "Passive Cable":
-                    return False
-            else:
-                compliance_code = spec_compliance_dict.get("10/40G Ethernet Compliance Code", " ")
-                if "CR" in compliance_code:
-                    return False
-                extended_code = spec_compliance_dict.get("Extended Specification Compliance", " ")
-                if "CR" in extended_code:
-                    return False
+            try:
+                spec_compliance_dict = ast.literal_eval(spec)
+            except (ValueError, SyntaxError):
+                return True
+            if spec_compliance_dict.get("SFP+CableTechnology") == "Passive Cable":
+                return False
+            # Copper baseT RJ45 SFP modules (e.g. 1000BASE-T, 100BASE-TX). No laser to
+            # disable; xcvrd returns "N/A" for the optics APIs on these modules.
+            if "BASE-T" in spec_compliance_dict.get("Ethernet Compliance", ""):
+                return False
+            return True
+
+        # All other types use the dict-based copper check.
+        spec_compliance_dict = ast.literal_eval(spec)
+        if "CR" in spec_compliance_dict.get("10/40G Ethernet Compliance Code", " "):
+            return False
+        if "CR" in spec_compliance_dict.get("Extended Specification Compliance", " "):
+            return False
         return True
 
     def is_xcvr_resettable(self, request, xcvr_info_dict):
