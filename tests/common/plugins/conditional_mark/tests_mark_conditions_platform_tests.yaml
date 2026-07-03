@@ -1160,6 +1160,12 @@ platform_tests/daemon/test_pcied.py:
     conditions:
       - "platform in ['arm64-elba-asic-flash128-r0']"
 
+platform_tests/daemon/test_bmc_watchdog.py::TestBmcWatchdog::test_watchdog_bmc_integration:
+  xfail:
+    reason: "BMC watchdog not supported yet: watchdog-keepalive.sh persistent log sink is missing"
+    conditions:
+      - "'bmc' in topo_type and https://github.com/sonic-net/sonic-buildimage/issues/28185"
+
 #######################################
 #####    fwutil/test_fwutil.py    #####
 #######################################
