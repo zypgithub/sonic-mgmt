@@ -158,11 +158,11 @@ def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
     acl_tbl_key = {"value": None}
 
     def _acl_config_applied():
-        result = get_acl_tbl_key(asichost)
-        if result:
-            acl_tbl_key["value"] = result
+        try:
+            acl_tbl_key["value"] = get_acl_tbl_key(asichost)
             return True
-        return False
+        except Exception:
+            return False
 
     wait_for_acl_entry_count_stable(asichost, timeout=30, interval=3)
 
@@ -274,7 +274,7 @@ def get_acl_tbl_key(asichost):
             key = item
             break
     else:
-        return None
+        pytest.fail("Ether type was not found in SAI ACL Entry table")
 
     # Get ACL table key
     cmd = "{db_cli} ASIC_DB HGET {key} \"SAI_ACL_ENTRY_ATTR_TABLE_ID\""
