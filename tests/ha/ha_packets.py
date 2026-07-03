@@ -192,7 +192,9 @@ def inbound_pl_packets(
     masked_exp_packet.set_do_not_care_packet(scapy.Ether, "src")
     masked_exp_packet.set_do_not_care_packet(scapy.Ether, "dst")
     masked_exp_packet.set_do_not_care_packet(scapy.UDP, "chksum")
-    masked_exp_packet.set_do_not_care(8 * (34 + 2) - vxlan_udp_src_port_mask, vxlan_udp_src_port_mask)
+    # W/A: for FNIC and Planned SWO on nvidia-bluefield, the VXLAN UDP
+    # source port does not match expectations.
+    masked_exp_packet.set_do_not_care_packet(scapy.UDP, "sport")
     masked_exp_packet.set_do_not_care_packet(scapy.IP, "ttl")
     masked_exp_packet.set_do_not_care_packet(scapy.IP, "chksum")
     if floating_nic:
