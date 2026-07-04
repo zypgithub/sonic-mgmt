@@ -377,22 +377,20 @@ def get_lport_to_first_subport_mapping(duthost, logical_intfs=None):
     return first_subport_dict
 
 
-def get_ports_with_flat_memory(dut, conn_graph_facts):
+def is_first_subport(port, lport_to_first_subport):
     """
-    This method is to get ports with flat memory
+    @summary: Return True iff ``port`` is the first logical sub-port of its
+        breakout group.  "First sub-port" is a DUT-local notion: among the
+        logical ports that share one physical index, it is the lowest-numbered
+        one.  Pairs with :func:`get_lport_to_first_subport_mapping` (which builds
+        the map this predicate consumes): a port is the first sub-port iff it
+        maps to itself.  A port absent from the map is treated as not-first.
+    @param port: logical interface name (e.g. "Ethernet0").
+    @param lport_to_first_subport: mapping from
+        :func:`get_lport_to_first_subport_mapping`.
     """
-    port_indexes_with_flat_memory = []
-    if is_mellanox_device(dut):
-        port_indexes_with_flat_memory = get_port_indexes_with_flat_memory(dut)
-
-    physical_intfs = conn_graph_facts["device_conn"][dut.hostname]
-    physical_port_index_map = get_physical_port_indices(dut, physical_intfs)
-    ports_with_flat_memory = []
-    for port, index in physical_port_index_map.items():
-        if index in port_indexes_with_flat_memory:
-            ports_with_flat_memory.append(port)
-    logging.info(f"Ports with flat memory: {ports_with_flat_memory}")
-    return ports_with_flat_memory
+    first = lport_to_first_subport.get(port)
+    return first is not None and first == port
 
 
 def get_xcvr_presence_data(duthost, asic_index=None):
