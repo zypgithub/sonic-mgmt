@@ -1040,9 +1040,21 @@ platform_tests/broadcom/test_ser.py:
     conditions:
       - "release in ['202412','202503'] and 'Arista-7060X6' in hwsku"
 
-##############################################
-#####  cli/test_show_chassis_module.py  #####
-##############################################
+##################################
+#####  cli/test_show_bmc.py  #####
+##################################
+platform_tests/cli/test_show_bmc.py::TestBmcCliCommands::test_show_chassis_module_status:
+  skip:
+    reason: "Discrepancy between the pmon and pmon test design"
+    conditions:
+      - https://github.com/sonic-net/SONiC/issues/2410
+
+platform_tests/cli/test_show_bmc.py::TestBmcCliCommands::test_show_platform_leak_commands:
+  skip:
+    reason: "Incorrect handling when the empty table is returned"
+    conditions:
+      - https://github.com/sonic-net/sonic-mgmt/issues/25761
+
 platform_tests/cli/test_show_chassis_module.py::test_show_chassis_module_midplane_status:
   skip:
     reason: "Not supported on T2 single node topology"
@@ -1137,6 +1149,12 @@ platform_tests/daemon:
     conditions:
       - "asic_type in ['vs']"
 
+platform_tests/daemon/test_bmc_watchdog.py::TestBmcWatchdog::test_watchdog_bmc_integration:
+  xfail:
+    reason: "BMC watchdog not supported yet: watchdog-keepalive.sh persistent log sink is missing"
+    conditions:
+      - "'bmc' in topo_type and https://github.com/sonic-net/sonic-buildimage/issues/28185"
+
 platform_tests/daemon/test_chassisd.py:
   skip:
     reason: "chassisd platform daemon introduced in 202106 / Temporarily skip in PR testing"
@@ -1160,11 +1178,11 @@ platform_tests/daemon/test_pcied.py:
     conditions:
       - "platform in ['arm64-elba-asic-flash128-r0']"
 
-platform_tests/daemon/test_bmc_watchdog.py::TestBmcWatchdog::test_watchdog_bmc_integration:
-  xfail:
-    reason: "BMC watchdog not supported yet: watchdog-keepalive.sh persistent log sink is missing"
+platform_tests/daemon/test_thermalctld.py::TestThermalctldDaemon::test_thermalctld_leak_status:
+  skip:
+    reason: "Improperly handled redis db result"
     conditions:
-      - "'bmc' in topo_type and https://github.com/sonic-net/sonic-buildimage/issues/28185"
+      - https://github.com/sonic-net/sonic-mgmt/issues/25760
 
 #######################################
 #####    fwutil/test_fwutil.py    #####
