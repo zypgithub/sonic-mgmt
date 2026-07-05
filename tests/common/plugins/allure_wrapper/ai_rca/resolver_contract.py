@@ -8,7 +8,7 @@ import hashlib
 import json
 import os
 
-ALLURE_JSON_RESOLVER_SERVER_BASE = "https://rm-via-allure.nvidia.com:9999"
+ALLURE_JSON_RESOLVER_SERVER_BASE = "https://allure-resolver.mec01-asgard.nvidia.com"
 ALLURE_JSON_RESOLVER_RESOLVE_PATH = "/resolve"
 
 # Synthetic Allure URL when ALLURE_ATTACHMENT_DEMO=1 (browser skips window.top).
