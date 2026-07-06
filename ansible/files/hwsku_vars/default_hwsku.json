@@ -279,7 +279,7 @@
         "default_hwsku": "Mellanox-SN2700",
         "support_hwsku": ["Mellanox-SN2700", "Mellanox-SN2700-C28D8", "Mellanox-SN2700-D48C8"]
     },
-    "sonic_salamandra_r-salamandra-1": {
+    "sonic_salamandra_r-salamandra-01": {
         "default_hwsku": "NVIDIA-AST2700-BMC",
         "support_hwsku": ["NVIDIA-AST2700-BMC"]
     },

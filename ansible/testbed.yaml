@@ -14598,7 +14598,7 @@
   group-name: rsal01bm
   topo: bmc-dual-mgmt
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-salamandra-1
+  ptf: ptf-r-salamandra-01
   ptf_ip: 10.213.86.105/16
   ptf_ipv6:
   server: server_3
