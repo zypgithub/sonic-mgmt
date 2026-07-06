@@ -11,7 +11,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 get_topology_obj, configure_mloops, stop_traffic,
                                                                 create_sdk_dump)
 from ngts.constants.constants import BugHandlerConst
-from ngts.constants.performance_constants import PerfConsts, ValidationConsts, MRCConsts
+from ngts.constants.performance_constants import PerfConsts, ValidationConsts, MRCConsts, BwFairnessThreshold
 from ngts.helpers.performance.traffic_helpers import get_ports_avg_bw
 
 logger = logging.getLogger()
@@ -23,8 +23,8 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
     "test_config",
     [
         TestConfig(num_of_traffic_ports=10, num_of_lossy_packets=8, num_of_lossless_packets=0, packet_size=PerfConsts.PACKET_SIZE_LIST[0], split_left=2, split_right=2, auto_buffer_mode=True, fboss_enabled=True, adjust_buffer_config=False, test_id="10_to_1_lossy_lossless_scenario_4_many_to_1"),
-        TestConfig(num_of_traffic_ports=70, num_of_lossy_packets=0, num_of_lossless_packets=8, packet_size=2500, split_left=4, split_right=4, auto_buffer_mode=True, fboss_enabled=True, adjust_buffer_config=True, num_downlink_ports=10, test_id="70_to_1_lossless_scenario_Ali_Bug"),
-        TestConfig(num_of_traffic_ports=60, num_of_lossy_packets=0, num_of_lossless_packets=16, packet_size=4096, split_left=1, split_right=1, auto_buffer_mode=True, fboss_enabled=True, adjust_buffer_config=True, test_id="60_to_1_800G_Bytedance"),
+        TestConfig(num_of_traffic_ports=70, num_of_lossy_packets=0, num_of_lossless_packets=8, packet_size=2500, split_left=4, split_right=4, auto_buffer_mode=True, fboss_enabled=True, adjust_buffer_config=True, num_downlink_ports=10, bw_fairness_threshold=BwFairnessThreshold(tx=0.5, rx=0.5), test_id="70_to_1_lossless_scenario_Ali_Bug"),
+        TestConfig(num_of_traffic_ports=60, num_of_lossy_packets=0, num_of_lossless_packets=16, packet_size=4096, split_left=1, split_right=1, auto_buffer_mode=True, fboss_enabled=True, adjust_buffer_config=True, bw_fairness_threshold=BwFairnessThreshold(tx=0.5, rx=0.5), test_id="60_to_1_800G_Bytedance"),
         TestConfig(num_of_traffic_ports=10, num_of_lossy_packets=0, num_of_lossless_packets=16, packet_size=4096, split_left=1, split_right=1, auto_buffer_mode=True, fboss_enabled=True, adjust_buffer_config=True, test_id="10_to_1_800G_Bytedance"),
         TestConfig(num_of_traffic_ports=2, num_of_lossy_packets=0, num_of_lossless_packets=16, packet_size=4096, split_left=1, split_right=1, auto_buffer_mode=True, fboss_enabled=True, adjust_buffer_config=True, test_id="2_to_1_800G_Bytedance")
     ],
@@ -100,8 +100,12 @@ class TestLossyLosslessManyToOne:
                     ValidationConsts.TX: 0.97
                 }
             }
+            bw_fairness_threshold_per_port_group = BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold)
+            if test_config.bw_fairness_threshold is not None:
+                bw_fairness_threshold_per_port_group = test_config.bw_fairness_threshold.override_per_port_group(bw_fairness_threshold_per_port_group)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type, bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=bw_fairness_threshold_per_port_group,
                                       tc_occ_threshold=None,
                                       run_validate_counters=False,
                                       power_threshold=self.power_thresholds_by_chip_type)

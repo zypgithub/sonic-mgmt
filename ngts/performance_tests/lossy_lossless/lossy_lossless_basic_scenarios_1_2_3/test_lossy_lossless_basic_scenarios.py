@@ -5,7 +5,7 @@ import pytest
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation, get_topology_obj)
 from ngts.performance_tests.lossy_lossless.lossy_lossless_basic_scenarios_1_2_3.conftest import set_allure_lossy_lossless_title
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, BwFairnessThreshold
 from ngts.performance_tests.lossy_lossless.conftest import get_lossy_lossless_basic_traffic
 
 logger = logging.getLogger()
@@ -49,8 +49,10 @@ class TestLossyLossless:
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             # Note that ECN counters are expected, due to required low ECN thresholds, due to mix of lossy and lossless traffic
             # to make sure packets aren't dropped on RED.
+            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
-                                      chip_type=self.chip_type, bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      chip_type=self.chip_type, bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       ignore_counter_list=['tx_ecn_marked_tc_3', 'tx_ecn_marked_tc_4'])

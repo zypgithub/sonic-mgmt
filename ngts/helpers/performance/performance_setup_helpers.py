@@ -8,7 +8,7 @@ import shutil
 from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, Cl_Consts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, Cl_Consts, BwFairnessThreshold
 from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from devts.infra.tools.exceptions.test_issue import TestIssue
@@ -22,7 +22,7 @@ from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.tools.infra import get_chip_type
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Optional, List, Dict, Any, Callable
 
 logger = logging.getLogger()
@@ -38,8 +38,8 @@ def get_is_simx(players):
         raise
 
 
-# Type alias for validation functions that take Any, float, and List[str] parameters
-ValidationFunc = Callable[[Any, float, List[str]], None]
+# Type alias for validation functions: (traffic_json, *, violations_list, **kwargs) -> None
+ValidationFunc = Callable[..., None]
 
 
 @dataclass
@@ -82,7 +82,7 @@ class ValidationConfig:
     test_name: str
     scenario: str
     chip_type: str
-    max_bw_utilization_variance: float = PerfConsts.DEFAULT_FAIRNESS_THRESHOLD
+    bw_fairness_threshold_per_port_group: Optional[Dict[str, BwFairnessThreshold]] = field(default_factory=dict)
     run_validate_counters: bool = True
     run_validate_no_drops_on_tg_ports: bool = True
     validate_bw_rx: bool = True
@@ -126,8 +126,8 @@ class ValidationConfig:
             ),
             _validation_spec(
                 'bw_fairness', validate_bw_utilization_fairness,
-                lambda: {'max_bw_utilization_variance': self.max_bw_utilization_variance},
-                lambda: not is_simx and self.max_bw_utilization_variance is not None,
+                lambda: {'bw_fairness_threshold_per_port_group': self.bw_fairness_threshold_per_port_group},
+                lambda: not is_simx and bool(self.bw_fairness_threshold_per_port_group),
             ),
             _validation_spec(
                 'tc', validate_tc,

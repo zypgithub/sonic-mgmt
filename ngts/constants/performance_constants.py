@@ -1,8 +1,11 @@
+import logging
 import os
-from typing import List
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+
+logger = logging.getLogger()
 
 
 class ValidationConsts:
@@ -349,6 +352,74 @@ class PerfConsts:
     }
     TIMEOUT_FOR_INSTALL_MODE = 120
     MAX_CELLS_RANGE_FOR_BINARY_SEARCH = 100
+
+
+@dataclass
+class BwFairnessThreshold:
+    tx: Optional[float] = PerfConsts.DEFAULT_FAIRNESS_THRESHOLD
+    rx: Optional[float] = PerfConsts.DEFAULT_FAIRNESS_THRESHOLD
+
+    @classmethod
+    def _get_bw_fairness_threshold(cls, bw_threshold: Optional[dict]) -> 'BwFairnessThreshold':
+        """
+        Build a BwFairnessThreshold from a single-port-group bw_threshold dict.
+
+        A direction is set to None (disabled) only when its value in the dict is explicitly None.
+        Falls back to a default BwFairnessThreshold when bw_threshold is not a dict.
+        """
+        if not isinstance(bw_threshold, dict):
+            logger.info(f"_get_bw_fairness_threshold: bw_threshold is not a dict (got: {bw_threshold=} of type={type(bw_threshold).__name__!r}), returning default BwFairnessThreshold")
+            return cls()
+        result = cls()
+        for group_threshold in bw_threshold.values():
+            if not isinstance(group_threshold, dict):
+                continue
+            for direction in (ValidationConsts.TX, ValidationConsts.RX):
+                if direction in group_threshold and group_threshold[direction] is None:
+                    logger.info(f"bw_threshold has {direction}=None — setting bw_fairness_threshold.{direction} to None")
+                    setattr(result, direction, None)
+        return result
+
+    @classmethod
+    def get_bw_fairness_threshold_per_port_group(cls, bw_threshold: Optional[dict]) -> 'Optional[Dict[str, BwFairnessThreshold]]':
+        """
+        Build a per-port-group fairness threshold mapping from a bw_threshold dict.
+
+        Returns None when bw_threshold is None, signaling that fairness validation should be skipped.
+        When bw_threshold is a non-dict non-None value, returns {"default": <default BwFairnessThreshold>}.
+        When bw_threshold is a dict keyed by port group names, each group gets its own
+        BwFairnessThreshold where a direction is None (disabled) if that group's value
+        for that direction is explicitly None.
+        """
+        if bw_threshold is None:
+            logger.info("get_bw_fairness_threshold_per_port_group: bw_threshold is None, returning None")
+            return None
+        if not isinstance(bw_threshold, dict):
+            logger.info(
+                f"get_bw_fairness_threshold_per_port_group: bw_threshold is not a dict "
+                f"(got: {bw_threshold=} of type={type(bw_threshold).__name__!r}), returning default for 'default' group"
+            )
+            return {"default": cls._get_bw_fairness_threshold(bw_threshold)}
+        return {
+            port_group: cls._get_bw_fairness_threshold({port_group: group_threshold})
+            for port_group, group_threshold in bw_threshold.items()
+        }
+
+    def override_per_port_group(
+        self, bw_fairness_threshold: 'Optional[Dict[str, BwFairnessThreshold]]'
+    ) -> 'Optional[Dict[str, BwFairnessThreshold]]':
+        """Apply this instance as a threshold override across all port groups.
+
+        Directions that are already disabled (None) in a port group are preserved.
+        """
+        if bw_fairness_threshold is None:
+            return None
+        for threshold_by_direction in bw_fairness_threshold.values():
+            if threshold_by_direction.tx is not None:
+                threshold_by_direction.tx = self.tx
+            if threshold_by_direction.rx is not None:
+                threshold_by_direction.rx = self.rx
+        return bw_fairness_threshold
 
 
 class MultiNosSharedData:

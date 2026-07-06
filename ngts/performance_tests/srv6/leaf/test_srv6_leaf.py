@@ -12,7 +12,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 skip_performance_test_conditionally, skip_test_on_unsupported_chip_type,
                                                                 set_shaper_on_traffic_gen)
 from ngts.constants.constants import InfraConst, CliType
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts, BwFairnessThreshold
 from ngts.performance_tests.srv6.conftest import (get_upstream_downstream_port_group_df,
                                                   get_upstream_downstream_groups_port_group_df,
                                                   get_srv6_tests_skip_condition, get_victim_flow_port_group_df)
@@ -102,9 +102,11 @@ class TestSRv6Leaf(TestSRv6Base):
             additional_validations = self.get_additional_validations(traffic_type,
                                                                      tc_occ_allowed_deviation=MRCConsts.TC_OCC_ALLOWED_DEVIATION_BISECTION,
                                                                      drop_over_max_sample_port=upstream[0] if is_drop_over_max else None)
+            bw_threshold = self.get_bisection_bw_threshold() if not is_drop_over_max else None
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=self.get_bisection_bw_threshold() if not is_drop_over_max else None,
+                                      bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=MRCConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       run_validate_counters=not is_drop_over_max,
@@ -234,6 +236,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                       chip_type=self.chip_type,
                                       run_validate_counters=False,
                                       bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       samples_params_dict=samples_params_dict,

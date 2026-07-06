@@ -18,7 +18,7 @@ from ngts.helpers.performance.performance_setup_helpers import (Validation, Vali
                                                                 skip_test_on_unsupported_os, add_test_mongo_metadata,
                                                                 set_shaper_on_traffic_gen, create_sdk_dump)
 from ngts.constants.constants import CliType, InfraConst, BugHandlerConst
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts, BwFairnessThreshold
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import (get_round_robin_traffic, get_many_to_few_traffic, get_many_to_one_traffic)
 from devts.infra.tools.exceptions.test_issue import TestIssue
@@ -132,9 +132,11 @@ class TestSRv6Base:
                                        ValidationConsts.OCC_99: 22 * half_ports_num}
             additional_validations = self.get_additional_validations(traffic_type)
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=self.shaper_value)
+            bw_threshold = MRCConsts.DUT_TX_UTIL_TH
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                      bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=round_robin_occ_th_dict,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       additional_validations=additional_validations)
@@ -187,6 +189,7 @@ class TestSRv6Base:
                                           chip_type=self.chip_type,
                                           run_validate_counters=False,
                                           bw_threshold=bw_threshold,
+                                          bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                           validate_bw_rx=False,
                                           tc_occ_threshold=self.get_many_to_one_tc_occ_threshold(),
                                           power_threshold=self.power_thresholds_by_chip_type,
@@ -238,6 +241,7 @@ class TestSRv6Base:
                                       chip_type=self.chip_type,
                                       run_validate_counters=False,
                                       bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       validate_bw_rx=False,
                                       tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type,

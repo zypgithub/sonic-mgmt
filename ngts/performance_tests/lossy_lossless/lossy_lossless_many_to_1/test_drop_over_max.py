@@ -8,7 +8,7 @@ from ngts.performance_tests.lossy_lossless.lossy_lossless_many_to_1.conftest imp
 import pytest
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation, get_topology_obj, configure_mloops, stop_traffic)
-from ngts.constants.performance_constants import PerfConsts, ValidationConsts, MRCConsts
+from ngts.constants.performance_constants import PerfConsts, ValidationConsts, MRCConsts, BwFairnessThreshold
 from ngts.helpers.performance.traffic_helpers import get_ports_avg_bw
 
 logger = logging.getLogger()
@@ -83,6 +83,7 @@ class TestDropOverMax:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=None,
                                       temperature_threshold=None,
                                       power_threshold=None,
@@ -139,6 +140,7 @@ class TestDropOverMax:
                         config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                                   chip_type=self.chip_type,
                                                   bw_threshold=bw_threshold,
+                                                  bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                                   tc_occ_threshold=None,
                                                   temperature_threshold=None,
                                                   power_threshold=None,

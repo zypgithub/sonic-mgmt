@@ -7,7 +7,7 @@ from ngts.helpers.performance.performance_setup_helpers import (restore_basic_co
                                                                 run_traffic, run_validation, get_topology_obj,
                                                                 skip_test_on_unsupported_os, ValidationConfig)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts, BwFairnessThreshold
 from ngts.performance_tests.ar_vs_random.conftest import get_ar_vs_random_traffic
 from ngts.performance_tests.ar_vs_random.split_x2_400G_ar_vs_random_leaf_scenario.conftest import LEFT_PORTS_LEAF_TO_SPINE, RIGHT_PORTS_LEAF_TO_HOST
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
@@ -97,6 +97,7 @@ class TestARvsRandom:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=skip_first_counters_iteration,
                                       ignore_counter_list=['tx_ecn_marked_tc_3'])
