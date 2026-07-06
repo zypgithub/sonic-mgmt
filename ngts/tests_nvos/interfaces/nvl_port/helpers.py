@@ -27,8 +27,8 @@ def show_interface_and_validate(engines, devices, ports_list, command=''):
     output_dictionary = OutputParsingTool.\
         parse_show_all_interfaces_output_to_dictionary(Port.show_interface(engines.dut, fae_param=command))\
         .get_returned_value()
-    output_keys = list(output_dictionary.keys())
-    ValidationTool.compare_values(output_keys.sort(), ports_list.sort()).verify_result()
+    output_keys = sorted(output_dictionary.keys())
+    ValidationTool.compare_values(output_keys, sorted(ports_list)).verify_result()
 
 
 def toggle_port_state(selected_port, port_state, test_name, devices):

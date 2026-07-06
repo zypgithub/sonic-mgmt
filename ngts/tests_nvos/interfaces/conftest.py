@@ -53,3 +53,10 @@ def has_active_access_ports(standalone_system: bool, has_loopbox: bool):
     """ check if a system doesn't have active access ports, skip the test """
     if standalone_system and not has_loopbox:
         pytest.skip(reason="System doesn't have active access ports, skipping the test")
+
+
+@pytest.fixture(scope='module')
+def skip_if_no_ib0(devices: DevicesT):
+    """ skip on systems without an ib0 interface (NVL switches: Juliet, Rosalind, Portia) """
+    if 'ib0' not in devices.dut.network_ports:
+        pytest.skip(reason="System doesn't have ib0 interface, skipping the test")

@@ -7,6 +7,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 
 logger = logging.getLogger()
+pytestmark = pytest.mark.usefixtures('skip_if_no_ib0')
 
 
 @retry(AssertionError, tries=10, delay=2)

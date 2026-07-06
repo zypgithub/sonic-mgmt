@@ -8,6 +8,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+pytestmark = pytest.mark.usefixtures('skip_if_no_ib0')
 
 
 @pytest.mark.ib

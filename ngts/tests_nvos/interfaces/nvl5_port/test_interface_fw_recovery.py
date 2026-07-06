@@ -1,28 +1,33 @@
+import logging
 import random
 import time
 
 import pytest
-import logging
 from retry.api import retry_call
 
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import ApiType, LogsSources
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import FWRecoveryConsts, NvosConsts
 from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_tools import summarize_switch_ports
-from ngts.tests_nvos.interfaces.nvl5_port.helpers import (skip_if_no_trunk_links, skip_if_no_access_links,
-                                                          validate_default_config, validate_mode_set,
-                                                          select_random_nvl_port_name, reset_gpus_if_needed)
-from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
-from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import FWRecoveryConsts, NvosConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.interfaces.nvl5_port.helpers import (
+    reset_gpus_if_needed,
+    select_random_nvl_port_name,
+    skip_if_no_access_links,
+    skip_if_no_trunk_links,
+    validate_default_config,
+    validate_mode_set,
+)
+from ngts.tests_nvos.system.gnmi.constants import GnmicErr, GnmiMode
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.tests_nvos.system.gnmi.helpers import verify_msg_in_out_or_err, verify_msg_not_in_out_or_err
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -43,9 +48,7 @@ FAE_RECOVERY_CONFIG_DICT = {
     # }
 }
 
-FAE_RECOVERY_CONFIG_PARAMS = [
-    pytest.param(config, id=name) for name, config in FAE_RECOVERY_CONFIG_DICT.items()
-]
+FAE_RECOVERY_CONFIG_PARAMS = [pytest.param(config, id=name) for name, config in FAE_RECOVERY_CONFIG_DICT.items()]
 
 
 @pytest.mark.interface
@@ -61,8 +64,7 @@ def test_show_fw_recovery_counters(engines, devices):
     3. Pick a random counter, subscribe via GNMI ONCE to `phy-diag/state/<counter>`.
     4. Verify GNMI stream contains the counter name and its default value.
     """
-    port_result = RandomizationTool.select_random_port(
-        requested_ports_state=NvosConsts.LINK_STATE_ALL_TYPES)
+    port_result = RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_ALL_TYPES)
 
     if not port_result.result:
         pytest.skip(f"Skipping test - {port_result.info}")
@@ -70,8 +72,7 @@ def test_show_fw_recovery_counters(engines, devices):
     selected_port = port_result.get_returned_value()
 
     with allure.step("Validate show interface command with all nvl5 interfaces"):
-        port_output = OutputParsingTool.parse_json_str_to_dictionary(
-            selected_port.interface.link.phy_diag.show()).get_returned_value()
+        port_output = OutputParsingTool.parse_json_str_to_dictionary(selected_port.interface.link.phy_diag.show()).get_returned_value()
 
     expected_fields = list(FWRecoveryConsts.DEFAULT_FW_RECOVERY_COUNTERS.keys())
     expected_values = list(FWRecoveryConsts.DEFAULT_FW_RECOVERY_COUNTERS.values())
@@ -79,22 +80,28 @@ def test_show_fw_recovery_counters(engines, devices):
     ValidationTool.validate_fields_values_in_output(expected_fields, expected_values, port_output)
 
     random_counter = random.choice(expected_fields)
-    with allure.step(f'set up gnmi client'):
-        client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
-                            devices.dut.default_password, verify_tools_installed=True)
+    with allure.step("set up gnmi client"):
+        client = GnmiClient(
+            engines.dut.ip,
+            GnmiConsts.GNMI_DEFAULT_PORT,
+            devices.dut.default_username,
+            devices.dut.default_password,
+            verify_tools_installed=True,
+        )
 
-    with allure.step(f'subscribe client to counter: {random_counter} and verify information'):
-        out, err = client.gnmic_subscribe_interface(GnmiMode.ONCE, selected_port.name, skip_cert_verify=True,
-                                                    interface_path=f'phy-diag/state/{random_counter}')
+    with allure.step(f"subscribe client to counter: {random_counter} and verify information"):
+        out, err = client.gnmic_subscribe_interface(
+            GnmiMode.ONCE, selected_port.name, skip_cert_verify=True, interface_path=f"phy-diag/state/{random_counter}"
+        )
 
     with allure.step(f'check that "{random_counter}" was streamed'):
         verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, out, err)
-        verify_msg_in_out_or_err(f'{random_counter}: {FWRecoveryConsts.DEFAULT_FW_RECOVERY_COUNTERS.get(random_counter)}', out)
+        verify_msg_in_out_or_err(f"{random_counter}: {FWRecoveryConsts.DEFAULT_FW_RECOVERY_COUNTERS.get(random_counter)}", out)
 
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
-@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
+@pytest.mark.parametrize("test_api", random.sample(ApiType.ALL_TYPES, 1))
 def test_fw_recovery_bad_flow(devices, engines, test_name, test_api):
     """
     @summary:
@@ -107,9 +114,8 @@ def test_fw_recovery_bad_flow(devices, engines, test_name, test_api):
        b. Verify that the expected_error is raised.
     """
     TestToolkit.tested_api = test_api
-    with allure.step(f"Select port for test"):
-        port_result = RandomizationTool.select_random_port(
-            requested_ports_state=NvosConsts.LINK_STATE_ALL_TYPES)
+    with allure.step("Select port for test"):
+        port_result = RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_ALL_TYPES)
 
         if not port_result.result:
             pytest.skip(f"Skipping test - {port_result.info}")
@@ -119,24 +125,30 @@ def test_fw_recovery_bad_flow(devices, engines, test_name, test_api):
 
     with allure.step(f"Testing interface {selected_port.port.name}"):
         phy_recovery_obj = selected_port.port.interface.link.phy_recovery
-        with allure.independent_step(f"Testing show non-existing attribute in phy-recovery"):
-            phy_recovery_obj.show('non-existing', should_succeed=False)
+        with allure.independent_step("Testing show non-existing attribute in phy-recovery"):
+            phy_recovery_obj.show("non-existing", should_succeed=False)
 
         with allure.independent_step(f"Testing bad-mode on interface {selected_port.port.name}"):
             logger.info(f"Set {FWRecoveryConsts.SerdesEQ.MODE} to bad-mode")
-            phy_recovery_obj.set(FWRecoveryConsts.SerdesEQ.MODE, "bad-mode", apply=True, ask_for_confirmation=True,
-                                 expected_str="'bad-mode' is not one of").verify_result()
+            phy_recovery_obj.set(
+                FWRecoveryConsts.SerdesEQ.MODE, "bad-mode", apply=True, ask_for_confirmation=True, expected_str="'bad-mode' is not one of"
+            ).verify_result()
 
         with allure.independent_step(f"Testing bad-timeout on interface {selected_port.port.name}"):
             logger.info(f"Set {FWRecoveryConsts.SerdesEQ.TIMEOUT} to -1")
-            expected_str = "-1 is less than the minimum of 0" if is_bug_active(4631963) and test_api == ApiType.OPENAPI else "Valid range for serdes-eq-timeout is 0 - 2550"
-            phy_recovery_obj.set(FWRecoveryConsts.SerdesEQ.TIMEOUT, -1, apply=True, ask_for_confirmation=True,
-                                 expected_str=expected_str).verify_result()
+            expected_str = (
+                "-1 is less than the minimum of 0"
+                if is_bug_active(4631963) and test_api == ApiType.OPENAPI
+                else "Valid range for serdes-eq-timeout is 0 - 2550"
+            )
+            phy_recovery_obj.set(
+                FWRecoveryConsts.SerdesEQ.TIMEOUT, -1, apply=True, ask_for_confirmation=True, expected_str=expected_str
+            ).verify_result()
 
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
-@pytest.mark.parametrize('config', FAE_RECOVERY_CONFIG_PARAMS)
+@pytest.mark.parametrize("config", FAE_RECOVERY_CONFIG_PARAMS)
 def test_set_fae_fw_recovery_trunk_ports(engines, devices, random_api, standalone_system: bool, has_loopbox: bool, config):
     """
     @summary:
@@ -153,8 +165,8 @@ def test_set_fae_fw_recovery_trunk_ports(engines, devices, random_api, standalon
         pytest.skip("Skipping test on standalone system without loopbox (no links in up state)")
 
     skip_if_no_trunk_links(devices)
-    port_name = select_random_nvl_port_name(devices, 'sw')
-    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl5_trunk_ports_list)
+    port_name = select_random_nvl_port_name(devices, "sw")
+    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl_trunk_ports_list)
 
     _run_fae_mode_timeout_test(
         test_api=random_api,
@@ -167,7 +179,7 @@ def test_set_fae_fw_recovery_trunk_ports(engines, devices, random_api, standalon
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
-@pytest.mark.parametrize('config', FAE_RECOVERY_CONFIG_PARAMS)
+@pytest.mark.parametrize("config", FAE_RECOVERY_CONFIG_PARAMS)
 def test_set_fae_fw_recovery_access_ports(engines, devices, random_api, standalone_system, has_loopbox, config, setup_name):
     """
     @summary:
@@ -181,10 +193,10 @@ def test_set_fae_fw_recovery_access_ports(engines, devices, random_api, standalo
     5. Disable recovery and confirm defaults restored.
     """
     skip_if_no_access_links(has_loopbox, standalone_system)
-    port_name = select_random_nvl_port_name(devices, 'acp')
+    port_name = select_random_nvl_port_name(devices, "acp")
     _run_fae_mode_timeout_test(
         test_api=random_api,
-        group_all_ports=f'acp1-{str(len(devices.dut.nvl5_access_ports_list))}',
+        group_all_ports=f"acp1-{str(len(devices.dut.nvl_access_ports_list))}",
         devices=devices,
         port_name=port_name,
         config=config,
@@ -242,7 +254,9 @@ def _run_fae_mode_timeout_test(test_api, group_all_ports, devices, port_name, co
                             # Standalone: local changes don't propagate, keep higher timeout
                             _validate_timeout(selected_port, config, higher_timeout, verify_after_seconds=30)
                     else:
-                        with allure.step(f"Update timeout to lower value ({lower_timeout}) locally — expect GPU default ({DEFAULT_GPU_TIMEOUT})"):
+                        with allure.step(
+                            f"Update timeout to lower value ({lower_timeout}) locally — expect GPU default ({DEFAULT_GPU_TIMEOUT})"
+                        ):
                             _apply_timeout(selected_port, config, lower_timeout)
                             reset_gpus_if_needed(setup_name)
                             # Non-standalone: GPU negotiates, expects MAX(lower_timeout, GPU_default) = 100
@@ -267,13 +281,11 @@ def _run_fae_mode_timeout_test(test_api, group_all_ports, devices, port_name, co
 
 
 def _apply_mode(selected_port, config, mode):
-    selected_port.port.interface.link.phy_recovery.set(config["mode"], mode, apply=True,
-                                                       ask_for_confirmation=True).verify_result()
+    selected_port.port.interface.link.phy_recovery.set(config["mode"], mode, apply=True, ask_for_confirmation=True).verify_result()
 
 
 def _apply_timeout(selected_port, config, timeout):
-    selected_port.port.interface.link.phy_recovery.set(config["timeout"], timeout, apply=True,
-                                                       ask_for_confirmation=True).verify_result()
+    selected_port.port.interface.link.phy_recovery.set(config["timeout"], timeout, apply=True, ask_for_confirmation=True).verify_result()
 
 
 def _verify_config(selected_port, config, mode, timeout=None):
@@ -291,7 +303,7 @@ def _validate_timeout(selected_port, config, expected_timeout=None, verify_after
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
 def test_phy_recovery_go_once(engines, devices, test_api):
     """
     @summary:
@@ -317,11 +329,11 @@ def test_phy_recovery_go_once(engines, devices, test_api):
 
     tested_ports = []
     with allure.step("Good flow: Run action start phy-recovery on valid ports"):
-        for interface_type in ['sw', 'acp']:
+        for interface_type in ["sw", "acp"]:
             with allure.independent_step(f"Test {interface_type} port"):
                 port_result = RandomizationTool.select_random_port(
-                    requested_ports_state=NvosConsts.LINK_STATE_ALL_TYPES,
-                    interface_type=interface_type)
+                    requested_ports_state=NvosConsts.LINK_STATE_ALL_TYPES, interface_type=interface_type
+                )
                 if not port_result.result:
                     logger.info(f"Skipping {interface_type} port test - {port_result.info}")
                     port_result.ignore_result()
@@ -339,7 +351,7 @@ def test_phy_recovery_go_once(engines, devices, test_api):
                 logs_to_find=[FWRecoveryConsts.GO_ONCE_LOG_MESSAGE],
                 logs_source=LogsSources.SYSLOG,
                 engine=engines.dut,
-                only_latest_log=True
+                only_latest_log=True,
             )
     else:
         logger.info("Skipping log verification - no valid sw or acp ports were tested")
