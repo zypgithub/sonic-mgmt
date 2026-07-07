@@ -191,10 +191,49 @@ def check_lldp_table_keys(duthost, db_instance):
     return set(lldp_entry_keys) == set(show_lldp_table_int_list)
 
 
+require_config_reload = False
+
+
+def _fail_test_if_error_found(duthost):
+    error_pattern = r"ERR kernel:.*sxd_kernel:.*error.*dev_id=.*Fails to access.*module eeprom, status:.*"
+    result = duthost.shell(f"sudo grep -E '{error_pattern}' /var/log/syslog | grep -v 'ansible'", module_ignore_errors=True)
+    if result["rc"] == 0:
+        logger.info(f"Error in RM#5070231 is found in syslog during the test: {result['stdout']}")
+        logger.info("Stopping thermalctld, disable tranceiver dom and fail the test to collect sysdump.")
+        global require_config_reload
+        require_config_reload = True
+        duthost.shell("docker exec -t pmon supervisorctl stop thermalctld")
+        duthost.shell("sudo systemctl stop hw-management-sync")
+        duthost.shell("sudo systemctl stop hw-management-thermal-updater")
+        output = duthost.shell("show interface status")["stdout"]
+        import re
+        first_interfaces = re.findall(r'(Ethernet\d+).*etp\d+a?\s', output)
+        for interface in first_interfaces:
+            duthost.shell(f"config interface transceiver dom {interface} disable")
+        pytest.fail(f"Error in RM#5070231 is found in syslog: {result['stdout']}, please contact Cong Hou.")
+
+
+@pytest.fixture(autouse=True)
+def reload_config(duthosts, enum_rand_one_per_hwsku_frontend_hostname):
+    global require_config_reload
+
+    yield
+
+    from tests.common.config_reload import config_reload
+    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+    if require_config_reload:
+        duthost.shell("sudo systemctl start hw-management-sync")
+        duthost.shell("sudo systemctl start hw-management-thermal-updater")
+        config_reload(duthost, safe_reload=True, check_intf_up_ports=True, wait_for_bgp=True)
+        require_config_reload = False
+
+
 def _shutdown_startup_interface(duthost, interface, asic_str=""):
     """Shutdown and startup a single interface."""
     duthost.shell("sudo config interface {} shutdown {}".format(asic_str, interface))
+    _fail_test_if_error_found(duthost)
     duthost.shell("sudo config interface {} startup {}".format(asic_str, interface))
+    _fail_test_if_error_found(duthost)
 
 
 def _build_lldpctl_lookup_map(lldpctl_interfaces):
@@ -513,6 +552,7 @@ def test_lldp_entry_table_after_cont_flap(
         for interface in asic_interfaces:
             _shutdown_startup_interface(duthost, interface, asic_str)
             _verify_interface_lldp_recovery(db_instance, interface, lldpctl_lookup_map, delay=10)
+    _fail_test_if_error_found(duthost)
 
 
 # Test case 4: Verify LLDP_ENTRY_TABLE after all batched interface flap
