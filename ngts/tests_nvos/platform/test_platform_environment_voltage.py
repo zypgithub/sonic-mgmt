@@ -165,8 +165,8 @@ def test_database_platform_environment_voltage(engines, devices):
             Returns:
                 Transformed name ready for database comparison (e.g., 'VOLTAGE_INFO|FAN HSC1 Volt In')
             """
-            # Handle FAN+HSC1 sensors: remove only VinDC, keep Volt
-            if 'FAN+HSC1' in sensor_name:
+            # HSC database names omit VinDC but retain Volt.
+            if any(hsc_name in sensor_name for hsc_name in ('FAN+HSC1', 'PDB+HSC')):
                 return sensor_name.replace('+VinDC', '')
 
             # Handle other sensors: remove only Volt/Vol suffixes
