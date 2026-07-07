@@ -453,14 +453,14 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/V3000/0ACUZ_00.01.003/Release_dev/0ACUZ.cab",
-						"version": "0ACUZ_00.01.003",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/V3000/0ACUZ_01.00.007/Release_dev/0ACUZ.cab",
+						"version": "0ACUZ_01.00.007",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/V3000/0ACUZ_00.01.001/Release_dev/0ACUZ.cab",
-						"version": "0ACUZ_00.01.001",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/V3000/0ACUZ_00.01.003/Release_dev/0ACUZ.cab",
+						"version": "0ACUZ_00.01.003",
 						"reboot": ["cold"]
 					}
 				],
