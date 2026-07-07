@@ -1806,7 +1806,7 @@ def _restore_mux_ports(duthosts, ports_to_restore):
         duthost.shell_cmds(cmds=restore_cmds)
 
 
-def _create_config_active_active_dualtor_handler(active_active_ports, ports_to_restore):
+def _create_config_active_active_dualtor_handler(active_active_ports, ports_to_restore):  # noqa: F811
     """Create a handler function for configuring active-active dualtor."""
     def _config_active_active_dualtor_active_standby(active_tor, standby_tor, ports, unconditionally=False):
         wait_until(300, 10, 0, _check_docker_status, standby_tor)
@@ -1822,7 +1822,7 @@ def _create_config_active_active_dualtor_handler(active_active_ports, ports_to_r
 
 
 @pytest.fixture(scope="module")
-def config_active_active_dualtor_active_standby_module(duthosts, active_active_ports, tbinfo):     # noqa: F811
+def config_active_active_dualtor_active_standby_module(duthosts, active_active_ports, tbinfo):  # noqa: F811
     """Module-level fixture: Config the active-active dualtor that one ToR as active and the other as standby."""
     if not ('dualtor' in tbinfo['topo']['name'] and active_active_ports):
         yield None
@@ -2053,7 +2053,8 @@ def setup_standby_ports_on_rand_unselected_tor_unconditionally_module(
     config_active_active_dualtor_active_standby_module
 ):
     if active_active_ports:
-        config_active_active_dualtor_active_standby_module(rand_selected_dut, rand_unselected_dut, active_active_ports, True)
+        config_active_active_dualtor_active_standby_module(rand_selected_dut, rand_unselected_dut,
+                                                           active_active_ports, True)
     return
 
 
