@@ -27,7 +27,7 @@
         <name> pbh daily </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir -k=\"test_inner_hashing[ipv4-ipv6]\" --alluredir=/tmp/allure-results --timeout 6000 --session-timeout 6000 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_inner_hashing.py  </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --pytest-tout-factor "[[conf:extra_info.pytest_tout_factor:*1]]" --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir -k=\"test_inner_hashing[ipv4-ipv6]\" --alluredir=/tmp/allure-results --timeout 6000 --session-timeout 6000 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_inner_hashing.py  </static_args>
              </params>
         </cmd>
     </case>
@@ -46,7 +46,7 @@
         <name> pbh lag daily </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir -k=\"test_inner_hashing[ipv4-ipv6]\" --alluredir=/tmp/allure-results --timeout 4800 --session-timeout 4800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_inner_hashing_lag.py  </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --pytest-tout-factor "[[conf:extra_info.pytest_tout_factor:*1]]" --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir -k=\"test_inner_hashing[ipv4-ipv6]\" --alluredir=/tmp/allure-results --timeout 4800 --session-timeout 4800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_inner_hashing_lag.py  </static_args>
              </params>
         </cmd>
     </case>
@@ -65,7 +65,7 @@
         <name> pbh weekly</name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 11800 --session-timeout 11800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_inner_hashing.py  </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --pytest-tout-factor "[[conf:extra_info.pytest_tout_factor:*1]]" --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 11800 --session-timeout 11800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_inner_hashing.py  </static_args>
              </params>
         </cmd>
     </case>
@@ -84,7 +84,7 @@
         <name> pbh lag weekly</name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 10800 --session-timeout 10800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_inner_hashing_lag.py  </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --pytest-tout-factor "[[conf:extra_info.pytest_tout_factor:*1]]" --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 10800 --session-timeout 10800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_inner_hashing_lag.py  </static_args>
              </params>
         </cmd>
     </case>
@@ -103,7 +103,7 @@
         <name> pbh_wr daily </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir -k=\"test_inner_hashing[ipv6-ipv4]\" --alluredir=/tmp/allure-results --timeout 4800 --session-timeout 4800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_wr_inner_hashing.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --pytest-tout-factor "[[conf:extra_info.pytest_tout_factor:*1]]" --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir -k=\"test_inner_hashing[ipv6-ipv4]\" --alluredir=/tmp/allure-results --timeout 4800 --session-timeout 4800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_wr_inner_hashing.py </static_args>
              </params>
         </cmd>
     </case>
@@ -122,7 +122,7 @@
         <name> pbh_wr lag daily </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir -k=\"test_inner_hashing[ipv6-ipv4]\" --alluredir=/tmp/allure-results --timeout 4800 --session-timeout 4800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_wr_inner_hashing_lag.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --pytest-tout-factor "[[conf:extra_info.pytest_tout_factor:*1]]" --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir -k=\"test_inner_hashing[ipv6-ipv4]\" --alluredir=/tmp/allure-results --timeout 4800 --session-timeout 4800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_wr_inner_hashing_lag.py </static_args>
              </params>
         </cmd>
     </case>
@@ -141,7 +141,7 @@
         <name> pbh_wr weekly </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 10800 --session-timeout 10800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_wr_inner_hashing.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --pytest-tout-factor "[[conf:extra_info.pytest_tout_factor:*1]]" --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 10800 --session-timeout 10800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_wr_inner_hashing.py </static_args>
              </params>
         </cmd>
     </case>
@@ -160,7 +160,7 @@
         <name> pbh_wr lag weekly </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 10800 --session-timeout 10800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_wr_inner_hashing_lag.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]]  --json-root-dir [[conf:extra_info.json_root_dir]] --pytest-tout-factor "[[conf:extra_info.pytest_tout_factor:*1]]" --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 10800 --session-timeout 10800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts ecmp/inner_hashing/test_wr_inner_hashing_lag.py </static_args>
              </params>
         </cmd>
     </case>
