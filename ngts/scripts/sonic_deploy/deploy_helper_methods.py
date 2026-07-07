@@ -440,11 +440,12 @@ class DeployTopologyHelper:
         This action will save us ~1.5 minutes of runtime in the first test,
          where need to get basic_facts in the first time.
         :param setup_info: setup_info dictionary
+        :param sonic_topo: sonic topology information
         :param neighbor_mode: neighbor mode to use for the dual-tor deployment
         """
 
         # neighbor mode is only supported for dual-tor deployment
-        is_dualtor = 'dualtor' in sonic_topo
+        is_dualtor = bool(sonic_topo) and 'dualtor' in sonic_topo
         if is_dualtor and neighbor_mode not in ['host-route', 'prefix-route', '']:
             raise ValueError(f"Invalid neighbor mode: {neighbor_mode}, valid values are: host-route, prefix-route, ''")
 
