@@ -3150,19 +3150,6 @@ gnmi/test_gnmi_configdb.py::test_gnmi_configdb_streaming_sample_01:
     conditions:
       - "'bmc' in topo_type"
 
-gnmi/test_gnmi_countersdb.py:
-  xfail:
-    reason: "This test does not supported multi-asic. Skipping test for multi-asic DUTs."
-    conditions:
-      - "is_multi_asic==True"
-
-gnmi/test_gnmi_configdb.py::test_gnmi_configdb_subscribe_authenticate:
-  skip:
-    reason: "dut ipv6 mgmt ip not supported"
-    conditions:
-      - "is_mgmt_ipv6_only==True"
-      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
-
 gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_polling_01:
   skip:
     reason: "Test relies on COUNTERS_PORT_NAME_MAP populated by syncd; not applicable on BMC"
@@ -5885,10 +5872,8 @@ telemetry/test_telemetry.py::test_telemetry_queue_buffer_cnt:
 
 telemetry/test_telemetry_poll.py::test_poll_mode_default_route:
   skip:
-    conditions_logical_operator: or
-    reason: "dut ipv6 mgmt ip not supported or not applicable on BMC because requires upstream BGP neighbor and default route"
+    reason: "not applicable on BMC because requires upstream BGP neighbor and default route"
     conditions:
-      - "is_mgmt_ipv6_only==True and https://github.com/sonic-net/sonic-mgmt/issues/20395"
       - "'bmc' in topo_type"
 
 telemetry/test_telemetry_srv6.py:
