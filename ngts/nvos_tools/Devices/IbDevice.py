@@ -3755,6 +3755,39 @@ class PortiaSimx(RosalindSwitch):
         self.sma_amount = 2
         self._extend_firmware_by_sma_amount()
 
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.voltage_sensors = [
+            "PDB-HSC-Volt-In",
+            "PDB-HSC-Volt-Out",
+            "PDB-PwrConv1-In-1",
+            "PDB-PwrConv1-Out-1",
+            "PDB-PwrConv2-In-1",
+            "PDB-PwrConv2-Out-1",
+        ]
+        for asic_num in range(1, self.asic_amount + 1):
+            first_pmic_num = (asic_num - 1) * 4 + 1
+            self.voltage_sensors.extend([
+                f"PMIC-{first_pmic_num}-ASIC{asic_num}-VDD-Out-1",
+                f"PMIC-{first_pmic_num}-PVIN1-VDD-ASIC{asic_num}-In-1",
+                f"PMIC-{first_pmic_num + 1}-ASIC{asic_num}-AVDD-PL0-Out-1",
+                f"PMIC-{first_pmic_num + 1}-ASIC{asic_num}-DVDD-PL0-Out-2",
+                f"PMIC-{first_pmic_num + 1}-PVIN1-AVDD-DVDD-ASIC{asic_num}-In-1",
+                f"PMIC-{first_pmic_num + 2}-ASIC{asic_num}-AVDD-PL1-Out-1",
+                f"PMIC-{first_pmic_num + 2}-ASIC{asic_num}-DVDD-PL1-Out-2",
+                f"PMIC-{first_pmic_num + 2}-PVIN1-AVDD-DVDD-ASIC{asic_num}-In-1",
+                f"PMIC-{first_pmic_num + 3}-ASIC{asic_num}-AVCC-PL0-PL1-Out-1",
+                f"PMIC-{first_pmic_num + 3}-ASIC{asic_num}-HVDD-PL0-PL1-Out-2",
+                f"PMIC-{first_pmic_num + 3}-PVIN1-AVCC-HVDD-ASIC{asic_num}-In-1",
+            ])
+        self.voltage_sensors.extend([
+            "PMIC-17-12V-MAIN-In-1",
+            "PMIC-17-CPU-Out-1",
+            "PMIC-17-SOC-Out-2",
+            "PMIC-18-COMEX-VDD-MEM-In-1",
+            "PMIC-18-COMEX-VDD-MEM-Out-1",
+        ])
+
     def _init_interface_lists(self):
         super()._init_interface_lists()
         self.mgmt_ports = ['eth0']
@@ -3764,6 +3797,29 @@ class PortiaSimx(RosalindSwitch):
         self.nvl_internal_fnm_ports = [f'fnma{asic}p{port_num}' for asic in range(self.asic_amount) for port_num in range(1, self.asic_amount + 1)]
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
         self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
+
+
+# -------------------------- PortiaSimxNso Switch ----------------------------
+
+
+class PortiaSimxNso(PortiaSimx):
+
+    def __init__(self):
+        super().__init__(asic_amount=2)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n7100_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N7100_LD",
+        })
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({
+            "model": ExpectedString(regex="920-9K51W-00L7-GS0"),
+        })
 
 
 # -------------------------- PortiaSA Switch ----------------------------
