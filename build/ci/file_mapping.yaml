@@ -2,6 +2,7 @@ COMMON_BAT_ONLY:
   - tests/platform_tests
   - tests/common/plugins
   - sonic-tool
+  - ngts/scripts/sonic_deploy  # shared deploy code executed by both SONiC and NVOS deployments
   - ngts
 
 NVOS_BAT_ONLY:
@@ -12,7 +13,6 @@ NVOS_BAT_ONLY:
 
 SONIC_BAT_ONLY:
   - ngts/tests
-  - ngts/scripts/sonic_deploy
   - ngts/scripts/sonic_add_session_info
   - ngts/scripts/upload_regression_results_to_msft
   - ansible
