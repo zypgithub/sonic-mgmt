@@ -606,7 +606,7 @@ def bug_handler_wrapper(analyzers, duthosts, la_results):
         original_handlers = logging.getLogger().handlers[:]
         original_level = logging.getLogger().level
         logging.getLogger().handlers = []
-        bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=720)
+        bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=1080)
         # restore original logging handlers and level
         logging.getLogger().handlers = original_handlers
         logging.getLogger().setLevel(original_level)
