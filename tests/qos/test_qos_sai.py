@@ -303,6 +303,11 @@ class TestQosSai(QosSaiBase):
                         fanout_host.set_speed(fanout_port, speed)
                     wait_until(60, 1, 0, duthost.links_status_up, dut_port_list)
 
+                    # Collect the eeprom hexdump of the ports to debug RM#4503493
+                    if duthost.hostname == 'r-leopard-01':
+                        time.sleep(10)
+                        duthost.shell(f"sudo sfputil show eeprom-hexdump | sudo tee /var/log/sfputil_eeprom_hexdump_{speed}.log")
+
                     logger.info("populate arp, because change speed will cause port flap")
                     self.populate_arp_entries(
                         get_src_dst_asic_and_duts, ptfhost, dutTestParams, dutConfig,
