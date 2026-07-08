@@ -158,9 +158,11 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_fw_stuck_du
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump[PLL_LOCK_EVENT-syncd]:
   skip:
-    reason: "Testcase ignored on platforms SPC, SPC2 because PLL_LOCK event is supported only in SPC3+ devices"
+    reason: "Skipped on SPC/SPC2 as PLL_LOCK event is supported only on SPC3+ devices; skipped on S sn6600_ld due to RM issue: https://redmine.mellanox.com/issues/5139368"
+    conditions_logical_operator: or
     conditions:
     - "'sn2' in platform or 'sn3' in platform"
+    - "https://redmine.mellanox.com/issues/5139368 and asic_gen == 'spc6'"
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump:
   skip:
