@@ -575,6 +575,12 @@ dash/nasa_debug/test_nasa_debug.py::test_nasa_debug_action:
     conditions:
     - "https://redmine.mellanox.com/issues/5099209"
 
+ha/test_ha_npu_process_crash.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5138419"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5138419"
+
 dhcp_relay/test_dhcp_relay.py::test_dhcp_broadcast_not_flooded:
   xfail:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100749"
