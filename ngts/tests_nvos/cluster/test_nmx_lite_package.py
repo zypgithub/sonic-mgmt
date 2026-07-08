@@ -31,13 +31,13 @@ def start_cluster_and_sdn_fm_config(engines, setup_name):
     topology_value = "vr_nvl8r1_c2g4_rtf_topology"
     try:
         with allure.step("Enable cluster"):
-            ClusterTools.start_cluster(cluster, setup_name)
+            ClusterTools.start_cluster(cluster, setup_name, engine=engines.dut)
 
         with allure.step("Config fm config"):
             ClusterSimulation.config_fm_config(engines.dut, topology_value=topology_value)
 
         with allure.step("Wait for nmx-controller to be in ok status"):
-            ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, "ok")
+            ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, "ok", engine=engines.dut)
 
         yield
 
@@ -45,10 +45,10 @@ def start_cluster_and_sdn_fm_config(engines, setup_name):
         with allure.step("Reset sdn fm config"):
 
             with allure.step("Disable cluster"):
-                ClusterTools.stop_cluster(cluster)
+                ClusterTools.stop_cluster(cluster, engine=engines.dut)
 
             with allure.step("Reset sdn factory default"):
-                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(Sdn(), cluster)
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(Sdn(), cluster, engine=engines.dut)
 
 
 @pytest.mark.gpu_tel
@@ -219,25 +219,25 @@ def test_gpu_telemetry_log_level_set(engines, test_api):
 
     TestToolkit.tested_api = test_api
     system = System()
-    gpu_telemetry = "gpu_telemetry"
+    peer_telemetry = LogComponentsConsts.PEER_TELEMETRY
 
     for log_level in LogComponentsConsts.LOG_LEVEL_LIST:
-        with allure.step(f"Validate set gpu telemetry log level command"):
-            system.log.component.component_id[gpu_telemetry].set(op_param_name=LogComponentsConsts.LEVEL,
-                                                                 op_param_value=log_level, apply=True).verify_result()
+        with allure.step("Validate set peer telemetry log level command"):
+            system.log.component.component_id[peer_telemetry].set(op_param_name=LogComponentsConsts.LEVEL,
+                                                                  op_param_value=log_level, apply=True).verify_result()
 
-        with allure.step(f"Validate GPU telemetry log level is set to {log_level} in show command"):
+        with allure.step(f"Validate peer telemetry log level is set to {log_level} in show command"):
             show_output = OutputParsingTool.parse_json_str_to_dictionary(
-                system.log.component.component_id[gpu_telemetry].show()).verify_result()
+                system.log.component.component_id[peer_telemetry].show()).verify_result()
             ValidationTool.verify_field_value_in_output(show_output, LogComponentsConsts.LEVEL, log_level).\
                 verify_result()
 
-    with allure.step(f"Validate unset gpu telemetry log level command"):
-        system.log.component.component_id[gpu_telemetry].unset(op_param=LogComponentsConsts.LEVEL, apply=True).\
+    with allure.step("Validate unset peer telemetry log level command"):
+        system.log.component.component_id[peer_telemetry].unset(op_param=LogComponentsConsts.LEVEL, apply=True).\
             verify_result()
 
-    with allure.step(f"Validate gpu telemetry log level is set to default {LogComponentsConsts.LOG_LEVEL_DEFAULT}"):
-        show_output = OutputParsingTool.parse_json_str_to_dictionary(system.log.component.component_id[gpu_telemetry].
+    with allure.step(f"Validate peer telemetry log level is set to default {LogComponentsConsts.LOG_LEVEL_DEFAULT}"):
+        show_output = OutputParsingTool.parse_json_str_to_dictionary(system.log.component.component_id[peer_telemetry].
                                                                      show()).verify_result()
         ValidationTool.verify_field_value_in_output(show_output, LogComponentsConsts.LEVEL,
                                                     LogComponentsConsts.LOG_LEVEL_DEFAULT).verify_result()

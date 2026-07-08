@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CASEDEF>
+    <global>
+        <Test>
+            <info> GNMI BMC Test </info>
+            <name> gnmi_bmc </name>
+            <owner> </owner>
+        </Test>
+        <Case>
+            <tags> GNMI, BMC </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
+            <tout> 55555 </tout>
+        </Case>
+    </global>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> GNMI Case </info>
+        <name> gnmi </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnmi.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- weekend case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> GNMI Case </info>
+        <name> gnmi_2038 </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnmi_2038.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> GNMI appldb Case </info>
+        <name> gnmi_appldb </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnmi_appldb.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> GNMI configdb Case </info>
+        <name> gnmi_configdb </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnmi_configdb.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> GNMI counters db Case </info>
+        <name> gnmi_countersdb </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnmi_countersdb.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> GNOI Kill Process Case </info>
+        <name> gnoi_kill_process </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnoi_killprocess.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> GMNI ZMQ Case </info>
+        <name> gnmi_zmq </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts zmq/test_gnmi_zmq.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> Gnoi system Case </info>
+        <name> gnoi_system </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnoi_system.py </static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> Gnoi file Case </info>
+        <name> gnoi_file </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnoi_file.py </static_args>
+            </params>
+        </cmd>
+    </case>
+     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> Gnoi Os Case </info>
+        <name> gnoi_os </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnoi_os.py </static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> Mimic hwproxy cert rotation Case </info>
+        <name> mimic_hwproxy_cert_rotation </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_mimic_hwproxy_cert_rotation.py </static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> gNOI system reboot Case </info>
+        <name> gnoi_system__reboot </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnoi_system_reboot.py </static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> gnmi_e2e_telemetry_auth </info>
+        <name> gnmi_e2e_telemetry_auth </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi_e2e/test_telemetry_auth.py </static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> gnmi_e2e_telemetry_auth </info>
+        <name> gnmi_e2e_telemetry_auth </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts gnmi/test_gnmi_stress.py </static_args>
+            </params>
+        </cmd>
+    </case>
+</CASEDEF>

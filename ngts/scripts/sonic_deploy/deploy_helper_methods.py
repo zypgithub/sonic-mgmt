@@ -9,28 +9,33 @@ import time
 import yaml
 
 import allure
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from retry.api import retry_call
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 try:
     from netmiko.ssh_exception import NetmikoAuthenticationException
 except ImportError:
     from netmiko.exceptions import NetmikoAuthenticationException
-from infra.tools.topology_tools.nogaq import upload_data_to_noga
-from infra.tools.general_constants.constants import NogaConstants
+from devts.infra.tools.topology_tools.nogaq import upload_data_to_noga, get_noga_resource_data
+from devts.infra.tools.general_constants.constants import NogaConstants
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
-from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants, SerialLoggerConst, CliType
-from ngts.constants.constants import PlayersAliases, SerialLoggerConst, SSHConsts
+from ngts.constants.constants import (
+    PlayersAliases, SonicDeployConstants, BmcDeployConstants, MarsConstants,
+    SerialLoggerConst, CliType, SSHConsts,
+)
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths, prepare_images
 from ngts.tools.align_components.nogaq import CACHE_FILE_NAME as NOGA_CACHE_FILE
 from ngts.helpers.general_helper import extract_host_details_from_topo_obj, get_cli_obj
-from ngts.scripts.sonic_deploy.sonic_only_methods import is_community
+from ngts.scripts.sonic_deploy.sonic_only_methods import is_community, SonicInstallationSteps
+from ngts.scripts.sonic_deploy.community_only_methods import get_deploy_minigraph_cmd, execute_script
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.dvs.dvs_general_clis import DvsGeneralCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
-from ngts.helpers.run_process_on_host import wait_until_background_procs_done
+from ngts.helpers.run_process_on_host import run_process_on_host, wait_until_background_procs_done
 from ngts.common.util import download_file_to_dut, save_specified_installed_dpus, get_installed_dpu_info
 from ngts.tools.infra import get_dumps_folder
 
@@ -54,7 +59,7 @@ class DeploymentContext:
                  verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
                  serial_log_analyzers, fanout_target_version, request, is_air,
                  deploy_testbed_in_parallel=False, deploy_image_only=False, deploy_chipless=False,
-                 deploy_sequential=False):
+                 deploy_sequential=False, base_version_bmc="", neighbor_mode=""):
         """
         Initialize DeploymentContext with all parameters.
 
@@ -98,6 +103,12 @@ class DeploymentContext:
         self.deploy_image_only = deploy_image_only
         self.deploy_chipless = deploy_chipless
         self.deploy_sequential = deploy_sequential
+        self.base_version_bmc = base_version_bmc
+        self.neighbor_mode = neighbor_mode
+        # True when a BMC image is provided and BMC installation should run
+        self.deploy_bmc = bool(base_version_bmc)
+        # True when a switch base/target image is provided and switch deployment should run
+        self.deploy_switch = bool(base_version) or bool(target_version)
         # Initialize derived values (replaces lines 102-123 from original function)
         self._initialize()
 
@@ -138,6 +149,15 @@ class DeploymentContext:
 
     def _initialize_image_urls(self):
         """Prepare image versions and URLs."""
+        # When no switch image is provided, skip the base/target image preparation
+        # entirely. This avoids the exception raised by prepare_images() when both
+        # --base-version and --target-version are empty (e.g. BMC-only runs).
+        if not self.deploy_switch:
+            self.base_version_url = ''
+            self.target_version_url = ''
+            self.image_urls = {'base_version': '', 'target_version': ''}
+            return
+
         with allure.step('prepare versions paths/urls'):
 
             # Get real paths for base and target versions
@@ -170,6 +190,12 @@ class DeploymentContext:
 
     def _validate_and_adjust_parameters(self):
         """Validate parameters and make necessary adjustments."""
+        if not self.deploy_switch and not self.deploy_bmc:
+            logger.warning(
+                'No image provided via "--base-version", "--target-version" or '
+                '"--base-version-bmc"; deployment flow will be skipped.'
+            )
+
         # Adjust apply_base_config for ptf-any topology
         if self.sonic_topo == 'ptf-any':
             self.apply_base_config = True
@@ -266,7 +292,7 @@ class DeployImageHelper:
     @staticmethod
     def get_image_for_dut(base_version, target_version, dut):
         if dut['cli_type'] == CliType.NVUE:
-            if target_version.startswith('http'):
+            if target_version.startswith('http') and '/auto/' in target_version:
                 target_version = '/auto/' + target_version.split('/auto/')[1]
         return base_version, target_version
 
@@ -407,17 +433,23 @@ class DeployTopologyHelper:
                 return hwsku_data[setup_name]['default_hwsku']
 
     @staticmethod
-    def filter_testbed_yaml_file(setup_info):
+    def customize_testbed_yaml_file(setup_info, sonic_topo, neighbor_mode):
         """
         Remove from testbed.yaml file all configurations, which not relevant to setup.
+        And set neighbor mode if provided.
         This action will save us ~1.5 minutes of runtime in the first test,
          where need to get basic_facts in the first time.
         :param setup_info: setup_info dictionary
+        :param sonic_topo: sonic topology information
+        :param neighbor_mode: neighbor mode to use for the dual-tor deployment
         """
 
-        duts = []
-        for dut in setup_info['duts']:
-            duts.append(dut['dut_name'])
+        # neighbor mode is only supported for dual-tor deployment
+        is_dualtor = bool(sonic_topo) and 'dualtor' in sonic_topo
+        if is_dualtor and neighbor_mode not in ['host-route', 'prefix-route', '']:
+            raise ValueError(f"Invalid neighbor mode: {neighbor_mode}, valid values are: host-route, prefix-route, ''")
+
+        dut_names = {dut['dut_name'] for dut in setup_info['duts']}
         testbed_yaml_file_path = os.path.join(os.path.dirname(__file__), "../../../ansible/testbed.yaml")
         testbed_yaml_backup_file_path = os.path.join(os.path.dirname(__file__), "../../../ansible/testbed.yaml.backup")
         # backup of original file
@@ -426,24 +458,34 @@ class DeployTopologyHelper:
         with open(testbed_yaml_file_path, 'r') as f:
             data = yaml.safe_load(f)
         # entry should include at least one on switch name
-        filtered_data = []
+        customized_data = []
         for entry in data:
-            for device in entry['dut']:
-                if device in duts:
-                    filtered_data.append(entry)
-                    break
-        # store filtered data
+            entry_duts = entry.get('dut') or []
+            if not any(device in dut_names for device in entry_duts):
+                continue
+            if is_dualtor and neighbor_mode:
+                entry['neighbor_mode'] = neighbor_mode
+            customized_data.append(entry)
+        # store customized data
         with open(testbed_yaml_file_path, 'w') as out_file:
-            yaml.dump(filtered_data, out_file, default_flow_style=False)
+            yaml.dump(customized_data, out_file, default_flow_style=False)
 
 
 class DeployConnectionHelper:
     """Handle SSH connections and OS detection"""
 
     @staticmethod
-    def get_current_os_engine(dut_ip):
+    def get_current_os_engine(dut_ip, expected_cli_type=None):
         logger.info("Trying connect with SSH to switch")
+        preferred_nos = SSHConsts.CLI_TYPE_TO_NOS.get(expected_cli_type)
+        if preferred_nos:
+            engine = DeployConnectionHelper.attempt_connect_to_switch(dut_ip, preferred_nos, SSHConsts.SSH_CREDS_DICT[preferred_nos])
+            if engine:
+                logger.info(f"Current OS is {preferred_nos}")
+                return preferred_nos, engine
         for nos_name, creds in SSHConsts.SSH_CREDS_DICT.items():
+            if nos_name == preferred_nos:
+                continue
             engine = DeployConnectionHelper.attempt_connect_to_switch(dut_ip, nos_name, creds)
             if engine:
                 logger.info("Current OS is {}".format(nos_name))
@@ -453,10 +495,15 @@ class DeployConnectionHelper:
 
     @staticmethod
     def attempt_connect_to_switch(ip, nos_name, creds_dict):
+        """
+        Attempt to connect to a switch with the given credentials.
+        retried reduced from default 3 to 2 to avoid OpenSSH PerSourcePenalties.
+        """
         try:
             username = creds_dict.get('username')
             password = creds_dict.get('password')
             engine = LinuxSshEngine(ip, username=username, password=password)
+            engine._engine = engine.get_engine_with_retry(tries=2)
             engine.run_cmd("echo $?")
         except NetmikoAuthenticationException:
             logger.error(f"Login to with {nos_name} credentials has failed")
@@ -501,19 +548,65 @@ class DeployMultiNosHelper:
 
     @staticmethod
     def multi_nos_pre_installation_steps(duts, target_cli_type, chip_type, deploy_sequential=False):
+        """Run per-DUT multi-NOS pre-install steps and surface any failures.
+
+        Without awaiting per-future results, any exception raised inside
+        ``do_multi_nos_pre_install`` (e.g. uninstall-mode setup failing on the
+        switch) is silently swallowed by the executor and the deploy proceeds
+        as if pre-installation succeeded, which causes confusing downstream
+        failures (e.g. ``OnieInstallationError``). Collect futures and call
+        ``result()`` so the first exception propagates to the caller.
+
+        Args:
+            duts: Iterable of DUT info dicts as built by ``DeploymentContext``;
+                each entry must contain at least ``dut_ip``.
+            target_cli_type: Target CLI/NOS being installed (e.g. ``"DVS"``,
+                ``"NVUE"``, ``"SONIC"``).
+            chip_type: ASIC family string used to look up timeouts in
+                ``PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE`` (e.g. ``"SPC5"``).
+            deploy_sequential: If ``True``, run per-DUT pre-install steps
+                inline; otherwise run them in a thread pool and join.
+
+        Raises:
+            Exception: The first exception raised by any per-DUT
+                ``do_multi_nos_pre_install`` invocation. In parallel mode all
+                submitted tasks are still allowed to finish (the executor
+                joins on context exit) before the exception is re-raised.
+        """
         logger.info("Multi NOS pre installation steps")
         if deploy_sequential:
             for dut in duts:
                 DeployMultiNosHelper.do_multi_nos_pre_install(dut, target_cli_type, chip_type)
-        else:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                for dut in duts:
-                    executor.submit(DeployMultiNosHelper.do_multi_nos_pre_install, dut, target_cli_type, chip_type)
+            return
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(DeployMultiNosHelper.do_multi_nos_pre_install,
+                                       dut, target_cli_type, chip_type)
+                       for dut in duts]
+        for future in futures:
+            future.result()
+
+    @staticmethod
+    def _get_expected_noga_cli_type(dut_ip):
+        """
+        Read the expected current CLI_TYPE from Noga for a given DUT IP.
+        :param dut_ip: DUT IP
+        :return: CLI_TYPE
+        """
+        try:
+            noga_data = get_noga_resource_data(ip_address=dut_ip, use_cache=False)
+            cli_type_str = noga_data['attributes']['Topology Conn.']['CLI_TYPE']
+            return cli_type_str
+        except Exception as e:
+            logger.warning(
+                f"Could not fetch expected CLI_TYPE from Noga for {dut_ip}: {e}.")
+            return None
 
     @staticmethod
     def do_multi_nos_pre_install(dut, target_cli_type, chip_type):
         dut_ip = dut['dut_ip']
-        current_os, engine = DeployConnectionHelper.get_current_os_engine(dut_ip)
+        noga_cli_type = DeployMultiNosHelper._get_expected_noga_cli_type(dut_ip)
+        current_os, engine = DeployConnectionHelper.get_current_os_engine(dut_ip, noga_cli_type)
         if engine:
             DeployMultiNosHelper.validate_sudo_config(engine, current_os)
             GeneralCliCommon(engine).uninstall_os_flow(current_os, target_cli_type, chip_type)
@@ -595,6 +688,8 @@ class DeployOrchestrator:
                 self.context.chip_type,
                 deploy_sequential=self.context.deploy_sequential
             )
+
+        DeployTopologyHelper.customize_testbed_yaml_file(self.context.setup_info, self.context.sonic_topo, self.context.neighbor_mode)
 
         return self.pre_install_threads
 
@@ -707,8 +802,6 @@ class DeployOrchestrator:
                 deploy_sequential=self.context.deploy_sequential
             )
 
-        DeployTopologyHelper.filter_testbed_yaml_file(self.context.setup_info)
-
     def execute_dpu_post_installation_steps(self):
         cli_obj = self.context.primary_cli_obj
         cli_obj.dpu_post_installation_steps(self.context)
@@ -748,47 +841,114 @@ class DeployOrchestrator:
         """
         Execute the complete deployment flow
 
+        Switch and BMC deployments are independent:
+        - BMC flow runs first when --base-version-bmc is provided.
+        - Switch flow (Phase 1-5, including DPU) runs when --base-version or --target-version is provided.
+        Both can run together, or either one can run alone. For a BMC-only run
+        (no switch image) the ordering has no effect since the switch phases are skipped.
+
         Returns:
             dict: Results containing thread information and status
         """
         results = {}
 
-        # Phase 1: Pre-installation
-        with allure.step('pre installation steps'):
-            results['pre_install_threads'] = self.execute_pre_installation_steps()
+        # BMC installation runs before the switch: the BMC boots first and
+        # controls Switch-Host power, so deploying it first.
+        # The BMC reuses the community topo flow (bmc-dual-mgmt is a normal topo),
+        # so it is driven by --sonic-topo / --dest_hwsku, not by dedicated params.
+        if self.context.deploy_bmc:
+            ctx = self.context
+            bmc_topo_threads = {}
+            dut_name = ctx.primary_dut['dut_name']
+            ansible_path = ctx.setup_info['ansible_path']
+            bmc_params = DeployBmcHelper._resolve_bmc_params(ctx)
 
-        # In sequential mode, pre-install processes have already completed inline.
-        # Verify them now so a failure stops the run before installation begins.
-        if self.context.deploy_sequential:
-            with allure.step('verify pre installation processes are done'):
-                self._verify_pre_installation_processes(results['pre_install_threads'])
+            # remove-topo / add-topo / gen-mg reuse the community deploy functions
+            # in sonic_only_methods directly (bmc-dual-mgmt is a normal topo); there
+            # are no BMC-specific topo wrappers.
+            with allure.step('BMC remove-topo'):
+                SonicInstallationSteps.remove_topologies(
+                    ansible_path=ansible_path,
+                    dut_names=[dut_name],
+                    setup_name=ctx.setup_name,
+                    sonic_topo=ctx.sonic_topo,
+                )
+            with allure.step('BMC add-topo and generate minigraph'):
+                SonicInstallationSteps.start_community_background_threads(
+                    bmc_topo_threads, ctx.setup_name, dut_name, ctx.sonic_topo,
+                    'ceos', MarsConstants.DEFAULT_PTF_TAG, '', ansible_path,
+                    ctx.setup_info, ctx.destination_hwsku,
+                    deploy_sequential=ctx.deploy_sequential,
+                )
+            with allure.step('BMC installation'):
+                DeployBmcHelper.install_bmc(ctx)
+            with allure.step('Wait for BMC add-topo/gen-mg to finish'):
+                wait_until_background_procs_done(bmc_topo_threads)
 
-        # Phase 2: Installation
-        with allure.step('installation'):
-            results['install_threads'] = self.execute_installation()
+            # deploy-mg produces the NetworkBmc DEVICE_METADATA, the default ACL
+            # tables and the telemetry certificates on the BMC.
+            with allure.step('BMC deploy minigraph'):
+                deploy_cmd = get_deploy_minigraph_cmd().format(SWITCH=dut_name, TOPO=ctx.sonic_topo)
+                logger.info(f"Running CMD: {deploy_cmd}")
+                execute_script(deploy_cmd, ansible_path, validate=True, timeout=900)
+            with allure.step('Wait for BMC is ready after config reload'):
+                DeployBmcHelper._wait_bmc_sonic_db_ready(bmc_params)
+                DeployBmcHelper._wait_bmc_containers_running(bmc_params)
+            # Disable extra services not available on the BMC. Must run after deploy-mg:
+            # 'config load_minigraph' / 'config reload' resets FEATURE state.
+            if is_redmine_issue_active([5057220])[0] or is_redmine_issue_active([5057221])[0]:
+                with allure.step('Disable unavailable services in the config'):
+                    DeployBmcHelper._disable_unavailable_services(bmc_params)
+
+        if self.context.deploy_switch:
+            # Phase 1: Pre-installation
+            with allure.step('pre installation steps'):
+                results['pre_install_threads'] = self.execute_pre_installation_steps()
+
+            # In sequential mode, pre-install processes have already completed inline.
+            # Verify them now so a failure stops the run before installation begins.
             if self.context.deploy_sequential:
-                logger.info("Sequential mode: installation completed inline, "
-                            "centralized timeout not applied (command-level timeouts still active)")
-            else:
-                self.wait_until_deploy_background_process(results['install_threads'], timeout=2400)
+                with allure.step('verify pre installation processes are done'):
+                    self._verify_pre_installation_processes(results['pre_install_threads'])
 
-        # Phase 3: Verify pre-installation processes (background mode)
-        if not self.context.deploy_sequential:
-            with allure.step('verify pre installation processes are done'):
-                self._verify_pre_installation_processes(results['pre_install_threads'])
+            # Phase 2: Installation
+            with allure.step('installation'):
+                results['install_threads'] = self.execute_installation()
+                if self.context.deploy_sequential:
+                    logger.info("Sequential mode: installation completed inline, "
+                                "centralized timeout not applied (command-level timeouts still active)")
+                else:
+                    self.wait_until_deploy_background_process(results['install_threads'], timeout=2400)
 
-        # Phase 4: Post-installation
-        with allure.step('post installation steps'):
-            self.execute_post_installation_steps()
+            # Phase 3: Verify pre-installation processes (background mode)
+            if not self.context.deploy_sequential:
+                with allure.step('verify pre installation processes are done'):
+                    self._verify_pre_installation_processes(results['pre_install_threads'])
 
-            # Cleanup
-            cache_full_path = os.path.join(os.path.dirname(__file__), '../../.pytest_cache')
-            shutil.rmtree(cache_full_path, ignore_errors=True)
+            # Phase 4: Post-installation
+            with allure.step('post installation steps'):
+                self.execute_post_installation_steps()
+
+                # Cleanup
+                cache_full_path = os.path.join(os.path.dirname(__file__), '../../.pytest_cache')
+                shutil.rmtree(cache_full_path, ignore_errors=True)
 
         # Phase 5: DPU installation
+        # TODO: WA for RM#4946685, power cycle duts
+        if self.context.deploy_dpu and "01-03-ha" in self.context.setup_name:
+            with allure.step("Power cycle the DUTs if it's HA setup"):
+                for dut in self.context.setup_info["duts"]:
+                    dut["cli_obj"].remote_reboot(self.context.topology_obj, dut_alias=dut["dut_alias"])
         if self.context.deploy_dpu:
             # install DPUs
             self.execute_dpu_image_installation()
+            # TODO: WA for RM#4946685, power cycle duts
+            if "03-04-ha" in self.context.setup_name:
+                with allure.step("Power cycle the DUTs if it's HA setup"):
+                    time.sleep(30)
+                    for dut in self.context.setup_info["duts"]:
+                        dut["cli_obj"].remote_reboot(self.context.topology_obj, dut_alias=dut["dut_alias"])
+                    time.sleep(120)
             self.execute_dpu_post_installation_steps()
 
         return results
@@ -882,3 +1042,586 @@ class DeployDpuHelper:
                 cli_obj.verify_dpu_boot_progress(dpu_index_list, bad_states={0, 15})
                 time.sleep(50)  # Wait 50s to make sure the rshim will be ready
             cli_obj.save_configuration()
+
+
+class DeployBmcHelper:
+    """
+    Handle SONiC BMC image installation.
+
+    Reuses noga "BMC IP", "Serial Connection Command" and "Remote Reboot"
+    fields that already drive the regular switch deployment flow.
+
+    Reference: BMC SONiC wiki section 2 "Image installation".
+    """
+
+    @staticmethod
+    def install_bmc(context):
+        """
+        Install SONiC BMC image on the primary DUT's BMC.
+
+        HW gate runs in the U-Boot phase by parsing the boot banner
+        captured during autoboot interruption. Only HW types in
+        SONIC_BMC_SUPPORTED_HW_TYPES proceed with the install;
+        unsupported HW resumes its normal boot and the function
+        returns. A banner that cannot be parsed raises - the caller
+        explicitly requested a BMC install, so an unidentifiable BMC
+        must fail loud rather than be silently skipped.
+
+        Image files (sonic_tftp_install.fit and
+        sonic-aspeed-arm64-emmc.img.gz) must already be staged under
+        the TFTP server root.
+        """
+        from ngts.helpers.secure_boot_helper import SecureBootHelper
+
+        primary_dut = context.primary_dut
+        dut_name = primary_dut['dut_name']
+        dut_alias = primary_dut['dut_alias']
+
+        with allure.step(f'Resolve BMC parameters for {dut_name}'):
+            bmc_params = DeployBmcHelper._resolve_bmc_params(context)
+
+        # Run a single attempt only - on failure raise immediately so the
+        # operator can inspect the BMC in its post-failure state instead
+        # of having the whole TFTP/eMMC install repeated and the failure
+        # state wiped by the next retry.
+        serial_engine = None
+        try:
+            with allure.step('Open BMC serial console'):
+                serial_engine = SecureBootHelper.get_serial_engine_instance(
+                    context.topology_obj, dut_alias
+                )
+                serial_engine.create_serial_engine(login_to_switch=False)
+
+            with allure.step('Power-cycle DUT to enter U-Boot'):
+                context.primary_cli_obj.remote_reboot(
+                    context.topology_obj, dut_alias, wait_till_alive=False
+                )
+
+            with allure.step('Interrupt autoboot to reach U-Boot prompt'):
+                uboot_banner = DeployBmcHelper._wait_uboot_prompt(serial_engine)
+
+            with allure.step('Detect BMC hardware type from U-Boot banner'):
+                hw_type = DeployBmcHelper._parse_soc_from_banner(
+                    uboot_banner, dut_name
+                )
+
+            if hw_type not in BmcDeployConstants.SONIC_BMC_SUPPORTED_HW_TYPES:
+                # Resume normal boot so the DUT does not stay parked at '=>'.
+                logger.warning(
+                    f"BMC HW type '{hw_type}' on {dut_name} not in "
+                    f"{BmcDeployConstants.SONIC_BMC_SUPPORTED_HW_TYPES}; "
+                    f"skipping SONiC BMC install."
+                )
+                with allure.step('Resume BMC boot (HW not supported)'):
+                    DeployBmcHelper._run_uboot_cmd(serial_engine, 'boot')
+                return False
+
+            with allure.step('Run U-Boot install sequence'):
+                DeployBmcHelper._run_uboot_install(serial_engine, bmc_params)
+
+            with allure.step('Wait for eMMC installation to finish'):
+                DeployBmcHelper._wait_emmc_write_done(serial_engine)
+
+            with allure.step('Verify BMC SSH login'):
+                DeployBmcHelper._wait_bmc_login_with_power_cycle(
+                    context, dut_alias, serial_engine
+                )
+                DeployBmcHelper._verify_bmc_login(bmc_params)
+
+            # sshd comes up well before the SONiC stack after the install reboots.
+            # The config steps below run sonic-db-cli / config commands, so wait
+            # until CONFIG_DB (redis) is reachable and sonic-environment exists,
+            # otherwise they race the boot and fail ('Unable to connect to redis').
+            with allure.step('Wait for BMC SONiC DB to be ready'):
+                DeployBmcHelper._wait_bmc_sonic_db_ready(bmc_params)
+
+            # Install the DHCP recovery workaround before the reboot below, so this
+            # reboot (and every later reboot / power-cycle during tests) self-heals
+            # eth0 when the ftgmac100 driver comes up without a DHCP lease.
+            # Tracked by Redmine #5091238; drops automatically once it is fixed.
+            if is_redmine_issue_active([5091238])[0]:
+                with allure.step('Install BMC DHCP recovery workaround service'):
+                    DeployBmcHelper._install_dhcp_recovery_service(bmc_params)
+
+            # Sync the BMC clock
+            with allure.step('Sync BMC clock via chrony'):
+                try:
+                    DeployBmcHelper._sync_bmc_clock(bmc_params)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to sync BMC clock on {dut_name}: {e}"
+                    )
+
+            logger.info(f"BMC installation succeeded on {dut_name}")
+            return True
+        finally:
+            DeployBmcHelper._close_serial(serial_engine)
+
+    @staticmethod
+    def _parse_soc_from_banner(banner_text, dut_name):
+        """
+        Pull the SoC ID (e.g. 'AST2700-A1') out of a captured U-Boot
+        banner. Prefer the 'SOC:' line; fall back to 'Model: AST...'
+        because the 'SOC:' line is printed earlier and is sometimes
+        missed by the serial capture. Raise if neither is found.
+        """
+        match = re.search(r'^\s*SOC:\s*(\S+)', banner_text, re.MULTILINE)
+        if match:
+            soc = match.group(1)
+            logger.info(f"BMC SoC parsed from 'SOC:' line: '{soc}'")
+            return soc
+
+        match = re.search(
+            r'^\s*Model:\s*(AST\d+(?:-A\d+)?)\b',
+            banner_text, re.MULTILINE | re.IGNORECASE,
+        )
+        if match:
+            soc = match.group(1)
+            logger.info(f"BMC SoC parsed from 'Model:' line: '{soc}'")
+            return soc
+
+        tail = banner_text[-2000:] if banner_text else '(empty)'
+        logger.error(
+            f"U-Boot banner from {dut_name} had no 'SOC:' or "
+            f"'Model: AST...' line. Last 2000 chars:\n{tail}"
+        )
+        raise RuntimeError(
+            f"Could not parse BMC SoC from U-Boot banner on {dut_name}"
+        )
+
+    @staticmethod
+    def _resolve_bmc_params(context):
+        """
+        Read BMC-related fields from the primary DUT's noga attributes.
+
+        Required:
+            bmc_ip - matches the noga "BMC IP" field.
+        Optional:
+            bmc_bootconf - per-platform U-Boot bootconf override; falls back
+                           to BmcDeployConstants.UBOOT_BOOTCONF_DEFAULT.
+        """
+        primary_dut = context.primary_dut
+        attrs = context.topology_obj.players[primary_dut['dut_alias']]['attributes']
+        specific = attrs.noga_query_data['attributes'].get('Specific', {})
+
+        bmc_ip = specific.get('bmc_ip')
+        if not bmc_ip:
+            raise Exception(
+                f"BMC install requires the 'BMC IP' (bmc_ip) field configured "
+                f"under noga Specific attributes for DUT {primary_dut['dut_name']}"
+            )
+
+        return {
+            'dut_name': primary_dut['dut_name'],
+            'tftp_server_ip': BmcDeployConstants.BMC_TFTP_SERVER_IP,
+            'bmc_ip': bmc_ip,
+            'bmc_bootconf': specific.get(
+                'bmc_bootconf', BmcDeployConstants.UBOOT_BOOTCONF_DEFAULT
+            ),
+        }
+
+    @staticmethod
+    def _close_serial(serial_engine):
+        if serial_engine is None:
+            return
+        try:
+            close = getattr(serial_engine, 'close_serial_engine', None) or \
+                getattr(serial_engine, 'disconnect', None)
+            if callable(close):
+                close()
+        except Exception as e:
+            logger.warning(f"Failed to close BMC serial console: {e}")
+
+    @staticmethod
+    def _wait_uboot_prompt(serial_engine):
+        """
+        Hammer Enter during the ~3s autoboot window until the U-Boot
+        prompt shows up. Returns the captured serial output (boot
+        banner + everything up to the prompt) so the caller can parse
+        the SoC. Each per-attempt timeout salvages the underlying
+        pexpect 'before' buffer so the banner is not lost across loop
+        iterations.
+        """
+        deadline = time.time() + BmcDeployConstants.UBOOT_PROMPT_TIMEOUT
+        per_attempt_timeout = 1   # autoboot window is ~3s wide
+        captured = []
+        while time.time() < deadline:
+            try:
+                output, _ = serial_engine.run_cmd(
+                    '',
+                    expected_value=BmcDeployConstants.UBOOT_PROMPT,
+                    timeout=per_attempt_timeout,
+                )
+                captured.append(output)
+                return ''.join(captured)
+            except Exception:
+                try:
+                    pending = serial_engine.serial_engine.before
+                    if pending:
+                        captured.append(
+                            pending.decode('utf-8', errors='ignore')
+                            if isinstance(pending, bytes) else str(pending)
+                        )
+                except Exception:
+                    pass
+                continue
+        raise Exception(
+            "Failed to reach U-Boot prompt within "
+            f"{BmcDeployConstants.UBOOT_PROMPT_TIMEOUT}s"
+        )
+
+    @staticmethod
+    def _run_uboot_cmd(serial_engine, cmd, timeout=None):
+        timeout = timeout or BmcDeployConstants.UBOOT_PROMPT_TIMEOUT
+        serial_engine.run_cmd(
+            cmd,
+            expected_value=BmcDeployConstants.UBOOT_PROMPT,
+            timeout=timeout,
+        )
+
+    @staticmethod
+    def _run_uboot_install(serial_engine, bmc_params):
+        """Execute the U-Boot command sequence to start the install."""
+        emmc_img = BmcDeployConstants.BMC_EMMC_IMG_FILE_NAME
+
+        # DHCP can occasionally fail; retry a few times.
+        dhcp_ok = False
+        for attempt in range(BmcDeployConstants.DHCP_RETRY_LIMIT):
+            try:
+                DeployBmcHelper._run_uboot_cmd(
+                    serial_engine, 'dhcp', timeout=BmcDeployConstants.DHCP_TIMEOUT
+                )
+                output = DeployBmcHelper._wait_uboot_prompt(serial_engine)
+                logger.info(f"DHCP output: {output}")
+                dhcp_ok = "DHCP client bound to address" in output
+                if dhcp_ok:
+                    break
+            except Exception as e:
+                logger.warning(f"DHCP attempt {attempt + 1} failed in U-Boot: {e}")
+        if not dhcp_ok:
+            raise Exception("Failed to acquire DHCP lease in U-Boot")
+
+        DeployBmcHelper._run_uboot_cmd(
+            serial_engine, f"setenv serverip {bmc_params['tftp_server_ip']}"
+        )
+        DeployBmcHelper._run_uboot_cmd(
+            serial_engine, f"setenv loadaddr {BmcDeployConstants.UBOOT_LOAD_ADDR}"
+        )
+
+        # Build bootargs incrementally: first reset to empty, then append
+        # each tail with a quoted 'setenv bootargs "${bootargs}<tail>"'.
+        # The eMMC image URL is HTTP, served by the build server.
+        DeployBmcHelper._run_uboot_cmd(serial_engine, 'setenv bootargs ""')
+        for tail_tmpl in BmcDeployConstants.UBOOT_BOOTARGS_TAILS:
+            tail = tail_tmpl.format(
+                emmc_img=emmc_img,
+                http_server=BmcDeployConstants.BMC_HTTP_SERVER_URL,
+            )
+            DeployBmcHelper._run_uboot_cmd(
+                serial_engine, f'setenv bootargs "${{bootargs}}{tail}"'
+            )
+
+        # Echo the assembled bootargs back to the console so the test
+        # log captures the actual U-Boot env value. If any 'setenv'
+        # silently dropped characters on the slow BMC serial, the wrong
+        # value will be visible here rather than only via a much later
+        # kernel cmdline mismatch.
+        DeployBmcHelper._run_uboot_cmd(serial_engine, 'print bootargs')
+
+        DeployBmcHelper._tftp_download_fit(serial_engine)
+        DeployBmcHelper._run_uboot_cmd(
+            serial_engine, f"setenv bootconf {bmc_params['bmc_bootconf']}"
+        )
+        # 'bootm' starts the installer kernel; do not expect the U-Boot
+        # prompt back. The next stage waits for the eMMC marker.
+        serial_engine.run_cmd(
+            "bootm $loadaddr#conf-$bootconf",
+            expected_value='Starting kernel',
+            timeout=BmcDeployConstants.UBOOT_PROMPT_TIMEOUT,
+        )
+
+    @staticmethod
+    def _tftp_download_fit(serial_engine):
+        """
+        Run 'tftp $loadaddr <fit>' with retries. Success is signalled by
+        U-Boot printing 'Bytes transferred = ...' once the transfer
+        completes, so we use that line directly as the success pattern.
+        We also list the U-Boot prompt as a fallback pattern: if U-Boot
+        returns to its prompt without printing 'Bytes transferred' (e.g.
+        after 'Retry count exceeded; starting again' or 'TFTP error'),
+        the transfer failed and we retry up to TFTP_DOWNLOAD_RETRY_LIMIT.
+        """
+        cmd = f"tftp $loadaddr {BmcDeployConstants.BMC_FIT_FILE_NAME}"
+        retry_limit = BmcDeployConstants.TFTP_DOWNLOAD_RETRY_LIMIT
+        last_summary = ''
+        for attempt in range(1, retry_limit + 1):
+            try:
+                output, idx = serial_engine.run_cmd(
+                    cmd,
+                    expected_value=[
+                        'Bytes transferred',
+                        BmcDeployConstants.UBOOT_PROMPT,
+                    ],
+                    timeout=BmcDeployConstants.TFTP_DOWNLOAD_TIMEOUT,
+                )
+                if idx == 0:
+                    logger.info(
+                        f"TFTP fit download succeeded on attempt {attempt}"
+                    )
+                    # Drain the trailing '<bytes> hex)\n=> ' so the next
+                    # U-Boot command starts cleanly.
+                    try:
+                        serial_engine.run_cmd(
+                            '',
+                            expected_value=BmcDeployConstants.UBOOT_PROMPT,
+                            timeout=10,
+                            send_without_enter=True,
+                        )
+                    except Exception:
+                        pass
+                    return
+                last_summary = (output or '')[-300:]
+                logger.warning(
+                    f"TFTP fit attempt {attempt}/{retry_limit} returned to "
+                    f"U-Boot prompt without 'Bytes transferred'. "
+                    f"Tail: {last_summary}"
+                )
+            except Exception as e:
+                last_summary = str(e)
+                logger.warning(
+                    f"TFTP fit attempt {attempt}/{retry_limit} raised: {e}"
+                )
+                # Drain whatever is buffered so the next 'tftp' command
+                # starts at a clean prompt.
+                try:
+                    serial_engine.run_cmd(
+                        '\r',
+                        expected_value=BmcDeployConstants.UBOOT_PROMPT,
+                        timeout=30,
+                    )
+                except Exception:
+                    pass
+        raise Exception(
+            f"Failed to download {BmcDeployConstants.BMC_FIT_FILE_NAME} via TFTP "
+            f"after {retry_limit} attempts. Last output tail: {last_summary}"
+        )
+
+    @staticmethod
+    def _wait_emmc_write_done(serial_engine):
+        """Wait for the installer to finish writing eMMC and updating U-Boot env."""
+        serial_engine.run_cmd(
+            '',
+            expected_value=BmcDeployConstants.EMMC_WRITE_DONE_MARKER,
+            timeout=BmcDeployConstants.EMMC_WRITE_TIMEOUT,
+            send_without_enter=True,
+        )
+
+    @staticmethod
+    def _wait_bmc_login(serial_engine):
+        """Best-effort confirmation that the BMC has reached its login prompt."""
+        serial_engine.run_cmd(
+            '',
+            expected_value=BmcDeployConstants.BMC_LOGIN_PROMPT,
+            timeout=BmcDeployConstants.BMC_BOOT_TIMEOUT,
+            send_without_enter=True,
+        )
+
+    @staticmethod
+    def _wait_bmc_login_with_power_cycle(context, dut_alias, serial_engine):
+        """
+        Wait for the BMC login prompt after a reboot.
+        """
+        try:
+            DeployBmcHelper._wait_bmc_login(serial_engine)
+            return
+        except Exception as err:
+            logger.warning(
+                f"BMC login prompt not seen within timeout: {err}. "
+                f"Power-cycling to recover from a possibly stuck reboot."
+            )
+            context.primary_cli_obj.remote_reboot(
+                context.topology_obj, dut_alias, wait_till_alive=False
+            )
+        DeployBmcHelper._wait_bmc_login(serial_engine)
+
+    @staticmethod
+    def _verify_bmc_login(bmc_params, tries=30, delay=5):
+        """
+        Confirm SSH login to the freshly-booted BMC works. sshd accepts TCP well
+        before it actually serves a password prompt / the admin account is ready,
+        so the first connections can time out without ever showing a prompt. Retry
+        until login succeeds (same pattern as _wait_bmc_sonic_db_ready); otherwise a
+        transient not-ready window aborts the whole BMC install.
+        """
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+        retry_call(engine.run_cmd, fargs=["uname -a"],
+                   tries=tries, delay=delay, logger=logger)
+
+    @staticmethod
+    def _wait_bmc_sonic_db_ready(bmc_params, tries=30, delay=10):
+        """
+        After the install reboots, sshd on the BMC comes up well before the
+        SONiC stack. The config steps that follow (DEVICE_METADATA type, ACLs,
+        feature disable) run sonic-db-cli / config commands and edit
+        /etc/sonic/sonic-environment, so wait until CONFIG_DB (redis) is
+        reachable and sonic-environment exists. Without this they race the boot
+        and fail with 'Unable to connect to redis' / sonic-environment missing.
+        """
+        db_errors = ("Unable to connect", "Invalid database name",
+                     "Connection refused", "doesn't exist")
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+
+        def _check():
+            db = engine.run_cmd("sonic-db-cli CONFIG_DB PING")
+            env = engine.run_cmd(
+                "test -f /etc/sonic/sonic-environment && echo OK || echo MISSING"
+            )
+            if not (all(err not in db for err in db_errors) and "OK" in env):
+                raise RuntimeError(
+                    f"BMC SONiC not ready yet (CONFIG_DB PING={db.strip()!r}, "
+                    f"sonic-environment={env.strip()!r})"
+                )
+            logger.info("BMC SONiC CONFIG_DB is ready")
+
+        retry_call(_check, tries=tries, delay=delay, logger=logger)
+
+    @staticmethod
+    def _install_dhcp_recovery_service(bmc_params):
+        """
+        Install and enable a systemd timer that recovers eth0's DHCP lease after a
+        BMC reboot / power-cycle (and at runtime).
+
+        Known issue: on the AST2700 BMC the ftgmac100 NIC reports "Link is Up"
+        after a (re)boot but no DHCP offer ever arrives, so eth0 stays without an
+        IPv4 address and the BMC is unreachable over the network. Reloading the
+        driver and re-running dhclient restores connectivity. Because the BMC has
+        no IP at that point it cannot be fixed remotely, so the recovery has to
+        run locally - hence a systemd unit instead of a per-test step.
+
+        A oneshot at boot is not enough: eth0 can briefly carry an early lease at
+        the moment a boot-time check runs (so it no-ops) and then drop it, and the
+        lease can also be lost at runtime. So the recovery script is driven by a
+        timer that re-checks periodically and reloads the driver only when eth0
+        has no IPv4 address.
+
+        The script and units are staged in ngts/common/; this copies them to the
+        BMC, installs them and enables the timer.
+        """
+        common_dir = os.path.join(os.path.dirname(__file__), "..", "..", "common")
+        script_src = os.path.join(common_dir, BmcDeployConstants.BMC_DHCP_WA_SCRIPT_SRC)
+        service_src = os.path.join(common_dir, BmcDeployConstants.BMC_DHCP_WA_SERVICE_SRC)
+        timer_src = os.path.join(common_dir, BmcDeployConstants.BMC_DHCP_WA_TIMER_SRC)
+
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+
+        # Stage the files in /tmp (writable for the admin user), then move them
+        # into place with sudo.
+        for src, dst, mode in (
+            (script_src, BmcDeployConstants.BMC_DHCP_WA_SCRIPT_DST, "0755"),
+            (service_src, BmcDeployConstants.BMC_DHCP_WA_SERVICE_DST, "0644"),
+            (timer_src, BmcDeployConstants.BMC_DHCP_WA_TIMER_DST, "0644"),
+        ):
+            staged = os.path.basename(src)
+            engine.copy_file(
+                source_file=src, dest_file=staged,
+                file_system="/tmp/", overwrite_file=True, verify_file=True,
+            )
+            engine.run_cmd(f"sudo install -m {mode} /tmp/{staged} {dst}")
+
+        engine.run_cmd("sudo systemctl daemon-reload")
+        # Enable + start the timer (the service is triggered by the timer).
+        engine.run_cmd(
+            f"sudo systemctl enable --now {BmcDeployConstants.BMC_DHCP_WA_TIMER_NAME}"
+        )
+
+        enabled = engine.run_cmd(
+            f"sudo systemctl is-enabled {BmcDeployConstants.BMC_DHCP_WA_TIMER_NAME}"
+        ).strip()
+        logger.info(f"BMC DHCP recovery timer is-enabled: '{enabled}'")
+        if "enabled" not in enabled:
+            raise RuntimeError(
+                f"Failed to enable {BmcDeployConstants.BMC_DHCP_WA_TIMER_NAME} "
+                f"on the BMC; 'systemctl is-enabled' returned '{enabled}'"
+            )
+
+    @staticmethod
+    def _wait_bmc_containers_running(bmc_params, tries=30, delay=10):
+        """
+        Wait BMC containers are running
+        """
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+        general_cli = GeneralCliCommon(engine)
+
+        def _check():
+            defined = engine.run_cmd("docker ps -a --format '{{.Names}}'").split()
+            if not defined:
+                raise RuntimeError("No BMC containers reported by 'docker ps' yet")
+            running = set(general_cli.get_running_containers_names())
+            not_running = [name for name in defined if name not in running]
+            if not_running:
+                raise RuntimeError(
+                    f"BMC containers not running yet: {', '.join(not_running)}"
+                )
+            logger.info(
+                "All BMC containers are running"
+            )
+
+        retry_call(_check, tries=tries, delay=delay, logger=logger)
+
+    @staticmethod
+    def _sync_bmc_clock(bmc_params):
+        """
+        Force a one-shot clock sync via SSH. Equivalent to running
+        'sudo systemctl start chrony; sleep N; sudo chronyc -a makestep'
+        from the BMC shell. Assumes sudo is NOPASSWD for the BMC admin.
+        """
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+        logger.info(
+            f"BMC clock before sync: {engine.run_cmd('date').strip()}"
+        )
+        engine.run_cmd("sudo systemctl start chrony")
+        time.sleep(BmcDeployConstants.BMC_CHRONY_SETTLE_SECONDS)
+        engine.run_cmd("sudo chronyc -a makestep")
+        logger.info(
+            f"BMC clock after sync:  {engine.run_cmd('date').strip()}"
+        )
+
+    @staticmethod
+    def _disable_unavailable_services(bmc_params):
+        """
+        Disabled mgmt-framework, radv, snmp, swss, syncd and if not available eventd
+        """
+        engine = LinuxSshEngine(
+            bmc_params['bmc_ip'],
+            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
+            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
+        )
+        services_to_disable = []
+        if is_redmine_issue_active([5057220])[0]:
+            services_to_disable.append("eventd")
+        if is_redmine_issue_active([5057221])[0]:
+            services_to_disable.extend(["mgmt-framework", "radv", "snmp", "swss", "syncd"])
+        for service in services_to_disable:
+            engine.run_cmd(f"sudo config feature state {service} disabled")
+        else:
+            engine.run_cmd("sudo config save -y")

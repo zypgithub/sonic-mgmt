@@ -11,9 +11,9 @@ from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType, CumulusConsts, RbacConsts
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.aaa.helpers import create_new_user, change_user_role
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from infra.tools.connection_tools.utils import generate_strong_password
+from devts.infra.tools.connection_tools.utils import generate_strong_password
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.nvos_tools.infra.FilesTool import FilesTool

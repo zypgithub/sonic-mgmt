@@ -7,6 +7,7 @@ from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+pytestmark = pytest.mark.usefixtures('skip_if_no_ib0')
 
 
 @pytest.mark.check_log_size

@@ -117,6 +117,8 @@ def test_gnoi_system_reboot_warm(duthosts, rand_one_dut_hostname, localhost, gnm
     and the system recovers with all critical processes running.
     """
     duthost = duthosts[rand_one_dut_hostname]
+    if duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_smartswitch"):
+        pytest.skip("Warm reboot is not supported on smartswitch")
 
     # Trigger reboot via gNOI using gnmi_tls fixture
     reboot_response = gnmi_tls.gnoi.system_reboot(
@@ -142,7 +144,7 @@ def test_gnoi_system_reboot_warm(duthosts, rand_one_dut_hostname, localhost, gnm
 
     # Wait for critical processes before ending
     # Warm reboot takes longer for containers to restart; use an extended timeout
-    wait_critical_processes(duthost, timeout=360)
+    wait_critical_processes(duthost, timeout=600)
 
     # Wait for gNMI container to be running
     wait_until(120, 10, 0, is_gnmi_container_running, duthost)

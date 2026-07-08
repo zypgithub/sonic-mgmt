@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any, List, Tuple
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.tests_nvos.general.security.tpm_attestation import constants as tpmconst
 from ngts.tools.test_utils import allure_utils as allure

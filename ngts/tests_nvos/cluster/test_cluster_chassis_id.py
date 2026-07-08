@@ -1,7 +1,6 @@
 import logging
 import random
 import re
-
 import pytest
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -22,11 +21,11 @@ logger = logging.getLogger()
 
 
 @pytest.fixture(scope='function', autouse=True)
-def enable_stop_cluster(setup_name, devices):
+def enable_stop_cluster(setup_name, devices, engines):
     cluster = Cluster()
-    ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
+    ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, engine=engines.dut, devices=devices)
     yield
-    ClusterTools.stop_cluster(cluster, OutputFormat.json)
+    ClusterTools.stop_cluster(cluster, OutputFormat.json, engine=engines.dut)
 
 
 @pytest.mark.nmx
@@ -58,19 +57,25 @@ def test_cluster_chassis_id(engines, devices, random_api):
             output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn().get_returned_value()
             filename = get_name_from_generate_config_file(output)
 
-        with allure.step("Verify content of config file is as expected"):
-            dict_output = OutputParsingTool.parse_show_output_to_dict(
-                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
-                    file_type].files.show()).get_returned_value()
-            path = dict_output[filename]['path']
-            current_config_content = engines.dut.run_cmd(f"sudo cat {path} | grep chassis")
-            expected_contect = f'chassisId{mapping_id} {chassis_id_serial}'
-            ValidationTool.verify_expected_output(current_config_content, expected_contect)
+        TestToolkit.tested_api = ApiType.NVUE
+        if ClusterTools.verify_control_plane_state(cluster, ClusterConsts.CONTROL_PLANE_STATE_CONFIGURED, engine=engines.dut):
+            with allure.step("Verify content of config file is as expected"):
+                dict_output = OutputParsingTool.parse_show_output_to_dict(
+                    sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
+                        file_type].files.show()).get_returned_value()
+                path = dict_output[filename]['path']
+                current_config_content = engines.dut.run_cmd(f"sudo cat {path} | grep chassis")
+                expected_contect = f'chassisId{mapping_id} {chassis_id_serial}'
+                ValidationTool.verify_expected_output(current_config_content, expected_contect).verify_result()
 
     finally:
+        TestToolkit.tested_api = random_api
         with allure.step("Delete config file"):
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[
                 filename].action_delete().verify_result()
+        with allure.step("Running sdn factory reset"):
+            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
+
         with allure.step("Running sdn factory reset"):
             ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
 

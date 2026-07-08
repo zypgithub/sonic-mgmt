@@ -2,7 +2,7 @@ import os
 from typing import List
 from dataclasses import dataclass
 from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class ValidationConsts:
@@ -102,6 +102,9 @@ class PerfConsts:
         "COUNTERS_SAMPLE_DELAY": 5,
         "CLEAR_COUNTERS": "True"
     }
+    SENSORS_CMD_ENV_VAR = "SENSORS_CMD"
+    DEFAULT_SENSORS_CMD = r"sensors *-i2c-5-*"
+    SPC6_SENSORS_CMD = "sensors"
     CLEAR_COUNTERS_ENV_VAR = "CLEAR_COUNTERS"
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
     SEND_FWS_ENV = "SEND_FWS"
@@ -118,6 +121,7 @@ class PerfConsts:
     HIGH_AR_THRESHOLD = 2000
     SDK_GENERATION_SECONDS_THRESHOLD = 30
     PERF_COUNTERS_ALLOWED_DEVIATION = 2.5
+    DEFAULT_FAIRNESS_THRESHOLD = 0.05
 
     # CLI Types
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes
@@ -133,6 +137,7 @@ class PerfConsts:
     DVS_LATEST_VERSION_FILE = "dvs_latest.properties"
     SDK_INSTALL_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/install_sdk_wrapper.py"
     SDK_DUMP_FILE_SYSTEM = '/var/log/sdk_dbg'
+    SHARED_SDK_DUMPS_DIR = "/auto/sw_system_project/switch_performance/results/dumps"
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
     LATEST_SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/lastrc_{SDK_BRANCH}/DEBS/"
@@ -333,10 +338,14 @@ class PerfConsts:
 
     # Timeouts
     TIMEOUT_FOR_NEXTHOP_RESOLUTION = 180
+    # Post-reboot settle time before ONIE/install steps; used for multi-NOS uninstall (onie-select -k).
+    # Unknown chip types fall back to TIMEOUT_FOR_UNINSTALL_MODE_DEFAULT (see general_clis_common).
+    TIMEOUT_FOR_UNINSTALL_MODE_DEFAULT = 900
     TIMEOUT_FOR_UNINSTALL_MODE = {
         "SPC3": 900,
         "SPC4": 900,
-        "SPC5": 480
+        "SPC5": 480,
+        "SPC6": 480
     }
     TIMEOUT_FOR_INSTALL_MODE = 120
     MAX_CELLS_RANGE_FOR_BINARY_SEARCH = 100
@@ -371,7 +380,8 @@ class Cl_Consts:
     BONUS_PORTS = {
         'Spectrum-3': [],
         'Spectrum-4': ['swp65'],
-        'Spectrum-5': ['swp65', 'swp66']
+        'Spectrum-5': ['swp65', 'swp66'],
+        'Spectrum-6': ['swp65s0', 'swp65s1']
     }
     CL_HOME_DIR = "/home/cumulus"
     CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
@@ -380,15 +390,18 @@ class Cl_Consts:
     COMMON_IP_PREFIX_RIGHT = "110"
     SRV6_SPEED_BY_CHIP_TYPE = {
         "SPC4": "200000000",
-        "SPC5": "100000000"
+        "SPC5": "100000000",
+        "SPC6": "200000000",  # TODO(#5088329): confirm correct SRv6 speed for SPC6 with arch
     }
     SRV6_SPLIT_LEFT_BY_CHIP_TYPE = {
         "SPC4": 4,
-        "SPC5": 8
+        "SPC5": 8,
+        "SPC6": 8,  # TODO(#5088329): confirm correct SRv6 split_left for SPC6 with arch
     }
     SRV6_SPLIT_RIGHT_BY_CHIP_TYPE = {
         "SPC4": 4,
-        "SPC5": 8
+        "SPC5": 8,
+        "SPC6": 8,  # TODO(#5088329): confirm correct SRv6 split_right for SPC6 with arch
     }
     SDK_DEB_DIR_TEMPLATE = os.path.join(PerfConsts.SDK_VERSION_PATH, "sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-29-2-amd64/")
 
@@ -431,6 +444,7 @@ class SPCXRAConsts:
 
     PACKET_NUM_400G_x2 = 8
     PACKET_NUM_800G_x1 = 20
+    PACKET_NUM_800G_x2 = PACKET_NUM_800G_x1
     PACKET_NUM_800G_x1_WITH_INCREMENTAL_DIPS = 72
 
 
@@ -460,6 +474,8 @@ class MongoDbConsts:
     VALIDATOR_RESULTS = "validatorResults"
     TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES = "trimmedUntrimmedDroppedPercentages"
     CONF_NAME = "configurationName"
+    TEST_STATE = "testState"
+    STATE_INFO = "stateInfo"
     COLLECTION = ":COLLECTION:SwitchPerformanceCollection\n"
     CRITERIA = ":CRITERIA_FIELD:testType\n"
     MONGO_DB_DICT_PATH = "/auto/sw_system_project/switch_performance/results/mongodb/"
@@ -512,7 +528,8 @@ class MRCConsts:
     UPLINKS = "Uplinks"
     T1_MANY_TO_FEW_INGRESS_PORTS_NUM_BY_CHIP_TYPE = {
         "SPC4": 256,
-        "SPC5": 448
+        "SPC5": 448,
+        "SPC6": 448
     }
     T0_DOWNLINKS_LIST = []
     T0_UPLINKS_LIST = []
@@ -555,26 +572,36 @@ class MRCConsts:
         "SPC4": {"leaf": "Mellanox-SN5600-C256S1",
                  "spine": "Mellanox-SN5600-C224O8"},
         "SPC5": {"leaf": "Mellanox-SN5640-C512S2",
-                 "spine": "Mellanox-SN5640-C448O16"}
+                 "spine": "Mellanox-SN5640-C448O16"},
+        # leaf: ACS-SN6600_LD-SPIL-8 = full 8×200G split = 512 ports (confirmed)
+        # spine: TODO(#5088329): confirm correct SPC6 spine SKU with arch
+        "SPC6": {"leaf": "ACS-SN6600_LD-SPIL-8",
+                 "spine": "Mellanox-SN6600_LD-P128C2"},
     }
     HWSKU_SWITCH_TYPE = {
         "Mellanox-SN5600-C256S1": 'ToRRouter',
         "Mellanox-SN5600-C224O8": 'LeafRouter',
         "Mellanox-SN5640-C512S2": 'ToRRouter',
-        "Mellanox-SN5640-C448O16": 'LeafRouter'
+        "Mellanox-SN5640-C448O16": 'LeafRouter',
+        "ACS-SN6600_LD-SPIL-8": 'ToRRouter',          # SPC6 leaf — confirmed HWSKU
+        # TODO(#5088329): confirm correct SPC6 spine switch type with arch
+        "Mellanox-SN6600_LD-P128C2": 'LeafRouter',
     }
     UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE = {
         "SPC4": 128,
-        "SPC5": 180
+        "SPC5": 180,
+        "SPC6": 180,  # SPIL-8: 512×200G — same port count as SPC5 512×100G
     }
     VICTIM_PORTS_NUM = 90
     LEAF_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
         "SPC4": {'group_size': 16, 'group_num': 8},
-        "SPC5": {'group_size': 10, 'group_num': 18}
+        "SPC5": {'group_size': 10, 'group_num': 18},
+        "SPC6": {'group_size': 10, 'group_num': 18},  # same as SPC5 — identical port count
     }
     SPINE_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
         "SPC4": {'group_size': 16, 'group_num': 7},
-        "SPC5": {'group_size': 14, 'group_num': 16}
+        "SPC5": {'group_size': 14, 'group_num': 16},
+        "SPC6": {'group_size': 14, 'group_num': 16},  # same as SPC5 — identical port count
     }
     TRAFFIC_TYPE_IPV6 = "IPv6"
     TRAFFIC_TYPE_SRV6 = "SRv6"
@@ -595,9 +622,13 @@ class MRCConsts:
     SPC4_POOL_SIZE_BYTES = 158230080
     SPC5_POOL_SIZE_CELLS = SPC5_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
     SPC4_POOL_SIZE_CELLS = SPC4_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
+    SPC6_POOL_SIZE_MB = 105
+    SPC6_POOL_SIZE_BYTES = SPC6_POOL_SIZE_MB * 1000 * 1000
+    SPC6_POOL_SIZE_CELLS = SPC6_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
     POOL_SIZE_CELLS_BY_CHIP_TYPE = {
         "SPC5": SPC5_POOL_SIZE_CELLS,
-        "SPC4": SPC4_POOL_SIZE_CELLS
+        "SPC4": SPC4_POOL_SIZE_CELLS,
+        "SPC6": SPC6_POOL_SIZE_CELLS
     }
     FULL_MRC_DATA_PACKET_SIZE = 23
     HALF_MRC_DATA_PACKET_SIZE = FULL_MRC_DATA_PACKET_SIZE / 2
@@ -673,6 +704,12 @@ class MRCConsts:
             "mrc_num_packets": 10,
             "num_dummy_acls": 25,
         },
+        # TODO(#5088329): confirm correct Drop Over Max params for SPC6 with arch (seeded from SPC5)
+        "SPC6": {
+            "packet_size": 3072,
+            "mrc_num_packets": 10,
+            "num_dummy_acls": 25,
+        },
     }
 
 
@@ -696,6 +733,24 @@ class PowerConsts:
             r"VCORE MAIN \(VDD_M\)": 310,
             "TOTAL": 811,
             "HVDD_TILES_TH": 444
+        },  # TODO: Add SPC6 power thresholds
+        "SPC6": {
+            r"swb_mps29816_\d+_STRESS_VDD_rail\d+": 400,
+            r"swb_mps29816_\d+_STRESS_HVDD_T\d+_rail\d+": 222,
+            r"swb_mps29816_\d+_STRESS_DVDD_T\d+_rail\d+": 35,
+            r"swb_mps29816_\d+_STRESS_VDDHBID_T\d+(?:_T\d+)?_rail\d+": 150,
+            r"swb_mps29816_\d+_STRESS_AVDD_T\d+_rail\d+": 55,
+            r"VCORE TILES \d & \d \(VDD_Tx\)": 150,
+            r"DVDD TILES \d & \d \(DVDD_Tx\)": 35,
+            r"HVDD TILES \(HVDD_T\d+\)": 222,
+            r"VDDSCC": 55,
+            r"VCORE MAIN \(VDD_M\)": 400,
+            r"DDR PMIC": 60,
+            r"OSFP PHY": 45,
+            r"PDB CONVERTER": 200,
+            r"Misc PMIC": 600,
+            "TOTAL": 2500,
+            "HVDD_TILES_TH": 444,
         }
     }
     CONTROLLER_REGEX = r'\w*\d*-i2c-\d*-\d*\w*'
@@ -705,6 +760,33 @@ class PowerConsts:
     POWER_CURRENT = "currentAmp"
     POWER_WATT = "powerWatt"
     TOTAL_POWER = "Total Power"
+
+    # SPC6 lm-sensors supply inference (sensors_power_parse.infer_spc6_supply_label)
+    SPC6_MARKER_DDR_PMIC = 'DDR PMIC'
+    SPC6_SUPPLY_DDR_PMIC = 'DDR PMIC (VDD_MEM)'
+    SPC6_MARKER_CPU_PMIC = 'CPU PMIC'
+    SPC6_MARKER_VDDCR = 'VDDCR'
+    SPC6_SUPPLY_VCORE_MAIN = 'VCORE MAIN (VDD_M)'
+    SPC6_REGEX_ASIC_VDD_MAIN = r'ASIC_VDD\s+Volt\s*\(out'
+    SPC6_MARKER_TILE = 'TILE'
+    SPC6_REGEX_ASIC_HVDD = r'ASIC_HVDD|Pvin1_HVDD|PVIN1_HVDD'
+    SPC6_SUPPLY_HVDD_TILES = 'HVDD TILES (HVDD_T03)'
+    SPC6_REGEX_ASIC_DVDD_TILE = r'ASIC_DVDD_TILE(\d)'
+    SPC6_SUPPLY_DVDD_TILES_FMT = 'DVDD TILES {low} & {high} (DVDD_Tx)'
+    SPC6_REGEX_ASIC_VDD_TILE = r'ASIC_VDD_TILE(\d)'
+    SPC6_SUPPLY_VCORE_TILES_FMT = 'VCORE TILES {low} & {high} (VDD_Tx)'
+    SPC6_REGEX_ASIC_AVDD_TILE = r'ASIC_AVDD_TILE'
+    SPC6_SUPPLY_VDDSCC = 'VDDSCC'
+    SPC6_MARKER_ASIC_HBID = 'ASIC_HBID'
+    SPC6_MARKER_HBID_TILE = 'HBID_TILE'
+    SPC6_REGEX_ASIC_HBID_TILE = r'ASIC_HBID_TILE(\d+)'
+    SPC6_SUPPLY_VCORE_TILES_45 = 'VCORE TILES 4 & 5 (VDD_Tx)'
+    SPC6_MARKER_ASIC_OSFP = 'ASIC_OSFP'
+    SPC6_MARKER_OSFPX = 'OSFPx'
+    SPC6_SUPPLY_OSFP_PHY = 'OSFP PHY (ASIC_OSFP)'
+    SPC6_REGEX_PDB = r'PDB-\d+\s+(CONV|HSC)'
+    SPC6_SUPPLY_PDB_CONVERTER = 'PDB CONVERTER'
+    SPC6_SUPPLY_MISC_PMIC = 'Misc PMIC (unknown rail)'
 
 
 class SPCControllers:
@@ -733,6 +815,19 @@ class SPCControllers:
             "0x6e": "VDDSCC",
         },
         "SPC5": {
+            "0x62": "VCORE MAIN (VDD_M)",
+            "0x63": "VCORE TILES 0 & 1 (VDD_Tx)",
+            "0x64": "VCORE TILES 2 & 3 (VDD_Tx)",
+            "0x65": "VCORE TILES 4 & 5 (VDD_Tx)",
+            "0x66": "VCORE TILES 6 & 7 (VDD_Tx)",
+            "0x67": "DVDD TILES 0 & 1 (DVDD_Tx)",
+            "0x68": "DVDD TILES 2 & 3 (DVDD_Tx)",
+            "0x69": "DVDD TILES 4 & 5 (DVDD_Tx)",
+            "0x6a": "DVDD TILES 6 & 7 (DVDD_Tx)",
+            "0x6c": "HVDD TILES (HVDD_T03)",
+            "0x6e": "VDDSCC",
+        },
+        "SPC6": {  # TODO: Add SPC6 controllers dictionary
             "0x62": "VCORE MAIN (VDD_M)",
             "0x63": "VCORE TILES 0 & 1 (VDD_Tx)",
             "0x64": "VCORE TILES 2 & 3 (VDD_Tx)",

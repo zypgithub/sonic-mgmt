@@ -2,8 +2,8 @@ import allure
 import logging
 import pytest
 
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
 from retry.api import retry_call
 from ngts.config_templates.route_config_template import RouteConfigTemplate

@@ -59,6 +59,7 @@ def test_upload_results_to_sonar(target_version: str, results_path: Path) -> Non
                 general_job_params
                 .project("NVOS-Python")
                 .coverage_folder(python_results_path)
+                .exclude_file_path(f"{NvosConsts.DEST_PATH}/exclude_lists/coverage_python_exclude.conf")
                 .build()
             )
             client.trigger_with_query(python_job_name, python_job_params)
@@ -131,7 +132,8 @@ def _get_branch_name(target_version: str) -> str:
     pattern = r'/.+[-_](\d+[-.]\d+[-.]\d+)'
 
     if grep := re.search(pattern, target_version):
-        logger.debug(f'{(result := ('nvos-%s' % grep.group(1)))=!r}')
+        result = f"nvos-{grep.group(1)}"
+        logger.debug(f"{result=!r}")
         release: str = TestToolkit.version_to_release(result)
         logger.debug(f'{release=!r}')
         return release

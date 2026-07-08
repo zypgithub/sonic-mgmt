@@ -712,8 +712,8 @@ def test_check_sfputil_low_power_mode(duthosts, enum_rand_one_per_hwsku_frontend
                     "skip tested SFPs {} to avoid repeating operating physical interface {}".format(intf, phy_intf))
                 continue
             sfp_type = sfp_type_data[intf]
-            if ("QSFP" not in sfp_type and "OSFP" not in sfp_type) \
-                or intf in port_list_with_flat_memory[duthost.hostname]:
+            if ("QSFP" not in sfp_type and "OSFP" not in sfp_type) or \
+                    (intf in port_list_with_flat_memory[duthost.hostname]):
                 logging.info("skip testing port {} which doesn't support LPM".format(intf))
                 not_supporting_lpm_physical_ports.add(phy_intf)
                 continue

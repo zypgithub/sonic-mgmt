@@ -18,6 +18,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.test_system_health import verify_health_status_and_led
+from ngts.tests_nvos.helpers import redmine_helpers
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 
@@ -28,6 +29,7 @@ logger = logging.getLogger()
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.nvos_ci
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 @pytest.mark.air
 @pytest.mark.air_ci
@@ -54,12 +56,13 @@ def test_show_platform_environment(engines, devices, random_api, output_format):
         ValidationTool.validate_set_equal(output.keys(),
                                           devices.dut.psu_fan_list + devices.dut.fan_list + devices.dut.psu_list +
                                           temperature_sensor_list + devices.dut.led_list +
-                                          devices.dut.voltage_sensors).verify_result()
+                                          devices.dut.voltage_sensors + devices.dut.list_of_leakages).verify_result()
 
 
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 def test_show_platform_environment_fan(engines, devices, random_api, output_format, skip_for_fanless_setup):
     """
@@ -123,6 +126,7 @@ def _test_specific_fan(fan, output_format, expected, output, platform):
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 @pytest.mark.air
 def test_show_platform_environment_led(engines, devices, random_api):
@@ -216,6 +220,7 @@ def test_set_platform_environment_led(engines, devices, random_api):
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.skynet
 def test_show_platform_environment_psu(engines, devices, random_api):
     """
@@ -294,7 +299,9 @@ def test_show_platform_environment_temperature(engines, devices, random_api):
                                   PlatformConsts.ENV_TEMP_MAX)
 
     verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_CPU)
-    verify_sensor_group_by_tolerance(output, PlatformConsts.FW_ASIC)
+    
+    if not redmine_helpers.is_bug_active(5070648):  # RM 5070648: ASIC temp tolerance flap
+        verify_sensor_group_by_tolerance(output, PlatformConsts.FW_ASIC)
     if devices.dut.psu_list:
         verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
 

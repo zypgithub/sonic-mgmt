@@ -10,7 +10,8 @@ from constants import ENI, VM_VNI, VNET1_VNI, VNET2_VNI, REMOTE_CA_IP, LOCAL_CA_
     REMOTE_PA_IP, REMOTE_PTF_INTF, REMOTE_PTF_MAC, REMOTE_PA_PREFIX, VNET1_NAME, VNET2_NAME, ROUTING_ACTION, \
     ROUTING_ACTION_TYPE, LOOKUP_OVERLAY_IP, ACL_GROUP, ACL_STAGE, LOCAL_DUT_INTF, REMOTE_DUT_INTF, \
     REMOTE_PTF_SEND_INTF, REMOTE_PTF_RECV_INTF, LOCAL_REGION_ID, VXLAN_UDP_BASE_SRC_PORT, VXLAN_UDP_SRC_PORT_MASK, \
-    NPU_DATAPLANE_IP, NPU_DATAPLANE_MAC, NPU_DATAPLANE_PORT, DPU_DATAPLANE_IP, DPU_DATAPLANE_MAC, DPU_DATAPLANE_PORT
+    NPU_DATAPLANE_IP, NPU_DATAPLANE_MAC, NPU_DATAPLANE_PORT, \
+    DPU_DATAPLANE_IP, DPU_DATAPLANE_MAC, DPU_DATAPLANE_PORT
 from tests.common.dash_utils import render_template_to_host, apply_swssconfig_file
 from gnmi_utils import generate_gnmi_cert, apply_gnmi_cert, recover_gnmi_cert, apply_gnmi_file
 from dash_acl import AclGroup, DEFAULT_ACL_GROUP, WAIT_AFTER_CONFIG, DefaultAclRule
@@ -141,15 +142,6 @@ def dash_pl_config(duthost, dpuhosts, dpu_index, config_facts, minigraph_facts):
                     continue
             if REMOTE_PTF_INTF in dash_info and LOCAL_PTF_INTF in dash_info:
                 break
-    dpuhost = dpuhosts[dpu_index]
-    dash_info[DPU_DATAPLANE_PORT] = dpuhost.dpu_dataplane_port
-    dash_info[DPU_DATAPLANE_IP] = dpuhost.dpu_data_port_ip
-    dash_info[DPU_DATAPLANE_MAC] = dpuhost.dpu_dataplane_mac
-
-    dash_info[NPU_DATAPLANE_PORT] = dpuhost.npu_dataplane_port
-    dash_info[NPU_DATAPLANE_IP] = dpuhost.npu_data_port_ip
-    dash_info[NPU_DATAPLANE_MAC] = dpuhost.npu_dataplane_mac
-
     dpuhost = dpuhosts[dpu_index]
     dash_info[DPU_DATAPLANE_PORT] = dpuhost.dpu_dataplane_port
     dash_info[DPU_DATAPLANE_IP] = dpuhost.dpu_data_port_ip
@@ -507,6 +499,31 @@ def acl_default_rule(localhost, duthost, ptfhost, dash_config_info):
 @pytest.fixture(scope="module")
 def dpu_index(request):
     return request.config.getoption("--dpu_index")
+
+
+def _apply_pl_sip(sip_params):
+    encoding_ip, encoding_mask, overlay_sip, overlay_sip_mask = sip_params
+    pl.PL_ENCODING_IP = encoding_ip
+    pl.PL_ENCODING_MASK = encoding_mask
+    pl.PL_OVERLAY_SIP = overlay_sip
+    pl.PL_OVERLAY_SIP_MASK = overlay_sip_mask
+    pl_sip_encoding = f"{encoding_ip}/{encoding_mask}"
+    overlay_sip_prefix = f"{overlay_sip}/{overlay_sip_mask}"
+    for cfg in pl.PL_SIP_CONFIGS:
+        for entry in cfg.values():
+            if "pl_sip_encoding" in entry:
+                entry["pl_sip_encoding"] = pl_sip_encoding
+            if "overlay_sip_prefix" in entry:
+                entry["overlay_sip_prefix"] = overlay_sip_prefix
+
+
+@pytest.fixture(scope="module", autouse=True)
+def configure_pl_sip_for_platform(request):
+    if "dpuhosts" not in request.fixturenames:
+        return
+    dpuhost = request.getfixturevalue("dpuhosts")[request.getfixturevalue("dpu_index")]
+    sip_params = pl.PL_SIP_ALTERNATE if "bluefield" in dpuhost.facts["asic_type"] else pl.DEFAULT_PL_SIP
+    _apply_pl_sip(sip_params)
 
 
 @pytest.fixture(scope="module", params=[True, False], ids=["single-endpoint", "multi-endpoint"])

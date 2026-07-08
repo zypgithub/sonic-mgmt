@@ -447,26 +447,26 @@ r-bison-18,Ethernet492,r-bison-19,Ethernet492,100000,2621,Access,on
 r-bison-18,Ethernet493,r-bison-19,Ethernet493,100000,2622,Access,on
 r-bison-18,Ethernet494,r-bison-19,Ethernet494,100000,2623,Access,on
 r-bison-18,Ethernet495,r-bison-19,Ethernet495,100000,2624,Access,on
-r-bison-18,Ethernet496,r-bison-19,Ethernet496,100000,2625,Access,on
-r-bison-18,Ethernet497,r-bison-19,Ethernet497,100000,2626,Access,on
-r-bison-18,Ethernet498,r-bison-19,Ethernet498,100000,2627,Access,on
-r-bison-18,Ethernet499,r-bison-19,Ethernet499,100000,2628,Access,on
-r-bison-18,Ethernet500,r-bison-19,Ethernet500,100000,2629,Access,on
-r-bison-18,Ethernet501,r-bison-19,Ethernet501,100000,2630,Access,on
-r-bison-18,Ethernet502,r-bison-19,Ethernet502,100000,2631,Access,on
-r-bison-18,Ethernet503,r-bison-19,Ethernet503,100000,2632,Access,on
+r-bison-18,Ethernet496,r-moose-06,Ethernet80,100000,2635,Access,off
+r-bison-18,Ethernet497,r-moose-06,Ethernet81,100000,2636,Access,off
+r-bison-18,Ethernet498,r-moose-06,Ethernet82,100000,2637,Access,off
+r-bison-18,Ethernet499,r-moose-06,Ethernet83,100000,2638,Access,off
+r-bison-18,Ethernet500,r-moose-06,Ethernet84,100000,2639,Access,off
+r-bison-18,Ethernet501,r-moose-06,Ethernet85,100000,2640,Access,off
+r-bison-18,Ethernet502,r-moose-06,Ethernet86,100000,2641,Access,off
+r-bison-18,Ethernet503,r-moose-06,Ethernet87,100000,2642,Access,off
 
 r-bison-18,Ethernet512,r-bison-19,Ethernet512,10000,2633,Access,off
 r-bison-18,Ethernet520,r-bison-19,Ethernet520,10000,2634,Access,off
 
-r-bison-18,Ethernet504,r-moose-06,Ethernet80,100000,2635,Access,off
-r-bison-18,Ethernet505,r-moose-06,Ethernet81,100000,2636,Access,off
-r-bison-18,Ethernet506,r-moose-06,Ethernet82,100000,2637,Access,off
-r-bison-18,Ethernet507,r-moose-06,Ethernet83,100000,2638,Access,off
-r-bison-18,Ethernet508,r-moose-06,Ethernet84,100000,2639,Access,off
-r-bison-18,Ethernet509,r-moose-06,Ethernet85,100000,2640,Access,off
-r-bison-18,Ethernet510,r-moose-06,Ethernet86,100000,2641,Access,off
-r-bison-18,Ethernet511,r-moose-06,Ethernet87,100000,2642,Access,off
+r-bison-18,Ethernet504,r-bison-19,Ethernet504,100000,2625,Access,off
+r-bison-18,Ethernet505,r-bison-19,Ethernet505,100000,2626,Access,off
+r-bison-18,Ethernet506,r-bison-19,Ethernet506,100000,2627,Access,off
+r-bison-18,Ethernet507,r-bison-19,Ethernet507,100000,2628,Access,off
+r-bison-18,Ethernet508,r-bison-19,Ethernet508,100000,2629,Access,off
+r-bison-18,Ethernet509,r-bison-19,Ethernet509,100000,2630,Access,off
+r-bison-18,Ethernet510,r-bison-19,Ethernet510,100000,2631,Access,off
+r-bison-18,Ethernet511,r-bison-19,Ethernet511,100000,2632,Access,off
 
-r-bison-19,Ethernet504,r-sonic-19,p4p2,100000,"1615-2100,2615-2634",Trunk,on
+r-bison-19,Ethernet496,r-sonic-19,p4p2,100000,"1615-2100,2615-2634",Trunk,on
 r-moose-06,Ethernet296,r-sonic-19,p4p2,100000,2635-2642,Trunk,on

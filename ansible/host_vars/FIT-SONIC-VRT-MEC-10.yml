@@ -1,0 +1,7 @@
+# Host variables for fit-sonic-vrt-mec-10
+
+mgmt_bridge: br0
+mgmt_prefixlen: 23
+mgmt_gw: 10.220.184.10
+external_port: p4p1
+

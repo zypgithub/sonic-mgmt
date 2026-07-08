@@ -39,7 +39,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("sad_case_type", input_sad_list, scope="module")
 
 
-def test_multi_hop_upgrade_path(localhost, duthosts, rand_one_dut_hostname, ptfhost, tbinfo, request,
+def test_multi_hop_upgrade_path(localhost, duthosts, rand_one_dut_hostname, ptfhost, tbinfo, request, nbrhosts,
                                 get_advanced_reboot, multihop_advanceboot_loganalyzer_factory,  # noqa: F811
                                 verify_dut_health, consistency_checker_provider, restore_image):        # noqa: F811
     duthost = duthosts[rand_one_dut_hostname]

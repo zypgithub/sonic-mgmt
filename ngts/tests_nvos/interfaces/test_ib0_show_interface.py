@@ -5,6 +5,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()
+pytestmark = pytest.mark.usefixtures('skip_if_no_ib0')
 
 
 @pytest.mark.ib

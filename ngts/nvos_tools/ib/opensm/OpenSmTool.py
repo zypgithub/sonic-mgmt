@@ -2,7 +2,7 @@ import pytest
 import time
 import logging
 
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_constants.constants_nvos import IbConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -158,6 +158,14 @@ class OpenSmTool:
                 return ResultObj(False, "Failed to create smi2 SMI device required for multiplanar")
 
             logging.info(f"Using opensm path: {desired_path}")
+            if multiplanar:
+                # CX8 needs to see the planarized interface
+                if "smi2" not in output:
+                    engines.hfnm.run_cmd(
+                        f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
+                opensm_path = '/opt/ufm/opensm/sbin/opensm'
+            else:
+                opensm_path = '/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm'
 
             output = engines.hfnm.run_cmd("ibstat {}".format(port_name))
             guid = ''

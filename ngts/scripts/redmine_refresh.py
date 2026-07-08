@@ -25,7 +25,7 @@ if "/devts" not in sys.path:
 from datetime import datetime, timedelta
 from gerrit.base import GerritClient
 from ngts.constants.constants import Sonic_Cache, MarsConstants
-from infra.tools.redmine.redmine_api import get_issues_active_status
+from devts.infra.tools.redmine.redmine_api import get_issues_active_status
 
 logger = logging.getLogger()
 

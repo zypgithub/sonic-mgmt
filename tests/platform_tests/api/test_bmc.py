@@ -18,7 +18,7 @@ from tests.common.helpers.firmware_helper import (
     show_firmware, FW_TYPE_UPDATE, PLATFORM_COMP_PATH_TEMPLATE,
     get_bmc_firmware_list, get_bmc_ip
 )
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger(__name__)
 

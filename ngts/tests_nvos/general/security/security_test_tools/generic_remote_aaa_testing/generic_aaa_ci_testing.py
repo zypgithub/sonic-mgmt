@@ -48,7 +48,7 @@ def generic_aaa_ci_test_auth(test_api: str, addressing_type: str, engines, topol
     with allure.step(f'Enable {remote_aaa_type}'):
         remote_aaa_obj.enable(failthrough=True, apply=True, verify_res=False)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item)
+            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(f'Verify auth with {remote_aaa_type} user'):
         user: UserInfo = server.users[0]

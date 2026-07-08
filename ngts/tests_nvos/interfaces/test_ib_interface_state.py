@@ -22,6 +22,7 @@ logger = logging.getLogger()
 @pytest.mark.check_disk_usage
 @pytest.mark.ib_interfaces
 @pytest.mark.air
+@pytest.mark.nvos_ci
 def test_ib_interface_state(test_name, random_api, devices):
     """
     Configure port interface state and verify the configuration applied successfully

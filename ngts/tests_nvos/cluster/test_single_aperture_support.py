@@ -6,9 +6,10 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_tools.platform.Platform import Platform
-from ngts.nvos_constants.constants_nvos import OutputFormat, ApiType
+from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import ChassisLocationConsts
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -17,8 +18,18 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 logger = logging.getLogger()
 
 # Error message constants for tray maintenance state tests
-ERR_NMX_RESOURCE_BAD = "NMX_ST_RESOURCE_BAD"
+# NMX-C reports a non-existent/out-of-range tray id as NMX_ST_BADPARAM
+# (it does not return a distinct "not found" code), so this is the expected
+# error for any invalid tray-id failure.
+ERR_NMX_TRAY_ID_BADPARAM = "NMX_ST_BADPARAM"
 ERR_INVALID_TRAY_ID = "is not a 'sdn-tray-id'"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def skip_if_standalone(standalone_system):
+    """Skip tests if system is standalone (requires non-standalone system for single aperture support)."""
+    if standalone_system:
+        pytest.skip("Single aperture support tests require non-standalone system (mini-oberon setup)")
 
 
 @contextmanager
@@ -27,7 +38,7 @@ def cluster_enabled(setup_name, devices):
     cluster = Cluster()
     with allure.step("Enable cluster and wait for NMX-C to be ready"):
         ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
-        ClusterTools.wait_until_app_expected_status(cluster, 'nmx-controller', 'ok')
+        ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, 'ok')
     try:
         yield cluster
     finally:
@@ -65,7 +76,7 @@ def get_chassis_info():
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
-def test_update_maintenance_state_up(engines, devices, random_api, get_chassis_info, setup_name, standalone_system, has_loopbox):
+def test_update_maintenance_state_up(engines, devices, random_api, get_chassis_info, setup_name):
     """
     Test Objective:
     Verify that a switch tray on the local chassis can be brought back to maintenance-state up using the
@@ -76,8 +87,7 @@ def test_update_maintenance_state_up(engines, devices, random_api, get_chassis_i
     - Cluster state enabled and NMX-C is running
     - Non standalone system
     """
-    if standalone_system:
-        pytest.skip("Single aperture support tests require non-standalone system (mini-oberon setup)")
+    TestToolkit.tested_api = random_api
 
     with cluster_enabled(setup_name, devices):
         slot_number = get_chassis_info[ChassisLocationConsts.SLOT_NUM]
@@ -97,7 +107,7 @@ def test_update_maintenance_state_up(engines, devices, random_api, get_chassis_i
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
-def test_error_flow_single_aperture_support(engines, devices, random_api, get_chassis_info, setup_name, standalone_system, has_loopbox):
+def test_error_flow_single_aperture_support(engines, devices, random_api, get_chassis_info, setup_name):
     """
     Test Objective:
     Verify proper error handling for invalid slot ID and / or invalid chassis-sn
@@ -106,25 +116,21 @@ def test_error_flow_single_aperture_support(engines, devices, random_api, get_ch
     - Cluster state enabled and NMX-C is running
     - Non standalone system
     """
-    if standalone_system:
-        pytest.skip("Single aperture support tests require non-standalone system (mini-oberon setup)")
+    TestToolkit.tested_api = random_api
+    output_format = OutputFormat.json
 
     with cluster_enabled(setup_name, devices) as cluster:
         chassis_sn = get_chassis_info[ChassisLocationConsts.CHAS_SN]
-        output_format = OutputFormat.json
 
         with allure.step("Create Sdn object"):
             sdn = Sdn()
 
         with allure.step("Verify cluster state is enabled and NMX-C is running"):
-            cluster_output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=output_format),
-                output_format=output_format).get_returned_value()
-            assert cluster_output['state'] == 'enabled', f"Cluster state is {cluster_output['state']}, expected enabled"
+            ClusterTools.validate_cluster_enabled(cluster, output_format)
 
         with allure.step("Verify bad flow commands for single aperture support"):
             with allure.independent_step("Attempt with non-existent slot (999)"):
-                sdn.trays.action_update_maintenance_state(tray_id='999').verify_result(should_succeed=False, expected_value=ERR_NMX_RESOURCE_BAD)
+                sdn.trays.action_update_maintenance_state(tray_id='999').verify_result(should_succeed=False, expected_value=ERR_NMX_TRAY_ID_BADPARAM)
 
             with allure.independent_step("Attempt with negative slot (-1)"):
                 sdn.trays.action_update_maintenance_state(tray_id='-1').verify_result(should_succeed=False, expected_value=ERR_INVALID_TRAY_ID)
@@ -133,14 +139,10 @@ def test_error_flow_single_aperture_support(engines, devices, random_api, get_ch
                 sdn.trays.action_update_maintenance_state(tray_id=f"{chassis_sn}.aaa").verify_result(should_succeed=False, expected_value=ERR_INVALID_TRAY_ID)
 
             with allure.independent_step("Attempt with chassis SN without slot"):
-                sdn.trays.action_update_maintenance_state(tray_id=chassis_sn).verify_result(should_succeed=False, expected_value=ERR_NMX_RESOURCE_BAD)
+                sdn.trays.action_update_maintenance_state(tray_id=chassis_sn).verify_result(should_succeed=False, expected_value=ERR_NMX_TRAY_ID_BADPARAM)
 
             with allure.independent_step("Attempt with a invalid format of the slot number (.1)"):
                 sdn.trays.action_update_maintenance_state(tray_id='.1').verify_result(should_succeed=False, expected_value=ERR_INVALID_TRAY_ID)
 
         with allure.step("Verify NMX-C is still running after all error tests"):
-            cluster_output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=output_format),
-                output_format=output_format).get_returned_value()
-            assert cluster_output['state'] == 'enabled', \
-                f"Cluster state changed to {cluster_output['state']} after error tests, should remain enabled"
+            ClusterTools.validate_cluster_enabled(cluster, output_format)

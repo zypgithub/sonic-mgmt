@@ -1,0 +1,164 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_14:
+    eos:
+      children:
+        vms_14:
+
+    servers:
+      vars:
+        topologies:
+          - t0
+          - t1-lag
+          - ptf32
+          - ptf-any
+          - t0-56
+
+      children:
+        server_14:
+
+vm_host_14:
+  hosts:
+    MTVR-R740-01:
+      ansible_host: mtvr-r740-01
+
+vms_14:
+  hosts:
+    VM1401:
+      ansible_host: 10.245.20.63
+    VM1402:
+      ansible_host: 10.245.20.64
+    VM1403:
+      ansible_host: 10.245.20.65
+    VM1404:
+      ansible_host: 10.245.20.66
+    VM1405:
+      ansible_host: 10.245.20.67
+    VM1406:
+      ansible_host: 10.245.20.68
+    VM1407:
+      ansible_host: 10.245.20.69
+    VM1408:
+      ansible_host: 10.245.20.70
+    VM1409:
+      ansible_host: 10.245.20.71
+    VM1410:
+      ansible_host: 10.245.20.72
+    VM1411:
+      ansible_host: 10.245.20.73
+    VM1412:
+      ansible_host: 10.245.20.74
+    VM1413:
+      ansible_host: 10.245.20.75
+    VM1414:
+      ansible_host: 10.245.20.76
+    VM1415:
+      ansible_host: 10.245.20.77
+    VM1416:
+      ansible_host: 10.245.20.78
+    VM1417:
+      ansible_host: 10.245.20.79
+    VM1418:
+      ansible_host: 10.245.20.80
+    VM1419:
+      ansible_host: 10.245.20.81
+    VM1420:
+      ansible_host: 10.245.20.82
+    VM1421:
+      ansible_host: 10.245.20.83
+    VM1422:
+      ansible_host: 10.245.20.84
+    VM1423:
+      ansible_host: 10.245.20.85
+    VM1424:
+      ansible_host: 10.245.20.86
+    VM1425:
+      ansible_host: 10.245.20.87
+    VM1426:
+      ansible_host: 10.245.20.88
+    VM1427:
+      ansible_host: 10.245.20.89
+    VM1428:
+      ansible_host: 10.245.20.90
+    VM1429:
+      ansible_host: 10.245.20.91
+    VM1430:
+      ansible_host: 10.245.20.92
+    VM1431:
+      ansible_host: 10.245.20.93
+    VM1432:
+      ansible_host: 10.245.20.94
+    VM1433:
+      ansible_host: 10.245.20.95
+    VM1434:
+      ansible_host: 10.245.20.96
+    VM1435:
+      ansible_host: 10.245.20.97
+    VM1436:
+      ansible_host: 10.245.20.98
+    VM1437:
+      ansible_host: 10.245.20.99
+    VM1438:
+      ansible_host: 10.245.20.100
+    VM1439:
+      ansible_host: 10.245.20.101
+    VM1440:
+      ansible_host: 10.245.20.102
+    VM1441:
+      ansible_host: 10.245.20.103
+    VM1442:
+      ansible_host: 10.245.20.104
+    VM1443:
+      ansible_host: 10.245.20.105
+    VM1444:
+      ansible_host: 10.245.20.106
+    VM1445:
+      ansible_host: 10.245.20.107
+    VM1446:
+      ansible_host: 10.245.20.108
+    VM1447:
+      ansible_host: 10.245.20.109
+    VM1448:
+      ansible_host: 10.245.20.110
+    VM1449:
+      ansible_host: 10.245.20.111
+    VM1450:
+      ansible_host: 10.245.20.112
+    VM1451:
+      ansible_host: 10.245.20.113
+    VM1452:
+      ansible_host: 10.245.20.114
+    VM1453:
+      ansible_host: 10.245.20.115
+    VM1454:
+      ansible_host: 10.245.20.116
+    VM1455:
+      ansible_host: 10.245.20.117
+    VM1456:
+      ansible_host: 10.245.20.118
+    VM1457:
+      ansible_host: 10.245.20.119
+    VM1458:
+      ansible_host: 10.245.22.120
+    VM1459:
+      ansible_host: 10.245.22.121
+    VM1460:
+      ansible_host: 10.245.22.122
+    VM1461:
+      ansible_host: 10.245.22.123
+    VM1462:
+      ansible_host: 10.245.22.124
+    VM1463:
+      ansible_host: 10.245.22.125
+    VM1464:
+      ansible_host: 10.245.22.126
+
+server_14:
+  children:
+    vm_host_14:
+    vms_14:
+  vars:
+    host_var_file: host_vars/MTVR-R740-01.yml
+    mgmt_prefixlen: 20

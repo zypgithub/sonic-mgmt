@@ -9,7 +9,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import CumulusConsts, RbacConsts
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 import threading
 from collections import defaultdict
 import time

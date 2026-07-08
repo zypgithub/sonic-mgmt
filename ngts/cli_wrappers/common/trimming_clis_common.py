@@ -2,7 +2,7 @@ import logging
 import os
 import json
 from ngts.constants.performance_constants import PerfConsts
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 
 

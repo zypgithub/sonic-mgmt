@@ -1,3 +1,4 @@
+import copy
 import logging
 import subprocess
 
@@ -7,9 +8,8 @@ except ImportError:
     from netmiko.exceptions import NetmikoAuthenticationException
 from retry import retry
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.connection_tools.serial_engine_factory import SerialEngineFactory
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -100,32 +100,21 @@ class ConnectionTool:
     @staticmethod
     def create_serial_engine(topology_obj, ip=None, username=None, password=None, enter_serial_context=False):
         """
-        @summary: Create and return a pexpect serial engine
+        @summary: Create and return a serial engine. Dispatches via
+                  :class:`SerialEngineFactory` (AIR → WSS engine,
+                  NVUE → pexpect, else → Mellanox).
         """
         with allure.step("create serial engine"):
             att = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']
-            # add connection options to pass connection problems
-            # Try serial_conn_command first, fallback to serial_conn_cmd if empty
-            serial_conn_cmd = att['Specific'].get('serial_conn_command', '').strip()
-            if not serial_conn_cmd:
-                serial_conn_cmd = att['Specific'].get('serial_conn_cmd', '').strip()
-
-            if not serial_conn_cmd:
-                raise ValueError("Serial connection command not configured in topology")
-
-            extended_rcon_command = serial_conn_cmd.split(' ')
-            extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
-            extended_rcon_command = ' '.join(extended_rcon_command)
-
-            ip = att['Specific']['ip'] if not ip else ip
-            username = att['Topology Conn.']['CONN_USER'] if not username else username
-            password = att['Topology Conn.']['CONN_PASSWORD'] if not password else password
-
-            serial_engine = PexpectSerialEngine(ip=ip,
-                                                username=username,
-                                                password=password,
-                                                rcon_command=extended_rcon_command,
-                                                timeout=30)
+            attributes = att
+            if ip is not None:
+                attributes = copy.deepcopy(att)
+                attributes['Specific']['ip'] = ip
+            serial_engine = SerialEngineFactory.create(
+                attributes,
+                login_username=username,
+                login_password=password,
+            )
             if enter_serial_context:
                 serial_engine.create_serial_engine(False)
             return serial_engine

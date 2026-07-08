@@ -7,8 +7,8 @@ import shlex
 import subprocess
 import time
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import (ActionConsts, ApiType, DatabaseConst, HealthConsts, IbConsts, IpConsts,
                                                 IssuConsts, NvosConst, PlatformConsts, SystemConsts)
 from ngts.tests_nvos.constants import FW_COMPONENT_SSD
@@ -116,7 +116,8 @@ def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_
         logger.info("ACL baseline captured for %d default ACL object(s)", len(json_acl_rules))
 
     with allure.step("Save control-plane ACL bindings baseline (nv show system control-plane acl)"):
-        cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(dut_engine=dut_engine)
+        cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(
+            dut_engine=dut_engine, mangle_state=acl_persist_mangle_state)
         logger.info("Control-plane ACL bindings captured: %s", cp_acl_bindings)
 
     issu_start = time.time()
@@ -974,7 +975,8 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
         logger.info("ACL baseline captured for %d default ACL object(s)", len(json_acl_rules))
 
     with allure.step("Save control-plane ACL bindings baseline (nv show system control-plane acl)"):
-        cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(dut_engine=dut_engine)
+        cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(
+            dut_engine=dut_engine, mangle_state=acl_persist_mangle_state)
         logger.info("Control-plane ACL bindings captured: %s", cp_acl_bindings)
 
     return (traffic_start_time, interface_output, ip_list, mtu_info,

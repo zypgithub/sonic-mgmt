@@ -161,12 +161,7 @@ def _test_remarkable_logs(engine, testing, log_count, log_priority, threshold_fi
     fae = Fae()
     system = System()
 
-    command = (
-        f"/bin/bash -lc $'for i in {{1..{log_count}}}\\n"
-        f"do\\n"
-        f"  logger -p {log_priority} \"Welcome $i times\"\\n"
-        f"done'"
-    )
+    command = f"for i in {{1..{log_count}}}; do logger -p {log_priority} \"Welcome $i times\"; done"
     with allure.step(f"rotate logs and check current files in remarkable logs folder"):
         engine.run_cmd("cat /tmp/remarkable_threshold_error_last_run")
         engine.run_cmd("cat /tmp/remarkable_threshold_notice_last_run")
@@ -174,6 +169,7 @@ def _test_remarkable_logs(engine, testing, log_count, log_priority, threshold_fi
         engine.run_cmd("ls /var/log/remarkable_logs_1")
         system.log.rotate_logs()
         system.log.rotate_logs()
+        time.sleep(8)   # Pause to allow for log rotation completion; two consecutive rotations may delay rsyslog.service restart.
         engine.run_cmd("ls /var/log/remarkable_logs_1")
 
     with allure.step(f"configure rate, clean-time, logs-number and time-window for {testing}"):

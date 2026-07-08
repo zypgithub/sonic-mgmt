@@ -28,9 +28,12 @@ class ClusterConsts:
     NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
     INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
     UNDEFINED_STATE = 'undefined'
+    CONTROL_PLANE_STATE_CONFIGURED = 'CONTROL_PLANE_STATE_CONFIGURED'
     UNDEFINED_STATE_ERR_MSG_NVUE = "'undefined' is not one of ['enabled', 'disabled']"
     UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
+    CLUSTER_NOT_ENABLED_ERR = 'cluster is not enabled'
+
     RESET_FACTORY_CLUSTER_DISABLED_NVUE = 'Error: Action failed with the following issue:\n  cluster is not enabled'
 
     RESET_FACTORY_NMX_CONN_DISABLED_NVUE = 'Error: Action failed with the following issue:\n  gRPC connection is down'
@@ -255,6 +258,17 @@ class AnsiblePlaybooksConsts:
     #       - 'param': parameter name for -e flag
     #   'extra_args': additional arguments (like --skip-tags)
 
+    # Per-setup playbook filenames (same collection_path and component_param_mapping as PLAYBOOKS base entries).
+    # Keys: ALIGNMENT_PLAYBOOKS_ORDER setup names. Inner keys: playbook_key when filename differs from default.
+    PLAYBOOK_FILENAME_PER_SETUP: Dict[str, Dict[str, str]] = {
+        'NVOS_juliet_10_7_148_148': {
+            FIRMWARE_BMC: 'firmware_install_compute_bmc.yml',
+        },
+        'NVOS_sws_rtf2_rosalind_198': {
+            FIRMWARE_BMC: 'bmc_powerctrl_firmware_install_compute_bmc.yml',
+        },
+    }
+
     PLAYBOOKS = {
         SOFTWARE_INSTALL: {
             'name': 'software_install_run_compute.yml',
@@ -390,7 +404,15 @@ class AnsiblePlaybooksConsts:
     # =========================================================================
 
     @classmethod
-    def get_playbook_command(cls, playbook_key, inventory_path, component_paths_dict):
+    def _playbook_filename(cls, playbook_info, playbook_key, setup_name):
+        """Resolve playbook YAML filename, including per-setup overrides."""
+        name = playbook_info['name']
+        per_setup = cls.PLAYBOOK_FILENAME_PER_SETUP.get(setup_name, {})
+        name = per_setup.get(playbook_key, name)
+        return name
+
+    @classmethod
+    def get_playbook_command(cls, playbook_key, inventory_path, component_paths_dict, setup_name):
         """
         Build complete playbook command.
 
@@ -401,6 +423,7 @@ class AnsiblePlaybooksConsts:
             inventory_path: Path to inventory file
             component_paths_dict: Dict of {param_name: file_path}
                 Example: {'rm_run_path': '/tmp/driver.run', 'imex_run_path': '/tmp/imex.run'}
+            setup_name: Optional lab/setup id (e.g. NVOS_sws_rtf2_rosalind_198) for playbook filename overrides
 
         Returns:
             Complete command string ready to execute
@@ -411,12 +434,13 @@ class AnsiblePlaybooksConsts:
             '/root/.../software_install_run_compute.yml -i /path/inv.yml -e "rm_run_path=/tmp/driver.run imex_run_path=/tmp/imex.run" -vvv'
         """
         playbook_info = cls.PLAYBOOKS[playbook_key]
+        filename = cls._playbook_filename(playbook_info, playbook_key, setup_name)
 
         # Build full playbook path (playbooks are directly executable)
-        playbook_path = f"{playbook_info['collection_path']}playbooks/{playbook_info['name']}"
+        playbook_path = f"{playbook_info['collection_path']}playbooks/{filename}"
 
-        # Start command (NO 'ansible-playbook' prefix - playbooks are executable)
-        cmd = f"{playbook_path} -i {inventory_path}"
+        # Start command
+        cmd = f"ansible-playbook {playbook_path} -i {inventory_path}"
 
         # Add parameters if any
         if component_paths_dict:

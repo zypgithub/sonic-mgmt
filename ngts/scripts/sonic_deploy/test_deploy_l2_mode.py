@@ -2,17 +2,26 @@
 import csv
 import json
 import logging
+import os
+import shutil
 from collections import defaultdict
 
 import allure
 import pytest
 
-from ngts.constants.constants import SonicConst, SonicDeployConstants
+from ngts.constants.constants import MarsConstants, SonicConst, SonicDeployConstants
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 from ngts.scripts.test_rpc_check_and_set_topology import run_testbed_cli_script
 
 
 logger = logging.getLogger()
+
+
+HWSKU_PORT_OVERRIDES = {
+    'Mellanox-SN5640-C508O1X2': {
+        'Ethernet508': {'subport': '2'}
+    }
+}
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -64,7 +73,7 @@ def read_csv_config(csv_path, dut_name):
     return port_config
 
 
-def update_config_db(dut_engine, csv_port_config, passive_ports, is_smartswitch=False):
+def update_config_db(dut_engine, csv_port_config, passive_ports, hwsku=None, is_smartswitch=False):
     """
     Update the config_db json file on PORT config part
     1.Update the port speed based on the link csv file
@@ -90,6 +99,8 @@ def update_config_db(dut_engine, csv_port_config, passive_ports, is_smartswitch=
             if port in config_data.get('PORT', {}):
                 config_data['PORT'][port]['admin_status'] = 'down'
 
+    apply_hwsku_port_overrides(config_data, hwsku)
+
     with open(f'/tmp/{SonicConst.CONFIG_DB_JSON}', 'w') as config_file:
         json.dump(config_data, config_file, indent=4)
 
@@ -101,11 +112,36 @@ def update_config_db(dut_engine, csv_port_config, passive_ports, is_smartswitch=
     dut_engine.run_cmd(f'sudo mv /tmp/{SonicConst.CONFIG_DB_JSON} {SonicConst.CONFIG_DB_JSON_PATH}', validate=True)
 
 
+def cleanup_facts_cache(reason):
+    cache_path = os.path.join(MarsConstants.SONIC_MGMT_DIR, "tests", "_cache")
+    logger.info(f"Cleanup facts cache {reason}: {cache_path}")
+    shutil.rmtree(cache_path, ignore_errors=True)
+
+
+def apply_hwsku_port_overrides(config_data, hwsku):
+    """
+    Apply hwsku-specific PORT field overrides to the in-memory config_db dict.
+    Silently skips ports that don't exist in the current config_data.
+    """
+    overrides = HWSKU_PORT_OVERRIDES.get(hwsku)
+    if not overrides:
+        return
+    ports = config_data.get('PORT', {})
+    for port, fields in overrides.items():
+        if port not in ports:
+            logger.warning(f"hwsku {hwsku} override target port {port} not found in PORT config, skipping")
+            continue
+        logger.info(f"Applying hwsku {hwsku} override on {port}: {fields}")
+        ports[port].update(fields)
+
+
 @allure.title('Deploy L2 mode')
-def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
+def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path, platform_params):
     """
     This test will deploy l2 mode on the dut
     """
+
+    cleanup_facts_cache("before L2 mode switch")
 
     dut_name = cli_objects.dut.chassis.get_hostname()
     is_smartswitch = 'bobcat' in dut_name
@@ -119,7 +155,8 @@ def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
         run_testbed_cli_script(ansible_cmd, setup_info['ansible_path'])
 
     with allure.step("Update port speed and autoneg configuration based on link csv file"):
-        update_config_db(engines.dut, csv_port_config, passive_phy_ports, is_smartswitch=is_smartswitch)
+        update_config_db(engines.dut, csv_port_config, passive_phy_ports, hwsku=platform_params['hwsku'],
+                         is_smartswitch=is_smartswitch)
         cli_objects.dut.general.reload_configuration(force=True)
 
 
@@ -147,3 +184,5 @@ def test_restore_default_mode(cli_objects, engines, sonic_topo, topology_obj, wo
             topology_obj.players[dut['dut_alias']]['engine'].disconnect()
             general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
             general_cli_obj.save_configuration()
+
+    cleanup_facts_cache("after restoring default mode")

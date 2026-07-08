@@ -4,19 +4,20 @@ from dotted_dict import DottedDict
 
 from ngts.helpers.object_filters import filter_objects
 from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4600cSwitch, Mlx4700Switch, \
-    Mlx5600Switch, \
+    Mlx5600Switch, Mlx6600Switch, \
     Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, \
     Mlx2201Switch, Mlx2100Switch, \
     Mlx2010Switch, Mlx3700Switch, Mlx5640Switch
-from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, BlackMambaDGXSwitch,
-                                              CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch,
-                                              JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
-                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600,
-                                              JulietNonScaleoutSwitchGB300, JulietNonScaleoutSwitchGB300QS,
+from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch,
+                                              BlackMambaDGXSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch,
+                                              JulietScaleoutSunbirdSwitch, JulietTTMSwitch, JulietNonScaleoutSwitch,
+                                              JulietAriel, JulietNonScaleoutSwitchNoNCI, JulietArielPS,
+                                              JulietNonScaleoutSwitchNoNCI5600, JulietNonScaleoutSwitchGB300,
+                                              JulietNonScaleoutSwitchGB300QS, JulietNonScaleoutSwitchGB300PS,
                                               RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch,
-                                              RosalindStackedSwitch, RosalindStackedSimx,
-                                              JulietNonScaleoutSwitchGB300PS, RosalindChipless, TaipanSwitch,
-                                              PortiaSimx, PortiaSA, RosalindSA)
+                                              RosalindStackedSwitch, RosalindStackedSimx, RosalindChipless,
+                                              TaipanSwitch, TaipanSingleAsicSwitch, PortiaSimx, PortiaSimxNso, PortiaSA,
+                                              RosalindSA, RosalindRTF)
 
 logger = logging.getLogger()
 
@@ -40,6 +41,7 @@ class DeviceFactory:
             'Q3401-RD Black Mamba DGX': BlackMambaDGXSwitch,
             'Mellanox SN5600': Mlx5600Switch,
             'Mellanox SN5640': Mlx5640Switch,
+            'Mellanox SN6600': Mlx6600Switch,
             'Mellanox SN5400': Mlx5400Switch,
             'Mellanox SN4700': Mlx4700Switch,
             'Mellanox SN4600': Mlx4600Switch,
@@ -56,6 +58,7 @@ class DeviceFactory:
             'Mellanox 2100': Mlx2100Switch,
             'Mellanox 2010': Mlx2010Switch,
             'N5110_LD - JulietScaleout': JulietScaleoutSwitch,
+            'N5110_LD - JulietScaleoutSunbirdSwitch': JulietScaleoutSunbirdSwitch,
             'N5110_LD - JulietTTM': JulietTTMSwitch,
             'N5100_LD - JulietNonScaleout': JulietNonScaleoutSwitch,
             'N5112_LD - JulietAriel': JulietAriel,
@@ -63,10 +66,12 @@ class DeviceFactory:
             'N5112_LD - JulietArielPS': JulietArielPS,
             'N5600_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI5600,
             'Q3450_LD - Taipan': TaipanSwitch,
+            'Q3451_LD - TaipanSingleAsic': TaipanSingleAsicSwitch,
             'N5500_LD - JulietNonScaleoutSwitchGB300': JulietNonScaleoutSwitchGB300,
             'N5500_LD - JulietNonScaleoutSwitchGB300QS': JulietNonScaleoutSwitchGB300QS,
             'N5500_LD - JulietNonScaleoutSwitchGB300PS': JulietNonScaleoutSwitchGB300PS,
             'N6100_LD - Rosalind': RosalindSwitch,
+            'N6100_LD - RTF': RosalindRTF,
             'N6150_LD - RosalindSurrogate': RosalindSurrogateSwitch,
             'N6100_LD - RosalindChipless': RosalindChipless,
             'N6100_LD_simx - Rosalind': RosalindSimx,
@@ -74,6 +79,7 @@ class DeviceFactory:
             "N6300_LD - RosalindStacked": RosalindStackedSwitch,
             "N6300_LD_simx - RosalindStacked": RosalindStackedSimx,
             "N7170_LD_simx - Portia": PortiaSimx,
+            "N7100_LD_NSO_simx - Portia": PortiaSimxNso,
             "N7170_LD_simx - Portia_SA": PortiaSA
         }
 
@@ -81,7 +87,9 @@ class DeviceFactory:
     def create_device(device_name):
         try:
             if device_name not in DeviceFactory.device_type_dict.keys():
-                if "5600" in device_name:
+                if "6600" in device_name:
+                    device_name = 'Mellanox SN6600'
+                elif "5600" in device_name:
                     device_name = 'Mellanox SN5600'
                 elif "5640" in device_name:
                     device_name = 'Mellanox SN5640'

@@ -138,7 +138,7 @@ def restore_to_sonic(secure_boot_helper, restore_image_path):
 
 
 @pytest.fixture(scope='function')
-def recover_switch_after_secure_boot_violation_message(secure_boot_helper, restore_image_path, request):
+def recover_switch_after_secure_boot_violation_message(secure_boot_helper, restore_image_path, request, topology_obj):
     """
     This function will recover the switch after receiving a secure boot violation message appear
     """
@@ -146,14 +146,18 @@ def recover_switch_after_secure_boot_violation_message(secure_boot_helper, resto
     # Skip recovery when the test was skipped
     if getattr(request.node, 'rep_call', None) and request.node.rep_call.skipped:
         return
-    if not secure_boot_helper.restore_vmlinuz_signature():
+    is_fwutil_onie_test = SonicSecureBootConsts.FWUTIL_ONIE_TEST_NAME in request.node.name
+    if is_fwutil_onie_test or not secure_boot_helper.restore_vmlinuz_signature():
         with allure.step("Recovering the switch"):
             logger.info("Disconnect engine connection")
             secure_boot_helper.cli_objects.dut.general.engine.disconnect()
-            secure_boot_helper.login_into_onie_mode()
+            if secure_boot_helper.is_sonic_mode():
+                secure_boot_helper.get_into_onie_mode(topology_obj)
+            else:
+                secure_boot_helper.login_into_onie_mode()
             secure_boot_helper.remove_staged_fw_pkg()
 
-        if SonicSecureBootConsts.FWUTIL_ONIE_TEST_NAME in request.node.name:
+        if is_fwutil_onie_test:
             restore_image_path = None
 
         with allure.step("ONIE reboot and wait switch boot up"):

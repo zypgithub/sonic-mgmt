@@ -1,0 +1,6 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+mtvr-panther-05,10.245.21.72/22,Mellanox-SN2700-D48C8,DevSonic,,sonic
+mtvr-panther-06,10.245.21.55/22,MLNX-OS,FanoutLeaf,,
+mtvr-dl360-01,10.245.42.60,TestServ,Server,,
+pdu-10-245-2-13,10.245.2.13,Raritan,Pdu,snmp,
+rcon,10.245.2.4,,ConsoleServer,ssh,sonic

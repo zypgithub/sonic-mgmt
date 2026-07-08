@@ -1,0 +1,62 @@
+{
+  "execution_id": "demo-exec-001",
+  "test_name": "test_demo_allure_agent_analysis",
+  "created_at": "2026-06-03T12:00:00Z",
+  "data": {
+    "test_name": "test_demo_allure_agent_analysis",
+    "test_log_analysis": {
+      "summary": "Demo mock — resolver loaded agent output successfully (simulated failed-test analysis).",
+      "findings": [
+        "Synthetic demo data from the production resolver (demo=1 URL).",
+        "If you see this, Failure analysis + feedback rendering works end-to-end."
+      ]
+    },
+    "exception_analysis": {
+      "exception_type": "AssertionError",
+      "message": "Demo: simulated failure for UI verification (pytest test actually passed).",
+      "stack_hint": "demo/test_demo_allure_agent_analysis.py:19"
+    },
+    "root_cause_analysis": {
+      "root_cause": "Demo mock: BGP session did not establish before the assertion checked neighbor state.",
+      "mechanism": "The test expected `show ip bgp summary` to report Established within 120s, but the peer remained in Active state because the DUT never received an OPEN message from the peer simulator.",
+      "hypothesis": "Mock root cause: local allure serve fetched HTML from rm-via-allure and /resolve returned demo JSON.",
+      "confidence": "demo",
+      "causal_chain": [
+        {
+          "step": 1,
+          "source": "tests/bgp/test_bgp_demo.py",
+          "timestamp": "2026-06-03T11:58:42Z",
+          "event": "Pytest started `test_demo_allure_agent_analysis_attachments`; topology brought up with two BGP peers."
+        },
+        {
+          "step": 2,
+          "source": "/var/log/syslog",
+          "timestamp": "2026-06-03T11:59:05Z",
+          "event": "bgpd: neighbor 10.0.0.2 Active (connect) — TCP session up but no BGP OPEN received from peer."
+        },
+        {
+          "step": 3,
+          "source": "tests/bgp/test_bgp_demo.py",
+          "timestamp": "2026-06-03T12:00:00Z",
+          "event": "Polling `show ip bgp summary` every 5s; neighbor state remained Active after 120s wait window."
+        },
+        {
+          "step": 4,
+          "source": "agent_output.json",
+          "timestamp": "2026-06-03T12:00:12Z",
+          "event": "AssertionError: expected Established, got Active — demo failure injected for Allure attachment UI test."
+        },
+        {
+          "step": 5,
+          "source": "/auto/demo/local/mock_agent_output.json",
+          "timestamp": "2026-06-03T12:00:15Z",
+          "event": "Resolver demo=1 returned this mock JSON; Cause chain section should be visible without scrolling on open."
+        }
+      ],
+      "recommended_actions": [
+        "Deploy latest ai_rca bundle to rm-via-allure if this panel is empty",
+        "Re-run demo pytest and open Failure analysis in allure serve"
+      ]
+    }
+  }
+}

@@ -12,9 +12,9 @@ except ImportError:
     from netmiko.exceptions import NetmikoAuthenticationException
 
 import ngts.tools.test_utils.allure_utils as allure
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool

@@ -86,7 +86,7 @@ class AnsiblePlaybooksTool:
 
     @staticmethod
     def run_playbook_by_key(playbook_key, inventory_file, component_paths_dict,
-                            ansible_machine=None, username=None, password=None):
+                            ansible_machine=None, username=None, password=None, setup_name=None):
         """
         Run a playbook using its key from AnsiblePlaybooksConsts.PLAYBOOKS.
 
@@ -97,12 +97,13 @@ class AnsiblePlaybooksTool:
             ansible_machine: (Optional) Specific ansible server to use (for consistency)
             username: (Optional) SSH username for ansible server
             password: (Optional) SSH password for ansible server
+            setup_name: (Optional) Lab/setup id for per-setup playbook filename overrides
 
         Returns:
             bool: True if playbook succeeded, False if failed
         """
         playbook_cmd = AnsiblePlaybooksConsts.get_playbook_command(
-            playbook_key, inventory_file, component_paths_dict
+            playbook_key, inventory_file, component_paths_dict, setup_name
         )
 
         logger.info(f"Running playbook '{playbook_key}'")

@@ -27,9 +27,10 @@ from tests.bgp.bgp_helpers import restart_bgp_session, get_eth_port, get_exabgp_
     get_bgp_neighbor_ip, check_route_install_status, validate_route_propagate_status, operate_orchagent, \
     get_upstream_ptf_intfs, get_eth_name_from_ptf_port, check_bgp_neighbor, check_fib_route
 from tests.common.helpers.constants import UPSTREAM_NEIGHBOR_MAP, DOWNSTREAM_ALL_NEIGHBOR_MAP
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 pytestmark = [
-    pytest.mark.topology('t1', 't2'),
+    pytest.mark.topology('t1', 't2', 'lrh', 'urh'),
     pytest.mark.skip_check_dut_health
 ]
 
@@ -406,6 +407,46 @@ def get_port_connected_with_vm(duthost, tbinfo, nbrhosts, vm_type='T0'):
     return port_list
 
 
+def check_vrf_bgp_peer_state(duthost, vrf, peer_ip, expected_state="Established"):
+    peer_info = json.loads(
+        duthost.shell(f"vtysh -c 'show bgp vrf {vrf} neighbors {peer_ip} json'")["stdout"]
+    )
+    peer_state = peer_info[peer_ip].get("bgpState", "Unknown")
+    if peer_state != expected_state:
+        logger.info(f"Vrf {vrf} bgp peer {peer_ip} is {peer_state}, expected {expected_state}")
+        return False
+    return True
+
+
+def _is_bgp_neighbor_entry(entry):
+    return isinstance(entry, dict) and ("asn" in entry or "admin_status" in entry)
+
+
+def check_vrf_bgp_sessions(duthost, cfg_facts):
+    for neigh, attrs in cfg_facts.get("BGP_NEIGHBOR", {}).items():
+        if _is_bgp_neighbor_entry(attrs):
+            if "|" in neigh:
+                vrf, peer_ip = neigh.split("|", 1)
+            else:
+                vrf, peer_ip = "default", neigh
+            if not check_vrf_bgp_peer_state(duthost, vrf, peer_ip):
+                return False
+        else:
+            for peer_ip in attrs:
+                if not check_vrf_bgp_peer_state(duthost, neigh, peer_ip):
+                    return False
+    return True
+
+
+def wait_for_vrf_bgp_sessions(duthost):
+    # config_facts nests "Vrf1|<ip>" as BGP_NEIGHBOR["Vrf1"][<ip>]
+    vrf_cfg = duthost.config_facts(host=duthost.hostname, source="running")['ansible_facts']
+    pytest_assert(
+        wait_until(300, 10, 0, check_vrf_bgp_sessions, duthost, vrf_cfg),
+        "Not all BGP sessions (including VRF) are established"
+    )
+
+
 def setup_vrf_cfg(duthost, cfg_facts, nbrhosts, tbinfo, loganalyzer):
     """
     Config vrf based configuration
@@ -429,7 +470,7 @@ def setup_vrf_cfg(duthost, cfg_facts, nbrhosts, tbinfo, loganalyzer):
         cfg_t1['BGP_NEIGHBOR'][bgp_neighbor].pop('nhopself', None)
         cfg_t1['BGP_NEIGHBOR'][bgp_neighbor].pop('rrclient', None)
     port_list = get_port_connected_with_vm(duthost, tbinfo, nbrhosts)
-    vm_list = nbrhosts.keys()
+    vm_list = [vm_name for vm_name in nbrhosts.keys() if not vm_name.endswith('PT1')]
     mg_facts = duthost.get_extended_minigraph_facts(tbinfo)
     port_channel_list = mg_facts['minigraph_portchannels'].keys()
     if len(port_channel_list) == 0:
@@ -443,8 +484,9 @@ def setup_vrf_cfg(duthost, cfg_facts, nbrhosts, tbinfo, loganalyzer):
     duthost.template(src="bgp/vrf_config_db.j2", dest="/tmp/config_db_vrf.json")
     duthost.shell("cp -f /tmp/config_db_vrf.json /etc/sonic/config_db.json")
 
-    config_reload(duthost, safe_reload=True, ignore_loganalyzer=loganalyzer)
+    config_reload(duthost, safe_reload=True, ignore_loganalyzer=loganalyzer, wait_for_bgp=True)
     wait_until(120, 10, 0, check_interface_status, duthost)
+    wait_for_vrf_bgp_sessions(duthost)
 
 
 def setup_vrf(duthost, nbrhosts, tbinfo, loganalyzer):
@@ -817,15 +859,35 @@ def param_reboot(request, duthost, localhost, loganalyzer):
     """
     reboot_type = request.config.getoption("--bgp_suppress_fib_reboot_type")
     reboot_type_list = ["reload", "cold", "warm", "fast"]
+    # TODO: remove this override once warm/fast reboot is supported on sn6600_ld
+    # (https://redmine.mellanox.com/issues/5008193).
+    sn6600_ld_warm_unsupported = (
+        "sn6600_ld" in duthost.facts.get("platform", "")
+        and is_redmine_issue_active([5008193])[0]
+    )
+    if sn6600_ld_warm_unsupported:
+        reboot_type_list = [rt for rt in reboot_type_list if rt not in ("warm", "fast")]
     if reboot_type == "random":
         reboot_type = random.choice(reboot_type_list)
-        logger.info("Randomly choose {} from reload, cold, warm, fast".format(reboot_type))
+        logger.info("Randomly choose {} from {}".format(reboot_type, reboot_type_list))
+    elif reboot_type in ("warm", "fast") and sn6600_ld_warm_unsupported:
+        logger.info("Overriding {} reboot with cold reboot on sn6600_ld due to "
+                    "RM 5008193 (warm/fast-reboot unsupported on this platform).".format(reboot_type))
+        reboot_type = "cold"
 
     if reboot_type == "reload":
-        config_reload(duthost, safe_reload=True, ignore_loganalyzer=loganalyzer)
+        config_reload(duthost, safe_reload=True, ignore_loganalyzer=loganalyzer, wait_for_bgp=True)
         wait_until(120, 10, 0, check_interface_status, duthost)
+        # Wait for BGP sessions to re-establish, consistent with do_and_wait_reboot()
+        bgp_neighbors = duthost.get_bgp_neighbors_per_asic(state="all")
+        pytest_assert(
+            wait_until(180, 10, 0, duthost.check_bgp_session_state_all_asics, bgp_neighbors),
+            "Not all bgp sessions are established after config reload"
+        )
     else:
         do_and_wait_reboot(duthost, localhost, reboot_type)
+
+    wait_for_vrf_bgp_sessions(duthost)
 
 
 def validate_route_states(duthost, ipv4_route_list, ipv6_route_list, exabgp_port, exabgp_port_v6, tbinfo, vrf=DEFAULT,
@@ -1161,7 +1223,7 @@ def test_bgp_route_with_suppress(duthosts, enum_downstream_dut_hostname, enum_up
         if vrf_type == USER_DEFINED_VRF and not tbinfo["topo"]["type"] in ["t2"]:
             with allure.step("Clean user defined vrf"):
                 duthost_down.shell("cp -f /etc/sonic/config_db.json.bak /etc/sonic/config_db.json")
-                config_reload(duthost_down, safe_reload=True, ignore_loganalyzer=loganalyzer)
+                config_reload(duthost_down, safe_reload=True, ignore_loganalyzer=loganalyzer, wait_for_bgp=True)
                 wait_until(120, 10, 0, check_interface_status, duthost_down)
 
 

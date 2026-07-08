@@ -45,5 +45,15 @@
       </params>
     </cmd>
   </case>
+  <case>
+    <name> tech support  </name>
+    <info> </info>
+    <tout> 900 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_techsupport_feature.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m skynet --skynet --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900  --skip_clear_config \'"</static_args>
+      </params>
+    </cmd>
+  </case>
 </CASEDEF>
 

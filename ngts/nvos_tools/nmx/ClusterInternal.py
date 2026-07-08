@@ -1,8 +1,6 @@
-import ngts.tools.test_utils.allure_utils as allure
+from ngts.nvos_constants.constants_nvos import ActionConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 
 
 class ClusterInternal(BaseComponent):
@@ -12,28 +10,14 @@ class ClusterInternal(BaseComponent):
         self.ca_certificate = ClusterInternalCertificate(self, "/ca-certificate")
         self.alternate_certificate = ClusterInternalCertificate(self, "/alternate-certificate")
         self.encryption = ClusterInternalEncryption(self)
+        self.crl = ClusterInternalCrl(self)
         self.connections = ClusterInternalConnections(self)
 
     def action_update(self, state: str = "", dut_engine=None) -> ResultObj:
-        with allure.step(f"Execute action update for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            res = SendCommandTool.execute_command(
-                self._cli_wrapper.action_update_cluster_manager_property,
-                engine,
-                self.get_resource_path(),
-                "state",
-                state,
-            )
-            return res
+        return self.action(ActionConsts.UPDATE, main_param=('state', state), engine=dut_engine)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
-        with allure.step(f"Execute action restore for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_restore_cluster_manager_property,
-                engine,
-                self.get_resource_path(),
-            )
+        return self.action(ActionConsts.RESTORE, engine=dut_engine)
 
 
 class ClusterInternalCertificate(BaseComponent):
@@ -42,33 +26,14 @@ class ClusterInternalCertificate(BaseComponent):
         self.is_ca = "ca-certificate" in path
 
     def action_update(self, cert_id="", dut_engine=None) -> ResultObj:
-        with allure.step(f"Execute action update for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_update_cluster_manager_property,
-                engine,
-                self.get_resource_path(),
-                f"{'ca' if self.is_ca else ''}cert-id",
-                cert_id,
-            )
+        param_name = f"{'ca' if self.is_ca else ''}cert-id"
+        return self.action(ActionConsts.UPDATE, main_param=(param_name, cert_id), engine=dut_engine)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
-        with allure.step(f"Execute action restore for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_restore_cluster_manager_property,
-                engine,
-                self.get_resource_path(),
-            )
+        return self.action(ActionConsts.RESTORE, engine=dut_engine)
 
     def action_rotate(self, dut_engine=None) -> ResultObj:
-        with allure.step(f"Execute action rotate for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_rotate_cluster_manager_property,
-                engine,
-                self.get_resource_path(),
-            )
+        return self.action(ActionConsts.ROTATE, engine=dut_engine)
 
 
 class ClusterInternalEncryption(BaseComponent):
@@ -76,24 +41,21 @@ class ClusterInternalEncryption(BaseComponent):
         super().__init__(parent=parent, path="/encryption")
 
     def action_update(self, mode="", dut_engine=None) -> ResultObj:
-        with allure.step(f"Execute action update for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_update_cluster_manager_property,
-                engine,
-                self.get_resource_path(),
-                "mode",
-                mode,
-            )
+        return self.action(ActionConsts.UPDATE, main_param=('mode', mode), engine=dut_engine)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
-        with allure.step(f"Execute action restore for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_restore_cluster_manager_property,
-                engine,
-                self.get_resource_path(),
-            )
+        return self.action(ActionConsts.RESTORE, engine=dut_engine)
+
+
+class ClusterInternalCrl(BaseComponent):
+    def __init__(self, parent):
+        super().__init__(parent=parent, path="/crl")
+
+    def action_update(self, crl_id="", dut_engine=None) -> ResultObj:
+        return self.action(ActionConsts.UPDATE, main_param=('crl-id', crl_id), engine=dut_engine)
+
+    def action_restore(self, dut_engine=None) -> ResultObj:
+        return self.action(ActionConsts.RESTORE, engine=dut_engine)
 
 
 class ClusterInternalConnections(BaseComponent):
@@ -104,6 +66,4 @@ class ClusterInternalConnections(BaseComponent):
 
     def action_reset(self, dut_engine=None) -> ResultObj:
         """Reset cluster app internal connections."""
-        with allure.step(f"Execute action reset for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(self._cli_wrapper.action_reset, engine, self.get_resource_path())
+        return self.action(ActionConsts.RESET, engine=dut_engine)

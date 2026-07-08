@@ -368,7 +368,8 @@ def validate_platform_dump_files(duthost, dump_folder_path, platform_dump_folder
 
 def gen_dump_file(duthost, since):
     logger.debug("Running show techsupport ... ")
-    wait_until(300, 20, 0, execute_command, duthost, str(since))
+    pytest_assert(wait_until(300, 20, 0, execute_command, duthost, str(since)),
+                  "show techsupport command failed to succeed within timeout")
     tar_file = [j for j in pytest.tar_stdout.split('\n') if j != ''][-1]
     return tar_file
 
@@ -385,12 +386,8 @@ def test_techsupport(request, config, duthosts, enum_rand_one_per_hwsku_hostname
     loop_delay = request.config.getoption("--loop_delay") or DEFAULT_LOOP_DELAY
     since = request.config.getoption("--logs_since") or str(randint(1, 5)) + " minute ago"
     is_bmc_present = False
-    try:
-        if bmc.get_presence(platform_api_conn):
-            is_bmc_present = True
-    except Exception as e:
-        logger.warning("Failed to get BMC presence: {}".format(e))
-        is_bmc_present = False
+    if bmc.is_bmc_exists(duthost):
+        is_bmc_present = True
     logger.debug("Loop_range is {} and loop_delay is {}".format(loop_range, loop_delay))
 
     for i in range(loop_range):
@@ -447,11 +444,18 @@ def validate_dump_file_content(duthost, dump_folder_path, is_bmc_present):
     if duthost.facts['asic_type'] in ["mellanox"]:
         nvme_check = duthost.shell("ls /dev/nvme0 2>/dev/null", module_ignore_errors=True)
         if nvme_check["rc"] == 0:
-            assert "ssd.dump" in dump, \
-                "SSD dump file (ssd.dump) not found in dump folder of techsupport archive"
-            ssd_dump_path = "{}/dump/ssd.dump".format(dump_folder_path)
-            ssd_size = int(duthost.command("stat -c '%s' {}".format(ssd_dump_path))["stdout"].strip())
-            assert ssd_size > 0, "SSD dump file exists but is empty"
+            # Skip SSD dump check on images where generate_ssd_dump is not present
+            ssd_tool_check = duthost.shell(
+                "ls /usr/local/bin/generate_ssd_dump", module_ignore_errors=True)
+            if ssd_tool_check["rc"] != 0:
+                logger.warning("/usr/local/bin/generate_ssd_dump not found on DUT, "
+                               "skipping SSD dump validation (feature not present in this image)")
+            else:
+                assert "ssd.dump" in dump, \
+                    "SSD dump file (ssd.dump) not found in dump folder of techsupport archive"
+                ssd_dump_path = "{}/dump/ssd.dump".format(dump_folder_path)
+                ssd_size = int(duthost.command("stat -c '%s' {}".format(ssd_dump_path))["stdout"].strip())
+                assert ssd_size > 0, "SSD dump file exists but is empty"
 
 
 def add_asic_arg(format_str, cmds_list, asic_num):
@@ -545,6 +549,30 @@ def commands_to_check(duthosts, enum_rand_one_per_hwsku_hostname):
             asic_cmds = cmds.broadcom_cmd_bcmcmd_dnx
         else:
             asic_cmds = cmds.broadcom_cmd_bcmcmd_xgs
+
+            # Check if soc commands should be supported
+            soc_supported = None
+            try:
+                soc_supported = duthost.shell(r'bcmcmd bsh -c SOC')
+            except Exception:
+                pass
+            else:
+                if (soc_supported and soc_supported['rc'] == 0
+                        and 'Unknown command: SOC' not in ' '.join(soc_supported["stdout_lines"])):
+                    asic_cmds += cmds.broadcom_cmd_bcmcmd_xgs_soc
+                else:
+                    asic_cmds += cmds.broadcom_cmd_bcmcmd_xgs_th5
+
+            # Check if nat commands should be supported
+            nat_supported = None
+            try:
+                nat_supported = duthost.shell(r'bcmcmd "show feature" | grep -i nat')
+            except Exception:
+                pass
+            else:
+                if (nat_supported and nat_supported['rc'] == 0):
+                    asic_cmds += cmds.broadcom_cmd_bcmcmd_xgs_nat
+
         cmds_to_check.update(
             {
                 "broadcom_cmd_bcmcmd":
@@ -568,7 +596,7 @@ def commands_to_check(duthosts, enum_rand_one_per_hwsku_hostname):
                 }
             )
     # Remove /proc/dma for armh
-    elif duthost.facts["asic_type"] in ["marvell-prestera", "marvell"]:
+    elif duthost.facts["asic_type"] in ["marvell-prestera", "marvell", "nokia-vs"]:
         if 'armhf-' in duthost.facts["platform"] or 'arm64-' in duthost.facts["platform"]:
             cmds.copy_proc_files.remove("/proc/dma")
     elif duthost.facts["asic_type"] == "vpp":

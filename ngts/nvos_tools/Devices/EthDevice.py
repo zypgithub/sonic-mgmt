@@ -8,7 +8,7 @@ from typing import List
 import pexpect
 
 from packaging.version import Version
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType, NtpConsts, TcpDumpConsts, RebootConsts, ImageConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -853,6 +853,85 @@ class Mlx5640Switch(EthSwitch):
 
     def _init_led_list(self):
         self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "FAN5", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx6600 Switch -----------------------------
+
+
+class Mlx6600Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 16
+        self.ib_ports_num = 66
+        self.asic_type = 'Spectrum-6'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM6)
+        self.show_platform_output.update({
+            "product-name": "SN6600",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = [
+            "CPU-PMIC-VDDCR-VOLT-IN",
+            "CPU-PMIC-VDDCR_CPU-VOLT-OUT1",
+            "CPU-PMIC-VDDCR_SOC-VOLT-OUT2",
+            "DDR-PMIC-VDD_MEM-VOLT-IN",
+            "DDR-PMIC-VDD_MEM-VOLT-OUT2",
+            "DDR-PMIC-VDD_MEMIO-VOLT-OUT1",
+            "PDB-1-CONV-VINDC-VOLT-IN",
+            "PDB-1-CONV-VOUT-VOLT-OUT",
+            "PDB-1-HSC-VINDC-VOLT-IN",
+            "PDB-1-HSC-VOUT-VOLT-OUT",
+            "PDB-2-CONV-VINDC-VOLT-IN",
+            "PDB-2-CONV-VOUT-VOLT-OUT",
+            "PDB-2-HSC-VINDC-VOLT-IN",
+            "PDB-2-HSC-VOUT-VOLT-OUT",
+            "PMIC-1-PVIN1_VDD_ASIC-VOLT-IN",
+            "PMIC-2-PVIN1_VDD_TILE0_TILE1_ASIC-VOLT-IN",
+            "PMIC-3-PVIN1_VDD_TILE2_TILE3_ASIC-VOLT-IN",
+            "PMIC-4-PVIN1_DVDD_TILE0_TILE1_ASIC-VOLT-IN",
+            "PMIC-5-PVIN1_DVDD_TILE2_TILE3_ASIC-VOLT-IN",
+            "PMIC-6-PVIN1_AVDD_TILE0_TILE1_ASIC-VOLT-IN",
+            "PMIC-7-PVIN1_AVDD_TILE0_TILE1_ASIC-VOLT-IN",
+            "PMIC-8-PVIN1_HBID_TILE12_37_ASIC-VOLT-IN",
+            "PMIC-9-PVIN1_OSFPX16_T-VOLT-IN",
+            "PMIC-10-PVIN1_OSFPX16_B-VOLT-IN",
+            "PMIC-11-PVIN1_VDD_TILE4_TILE5_ASIC-VOLT-IN",
+            "PMIC-12-PVIN1_VDD_TILE6_TILE7_ASIC-VOLT-IN",
+            "PMIC-13-PVIN1_DVDD_TILE4_TILE5_ASIC-VOLT-IN",
+            "PMIC-14-PVIN1_DVDD_TILE6_TILE7_ASIC-VOLT-IN",
+            "PMIC-15-PVIN1_AVDD_TILE4_TILE5_ASIC-VOLT-IN",
+            "PMIC-16-PVIN1_AVDD_TILE6_TILE7_ASIC-VOLT-IN",
+            "PMIC-17-PVIN1_HBID_TILE04_56_ASIC-VOLT-IN",
+            "PMIC-18-PVIN1_OSFPX16_M1-VOLT-IN",
+            "PMIC-19-PVIN1_OSFPX16_M2-VOLT-IN",
+            "PMIC-20-PVIN1_HVDD-VOLT-IN",
+        ]
+
+        self.leakage_sensors_count = 2
+        self.list_of_leakages = [f"leakage{i}" for i in range(1, self.leakage_sensors_count + 1)]
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Package-Sensor"]
+
+    def _init_psu_list(self):
+        self.psu_list = ["PDB1", "PDB2"]
+        self.psu_fan_list = []
+        self.platform_env_psu_prop = ["state"]
+
+    def _init_fan_list(self):
+        self.fan_list = []
+
+    def _init_led_list(self):
+        self.led_list = ["POWER", "SYSTEM"]
+
+    def _init_sensors_dict(self):
+        super()._init_sensors_dict()
+        self.sensors_dict["LEAKAGE"] = self.list_of_leakages
+
 
 # -------------------------- Mlx410 Switch -----------------------------
 

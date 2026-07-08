@@ -2,7 +2,7 @@ from netmiko.exceptions import ReadTimeout
 import functools
 import logging
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 
 from ngts.nvos_constants.constants_nvos import OutputFormat, RebootConsts, ActionConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
@@ -54,7 +54,7 @@ class NvueBaseCli(BaseCli):
             #  ("Action executing...") and print it to the log, instead of waiting for the action to finish and only
             #  then printing everything all at once.
             # Use custom read_timeout for long-running operations (e.g., ISSU)
-            timing_kwargs = {}
+            timing_kwargs = {'last_read': 5}
             if timeout is not None:
                 timing_kwargs['read_timeout'] = timeout
             response: str = netmiko_engine.send_command_timing(cmd, **timing_kwargs)

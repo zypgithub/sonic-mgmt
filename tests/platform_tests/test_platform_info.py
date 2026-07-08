@@ -77,6 +77,7 @@ SKIP_ERROR_LOG_PSU_ABSENCE = [
     '.*ERR pmon#psud:.*Fail to read model number: No key PN_VPD_FIELD in.*',
     '.*ERR pmon#psud:.*Fail to read serial number: No key SN_VPD_FIELD in.*',
     '.*ERR pmon#psud:.*Fail to read revision: No key REV_VPD_FIELD in.*',
+    r'.*ERR pmon#psud(\[\d+\])?: (PSU absence warning: )?PSU \d+ is not present\..*',
     r'.*ERR pmon#psud: Failed to read from file /var/run/hw-management/power/psu\d_volt.*',
     r'.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/.*FileNotFoundError.*',
     r'.*ERR pmon#thermalctld: Failed to read from file.*\/var\/run\/hw-management\/thermal\/psu.*ValueError.*',
@@ -129,16 +130,17 @@ def stop_pmon_sensord_task(ans_host):
         logging.info("sensord stopped successfully")
 
 
-def start_pmon_sensord_task(duthost):
+def start_pmon_sensord_task(duthost, timeout=10):
     sensord_running_status, sensord_pid = check_sensord_status(duthost)
     if not sensord_running_status:
         duthost.command("docker exec pmon supervisorctl restart lm-sensors")
-        time.sleep(3)
-        sensord_running_status, sensord_pid = check_sensord_status(duthost)
-        if sensord_running_status:
+        if wait_until(timeout, 1, 0, lambda: check_sensord_status(duthost)[0]):
+            sensord_running_status, sensord_pid = check_sensord_status(duthost)
             logging.info("sensord task started, pid = {}".format(sensord_pid))
         else:
-            logging.error("Failed to start sensord task.")
+            sensord_running_status = False
+            sensord_pid = -1
+            logging.error("Failed to start sensord task within {} seconds.".format(timeout))
     else:
         logging.info("sensord is running, pid = {}".format(sensord_pid))
     return sensord_running_status, sensord_pid
@@ -158,17 +160,9 @@ def psu_test_setup_teardown(duthosts, enum_rand_one_per_hwsku_hostname):
     yield
 
     logging.info("Starting psu test teardown")
-    sensord_running_status, sensord_pid = check_sensord_status(duthost)
-    if not sensord_running_status:
-        duthost.command("docker exec pmon supervisorctl restart lm-sensors")
-        time.sleep(3)
-        sensord_running_status, sensord_pid = check_sensord_status(duthost)
-        if sensord_running_status:
-            logging.info("sensord task restarted, pid = {}".format(sensord_pid))
-        else:
-            pytest_assert(False, "Failed to restart sensord task after test.")
-    else:
-        logging.info("sensord is running, pid = {}".format(sensord_pid))
+    started, sensord_pid = start_pmon_sensord_task(duthost)
+    if not started:
+        pytest_assert(False, "Failed to restart sensord task after test.")
 
 
 @pytest.fixture(scope="function")
@@ -366,6 +360,24 @@ def test_turn_on_off_psu_and_check_psustatus(duthosts, enum_rand_one_per_hwsku_h
 
     # Group outlets/PDUs by PSU and toggle PDUs by PSU
     psu_to_pdus = get_grouped_pdus_by_psu(pdu_ctrl)
+    # Safety check: there must be at least 2 distinct PDU outlets across all PSUs, so that
+    # turning one PSU's outlet off still leaves another PSU powered. If every PSU hangs off
+    # a single shared outlet (e.g. both PSUs of a 2-PSU DUT on one outlet, as seen when the
+    # PDU connection graph maps PSU1 and PSU2 to the same outlet), turning it off removes
+    # all power from the DUT and reboots it
+    distinct_outlets = set()
+    for outlets in psu_to_pdus.values():
+        for outlet in outlets:
+            distinct_outlets.add("{}/{}".format(outlet.get('pdu_name'), outlet.get('outlet_id')))
+    if len(distinct_outlets) < 2:
+        logging.warning(
+            "All PSUs on %s share a single PDU outlet %s; turning it off would power off the "
+            "whole DUT. Please fix the PDU cabling/connection graph so each PSU has its own "
+            "outlet.", duthost.hostname, sorted(distinct_outlets))
+    pytest_require(
+        len(distinct_outlets) >= 2,
+        "Skip the test: all PSUs on {} share PDU outlet(s) {}; toggling would power off the "
+        "whole DUT.".format(duthost.hostname, sorted(distinct_outlets)))
 
     # Get list of PSUs to skip from inventory configuration
     skip_psu_list = get_skip_mod_list(duthost, ['psus'])

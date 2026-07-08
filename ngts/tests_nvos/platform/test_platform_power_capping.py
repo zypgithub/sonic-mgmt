@@ -7,9 +7,12 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_constants.constants_nvos import DatabaseConst
 
 from ngts.nvos_constants.constants_nvos import ApiType, PowerCappingConsts
 
@@ -31,6 +34,7 @@ def cleanup_profiles(engines):
     yield
     platform = NvCommand().platform
     fae = NvCommand().fae
+
     with allure.step('return to default config after test'):
         NvueGeneralCli.detach_config(engines.dut)
         platform.power_capping.unset_active_profile(apply=True).verify_result()
@@ -53,6 +57,9 @@ def test_set_platform_power_capping(engines, devices, test_api):
     5. Verify the default power capping profile is active.
     6. Repeat the above steps for all profiles.
     """
+    if not _check_hw_mgmt_rev(engines) and devices.dut.asic_type == NvosConst.NVL6:
+        pytest.skip("power-capping feature not supported, because hw-mgmt-rev condition not met (last hex digit <= 5)")
+
     TestToolkit.tested_api = test_api
 
     with allure.step("Create Platform object"):
@@ -71,7 +78,7 @@ def test_set_platform_power_capping(engines, devices, test_api):
                 with allure.independent_step(f"Verify all fields and values under power-capping profile {profile_id}"):
                     profile_show_output = platform.power_capping.profiles.show()
                     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
-                    ValidationTool.compare_dictionaries(output_dictionary, PowerCappingConsts.PROFILES_DEFAULT_DICT)
+                    ValidationTool.compare_dictionaries(output_dictionary, devices.dut.power_capping_profiles_default_dict)
 
                 with allure.independent_step(f"Verify {profile_id} in platform asic"):
                     _verify_asic_power(devices, platform, profile_id)
@@ -87,7 +94,7 @@ def test_set_platform_power_capping(engines, devices, test_api):
 
 @pytest.mark.platform
 @pytest.mark.power_capping
-def test_set_fae_platform_power_capping_enum_profiles_activation(engines, random_api):
+def test_set_fae_platform_power_capping_enum_profiles_activation(engines, random_api, devices):
     """
     Test Objective:
     Verify the creation and activation of enum-based power capping profiles in FAE.
@@ -98,6 +105,9 @@ def test_set_fae_platform_power_capping_enum_profiles_activation(engines, random
     3. Return to the default power capping profile.
     4. Cleanup by unsetting all newly created profiles.
     """
+    if not _check_hw_mgmt_rev(engines) and devices.dut.asic_type == NvosConst.NVL6:
+        pytest.skip("power-capping feature not supported, because hw-mgmt-rev condition not met (last hex digit <= 5)")
+
     TestToolkit.tested_api = random_api
     # Use enum-based profile names instead of random strings
     profiles = PowerCappingConsts.ENUM_PROFILES
@@ -137,7 +147,7 @@ def test_set_fae_platform_power_capping_enum_profiles_activation(engines, random
 @pytest.mark.platform
 @pytest.mark.power_capping
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_set_fae_platform_power_capping_configurations(engines, test_api):
+def test_set_fae_platform_power_capping_configurations(engines, test_api, devices):
     """
     Test Objective:
     Verify that updating power capping profile configurations works as expected.
@@ -148,6 +158,9 @@ def test_set_fae_platform_power_capping_configurations(engines, test_api):
     3. Verify the value has been changed using the show command.
     4. Unset the profile and verify default values are restored.
     """
+    if not _check_hw_mgmt_rev(engines) and devices.dut.asic_type == NvosConst.NVL6:
+        pytest.skip("power-capping feature not supported, because hw-mgmt-rev condition not met (last hex digit <= 5)")
+
     TestToolkit.tested_api = test_api
     with allure.step("Create Fae object"):
         fae = NvCommand().fae
@@ -190,7 +203,7 @@ def test_set_fae_platform_power_capping_configurations(engines, test_api):
 @pytest.mark.platform
 @pytest.mark.power_capping
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_power_capping_bad_flow(engines, test_api):
+def test_power_capping_bad_flow(engines, test_api, devices):
     """
     Test Objective:
     Validate that invalid operations on power capping profiles are properly rejected and produce expected errors.
@@ -203,6 +216,8 @@ def test_power_capping_bad_flow(engines, test_api):
     5. Attempt to create a new power capping profile with an invalid name and verify that the operation fails.
     6. Attempt to apply a profile with incomplete attributes and verify that the operation fails due to missing required properties.
     """
+    if not _check_hw_mgmt_rev(engines) and devices.dut.asic_type == NvosConst.NVL6:
+        pytest.skip("power-capping feature not supported, because hw-mgmt-rev condition not met (last hex digit <= 5)")
 
     TestToolkit.tested_api = test_api
 
@@ -251,7 +266,7 @@ def test_power_capping_bad_flow(engines, test_api):
 @pytest.mark.platform
 @pytest.mark.power_capping
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_power_capping_state_disabled(engines, test_api):
+def test_power_capping_state_disabled(engines, test_api, devices):
     """
     Test Objective:
     Verify that when power capping state is disabled, the commands are pruned and not accessible.
@@ -263,6 +278,9 @@ def test_power_capping_state_disabled(engines, test_api):
     4. Verify that setting active profile command is not accessible.
     5. Re-enable power capping state for cleanup.
     """
+    if not _check_hw_mgmt_rev(engines) and devices.dut.asic_type == NvosConst.NVL6:
+        pytest.skip("power-capping feature not supported, because hw-mgmt-rev condition not met (last hex digit <= 5)")
+
     TestToolkit.tested_api = test_api
 
     with allure.step("Create Platform object"):
@@ -374,5 +392,23 @@ def _verify_asic_power(devices, platform, profile_id):
     asic_show_output = platform.asic.show()
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(asic_show_output).get_returned_value()
     for asic_name in [f"ASIC{i + 1}" for i in range(devices.dut.asic_amount)]:
-        ValidationTool.verify_field_value_in_output(output_dictionary[asic_name], PowerCappingConsts.ACTIVE_PROFILE,
+        ValidationTool.verify_field_value_in_output(output_dictionary[asic_name][PowerCappingConsts.POWER], PowerCappingConsts.ACTIVE_PROFILE,
                                                     profile_id).verify_result()
+
+
+def _check_hw_mgmt_rev(engines):
+    """
+        This function check if we have hw-mgmt-rev which support power-capping feature
+        """
+    try:
+        curr_value = Tools.DatabaseTool.sonic_db_cli_hget(engine=engines.dut, asic="",
+                                                          db_name=DatabaseConst.CONFIG_DB_NAME,
+                                                          db_config='DEVICE_METADATA|localhost', param='hw-mgmt-rev')
+        value = int(curr_value)
+        hex_val = hex(value)[2:]
+        last_digit = int(hex_val[-1], 16)
+        return last_digit >= 5
+
+    except Exception as e:
+        logger.info(f"Error occurred: {e}")
+        return False

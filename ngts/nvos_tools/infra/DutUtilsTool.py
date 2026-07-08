@@ -7,23 +7,27 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import pytest
+import requests
 from netmiko import ConnectHandler, ReadTimeout
 from paramiko.ssh_exception import AuthenticationException
 from retry.api import retry_call, retry
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst, RebootConsts
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, DatabaseConst, NvosConst, RebootConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime, SubDuration
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tools.test_utils import allure_utils as allure
 from .ResultObj import ResultObj, IssueType
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,26 +50,40 @@ class DutUtilsTool:
         reboot_params = reboot_params or RebootParams()
         with allure.step(f'Run command "{command}" and wait for reboot to finish'):
             list_commands = [command, 'y'] if confirm else [command]
+            op_start = time.perf_counter()
             output = device.reload_device(engine, list_commands)
+            op_duration = time.perf_counter() - op_start
+            OperationTime.record_sub_duration(SubDuration.OPERATION, op_duration)
             logger.info(output)
             output = output.replace('-bash: y: command not found', '')
 
             output_lower = output.lower()
             if ('action succeeded' in output_lower) and ('reboot skipped' in output_lower):
-                return ResultObj(result=True, info=output)
+                res_obj = ResultObj(result=True, info=output, returned_value=output)
+                res_obj.duration = {SubDuration.OPERATION: op_duration, SubDuration.REBOOT: 0.0}
+                OperationTime.record_sub_duration(SubDuration.REBOOT, 0.0)
+                return res_obj
 
             error_list = ['aborted', 'aborting', 'error: action failed', 'command not found']
             for error in error_list:
                 if error in output_lower:
-                    return ResultObj(result=False, info=output)
+                    res_obj = ResultObj(result=False, info=output, returned_value=output)
+                    res_obj.duration = {SubDuration.OPERATION: op_duration, SubDuration.REBOOT: 0.0}
+                    OperationTime.record_sub_duration(SubDuration.REBOOT, 0.0)
+                    return res_obj
 
+            reboot_start = time.perf_counter()
             res_obj = DutUtilsTool.wait_on_system_reboot(engine, reboot_params, device,
                                                          verify_final_result=False, wait_for_nvos=True)
+            reboot_duration = time.perf_counter() - reboot_start
+            OperationTime.record_sub_duration(SubDuration.REBOOT, reboot_duration)
             if not reboot_params.should_wait_till_system_ready:
                 time.sleep(40)
+                res_obj.duration = {SubDuration.OPERATION: op_duration, SubDuration.REBOOT: reboot_duration}
                 return res_obj
 
         res_obj.returned_value = output
+        res_obj.duration = {SubDuration.OPERATION: op_duration, SubDuration.REBOOT: reboot_duration}
         return res_obj
 
     @staticmethod
@@ -110,6 +128,12 @@ class DutUtilsTool:
         Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
         The RebootParams object can be used to control some parameters. If omitted, default values are used.
         """
+        # A reboot tears down the remote sshd session; the session-scoped ansible
+        # ControlMaster stays alive (ControlPersist) and would block the next ansible
+        # task for minutes. Flag it so test teardown drops the stale master (see
+        # reset_ansible_connection_after_reboot). Reset/install paths that bypass this
+        # function are covered by the same flag set in the readiness waits below.
+        pytest.dut_rebooted = True
         if not isinstance(reboot_params, RebootParams):
             reboot_params = RebootParams()
         with allure.step("Waiting for switch shutdown after reload command"):
@@ -124,6 +148,16 @@ class DutUtilsTool:
 
         with allure.step("Waiting for system to reboot and become available"):
             dut_engine: LinuxSshEngine = reboot_params.recovery_engine or engine
+
+            # Attach to the serial console BEFORE the port-up wait. "System is ready" is a
+            # one-shot banner printed *before* the mgmt IP/port becomes reachable sometimes, so attaching
+            # serial only after the port-up wait races against (and loses to) it. Connecting now
+            # lets the pexpect buffer accumulate the banner while we poll the port.
+            serial_engine = None
+            if wait_for_nvos and reboot_params.topology_obj:
+                with allure.step('get serial engine (before port-up wait)'):
+                    serial_engine = ConnectionTool.create_serial_engine(reboot_params.topology_obj,
+                                                                        enter_serial_context=True)
             with allure.step("Waiting for switch to be ready"):
                 with allure.step('wait for switch reachable/ping'):
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
@@ -131,12 +165,15 @@ class DutUtilsTool:
                     with allure.step('wait for System is ready in serial'):
                         if reboot_params.system_is_ready_timeout:
                             DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine,
                                                                          wait_timeout=reboot_params.system_is_ready_timeout)
                         elif device:
                             DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine,
                                                                          wait_timeout=device.timeout_system_is_ready)
                         else:
-                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj)
+                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         serial_engine=serial_engine)
                         if reboot_params.track_boot_intervals:
                             InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE)
                 if not wait_for_nvos:
@@ -169,6 +206,10 @@ class DutUtilsTool:
     @staticmethod
     def wait_for_nvos_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10, /, *,
                                            throw_exception_on_unhealthy: bool = True, cli_up_retries: int = 36):
+        # Readiness choke point reached after any reboot/reset/install, including paths
+        # that bypass wait_on_system_reboot (e.g. factory reset). Flag it so test teardown
+        # drops the stale ansible ControlMaster (see reset_ansible_connection_after_reboot).
+        pytest.dut_rebooted = True
         with allure.step('wait until the system is ready - check SYSTEM_STATE table'):
             with allure.step('wait for the system table to exist'):
                 wait_for_system_table_to_exist(engine)
@@ -211,6 +252,10 @@ class DutUtilsTool:
 
     @staticmethod
     def wait_for_cumulus_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10):
+        # Readiness choke point after reboot/reset/install on Cumulus/Eth DUTs (counterpart
+        # of wait_for_nvos_to_become_functional). Flag it so teardown refreshes the ansible
+        # connection (see reset_ansible_connection_after_reboot).
+        pytest.dut_rebooted = True
         with allure.step('wait until the CLI is up'):
             wait_until_cli_is_up(engine)
 
@@ -243,6 +288,63 @@ class DutUtilsTool:
             logging.info('Got error: %s. Current engine was also disconnected', e)
             engine.disconnect()
             return "Action succeeded"
+
+    @staticmethod
+    def _nv_show_system_output_indicates_nvue_ready(output: str) -> bool:
+        if not output or "CLI is unavailable" in output:
+            return False
+        if "System is ready" in output:
+            return True
+        try:
+            out_obj = OutputParsingTool.parse_json_str_to_dictionary(output)
+            if not out_obj.result or not isinstance(out_obj.returned_value, dict):
+                return False
+            health = out_obj.returned_value.get(SystemConsts.HEALTH)
+            if isinstance(health, dict):
+                st = health.get(HealthConsts.STATUS)
+                if st in (HealthConsts.OK, SystemConsts.STATUS_DEFAULT_VALUE):
+                    return True
+        except (AttributeError, TypeError, KeyError, ValueError):
+            pass
+        return False
+
+    @staticmethod
+    def wait_for_nv_show_system_ready_on_ssh(engine: LinuxSshEngine, timeout_sec: int, poll_sec: int = 10) -> None:
+        """
+        Wait until `nv show system` shows NVUE is ready. Uses `retry_run=False` so ProxySshEngine
+        does not sit in its internal pre-check loop.
+
+        After a BMC-only reset the host may not reboot, so serial may never print a new
+        \"System is ready\"; use this instead of `wait_for_system_ready_in_serial` in that case.
+        """
+        cmd = "nv show system -o json --color off"
+        deadline = time.time() + timeout_sec
+        last_out = ""
+        while time.time() < deadline:
+            try:
+                last_out = engine.run_cmd(cmd, timeout=90, validate=False, retry_run=False)
+            except (OSError, socket.error, ReadTimeout) as e:
+                logger.warning(
+                    "wait_for_nv_show_system_ready_on_ssh: %s; reconnecting and retrying.", e
+                )
+                try:
+                    engine.disconnect()
+                except OSError:
+                    pass
+                DutUtilsTool.reconnect_engine(engine, find_prompt_tries=5, find_prompt_delay=3)
+                time.sleep(poll_sec)
+                continue
+            except Exception as e:
+                logger.warning("wait_for_nv_show_system_ready_on_ssh: %s", e)
+                time.sleep(poll_sec)
+                continue
+            if DutUtilsTool._nv_show_system_output_indicates_nvue_ready(last_out):
+                return
+            time.sleep(poll_sec)
+        raise TimeoutError(
+            f"Timed out after {timeout_sec}s waiting for NVUE readiness in `nv show system` output. "
+            f"Last output (truncated): {last_out[:1200]!r}"
+        )
 
     @staticmethod
     def get_engine_interface_name(engine, topology) -> str:

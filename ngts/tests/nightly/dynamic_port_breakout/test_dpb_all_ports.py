@@ -3,7 +3,7 @@ import pytest
 import logging
 from retry.api import retry_call
 import re
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tests.nightly.dynamic_port_breakout.conftest import get_mutual_breakout_modes, \
     is_splittable, set_dpb_conf, verify_ifaces_speed_and_status
 from ngts.helpers.interface_helpers import speed_string_to_int_in_mb

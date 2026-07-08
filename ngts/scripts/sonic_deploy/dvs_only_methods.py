@@ -1,6 +1,6 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.tools.test_utils import allure_utils as allure
 import shutil
 import os

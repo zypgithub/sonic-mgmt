@@ -20,9 +20,9 @@ from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst, FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra import ExceptionTool
-from infra.tools.redmine.redmine_api import get_issue_fixed_in_version_value
-from ngts.scripts.collect_simx_logs_on_not_success import dump_simx_data
-from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
+from devts.infra.tools.redmine.redmine_api import get_issue_fixed_in_version_value
+from ngts.scripts.collect_simx_logs_on_not_success import collect_hypervisor_logs, dump_simx_data
+from devts.infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
 from ngts.helpers.redmine_cache_helper import access_redmine_cache
 
 logger = logging.getLogger(__name__)
@@ -342,7 +342,14 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
 
         bug_handler_output = _run_bug_handler_command(bug_handler_cmd)
         logger.info(f"Bug Handler Output: {bug_handler_output}")
-        bug_handler_file_result = json.loads(bug_handler_output.message)
+        try:
+            bug_handler_file_result = json.loads(bug_handler_output.message)
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse bug handler output as JSON.\n"
+                         f"Command: {bug_handler_cmd}\n"
+                         f"Output: {bug_handler_output.message}\n"
+                         f"Stderr: {bug_handler_output.stderr}\n"
+                         f"RC: {bug_handler_output.returncode}")
 
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
@@ -527,6 +534,7 @@ def get_tech_support_from_switch(bug_handler_params):
             try:
                 topology_obj = get_topology_by_setup_name(setup_name=testbed, slow_cli=True)
                 dumps_files.extend(dump_simx_data(topology_obj, dumps_folder))
+                dumps_files.append(collect_hypervisor_logs(topology_obj, dumps_folder))
             except Exception as e:
                 logger.error(f"Exception while collecting the simx dump {str(e)}")
         tar_file_path_on_switch = _generate_sonic_techsupport(duthost)

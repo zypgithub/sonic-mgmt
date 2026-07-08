@@ -12,7 +12,7 @@ from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, PlatformConst
 from ngts.tools.test_utils.nvos_general_utils import generate_file_location_uri
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tests_nvos.general.config_commands.test_config_fetch import YAML_FILES_LIST, YAML_FILES_PATH
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.infra.BmcTool import BmcTool

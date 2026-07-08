@@ -10,6 +10,20 @@ logger = logging.getLogger()
 
 SC_ENABLED = 1
 
+
+SERVICE_PORTS_BY_PLATFORM = {
+    "x86_64-nvidia_sn5600-r0": ["Ethernet512"],
+    "x86_64-nvidia_sn5600_simx-r0": ["Ethernet512"],
+    "x86_64-nvidia_sn5640-r0": ["Ethernet512", "Ethernet520"],
+    "x86_64-nvidia_sn5640_simx-r0": ["Ethernet512", "Ethernet520"],
+    "x86_64-nvidia_sn6600-r0": ["Ethernet512", "Ethernet520", "Ethernet528", "Ethernet536"],
+    "x86_64-nvidia_sn6600_simx-r0": ["Ethernet512", "Ethernet520", "Ethernet528", "Ethernet536"],
+    "x86_64-nvidia_sn5810_ld-r0": ["Ethernet512", "Ethernet513"],
+    "x86_64-nvidia_sn5810_ld_simx-r0": ["Ethernet512", "Ethernet513"],
+    "x86_64-nvidia_sn6600_ld-r0": ["Ethernet512", "Ethernet513"],
+    "x86_64-nvidia_sn6600_ld_simx-r0": ["Ethernet512", "Ethernet513"],
+}
+
 # Command to get ASIC device (PCI) path on DUT
 ASIC_DETECT_GET_DEVICE_PATH_CMD = '/usr/bin/asic_detect/asic_detect.sh -p'
 
@@ -92,6 +106,11 @@ CMD_REDIS_TRANSCEIVERS = {
     "TRANSCEIVER_INFO": 'redis-cli -n 6 keys "TRANSCEIVER_INFO|*"',
     "TRANSCEIVER_STATUS": 'redis-cli -n 6 keys "TRANSCEIVER_STATUS|*"'
 }
+
+def get_service_ports(platform):
+    """Return the platform's service ports, or an empty list if it has none."""
+    return SERVICE_PORTS_BY_PLATFORM.get(platform, [])
+
 
 def enable_cmis_mgr_in_pmon_file(duthost):
     """

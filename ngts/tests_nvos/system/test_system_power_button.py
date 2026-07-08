@@ -2,14 +2,14 @@ import logging
 
 import pytest
 
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_constants.constants_nvos import SystemConsts, RebootConsts
 from ngts.tests_nvos.system.reboot_telemetry_helpers import (
     REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS,

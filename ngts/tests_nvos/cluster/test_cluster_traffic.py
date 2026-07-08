@@ -11,7 +11,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.ansible_playbooks_tool import AnsiblePlaybooksTool
-from ngts.tests_nvos.cluster.cluster_consts import AnsiblePlaybooksConsts as Ansible
+from ngts.tests_nvos.cluster.cluster_consts import AnsiblePlaybooksConsts as Ansible, ClusterConsts
 from ngts.tests_nvos.cluster.cluster_mpi_prei import _run_cluster_mpi_with_optional_prei
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
@@ -209,6 +209,7 @@ def test_cluster_traffic_basic_test(engines, devices, test_api, has_loopbox, sta
 
     if standalone_system:
         pytest.skip(f"Skipping test - Standalone system, traffic not supported.")
+    cluster = None
     try:
         with allure.step("Enable Cluster"):
             cluster = Cluster()
@@ -245,7 +246,8 @@ def test_cluster_traffic_basic_test(engines, devices, test_api, has_loopbox, sta
         _assert_test_results(status_check, configure_nmx_status, traffic_status, disk_write_ok)
 
     finally:
-        pass
+        if cluster is not None:
+            cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].manager.action_restore().verify_result()
 
 
 @disabled_access_ports
@@ -265,6 +267,7 @@ def test_cluster_traffic_all_test(engines, devices, test_api, has_loopbox, stand
     initial_writes = None
     status_check = configure_nmx_status = traffic_status = None
     disk_write_ok = True
+    cluster = None
 
     try:
         with allure.step("Enable Cluster"):
@@ -382,3 +385,5 @@ def test_cluster_traffic_all_test(engines, devices, test_api, has_loopbox, stand
             Port(_CLUSTER_TRAFFIC_COUNTERS_IFACE, "", "").interface.counters.clear_counters(
                 dut_engine=engines.dut
             ).verify_result()
+        if cluster is not None:
+            cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].manager.action_restore().verify_result()

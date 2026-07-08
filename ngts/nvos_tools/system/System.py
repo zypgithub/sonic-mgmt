@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from typing import Tuple, Union
+
 import pytest
 from retry import retry
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
@@ -40,6 +41,7 @@ from ngts.nvos_tools.system.SnmpServer import SnmpServer
 from ngts.nvos_tools.system.Stats import Stats
 from ngts.nvos_tools.system.Syslog import Syslog
 from ngts.nvos_tools.system.Techsupport import TechSupport
+from ngts.nvos_tools.system.Telemetry import Telemetry
 from ngts.nvos_tools.system.Version import Version
 from ngts.nvos_tools.system.Ztp import Ztp
 from ngts.nvos_tools.system.Dns import Dns
@@ -66,6 +68,7 @@ class System(BaseComponent):
         self.serial_console = BaseComponent(self, path='/serial-console')
         self.syslog = Syslog(self)
         self.ntp = Ntp(self)
+        self.telemetry = Telemetry(self)
         self.ztp = Ztp(self)
         self.stats = Stats(self, devices_dut)
         self.techsupport = TechSupport(self)
@@ -99,7 +102,7 @@ class System(BaseComponent):
     def get_expected_fields(device, resource):
         return device.constants.system[resource]
 
-    def validate_health_status(self, expected_status, throw_exception=True, dut_engine=None):
+    def validate_health_status(self, expected_status, throw_exception=True, dut_engine=None, expected_led=None):
         if not dut_engine:
             dut_engine = TestToolkit.get_engine()
         with allure.step("Validate health status with \"nv show system\" cmd"):
@@ -111,6 +114,8 @@ class System(BaseComponent):
                 actual_status = system_output[SystemConsts.HEALTH][HealthConsts.STATUS]
                 if actual_status == expected_status:
                     logger.info(f"Health status matches expected: {expected_status}")
+                    if expected_led is not None:
+                        self._validate_status_led(expected_led, throw_exception=throw_exception, dut_engine=dut_engine)
                     return
                 if actual_status != "N/A":
                     break
@@ -135,6 +140,23 @@ class System(BaseComponent):
             exception_str = "Unexpected health status.\nExpected: {}, but got :{}," \
                 " with the following health issues:\n{}".\
                 format(expected_status, health_output[HealthConsts.STATUS], health_issues_str)
+            logger.warning(exception_str)
+            if throw_exception:
+                assert False, exception_str
+
+    def _validate_status_led(self, expected_led, throw_exception=True, dut_engine=None):
+        # status-led is exposed by `nv show system health`, not by `nv show system`
+        with allure.step(f"Validate health status-led is {expected_led!r}"):
+            health_output = OutputParsingTool.parse_json_str_to_dictionary(
+                self.health.show(dut_engine=dut_engine)).get_returned_value()
+            actual_led = health_output.get(HealthConsts.STATUS_LED)
+            if actual_led == expected_led:
+                logger.info(f"Health status-led matches expected: {expected_led}")
+                return
+            exception_str = (
+                f"Unexpected health status-led. Expected: {expected_led!r}, "
+                f"but got: {actual_led!r}"
+            )
             logger.warning(exception_str)
             if throw_exception:
                 assert False, exception_str
@@ -213,7 +235,7 @@ class FactoryDefault(BaseComponent):
             from ngts.tests_nvos.system.factory_reset.helpers import KEEP_ONLY_FILES
             # can't import at top of file due to circular import
             if wait_for_functional and (handle_log_analyzer or (handle_log_analyzer is None and param != KEEP_ONLY_FILES)):
-                log_analyzer_marker = TestToolkit.get_loganalyzer_marker(engine, get_full_line=True)
+                log_analyzer_marker = TestToolkit.get_loganalyzer_marker(engine, get_full_line=True, test_string=test_name)
             else:
                 log_analyzer_marker = ""
             res_obj, duration = OperationTime.save_duration(f'reset factory {param}', "", test_name, SendCommandTool.execute_command,

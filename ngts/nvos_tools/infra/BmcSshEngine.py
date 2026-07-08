@@ -1,5 +1,5 @@
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder, SshPassCmdBuilder
 from ngts.tools.test_utils import allure_utils as allure

@@ -61,7 +61,8 @@ COMMUNITY_SET2_TEST_GROUP_MAP = {
     'community/dualtor.db': PLATFORM_DEPENDENT,
     'community/memory.db': PLATFORM_DEPENDENT,
     'community/link.db': PLATFORM_AGNOSTIC_GROUP1,
-    'community/upgrade_related.db': PLATFORM_DEPENDENT
+    'community/upgrade_related.db': PLATFORM_DEPENDENT,
+    'community/sed_password.db': PLATFORM_DEPENDENT
 }
 
 
@@ -118,7 +119,9 @@ SETUPS_GROUPS_MAP = {
                               'sonic_bison_mtvr-bison-133': SETUPS_GROUP_1,
                               'sonic_bison_r-bison-11': SETUPS_GROUP_1,
                               'sonic_bison_r-bison-12': SETUPS_GROUP_1,
-                              'sonic_moose_mtvr-moose-10': SETUPS_GROUP_1}
+                              'sonic_moose_mtvr-moose-11': SETUPS_GROUP_1,
+                              'sonic_moose_mtvr-moose-09': SETUPS_GROUP_1,
+                              'sonic_moose_r-moose-02': SETUPS_GROUP_1}
     }
 }
 # In canonical we have odd number of setups.

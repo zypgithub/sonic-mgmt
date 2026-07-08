@@ -12,7 +12,7 @@ from retry import retry
 from shutil import copyfile
 from collections import namedtuple
 from ngts.constants.constants import LinuxConsts, ConfigDbJsonConst, SonicConst
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli

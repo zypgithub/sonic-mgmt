@@ -8,11 +8,11 @@ from retry.api import retry_call
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.tools.test_utils import allure_utils as allure
 
 

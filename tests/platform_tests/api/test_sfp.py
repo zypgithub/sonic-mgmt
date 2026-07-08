@@ -88,6 +88,7 @@ def setup(request, duthosts, enum_rand_one_per_hwsku_hostname,
 
     sfp_setup["indexes_with_flat_memory"] = get_port_indexes_with_flat_memory(duthost)
 
+
 @pytest.mark.usefixtures("setup")
 class TestSfpApi(PlatformApiTestBase):
     """
@@ -321,26 +322,39 @@ class TestSfpApi(PlatformApiTestBase):
     #
     def is_xcvr_optical(self, xcvr_info_dict):
         """Returns True if transceiver is optical, False if copper (DAC)"""
-        # For QSFP-DD specification compliance will return type as passive or active
-        if xcvr_info_dict["type_abbrv_name"] in ["QSFP-DD", "OSFP-8X", "QSFP+C", "BP", "SFP"]:
-            if xcvr_info_dict["specification_compliance"] == "Passive Copper Cable" or \
-                    xcvr_info_dict["specification_compliance"] == "passive_copper_media_interface":
+        type_name = xcvr_info_dict["type_abbrv_name"]
+        spec = xcvr_info_dict["specification_compliance"]
+
+        # QSFP-DD/OSFP-8X/QSFP+C/BP report specification_compliance as a plain string.
+        if type_name in ["QSFP-DD", "OSFP-8X", "QSFP+C", "BP"]:
+            return spec not in ("Passive Copper Cable", "passive_copper_media_interface")
+
+        # SFP may report specification_compliance either as a plain string
+        # (e.g. Cisco-console SFP) or as a dict-formatted string (standard SFP/SFP+ DAC).
+        if type_name == "SFP":
+            if spec in ("Passive Copper Cable", "passive_copper_media_interface"):
                 return False
         elif xcvr_info_dict["type"] == "CPO":
             return True
         else:
-            spec_compliance_dict = ast.literal_eval(xcvr_info_dict["specification_compliance"])
-            if xcvr_info_dict["type_abbrv_name"] == "SFP":
-                compliance_code = spec_compliance_dict.get("SFP+CableTechnology")
-                if compliance_code == "Passive Cable":
-                    return False
-            else:
-                compliance_code = spec_compliance_dict.get("10/40G Ethernet Compliance Code", " ")
-                if "CR" in compliance_code:
-                    return False
-                extended_code = spec_compliance_dict.get("Extended Specification Compliance", " ")
-                if "CR" in extended_code:
-                    return False
+            try:
+                spec_compliance_dict = ast.literal_eval(spec)
+            except (ValueError, SyntaxError):
+                return True
+            if spec_compliance_dict.get("SFP+CableTechnology") == "Passive Cable":
+                return False
+            # Copper baseT RJ45 SFP modules (e.g. 1000BASE-T, 100BASE-TX). No laser to
+            # disable; xcvrd returns "N/A" for the optics APIs on these modules.
+            if "BASE-T" in spec_compliance_dict.get("Ethernet Compliance", ""):
+                return False
+            return True
+
+        # All other types use the dict-based copper check.
+        spec_compliance_dict = ast.literal_eval(spec)
+        if "CR" in spec_compliance_dict.get("10/40G Ethernet Compliance Code", " "):
+            return False
+        if "CR" in spec_compliance_dict.get("Extended Specification Compliance", " "):
+            return False
         return True
 
     def is_xcvr_resettable(self, request, xcvr_info_dict):
@@ -1037,7 +1051,7 @@ class TestSfpApi(PlatformApiTestBase):
         for i in self.sfp_setup["sfp_test_port_indices"]:
             current_ports_set = set(self.sfp_setup["index_physical_port_map"][i])
             if admin_up_port_set.isdisjoint(current_ports_set):
-                logger.warning(f"test_get_error_description: Skipping transceiver {i} as ports are not admin up:"
+                logger.warning(f"test_get_error_description: Skipping transceiver {i} as ports are not admin up: "
                                f"{current_ports_set}")
                 continue
             error_description = sfp.get_error_description(platform_api_conn, i)

@@ -2,12 +2,13 @@ import pytest
 import random
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 
 logger = logging.getLogger()
+pytestmark = pytest.mark.usefixtures('skip_if_no_ib0')
 
 
 @pytest.mark.ib

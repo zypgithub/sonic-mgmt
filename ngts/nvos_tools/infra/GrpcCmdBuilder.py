@@ -1,7 +1,7 @@
 import base64
 import json
 import os
-from typing import Self
+from typing import Any, Self
 
 from ngts.nvos_tools.infra.IpTool import IpTool
 
@@ -28,9 +28,7 @@ class GrpcCmdBuilder:
         return self
 
     def header(self, value: str) -> Self:
-        if not self.rpc_header:
-            self.rpc_header += " -rpc-header"
-        self.rpc_header += f" '{str(value)}'"
+        self.rpc_header += f" -rpc-header '{value}'"
         return self
 
     def user_creds(self, username: str, password: str) -> Self:
@@ -50,7 +48,7 @@ class GrpcCmdBuilder:
     def proto(self, proto_path: str) -> Self:
         return self.option("import-path", os.path.dirname(proto_path)).option("proto", proto_path)
 
-    def payload(self, payload: dict[str, str]) -> Self:
+    def payload(self, payload: dict[str, Any]) -> Self:
         return self.option("d", f"'{json.dumps(payload)}'")
 
     def endpoint(self, endpoint: str) -> Self:
@@ -68,3 +66,7 @@ class GrpcCmdBuilder:
         return self.CMD_TEMPLATE.format(
             host=host, port=self.port, opts=self.options, endpoint=self.endpoint_loc, rpc_header=self.rpc_header
         ).strip()
+        self.endpoint_loc.strip()
+        self.options.strip()
+        self.rpc_header.strip()
+        return GrpcCmdBuilder.CMD_TEMPLATE.format(host=host, port=self.port, opts=self.options, endpoint=self.endpoint_loc, rpc_header=self.rpc_header).strip()

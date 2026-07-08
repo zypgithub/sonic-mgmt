@@ -14,7 +14,7 @@ from ngts.helpers.performance.performance_db_helpers import (create_performance_
                                                              create_test_validation_entry_to_db,
                                                              add_test_mongo_metadata, get_perf_test_name)
 from ngts.helpers.thread_log_filter import config_root_logger
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 
 logger = logging.getLogger()
 
@@ -122,6 +122,7 @@ def cleanup_shared_json_file(players):
 
 @pytest.fixture(scope='function', autouse=True)
 def update_test_data_in_mongo_db(request, players):
+    test_name = None
     try:
         test_name = get_perf_test_name(request)
         time_now = datetime.now().strftime(MongoDbConsts.TIME_REGEX_FORMAT)
@@ -131,10 +132,34 @@ def update_test_data_in_mongo_db(request, players):
     except Exception as e:
         raise e
     finally:
+        if test_name is None:
+            test_name = get_perf_test_name(request)
         if re.search('optimize', test_name, re.IGNORECASE):
             return
-        else:
-            create_test_validation_entry_to_db(players, test_name)
+        # rep_call is None when setup failed/skipped before the test body ran;
+        # fall back to rep_setup in that case. rep_teardown is not yet set here.
+        rep_call = getattr(request.node, 'rep_call', None)
+        rep_setup = getattr(request.node, 'rep_setup', None)
+        report = rep_call if rep_call is not None else rep_setup
+        if report is not None:
+            if getattr(report, 'failed', False):
+                test_state = "failed"
+                longrepr = getattr(report, 'longrepr', "")
+                crash_report = getattr(longrepr, 'reprcrash', None)
+                state_info = getattr(crash_report, 'message', None) or str(longrepr)
+            elif getattr(report, 'skipped', False):
+                test_state = "skipped"
+                longrepr = getattr(report, 'longrepr', "")
+                if isinstance(longrepr, tuple) and len(longrepr) >= 3:
+                    state_info = str(longrepr[2])
+                else:
+                    state_info = str(longrepr)
+            else:
+                test_state = "passed"
+                state_info = ""
+            add_test_mongo_metadata(test_name, {MongoDbConsts.TEST_STATE: test_state,
+                                                MongoDbConsts.STATE_INFO: state_info})
+        create_test_validation_entry_to_db(players, test_name)
 
 
 def get_all_players_ports(players, right_split_num=1, left_split_num=1):
@@ -237,9 +262,9 @@ def fix_tg_cli_objects_alias_keys(cli_objects, topology_obj):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def unsplit_all_ports_on_spc5(players):
+def unsplit_all_ports_on_spc5_6(players):
     """
-    Unsplits all ports on the SPC5.
+    Unsplits all ports on the SPC5/6.
     """
-    unsplit_all_ports(players, step="unsplit_all_ports_on_spc5 - unsplit_all_ports")
+    unsplit_all_ports(players, step="unsplit_all_ports_on_spc5_6 - unsplit_all_ports")
     return

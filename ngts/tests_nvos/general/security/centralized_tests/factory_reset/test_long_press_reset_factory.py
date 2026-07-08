@@ -24,7 +24,7 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo 
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AddressingType, AuthConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 
 logger = logging.getLogger(__name__)
 DEFAULT_TEST_PASSWORD = 'Aa123456!'
@@ -123,14 +123,13 @@ def _local_users_restore_check(engines: EnginesT, feature_enabled: bool):
 def _aaa_method_keep_check(engines: EnginesT, auth_method: str):
     def _setup_tacacs() -> UserInfo:
         with allure.step('set tacacs server'):
-            tac_server: RemoteAaaServerInfo = TacacsDockerServer0.SERVER_BY_ADDRESSING_TYPE[
-                random.choice(AddressingType.ALL_TYPES)]
+            tac_server: RemoteAaaServerInfo = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[AddressingType.IPV4]
             tac_server.configure(engines)
             return tac_server.users[0]
 
     def _setup_ldap() -> UserInfo:
         with allure.step('set ldap server'):
-            ldap_server: RemoteAaaServerInfo = LdapServersP3.LDAP1_SERVERS[random.choice(AddressingType.ALL_TYPES)]
+            ldap_server: RemoteAaaServerInfo = LdapServersP3.LDAP3_SERVERS[AddressingType.IPV4]
             ldap_server.configure(engines)
             return ldap_server.users[0]
 
@@ -149,7 +148,7 @@ def _aaa_method_keep_check(engines: EnginesT, auth_method: str):
             with allure.step('Set authentication order'):
                 system.aaa.authentication.set(AuthConsts.ORDER, [auth_method, AuthConsts.LOCAL], apply=True).verify_result()
                 if auth_method == RemoteAaaType.LDAP:
-                    nvos_general_utils.wait_for_ldap_nvued_restart_workaround(None)
+                    nvos_general_utils.wait_for_ldap_nvued_restart_workaround(None, engine_to_use=engines.dut)
                 else:
                     time.sleep(3)
             with allure.step('enable failthrough'):

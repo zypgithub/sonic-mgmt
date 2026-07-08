@@ -817,6 +817,14 @@ def render_no_new_failures_message(summary: ReportSummary) -> str:
     """Render a positive message when there are no new failures."""
     new_failures = [t for t in summary.failed_tests if t.is_new_failure]
 
+    # Defensive: don't render the "all tests passed" banner when the
+    # report reports zero tests. That's almost always allure-docker-service
+    # still indexing widgets, not a real all-pass run. Caller should have
+    # caught this via summary.error, but suppress here as well in case a
+    # downstream code path bypasses the retry.
+    if summary.total == 0:
+        return ""
+
     # Also check if there are any failures at all
     if not summary.failed_tests:
         return """

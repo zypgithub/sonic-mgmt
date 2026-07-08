@@ -1,8 +1,8 @@
 class BugDataCollector {
-    constructor() {
-        this.bugAuthor = "otrabelsi";
+    constructor(usernameManager) {
+        this.usernameManager = usernameManager;
+        this.bugAuthor = "";
     }
-
     findSysdumpPathFromTestStage(reportContent) {
         if (!reportContent) return "Not found";
         function searchSteps(steps) {
@@ -26,14 +26,12 @@ class BugDataCollector {
         }
         return searchSteps(reportContent.steps);
     }
-
     async fetchTestData(baseUrl, testCaseId) {
         const testUrl = `${baseUrl}/data/test-cases/${testCaseId}.json`;
         const testResp = await fetch(testUrl, { credentials: "include" });
         if (!testResp.ok) throw new Error(`Failed to fetch test JSON: ${testResp.status}`);
         return await testResp.json();
     }
-
     async fetchEnvironmentData(baseUrl) {
         let setupName = "";
         let overviewData = null;
@@ -48,14 +46,13 @@ class BugDataCollector {
         }
         return { overviewData, setupName };
     }
-
     prepareBugReportData(testData, selectionResult, sysdumpPath, overviewData, is_session_report) {
-        const { team: selectedTeam, showStopper: showStopperValue, isDegradation: isDegradationValue, bugTitle: userBugTitle, manualVersion } = selectionResult;
+        const { team: selectedTeam, showStopper: showStopperValue, isDegradation: isDegradationValue, bugTitle: userBugTitle, bugDescription: userBugDescription, manualVersion } = selectionResult;
         // Base flatData
         const flatData = {
             test_name: testData.fullName || "Not found",
             // test_description: (testData.testStage && testData.testStage.description) || "Not found",
-            description: (testData.testStage && testData.testStage.description) || "",
+            description: userBugDescription || (testData.testStage && testData.testStage.description) || "",
             report_url: window.location.href,
             is_test_function_failed: true,
             bug_title: userBugTitle ,
@@ -116,9 +113,15 @@ class BugDataCollector {
         }
         return flatData;
     }
-
     async collectBugData(ui) {
         try {
+            // Ensure username is set before proceeding
+            this.bugAuthor = await this.usernameManager.ensureUsername();
+            // If user cancelled username entry, exit silently
+            if (!this.bugAuthor) {
+                console.log("Username setup cancelled by user");
+                return null;
+            }
             // Get test data first to show test name in popup
             const hashMatch = window.location.hash.match(/#suites\/[^/]+\/([^/]+)/);
             if (!hashMatch) {
@@ -130,6 +133,48 @@ class BugDataCollector {
             const is_session_report = baseUrl.includes("session-reports");
             const testData = await this.fetchTestData(baseUrl, testCaseId);
             const { overviewData, setupName } = await this.fetchEnvironmentData(baseUrl);
+            // Get sysdump path early so we can include it in the template
+            const sysdumpPath = this.findSysdumpPathFromTestStage(testData.testStage);
+            // Prepare initial bug data for the template
+            const initialBugData = {
+                description: (testData.testStage && testData.testStage.description) || "",
+                report_url: window.location.href,
+                setup_name: setupName || "???",
+                dump_files: sysdumpPath && sysdumpPath !== "Not found" ? [sysdumpPath] : ["not available"],
+                pytest_cmd_args: "???",
+                hw_sku: "???",
+                beforeStages: testData.beforeStages || []
+            };
+            // Extract data from overviewData to populate the template
+            if (overviewData && overviewData.length > 0) {
+                overviewData.forEach(item => {
+                    if (item.name && item.values && item.values.length > 0) {
+                        const val = item.values[0];
+                        switch (item.name) {
+                            case "PyTest_args":
+                                if (!is_session_report) {
+                                    if (testData.fullName.includes('#')) {
+                                        const testNamePart = testData.fullName.split('#')[1];
+                                        initialBugData.pytest_cmd_args = val + ` -k="${testNamePart}"`;
+                                    } else {
+                                        initialBugData.pytest_cmd_args = val;
+                                    }
+                                } else {
+                                    initialBugData.pytest_cmd_args = "???";
+                                }
+                                break;
+                            case "HwSKU":
+                                initialBugData.hw_sku = val;
+                                break;
+                            case "Version":
+                                if (val && val.trim() !== "") {
+                                    initialBugData.detected_in_version = val;
+                                }
+                                break;
+                        }
+                    }
+                });
+            }
             // Show popup - check if Version specifically exists in overview data with non-empty value
             const hasVersion = overviewData && overviewData.some(item =>
                 item.name === "Version" &&
@@ -138,12 +183,17 @@ class BugDataCollector {
                 item.values[0] &&
                 item.values[0].trim() !== ""
             );
-            const selectionResult = await ui.getUserBugInputs(testData.name, setupName, hasVersion);
+            const selectionResult = await ui.getUserBugInputs(
+                testData.name,
+                setupName,
+                hasVersion,
+                initialBugData,
+                testCaseId
+            );
             if (!selectionResult) {
                 console.log("User cancelled bug creation");
                 return;
             }
-            const sysdumpPath = this.findSysdumpPathFromTestStage(testData.testStage);
             const flatData = this.prepareBugReportData(testData, selectionResult, sysdumpPath, overviewData, is_session_report);
             return flatData;
         } catch (err) {

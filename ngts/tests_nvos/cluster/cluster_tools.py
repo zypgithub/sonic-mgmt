@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import concurrent.futures
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from collections import defaultdict
 import functools
 import inspect
@@ -12,7 +14,6 @@ import re
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -34,40 +35,40 @@ logger = logging.getLogger(__name__)
 class ClusterTools:
 
     @staticmethod
-    def stop_start_app(cluster, engines, devices, has_loopbox, setup_name, standalone_system):
+    def stop_start_app(cluster, engine, devices, has_loopbox, setup_name, standalone_system):
         with allure.step("Stop/Start apps"):
             for app in devices.dut.expected_cluster_apps:
                 with allure.step(f"Validate app {app} is up"):
-                    ClusterTools.verify_app_is_up(engines, app)
+                    ClusterTools.verify_app_is_up(engine, app)
                     if app == ClusterConsts.NMX_CONTROLLER and (has_loopbox or not standalone_system):
-                        ClusterTools.verify_lid_value(devices)
-                        ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
+                        ClusterTools.verify_lid_value(devices, engine=engine)
+                        ClusterTools.verify_interface_up(devices, has_loopbox, setup_name, engine=engine)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
                     if app == ClusterConsts.NMX_CONTROLLER and redmine_helpers.is_bug_active(4207869) and standalone_system:
                         pass
                     else:
-                        ClusterTools.wait_for_app_healthy(cluster, app)
+                        ClusterTools.wait_for_app_healthy(cluster, app, engine=engine)
                 with allure.step(f"Stop app {app} and validate its down"):
-                    cluster.apps.app_name[app].action_stop_cluster_app()
+                    cluster.apps.app_name[app].action_stop_cluster_app(engine=engine)
                     nmx_c_expected_state = 'down' if app == ClusterConsts.NMX_CONTROLLER else ''
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state, engine=engine)
                     # TBD -- once "running" is working, use it to verify app is not running
-                    ClusterTools.verify_app_is_down(engines, app, devices)
+                    ClusterTools.verify_app_is_down(engine, app, devices)
 
                 with allure.step(f"Start app again {app} and validate its up"):
-                    _ = cluster.apps.app_name[app].action_start_cluster_app()
+                    _ = cluster.apps.app_name[app].action_start_cluster_app(engine=engine)
                     nmx_c_expected_state = 'up' if app == ClusterConsts.NMX_CONTROLLER else ''
                     app_state = '' if app == ClusterConsts.NMX_CONTROLLER else app
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state, app=app_state)
-                ClusterTools.verify_app_is_up(engines, app)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state, app=app_state, engine=engine)
+                ClusterTools.verify_app_is_up(engine, app)
                 if app == ClusterConsts.NMX_CONTROLLER and (has_loopbox or not standalone_system):
-                    ClusterTools.verify_lid_value(devices)
-                    ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
+                    ClusterTools.verify_lid_value(devices, engine=engine)
+                    ClusterTools.verify_interface_up(devices, has_loopbox, setup_name, engine=engine)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
                     if app == ClusterConsts.NMX_CONTROLLER and redmine_helpers.is_bug_active(4207869) and standalone_system:
                         pass
                     else:
-                        ClusterTools.wait_for_app_healthy(cluster, app)
+                        ClusterTools.wait_for_app_healthy(cluster, app, engine=engine)
 
             return ResultObj(result=True)
 
@@ -105,7 +106,7 @@ class ClusterTools:
             # Apply nv-bridge config for devices that need it (e.g., Rosalind)
             # This must happen AFTER cluster is enabled, then restart nmx-controller
             # This is required because cluster.unset() clears the node primary server config
-            ClusterTools._apply_nv_bridge_config_if_needed(cluster, devices)
+            ClusterTools._apply_nv_bridge_config_if_needed(cluster, devices, engine=engine)
 
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format, dut_engine=engine),
@@ -123,13 +124,13 @@ class ClusterTools:
                                                                       expected_value=expected_nmxc_state).verify_result()
 
     @staticmethod
-    def _is_nv_bridge_configured(cluster):
+    def _is_nv_bridge_configured(cluster, engine=None):
         """
         Check if nv-bridge node primary server is already configured.
         Returns True if configured, False otherwise.
         """
         try:
-            output = cluster.show(op_param='node', output_format=OutputFormat.json)
+            output = cluster.show(op_param='node', output_format=OutputFormat.json, dut_engine=engine)
             parsed = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
             # Check if primary/server exists in the config
             return bool(parsed.get('primary', {}).get('server', {}))
@@ -137,7 +138,7 @@ class ClusterTools:
             return False
 
     @staticmethod
-    def _apply_nv_bridge_config_if_needed(cluster, devices=None):
+    def _apply_nv_bridge_config_if_needed(cluster, devices=None, engine=None):
         """
         Apply nv-bridge configuration for devices that require it.
         This sets the cluster node primary server which is required for nv-bridge to function.
@@ -168,7 +169,7 @@ class ClusterTools:
         # Check if device requires nv-bridge config (set in device class, e.g., RosalindSurrogateSwitch)
         if getattr(devices.dut, 'requires_nv_bridge_config', False):
             # Check if nv-bridge is already configured - skip if it is
-            if ClusterTools._is_nv_bridge_configured(cluster):
+            if ClusterTools._is_nv_bridge_configured(cluster, engine=engine):
                 logger.info("nv-bridge node primary server already configured, skipping")
                 return
 
@@ -177,25 +178,25 @@ class ClusterTools:
 
                 # Step 1: Set node primary server
                 cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
-                                                      op_param_value=devices.dut.cur_mgmt_port_ip, apply=True)
+                                                      op_param_value=devices.dut.cur_mgmt_port_ip, apply=True, dut_engine=engine)
 
                 # Step 2: Stop nmx-controller
                 logger.info("Stopping nmx-controller to apply nv-bridge config")
-                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_stop_cluster_app()
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='down')
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_stop_cluster_app(engine=engine)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='down', engine=engine)
 
                 # Step 3: Start nmx-controller
                 logger.info("Starting nmx-controller after nv-bridge config")
-                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_start_cluster_app()
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_start_cluster_app(engine=engine)
 
                 # Step 4: Wait for nmx-conn to be up
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up', engine=engine)
 
     @staticmethod
     @retry.retry(AssertionError, tries=6, delay=15, logger=None)
-    def validate_cluster_enabled(cluster, output_format=OutputFormat.json):
+    def validate_cluster_enabled(cluster, output_format=OutputFormat.json, engine=None):
         output = OutputParsingTool.parse_show_output_to_dict(
-            cluster.show(output_format=output_format),
+            cluster.show(output_format=output_format, dut_engine=engine),
             output_format=output_format).get_returned_value()
 
         with allure.step("Validate state is enabled"):
@@ -210,19 +211,19 @@ class ClusterTools:
             assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
     @staticmethod
-    def check_cluster_state(cluster, output_format=OutputFormat.json):
+    def check_cluster_state(cluster, output_format=OutputFormat.json, engine=None):
         with allure.step("Check cluster state"):
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=output_format),
+                cluster.show(output_format=output_format, dut_engine=engine),
                 output_format=output_format).get_returned_value()
             return output[SystemConsts.STATE]
 
     @staticmethod
-    def reverse_cluster_state(cluster, setup_name, output_format):
-        if ClusterTools.check_cluster_state(cluster, output_format) == 'enabled':
-            ClusterTools.stop_cluster(cluster, output_format)
+    def reverse_cluster_state(cluster, setup_name, output_format, engine=None):
+        if ClusterTools.check_cluster_state(cluster, output_format, engine=engine) == 'enabled':
+            ClusterTools.stop_cluster(cluster, output_format, engine=engine)
         else:
-            ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format=output_format, engine=engine)
 
     @staticmethod
     def stop_cluster(cluster, output_format=OutputFormat.json, engine=None):
@@ -256,9 +257,9 @@ class ClusterTools:
                 assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
     @staticmethod
-    def verify_app_is_up(engines, app):
+    def verify_app_is_up(engine, app):
         with allure.step("Checking if service is up using docker ps | grep -i nmx"):
-            output = engines.dut.run_cmd('docker ps | grep -i nmx')
+            output = engine.run_cmd('docker ps | grep -i nmx')
             assert output != '', f"nmx docker is still down, {output}"
             output = output.split('\n')
             expected_services = ClusterConsts.CONTROLLER_SERVICES if app == ClusterConsts.NMX_CONTROLLER else ClusterConsts.TELEMETRY_SERVICES
@@ -266,25 +267,25 @@ class ClusterTools:
             assert all_services_present, f"Missing services - expected services {expected_services}, actual: {output}"
 
     @staticmethod
-    def verify_app_is_down(engines, app, devices=None):
+    def verify_app_is_down(engine, app, devices=None):
         # Skip nmx-t docker check since the agent keeps it running even when the app is stopped
         if app == ClusterConsts.NMX_TELEMETRY and devices and getattr(devices.dut, 'has_nmx_telemetry_agent', False):
             logger.info("Skipping nmx-t docker check - system has nmx-telemetry-agent")
             return
         with allure.step("Checking if service is down using docker ps | grep -i nmx"):
-            output = engines.dut.run_cmd('docker ps | grep -i nmx')
+            output = engine.run_cmd('docker ps | grep -i nmx')
             output = output.split('\n')
             expected_services = ClusterConsts.CONTROLLER_SERVICES if app == ClusterConsts.NMX_CONTROLLER else ClusterConsts.TELEMETRY_SERVICES
             none_services_present = all(not any(service in line for line in output) for service in expected_services)
             assert none_services_present, f"nmx docker is still up, {output}"
 
     @staticmethod
-    def verify_lid_value(devices):
+    def verify_lid_value(devices, engine=None):
         with allure.step("Create an IB object"):
             ib = Ib(None)
 
         with allure.step('Run nv show ib device command and verify that each field has a value'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(ib.device.show()).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(ib.device.show(dut_engine=engine)).get_returned_value()
 
             ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
                 output, devices.dut.device_list).verify_result()
@@ -298,13 +299,13 @@ class ClusterTools:
             for device in output:
                 with allure.step('Run nv show ib device <device-id> command and verify that each field has a value'):
                     dev_output = OutputParsingTool.parse_json_str_to_dictionary(
-                        ib.device.show(device)).get_returned_value()
+                        ib.device.show(op_param=device, dut_engine=engine)).get_returned_value()
 
                 if IbConsts.DEVICE_ASIC_PREFIX in device:
                     assert dev_output['lid'] > 0, "Invalid number of lid"
 
     @staticmethod
-    def verify_interface_up(devices, has_loopbox, setup_name):
+    def verify_interface_up(devices, has_loopbox, setup_name, engine=None):
         # Build list of interface types to check based on what actually exists
         interface_types = []
 
@@ -320,9 +321,13 @@ class ClusterTools:
 
         for interface_type in interface_types:
             port_type = 'fnm' if interface_type == 'fnm' else ''
-            selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
+            selected_port = Tools.RandomizationTool.select_random_port(
+                dut_engine=engine,
+                requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE,
+                requested_ports_type=port_type,
+                interface_type=interface_type).get_returned_value()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                selected_port.interface.link.show()).get_returned_value()
+                selected_port.interface.link.show(dut_engine=engine)).get_returned_value()
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                               field_name=IbInterfaceConsts.LINK_STATE,
                                                               expected_value=NvosConsts.LINK_STATE_UP).verify_result()
@@ -333,14 +338,15 @@ class ClusterTools:
                                                               field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
                                                               expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
 
-        with allure.step("Verify switch ports state - that are connected to transceivers"):
-            ClusterTools().verify_external_interfaces_state_up_and_active(devices)
+        if hasattr(devices.dut, 'nvl_trunk_ports_list') and devices.dut.nvl_trunk_ports_list:
+            with allure.step("Verify switch ports state - that are connected to transceivers"):
+                ClusterTools().verify_external_interfaces_state_up_and_active(devices)
 
     @staticmethod
-    def get_all_interfaces_with_transceivers(devices):
+    def get_all_interfaces_with_transceivers(devices, engine=None):
         interfaces = []
         platform = Platform()
-        present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
+        present_transceivers = platform.transceiver.get_list_of_connected_transceivers(dut_engine=engine)
 
         for transceiver in present_transceivers:
             interfaces.extend([interface for interface in devices.dut.nvl_trunk_ports_list if interface.startswith(f"{transceiver}p")])
@@ -348,13 +354,13 @@ class ClusterTools:
         return interfaces
 
     @staticmethod
-    def verify_external_interfaces_state_up_and_active(devices):
-        interfaces = ClusterTools().get_all_interfaces_with_transceivers(devices)
+    def verify_external_interfaces_state_up_and_active(devices, engine=None):
+        interfaces = ClusterTools().get_all_interfaces_with_transceivers(devices, engine=engine)
         for interface in interfaces:
             selected_port = Port(interface, "", "")
             # Verify fields.
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                selected_port.interface.link.show()).get_returned_value()
+                selected_port.interface.link.show(dut_engine=engine)).get_returned_value()
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                               field_name=IbInterfaceConsts.LINK_STATE,
                                                               expected_value=NvosConsts.LINK_STATE_UP).verify_result()
@@ -366,13 +372,13 @@ class ClusterTools:
                                                               expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
 
     @staticmethod
-    def start_stop_cluster(cluster, setup_name, output_format):
-        ClusterTools.start_cluster(cluster, setup_name, output_format)
-        ClusterTools.stop_cluster(cluster, output_format)
+    def start_stop_cluster(cluster, setup_name, output_format, engine=None):
+        ClusterTools.start_cluster(cluster, setup_name, output_format, engine=engine)
+        ClusterTools.stop_cluster(cluster, output_format, engine=engine)
         return ResultObj(result=True)
 
     @staticmethod
-    def verify_apps_running(engines, devices, cluster, expected_state, output_format, standalone_system, has_loopbox,
+    def verify_apps_running(engine, devices, cluster, expected_state, output_format, standalone_system, has_loopbox,
                             retries=0, retry_interval=15, is_simx=False):
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
             for app in devices.dut.expected_cluster_apps:
@@ -381,7 +387,7 @@ class ClusterTools:
                 app_status = None
                 for attempt in range(retries + 1):
                     output = OutputParsingTool.parse_show_output_to_dict(
-                        cluster.apps.running.show(output_format=output_format),
+                        cluster.apps.running.show(output_format=output_format, dut_engine=engine),
                         output_format=output_format).get_returned_value()
                     app_status = output[app]['status']
                     if app_status == expected_state:
@@ -392,30 +398,30 @@ class ClusterTools:
                         time.sleep(retry_interval)
                 assert app_status == expected_state, \
                     f"App {app} status is {app_status} instead of {expected_state}"
-                ClusterTools.verify_app_is_up(engines, app)
+                ClusterTools.verify_app_is_up(engine, app)
             if has_loopbox or is_simx or not standalone_system:
-                ClusterTools.verify_lid_value(devices)
+                ClusterTools.verify_lid_value(devices, engine=engine)
 
     @staticmethod
-    def verify_app_version(cluster, app, expected_version):
+    def verify_app_version(cluster, app, expected_version, engine=None):
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-            output = OutputParsingTool.parse_show_output_to_dict(cluster.apps.show()).get_returned_value()
+            output = OutputParsingTool.parse_show_output_to_dict(cluster.apps.show(dut_engine=engine)).get_returned_value()
             ValidationTool.verify_field_value_exist_in_output_dict(output, app)
             assert expected_version in output[app][ClusterConsts.APP_VERSION], \
                 f"Expected {app} version: {expected_version}. Actual version: {output[app][ClusterConsts.APP_VERSION]}"
 
     @staticmethod
-    def start_app(cluster, app, has_loopbox, standalone_system):
+    def start_app(cluster, app, has_loopbox, standalone_system, engine=None):
         with allure.step(f"Start app {app}"):
-            cluster.apps.app_name[app].action_start_cluster_app()
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+            cluster.apps.app_name[app].action_start_cluster_app(engine=engine)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up', engine=engine)
             if app == ClusterConsts.NMX_CONTROLLER and redmine_helpers.is_bug_active(4207869) and standalone_system:
                 pass
             else:
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
                     for _ in range(10):
                         output = OutputParsingTool.parse_show_output_to_dict(
-                            cluster.apps.running.show(output_format=OutputFormat.json),
+                            cluster.apps.running.show(output_format=OutputFormat.json, dut_engine=engine),
                             output_format=OutputFormat.json).get_returned_value()
                         app_status = output[app]['status']
                         if app_status == 'ok':
@@ -425,30 +431,30 @@ class ClusterTools:
                     assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
 
     @staticmethod
-    def stop_app(cluster, app):
+    def stop_app(cluster, app, engine=None):
         with allure.step(f"Stop app {app}"):
-            cluster.apps.app_name[app].action_stop_cluster_app()
+            cluster.apps.app_name[app].action_stop_cluster_app(engine=engine)
             if app == ClusterConsts.NMX_CONTROLLER:
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='down')
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='down', engine=engine)
             else:
                 logger.info("Stopping nmx-telemetry app, sleeping for 10 seconds till its status is updated")
                 time.sleep(10)
 
     @staticmethod
-    def get_current_config_files_paths(sdn, app, files_types):
+    def get_current_config_files_paths(sdn, app, files_types, engine=None):
         files_dict = {}
         with allure.step("Fetch & Generate config files"):
             for file_type in files_types:
-                output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
+                output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn(dut_engine=engine)
                 installed_file = ClusterTools().get_generated_file_name(output.returned_value, 'config')
-                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json, dut_engine=engine),
                                                                      output_format=OutputFormat.json).get_returned_value()
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
         return files_dict
 
     @staticmethod
-    def get_all_apps_config_files_paths(sdn, devices):
+    def get_all_apps_config_files_paths(sdn, devices, engine=None):
         """
         Get config files paths for all cluster apps on this device type.
         Handles dynamic app lists (Juliet/Surrogate: both apps, Rosalind: controller only)
@@ -460,7 +466,7 @@ class ClusterTools:
         config_files_paths = {}
         for app in devices.dut.expected_cluster_apps:
             app_config_files = devices.dut.cluster_config_files_by_app.get(app, [])
-            app_files_paths = ClusterTools.get_current_config_files_paths(sdn, app, app_config_files)
+            app_files_paths = ClusterTools.get_current_config_files_paths(sdn, app, app_config_files, engine=engine)
             config_files_paths.update(app_files_paths)
         return config_files_paths
 
@@ -476,26 +482,26 @@ class ClusterTools:
         return file_name
 
     @staticmethod
-    def verify_log_level(log_level, app, output_format, cluster):
+    def verify_log_level(log_level, app, output_format, cluster, engine=None):
         with allure.step(f"Verifying log level is updated to {log_level}"):
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.apps.app_name[app].loglevel.show(output_format=output_format),
+                cluster.apps.app_name[app].loglevel.show(output_format=output_format, dut_engine=engine),
                 output_format=output_format).get_returned_value()
             # Add assert on log level
             assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
 
     @staticmethod
-    def create_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
+    def create_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json, engine=None):
         with allure.step("Create empty partition"):
             resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
             mcast_limit = random.randint(ClusterConsts.MIN_MCAST, ClusterConsts.MAX_MCAST)
-            sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_create_partition_id(name=ClusterConsts.EMPTY_PARTITION_NAME, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit)
+            sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_create_partition_id(name=ClusterConsts.EMPTY_PARTITION_NAME, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, engine=engine)
 
         with allure.step("Checking newly created partition"):
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format, dut_engine=engine),
                                                                  output_format=output_format).get_returned_value()
             assert ClusterConsts.EMPTY_PARTITION_ID in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not created'
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format, dut_engine=engine),
                                                                  output_format=output_format).get_returned_value()
             partitions_mapping[int(ClusterConsts.EMPTY_PARTITION_ID)] = []
             if not redmine_helpers.is_bug_active(4209873):
@@ -514,19 +520,19 @@ class ClusterTools:
                     assert str(output[key]) == str(val), f'Expected value: {val}, Actual value:{output[key]}'
 
     @staticmethod
-    def create_empty_partition_and_add_gpu(sdn, no_reroute='', output_format=OutputFormat.json, zero_uuid_gpus=None):
-        mapping, original_partition_type = ClusterTools.get_partition_mapping(sdn)
+    def create_empty_partition_and_add_gpu(sdn, no_reroute='', output_format=OutputFormat.json, zero_uuid_gpus=None, engine=None):
+        mapping, original_partition_type = ClusterTools.get_partition_mapping(sdn, engine=engine)
         valid_ids = [key for key, value in mapping.items() if len(value) > 0]
-        ClusterTools.create_empty_partition(sdn, mapping)
+        ClusterTools.create_empty_partition(sdn, mapping, engine=engine)
         _ = random.choice(ClusterConsts.PARTITION_TYPES)
         partition_to_remove_from = random.choice(valid_ids)
         gpus_in_partition = mapping[partition_to_remove_from]
         (uuid, location) = ClusterTools.choose_valid_gpu(gpus_in_partition, zero_uuid_gpus)
         with allure.step(f"Remove GPU from partition {partition_to_remove_from}"):
             if original_partition_type == 'location_based':
-                sdn.partition.partition_id[partition_to_remove_from].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result()
+                sdn.partition.partition_id[partition_to_remove_from].location.location_id[location].action_restore_partition(engine=engine, reroute_param=no_reroute).verify_result()
             else:
-                sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result()
+                sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(engine=engine, reroute_param=no_reroute).verify_result()
 
         if redmine_helpers.is_bug_active(4285786):
             time.sleep(15)
@@ -534,30 +540,30 @@ class ClusterTools:
         with allure.step(f"Add GPU {uuid} {location} to empty partition {ClusterConsts.EMPTY_PARTITION_ID}"):
             empty_partition_type = random.choice(['uuid', 'location'])
             if empty_partition_type == 'location':
-                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result()
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].location.location_id[location].action_update_partition(engine=engine, reroute_param=no_reroute).verify_result()
             else:
-                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result()
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].uuid.uuid_value[uuid].action_update_partition(engine=engine, reroute_param=no_reroute).verify_result()
         return uuid, location, ClusterConsts.EMPTY_PARTITION_ID, partition_to_remove_from
 
     @staticmethod
-    def uuid_location_in_partition(sdn, partition_id):
-        output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show()).get_returned_value()
+    def uuid_location_in_partition(sdn, partition_id, engine=None):
+        output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(dut_engine=engine)).get_returned_value()
         uuids = [info['uuid'] for _, info in output['locations'].items()]
         locations = list((output['locations']).keys())
         return uuids, locations
 
     @staticmethod
-    def get_partition_mapping(sdn, output_format=OutputFormat.json):
+    def get_partition_mapping(sdn, output_format=OutputFormat.json, engine=None):
         mapping = {}
         with allure.step("Show All Partitions - at the beginning its just the default partition"):
-            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format, dut_engine=engine),
                                                                                    output_format=output_format).get_returned_value()
             partition_ids = list(initial_partition_output.keys())
             default_partition_id = partition_ids[-1]
             default_partition_type = initial_partition_output[default_partition_id]['partition-type']
         with allure.step("Show partition per partition id"):
             for partition_id in partition_ids:
-                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format, dut_engine=engine),
                                                                      output_format=output_format).get_returned_value()
                 list_of_tuples = ClusterTools.get_partition_uuid_location_map(output)
                 mapping[partition_id] = list_of_tuples
@@ -606,13 +612,13 @@ class ClusterTools:
             )
 
     @staticmethod
-    def delete_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
+    def delete_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json, engine=None):
         with allure.step("Delete empty partition"):
-            sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_delete_partition()
+            sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_delete_partition(engine=engine)
             start_time = time.time()
             timeout = 25
             while True:
-                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format, dut_engine=engine),
                                                                      output_format=output_format).get_returned_value()
                 logger.info("Checking if partition is deleted,")
                 if ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()):
@@ -629,9 +635,9 @@ class ClusterTools:
             partitions_mapping.pop(int(ClusterConsts.EMPTY_PARTITION_ID))
 
     @staticmethod
-    def verify_log_messages_log_level(log_level, system, test_api, cluster, setup_name):
-        ClusterTools().stop_cluster(cluster)
-        ClusterTools().start_cluster(cluster, setup_name)
+    def verify_log_messages_log_level(log_level, system, test_api, cluster, setup_name, engine=None):
+        ClusterTools().stop_cluster(cluster, engine=engine)
+        ClusterTools().start_cluster(cluster, setup_name, engine=engine)
         TestToolkit.tested_api = 'NVUE'
         lines_checked = 0
         # Get the index of the current log level
@@ -672,10 +678,7 @@ class ClusterTools:
                     f"Polling until cluster state is {cluster_expected_state} "
                     f"and nmx-c state is {nmx_c_expected_state}"
             ):
-                if (
-                        (cluster_expected_state and actual_cluster_state != cluster_expected_state) or
-                        (nmx_c_expected_state and actual_nmxc_state != nmx_c_expected_state)
-                ):
+                if (cluster_expected_state and actual_cluster_state != cluster_expected_state) or (nmx_c_expected_state and actual_nmxc_state != nmx_c_expected_state):
                     logger.info(f"Cluster state not as expected yet (attempt {attempt + 1}/{max_retries}). Retrying...")
                     logger.info(f"Expected: cluster {cluster_expected_state}, nmx_c {nmx_c_expected_state}.\n Actual: cluster {actual_cluster_state}, nmx_c {actual_nmxc_state}")
                     logger.info("Sleeping for 4 seconds between iterations")
@@ -715,7 +718,7 @@ class ClusterTools:
             )
 
     @staticmethod
-    def reset_sdn_factory_default_and_wait_for_restart(sdn, cluster):
+    def reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=None):
         """
         Perform SDN factory reset and wait for the process to complete.
 
@@ -738,30 +741,30 @@ class ClusterTools:
             cluster: The Cluster object to monitor app states.
         """
         with allure.step("Running sdn factory reset and waiting for completion"):
-            sdn.factory_default.action_reset(param='force')
+            sdn.factory_default.action_reset(param='force', engine=engine)
             try:
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(
-                    cluster, cluster_expected_state='enabled', nmx_c_expected_state='down')
+                    cluster, cluster_expected_state='enabled', nmx_c_expected_state='down', engine=engine)
             except AssertionError:
                 logger.info("Did not observe nmx-c 'down' state within the polling window. "
                             "The down->up transition likely completed before polling started.")
             time.sleep(5)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(
-                cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+                cluster, cluster_expected_state='enabled', nmx_c_expected_state='up', engine=engine)
 
     @staticmethod
-    def verify_sdn_config_files_deleted(sdn, devices):
+    def verify_sdn_config_files_deleted(sdn, devices, engine=None):
         with allure.step("Running nv show sdn config app <app> type <type> files and make sure files are deleted"):
             # Only check file types for apps that exist on this device
             for app in devices.dut.expected_cluster_apps:
                 app_config_files = devices.dut.cluster_config_files_by_app.get(app, [])
                 for file_type in app_config_files:
-                    files = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                    files = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json, dut_engine=engine),
                                                                         output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {files}"
 
     @staticmethod
-    def verify_sdn_state_files_deleted(sdn, standalone_system=False, devices=None):
+    def verify_sdn_state_files_deleted(sdn, standalone_system=False, devices=None, engine=None):
         with allure.step("Running nv show sdn state app <app> type <type> files and make sure files are deleted"):
             # If devices provided, use dynamic state files; otherwise fall back to empty list
             if devices and hasattr(devices.dut, 'expected_cluster_apps'):
@@ -772,24 +775,80 @@ class ClusterTools:
 
             for file_type in state_files:
                 app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json, dut_engine=engine),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {files}"
 
     @staticmethod
-    def reboot_compute_nodes_gpus(setup_name):
-        if setup_name in list(Configurations.compute_nodes_per_system.keys()):
-            for node in Configurations.compute_nodes_per_system[setup_name]:
-                ip_address = node['ip_address']
-                username = node['username']
-                password = node['password']
-                new_engine = LinuxSshEngine(ip_address, username, password)
-                new_engine.run_cmd(f"echo {password} | sudo -S nvidia-smi -r ; sleep 1")
-                new_engine.run_cmd(f"{password}")
-            time.sleep(10)
+    def _reset_single_compute_node_gpu(node):
+        """Run nvidia-smi -r on one compute node. Each node gets its own SSH connection,
+        so this is safe to run concurrently across nodes."""
+        ip_address = node['ip_address']
+        username = node['username']
+        password = node['password']
+        new_engine = LinuxSshEngine(ip_address, username, password)
+        # sudo password is fed via stdin in the same command: `sudo -S` reads it from
+        # stdin and `-p ''` suppresses the prompt, so it does not depend on a
+        # 'password:' prompt appearing in time.
+        #
+        # Do NOT use run_cmd() here. run_cmd relies on Netmiko prompt auto-detection,
+        # but these compute nodes have a *dynamic* prompt with a live timestamp
+        # ("[HH:MM:SS] nvidia@host ~ $"). nvidia-smi -r takes tens of seconds; by the
+        # time it finishes the shell redraws the prompt with a different timestamp, so
+        # the captured prompt never matches again and the read blocks until read_timeout
+        # (~hours) -> the "stuck" hang. The DUT (static NVOS prompt) is unaffected.
+        #
+        # Instead, emit a fixed sentinel and wait for that explicitly. The quotes keep
+        # the sentinel out of the echoed command line, so we match the real output and
+        # not the command echo.
+        reset_cmd = (f"printf '%s\\n' '{password}' | sudo -S -p '' nvidia-smi -r ; "
+                     f"echo GPU__RESET__\"DONE\"")
+        logger.info("GPU reset (nvidia-smi -r) starting on %s", ip_address)
+        output = new_engine.send_cmd_with_retry(reset_cmd, timeout=300, retries=2,
+                                                auto_find_prompt=False,
+                                                expected_string='GPU__RESET__DONE')
+        # Log the real nvidia-smi -r output (e.g. "GPU 0000...:81:00.0 was successfully
+        # reset.\n... All done."). Strip the sentinel line so the log shows only the
+        # command's own output.
+        clean_output = "\n".join(
+            line for line in (output or "").splitlines()
+            if "GPU__RESET__DONE" not in line).strip()
+        logger.info("GPU reset (nvidia-smi -r) output on %s:\n%s", ip_address, clean_output)
+        logger.info("GPU reset (nvidia-smi -r) finished on %s", ip_address)
 
     @staticmethod
-    def edit_config_file(path, edit_commands, engines):
+    def reboot_compute_nodes_gpus(setup_name):
+        nodes = Configurations.compute_nodes_per_system.get(setup_name)
+        if not nodes:
+            return
+        # Reset every compute host in PARALLEL. A single nvidia-smi -r takes ~2 min; doing
+        # them sequentially across N hosts, multiplied by the 3-4 reset points in the tray
+        # test, blew past the pytest function timeout and aborted the test mid-reset into its
+        # finally/cleanup block (which then issued an invalid `nv action restore` on a tray
+        # still 'down' -> NMX_ST_BADPARAM). Each node uses its own SSH connection, so the
+        # resets are independent; running them concurrently makes wall time ~= one host.
+        errors = {}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(nodes)) as executor:
+            future_to_ip = {
+                executor.submit(ClusterTools._reset_single_compute_node_gpu, node):
+                    node['ip_address']
+                for node in nodes
+            }
+            for future in concurrent.futures.as_completed(future_to_ip):
+                ip = future_to_ip[future]
+                try:
+                    future.result()
+                except Exception as exc:  # noqa: BLE001 - aggregate per-host failures
+                    errors[ip] = exc
+                    logger.error("GPU reset failed on %s: %s", ip, exc)
+        if errors:
+            raise RuntimeError(
+                "nvidia-smi -r failed on compute node(s): " +
+                ", ".join(f"{ip} ({err})" for ip, err in errors.items()))
+        time.sleep(10)
+
+    @staticmethod
+    def edit_config_file(path, edit_commands, engine):
         # Run each edit as a separate command so SSH/Netmiko pattern detection works:
         # multi-line commands are echoed line-by-line with prompts in between, so the
         # full-command pattern never appears and read_until_pattern times out.
@@ -797,9 +856,9 @@ class ClusterTools:
         for line in full_text.strip().split("\n"):
             line = line.strip()
             if line and not line.startswith("#"):
-                engines.dut.run_cmd(line)
+                engine.run_cmd(line)
 
-        modified_content = engines.dut.run_cmd(f"cat {path}")
+        modified_content = engine.run_cmd(f"cat {path}")
         logger.info(f"File content after edits:\n{modified_content}")
 
         expected_lines = []
@@ -817,20 +876,20 @@ class ClusterTools:
             )
 
     @staticmethod
-    def get_generated_file_info(sdn, config_type):
+    def get_generated_file_info(sdn, config_type, engine=None):
         output_format = OutputFormat.json
         output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
-            config_type].action_generate_sdn().get_returned_value()
+            config_type].action_generate_sdn(dut_engine=engine).get_returned_value()
         file_name = ClusterTools().get_generated_sdn_file(output, 'config')
         output_dict = OutputParsingTool.parse_show_output_to_dict(
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[config_type].files.show(
-                output_format=output_format),
+                output_format=output_format, dut_engine=engine),
             output_format=output_format).get_returned_value()
         path = output_dict[file_name]['path']
         return file_name, path
 
     @staticmethod
-    def edit_fm_config(sdn, engines, devices, standalone_system):
+    def edit_fm_config(sdn, engine, devices, standalone_system):
         """
         Edit FM config based on device-specific requirements.
         Returns None if device doesn't require FM config edits (e.g., Rosalind).
@@ -843,16 +902,16 @@ class ClusterTools:
             return None
 
         fm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[0]
-        fm_generated_file_name, fm_path = ClusterTools.get_generated_file_info(sdn, fm_config)
-        fm_original_content = engines.dut.run_cmd(f"cat {fm_path}")
+        fm_generated_file_name, fm_path = ClusterTools.get_generated_file_info(sdn, fm_config, engine=engine)
+        fm_original_content = engine.run_cmd(f"cat {fm_path}")
         logger.info(f"Adjusting fm_config file for {devices.dut.__class__.__name__}.")
-        ClusterTools().edit_config_file(fm_path, config, engines)
+        ClusterTools().edit_config_file(fm_path, config, engine)
         sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
-            fm_generated_file_name].action_file_install(force=False)
+            fm_generated_file_name].action_file_install(force=False, dut_engine=engine)
         return fm_config, fm_generated_file_name, fm_path, fm_original_content
 
     @staticmethod
-    def edit_sm_config(sdn, engines, devices, standalone_system, has_loopbox, is_simx=False):
+    def edit_sm_config(sdn, engine, devices, standalone_system, has_loopbox, is_simx=False):
         """
         Edit SM config based on device-specific requirements.
         SM config is ONLY edited when: standalone=True AND has_loopbox=True.
@@ -868,68 +927,90 @@ class ClusterTools:
             return None
 
         sm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[1]
-        sm_generated_file_name, sm_path = ClusterTools.get_generated_file_info(sdn, sm_config)
-        sm_original_content = engines.dut.run_cmd(f"cat {sm_path}")
+        sm_generated_file_name, sm_path = ClusterTools.get_generated_file_info(sdn, sm_config, engine=engine)
+        sm_original_content = engine.run_cmd(f"cat {sm_path}")
         logger.info(f"Adjusting sm_config file for {devices.dut.__class__.__name__}.")
-        ClusterTools().edit_config_file(sm_path, devices.dut.sdn_sm_config_edits, engines)
+        ClusterTools().edit_config_file(sm_path, devices.dut.sdn_sm_config_edits, engine)
         sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
-            sm_generated_file_name].action_file_install(force=False)
+            sm_generated_file_name].action_file_install(force=False, dut_engine=engine)
         return sm_config, sm_generated_file_name, sm_path, sm_original_content
 
     @staticmethod
-    def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name,
+    def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engine, dut_engines, has_loopbox, setup_name,
                                                        standalone_system, is_simx=False):
+        def get_generated_file_info(config_type):
+            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
+                config_type].action_generate_sdn().get_returned_value()
+            file_name = ClusterTools().get_generated_sdn_file(output, 'config')
+            output_dict = OutputParsingTool.parse_show_output_to_dict(
+                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[config_type].files.show(
+                    output_format=output_format),
+                output_format=output_format).get_returned_value()
+            path = output_dict[file_name]['path']
+            return file_name, path
+
         output_format = OutputFormat.json
 
         # Device-specific: Run pre-cluster setup if needed (e.g., Rosalind)
         if hasattr(devices.dut, 'sdn_needs_pre_cluster_setup') and devices.dut.sdn_needs_pre_cluster_setup:
             with allure.step(f"Device {devices.dut.__class__.__name__} requires pre-cluster setup"):
                 # Call device-specific setup method
-                devices.dut.setup_cluster_for_sdn_config(cluster, engines)
+                devices.dut.setup_cluster_for_sdn_config(cluster, engine, dut_engines)
                 logger.info("Waiting for nmx-controller to be up after cluster setup")
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up', engine=engine)
 
         # Edit FM config (device-specific, may return None for devices like Rosalind)
-        fm_result = ClusterTools.edit_fm_config(sdn, engines, devices, standalone_system)
+        fm_result = ClusterTools.edit_fm_config(sdn, engine, devices, standalone_system)
         if fm_result:
             fm_config, fm_generated_file_name, fm_path, fm_original_content = fm_result
         else:
             fm_config = fm_generated_file_name = fm_path = fm_original_content = None
 
         # Edit SM config (includes standalone/loopbox guard internally)
-        sm_result = ClusterTools.edit_sm_config(sdn, engines, devices, standalone_system, has_loopbox, is_simx)
+        sm_result = ClusterTools.edit_sm_config(sdn, engine, devices, standalone_system, has_loopbox, is_simx)
         if sm_result:
             sm_config, sm_generated_file_name, sm_path, sm_original_content = sm_result
 
             # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4910763)
             if hasattr(devices.dut, 'wa_restart_nv_bridge_after_sm_config'):
-                devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines)
+                devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engine)
         else:
             sm_config = sm_generated_file_name = sm_path = sm_original_content = None
 
-        ClusterTools.validate_cluster_enabled(cluster)
+        # WA for Bug SW #5074056: changes in fm_config are not picked up without restarting
+        # nmx-controller. Restart the app after loading both fm and sm configs.
+        if redmine_helpers.is_bug_active(5074056):
+            with allure.step("WA for Bug 5074056: Restart nmx-controller after loading configs"):
+                logger.info("Stopping nmx-controller app")
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_stop_cluster_app(engine=engine)
+                time.sleep(5)
+                logger.info("Starting nmx-controller app")
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_start_cluster_app(engine=engine)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up', engine=engine)
+
+        ClusterTools.validate_cluster_enabled(cluster, engine=engine)
 
         yield
 
-        if ClusterTools.check_cluster_state(cluster, output_format) == 'disabled':
-            ClusterTools.start_cluster(cluster, setup_name, output_format=output_format, devices=devices)
+        if ClusterTools.check_cluster_state(cluster, output_format, engine=engine) == 'disabled':
+            ClusterTools.start_cluster(cluster, setup_name, output_format=output_format, devices=devices, engine=engine)
 
         # Restore FM config if it was edited
-        if fm_path and "Exists" in engines.dut.run_cmd(f'test -e {fm_path} && echo "Exists" || echo "Does not exist"'):
-            engines.dut.run_cmd(f"echo '{fm_original_content}' | sudo tee {fm_path} > /dev/null")
+        if fm_path and "Exists" in engine.run_cmd(f'test -e {fm_path} && echo "Exists" || echo "Does not exist"'):
+            engine.run_cmd(f"echo '{fm_original_content}' | sudo tee {fm_path} > /dev/null")
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
-                fm_generated_file_name].action_file_install(force=False)
+                fm_generated_file_name].action_file_install(force=False, dut_engine=engine)
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
-                fm_generated_file_name].action_delete().verify_result()
+                fm_generated_file_name].action_delete(engine=engine).verify_result()
 
         # Restore SM config if it was edited
-        if sm_path and "Exists" in engines.dut.run_cmd(
+        if sm_path and "Exists" in engine.run_cmd(
                 f'test -e {sm_path} && echo "Exists" || echo "Does not exist"'):
-            engines.dut.run_cmd(f"echo '{sm_original_content}' | sudo tee {sm_path} > /dev/null")
+            engine.run_cmd(f"echo '{sm_original_content}' | sudo tee {sm_path} > /dev/null")
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
-                sm_generated_file_name].action_file_install(force=False)
+                sm_generated_file_name].action_file_install(force=False, dut_engine=engine)
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
-                sm_generated_file_name].action_delete().verify_result()
+                sm_generated_file_name].action_delete(engine=engine).verify_result()
 
         # Note: No need to cleanup pre-cluster setup (e.g., cluster node primary server)
         # The disabled_access_ports decorator already does cluster.unset(apply=True) which cleans everything
@@ -953,7 +1034,15 @@ class ClusterTools:
             assert app_status == expected_status, f"App {app} status is {app_status} instead of {expected_status}"
 
     @staticmethod
-    def wait_for_app_healthy(cluster, app, expected_output=None, max_retries=7, delay=10):
+    def verify_control_plane_state(cluster, expected_state, engine=None):
+        with allure.step(f"Verify nmx-controller control plane state is {expected_state}"):
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.apps.running.show(output_format=OutputFormat.json, dut_engine=engine)).get_returned_value()
+            control_plane_state = output[ClusterConsts.NMX_CONTROLLER]['addition-info']
+            return control_plane_state == expected_state
+
+    @staticmethod
+    def wait_for_app_healthy(cluster, app, expected_output=None, max_retries=7, delay=10, engine=None):
         """
         Wait for a cluster app to become healthy. NMX-T can take up to ~60s after cluster
         start to report healthy while the NVLink network is being configured.
@@ -965,7 +1054,7 @@ class ClusterTools:
             for attempt in range(max_retries):
                 if expected_output is not None:
                     output = OutputParsingTool.parse_show_output_to_dict(
-                        cluster.apps.app_name[app].show(output_format=OutputFormat.json),
+                        cluster.apps.app_name[app].show(output_format=OutputFormat.json, dut_engine=engine),
                         output_format=OutputFormat.json).get_returned_value()
                     validation_result = ValidationTool.validate_output_of_show(output, expected_output)
                     if validation_result.result:
@@ -973,7 +1062,7 @@ class ClusterTools:
                     validation_result.ignore_result()
                 else:
                     output = OutputParsingTool.parse_show_output_to_dict(
-                        cluster.apps.running.show(output_format=OutputFormat.json),
+                        cluster.apps.running.show(output_format=OutputFormat.json, dut_engine=engine),
                         output_format=OutputFormat.json).get_returned_value()
                     if output[app]['status'] == 'ok':
                         return
@@ -1013,17 +1102,17 @@ def summarize_switch_ports(ports_list):
     return ''.join(summary_parts)
 
 
-def refresh_switch_ports(ports_list, engines):
+def refresh_switch_ports(ports_list, engine):
     TestToolkit.tested_api = 'NVUE'
     port_name = summarize_switch_ports(ports_list)
     selected_port = Port(port_name, "", "")
     port_state = NvosConsts.LINK_STATE_DOWN
-    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True, dut_engine=engine).verify_result()
+    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engine)
     time.sleep(30)
     port_state = NvosConsts.LINK_STATE_UP
-    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True, dut_engine=engine).verify_result()
+    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engine)
     time.sleep(30)
 
 
@@ -1034,7 +1123,13 @@ def disabled_access_ports(func):
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         devices = bound_args.arguments.get('devices', None)
+        engine = bound_args.arguments.get('engine', None)
         engines = bound_args.arguments.get('engines', None)
+        if engine is None and engines is not None:
+            engine = getattr(engines, 'dut', None)
+        dut_engines = bound_args.arguments.get('dut_engines', None)
+        if dut_engines is None and engines is not None:
+            dut_engines = {'dut': engine}
         has_loopbox = bound_args.arguments.get('has_loopbox', None)
         standalone_system = bound_args.arguments.get('standalone_system', None)
         setup_name = bound_args.arguments.get('setup_name', None)
@@ -1055,24 +1150,24 @@ def disabled_access_ports(func):
                     port_name = summarize_ports(devices.dut.nvl_access_ports_list)
                     selected_port = Port(port_name, "", "")
                     port_state = NvosConsts.LINK_STATE_DOWN
-                    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True, dut_engine=engine).verify_result()
+                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engine)
                 if not standalone_system:
                     if Configurations.ports_to_disable[setup_name] != []:
                         for port in Configurations.ports_to_disable[setup_name]:
                             selected_port = Port(port, "", "")
                             port_state = NvosConsts.LINK_STATE_DOWN
-                            selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                            selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True, dut_engine=engine).verify_result()
+                        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engine)
 
-                ClusterTools().stop_cluster(cluster)
-                ClusterTools().start_cluster(cluster, setup_name, devices=devices)
-                interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system, is_simx)
+                ClusterTools().stop_cluster(cluster, engine=engine)
+                ClusterTools().start_cluster(cluster, setup_name, devices=devices, engine=engine)
+                interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engine, dut_engines, has_loopbox, setup_name, standalone_system, is_simx)
                 next(interfaces_wa)
                 interface_wa_called = True
                 with allure.step("Unset Cluster before test starts to run, to make sure we are at the correct init state"):
-                    cluster.unset(apply=True)
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+                    cluster.unset(apply=True, dut_engine=engine)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down', engine=engine)
                     logger.info("Sleeping for 15 seconds to make sure nnx-t docker is down")
                     time.sleep(15)
                 # Execute the test function
@@ -1084,28 +1179,28 @@ def disabled_access_ports(func):
                         port_name = summarize_ports(devices.dut.nvl_access_ports_list)
                         selected_port = Port(port_name, "", "")
                         port_state = NvosConsts.LINK_STATE_UP
-                        selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                        selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True, dut_engine=engine).verify_result()
+                        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engine)
                     if not standalone_system:
                         if Configurations.ports_to_disable[setup_name] != []:
                             for port in Configurations.ports_to_disable[setup_name]:
                                 selected_port = Port(port, "", "")
                                 port_state = NvosConsts.LINK_STATE_UP
-                                selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                                selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True, dut_engine=engine).verify_result()
+                            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engine)
                     if interface_wa_called:
                         try:
                             next(interfaces_wa)
                         except StopIteration:
                             pass  # Or handle it if necessary
                     if hasattr(devices.dut, 'nvl_trunk_ports_list') and devices.dut.nvl_trunk_ports_list:
-                        refresh_switch_ports(devices.dut.nvl_trunk_ports_list, engines)
+                        refresh_switch_ports(devices.dut.nvl_trunk_ports_list, engine)
                     with allure.step("Reset cluster state"):
-                        if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
-                            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
-                            cluster.unset(apply=True)
-                            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
-                TestToolkit.tested_api = original_api
+                        if ClusterTools.check_cluster_state(cluster, OutputFormat.json, engine=engine) == 'enabled':
+                            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engine)
+                            cluster.unset(apply=True, dut_engine=engine)
+                            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down', engine=engine)
+            TestToolkit.tested_api = original_api
     return wrapper
 
 
@@ -1162,44 +1257,44 @@ class ClusterSimulation:
     # simulation for the SDN maintenance state tests
     # simulate the cluster as topology of 2 racks
 
-    def start_sdn_cluster_simulation(engines, setup_name):
+    def start_sdn_cluster_simulation(engine, setup_name):
         with allure.step("Start of sdn cluster simulation"):
             cluster = Cluster()
 
             with allure.step("Disable cluster"):
-                ClusterTools.stop_cluster(cluster)
+                ClusterTools.stop_cluster(cluster, engine=engine)
 
             with allure.step("Generate simulator_config.json file"):
-                ClusterSimulation.generate_simulator_config_file(engines.dut)
+                ClusterSimulation.generate_simulator_config_file(engine)
 
             with allure.step("Apply the patch for /usr/share/cluster_pkgs/nmx-controller/job.json"):
-                ClusterSimulation.apply_patch_for_nmc_controller_job(engines.dut)
+                ClusterSimulation.apply_patch_for_nmc_controller_job(engine)
 
             with allure.step("Enable cluster"):
-                ClusterTools.start_cluster(cluster, setup_name)
+                ClusterTools.start_cluster(cluster, setup_name, engine=engine)
 
             with allure.step("Config fm config"):
-                ClusterSimulation.config_fm_config(engines.dut)
+                ClusterSimulation.config_fm_config(engine)
 
             with allure.step("Wait for nmx-controller to be in ok status"):
-                ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, "ok")
+                ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, "ok", engine=engine)
 
     @staticmethod
-    def end_of_sdn_cluster_simulation(engines, setup_name):
+    def end_of_sdn_cluster_simulation(engine, setup_name):
         with allure.step("End of sdn cluster simulation"):
             cluster = Cluster()
 
             with allure.step("Disable cluster"):
-                ClusterTools.stop_cluster(cluster)
+                ClusterTools.stop_cluster(cluster, engine=engine)
 
             with allure.step("Restore /usr/share/cluster_pkgs/nmx-controller/job.json"):
-                ClusterSimulation.restore_nmc_controller_job(engines.dut)
+                ClusterSimulation.restore_nmc_controller_job(engine)
 
             with allure.step("Enable cluster"):
-                ClusterTools.start_cluster(cluster, setup_name)
+                ClusterTools.start_cluster(cluster, setup_name, engine=engine)
 
             with allure.step("Reset sdn factory default"):
-                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(Sdn(), cluster)
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(Sdn(), cluster, engine=engine)
 
     @staticmethod
     def generate_simulator_config_file(engine):

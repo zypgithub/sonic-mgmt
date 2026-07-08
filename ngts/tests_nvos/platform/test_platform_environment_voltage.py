@@ -3,8 +3,6 @@ import re
 import pytest
 import random
 
-from retry import retry
-
 from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
@@ -12,6 +10,14 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.platform.helpers import (
+    filter_eligible_sensors,
+    is_sensor_for_absent_psu,
+    validate_health,
+    validate_health_issues,
+    validate_invalid_voltage_value_logged,
+    validate_sensor_state,
+)
 from ngts.nvos_constants.constants_nvos import DatabaseConst, HealthConsts, PlatformConsts
 
 logger = logging.getLogger()
@@ -159,8 +165,8 @@ def test_database_platform_environment_voltage(engines, devices):
             Returns:
                 Transformed name ready for database comparison (e.g., 'VOLTAGE_INFO|FAN HSC1 Volt In')
             """
-            # Handle FAN+HSC1 sensors: remove only VinDC, keep Volt
-            if 'FAN+HSC1' in sensor_name:
+            # HSC database names omit VinDC but retain Volt.
+            if any(hsc_name in sensor_name for hsc_name in ('FAN+HSC1', 'PDB+HSC')):
                 return sensor_name.replace('+VinDC', '')
 
             # Handle other sensors: remove only Volt/Vol suffixes
@@ -187,17 +193,6 @@ def test_database_platform_environment_voltage(engines, devices):
                 normalization,
                 normalize_for_database_comparison
             ).verify_result()
-
-
-def is_sensor_for_absent_psu(sensor, available_psu_list):
-    psu_name = re.search(r"PSU-(\d+)-.*", sensor)
-    if psu_name is not None:
-        # Sensor is a PSU sensor
-        psu_name = "PSU" + psu_name.group(1)
-        if psu_name not in available_psu_list:
-            # Sensor belongs to an absent PSU
-            return True
-    return False
 
 
 def get_random_sensor_max_min(sensors_dic):
@@ -238,12 +233,9 @@ def _pick_sensor(engine, devices):
     voltage_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
         platform.environment.voltage.show()).verify_result()
     available_psu_list = platform.environment.get_available_psus() if devices.dut.psu_list else []
-    candidates = [
-        sensor for sensor in devices.dut.voltage_sensors
-        if voltage_output.get(sensor, {}).get('state') == 'ok' and
-        all(k in voltage_output.get(sensor, {}) for k in ('max', 'min', 'actual'))
-    ]
-    eligible_sensors = [sensor for sensor in candidates if not is_sensor_for_absent_psu(sensor, available_psu_list)]
+    eligible_sensors = filter_eligible_sensors(
+        devices.dut.voltage_sensors, voltage_output, available_psu_list,
+        required_keys=('max', 'min', 'actual'))
     assert eligible_sensors, "No voltage sensors with max/min/actual found for simulation"
     sensor = random.choice(eligible_sensors)
     sensor_data = voltage_output[sensor]
@@ -254,64 +246,13 @@ def _pick_sensor(engine, devices):
     return sensor, sensor_data, sensor_input_path
 
 
-@retry(AssertionError, tries=6, delay=10)
-def _validate_health(system, expected):
-    system.validate_health_status(expected)
-
-
-@retry(AssertionError, tries=6, delay=10)
-def _validate_voltage_state(sensor_name, expected_state):
-    voltage_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
-        Platform().environment.voltage.show()).verify_result()
-    actual = voltage_output[sensor_name].get('state', '')
-    assert actual == expected_state, (
-        f"Sensor '{sensor_name}': expected state='{expected_state}', got '{actual}'"
-    )
-
-
-def _find_sensor_in_health_issues(sensor_name, health_issues):
-    """Find a sensor in health issues dict, accounting for name format differences.
-
-    CLI voltage names use hyphens (e.g. 'PMIC-3-ASIC1-DVDD-PL1-Out-2')
-    while health issues use spaces (e.g. 'PMIC-3 ASIC1 DVDD PL1 Out 2').
-    We normalize by lowering and stripping non-alphanumeric chars.
-    """
-    def normalize(name):
-        return re.sub(r'[^a-z0-9]', '', name.lower())
-
-    target = normalize(sensor_name)
-    for key in health_issues:
-        if normalize(key) == target:
-            return key
-    return None
-
-
-@retry(AssertionError, tries=6, delay=10)
-def _validate_health_issues(system, sensor_name, expected_present):
-    """Validate that a sensor appears (or not) in health issues dict."""
-    health_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
-        system.health.show()).get_returned_value()
-    health_issues = health_output.get(HealthConsts.ISSUES, {})
-    matched_key = _find_sensor_in_health_issues(sensor_name, health_issues)
-    if expected_present:
-        assert matched_key is not None, (
-            f"Expected sensor '{sensor_name}' in health issues, "
-            f"but got: {list(health_issues.keys())}"
-        )
-    else:
-        assert matched_key is None, (
-            f"Expected sensor '{sensor_name}' NOT in health issues, "
-            f"but it is still present as '{matched_key}': {health_issues.get(matched_key)}"
-        )
-
-
 # --- Voltage simulation test ---
 
 VOLTS_TO_MILLIVOLTS = 1000
 
 FAULT_SCENARIOS = [
     ("high", lambda sensor_data: int(float(sensor_data['max']) * VOLTS_TO_MILLIVOLTS * VOLTAGE_MARGIN_FACTOR)),
-    ("low", lambda sensor_data: max(0, int(float(sensor_data['min']) * VOLTS_TO_MILLIVOLTS / VOLTAGE_MARGIN_FACTOR))),
+    ("low", lambda sensor_data: max(-1, int(float(sensor_data['min']) * VOLTS_TO_MILLIVOLTS / VOLTAGE_MARGIN_FACTOR) - 1)),
     ("negative", lambda sensor_data: -100),
     ("gibberish", lambda sensor_data: 'abc'),
 ]
@@ -337,9 +278,11 @@ def test_simulate_voltage_faults(engines, devices):
     """
     system = System()
 
+    voltage_show = Platform().environment.voltage.show
+
     with allure.step("Pick sensor and validate initial health"):
         sensor_name, sensor_data, sensor_input_path = _pick_sensor(engines.dut, devices)
-        _validate_health(system, HealthConsts.OK)
+        validate_health(system, HealthConsts.OK)
 
     with allure.step("Simulate voltage faults"):
         for fault_name, compute_value in FAULT_SCENARIOS:
@@ -347,10 +290,12 @@ def test_simulate_voltage_faults(engines, devices):
 
             with allure.independent_step(f"Simulate voltage fault: {fault_name} (value={fault_value})"):
                 with HWSimulator.simulate_sensor(engines.dut, sensor_input_path, fault_value, HEALTH_STABILIZE_DELAY):
-                    _validate_voltage_state(sensor_name, 'failed')
-                    _validate_health(system, HealthConsts.NOT_OK)
-                    _validate_health_issues(system, sensor_name, expected_present=True)
+                    validate_sensor_state(voltage_show, sensor_name, 'failed')
+                    validate_health(system, HealthConsts.NOT_OK)
+                    validate_health_issues(system, sensor_name, expected_present=True)
+                    if fault_name == 'gibberish':
+                        validate_invalid_voltage_value_logged(system, engines.dut)
 
-                _validate_voltage_state(sensor_name, 'ok')
-                _validate_health(system, HealthConsts.OK)
-                _validate_health_issues(system, sensor_name, expected_present=False)
+                validate_sensor_state(voltage_show, sensor_name, 'ok')
+                validate_health(system, HealthConsts.OK)
+                validate_health_issues(system, sensor_name, expected_present=False)

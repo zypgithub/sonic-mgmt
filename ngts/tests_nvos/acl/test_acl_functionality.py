@@ -6,7 +6,7 @@ import time
 from retry import retry
 from retry.api import retry_call
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -16,7 +16,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType, AclConsts, OutputFormat, IpConsts
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from scapy.layers.inet import IP, TCP, ICMP
 from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
 from scapy.all import *

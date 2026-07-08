@@ -1,0 +1,32 @@
+[
+  {
+    "op": "replace",
+    "path": "/ACL_TABLE",
+    "value": {
+      "NTP_ACL": {
+        "policy_desc": "NTP_ACL",
+        "services": [
+          "NTP"
+        ],
+        "stage": "ingress",
+        "type": "CTRLPLANE"
+      },
+      "SNMP_ACL": {
+        "policy_desc": "SNMP_ACL",
+        "services": [
+          "SNMP"
+        ],
+        "stage": "ingress",
+        "type": "CTRLPLANE"
+      },
+      "SSH_ONLY": {
+        "policy_desc": "SSH_ONLY",
+        "services": [
+          "SSH"
+        ],
+        "stage": "ingress",
+        "type": "CTRLPLANE"
+      }
+    }
+  }
+]

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CASEDEF>
+    <global>
+        <Test>
+            <info> Control Plane ACL BMC Test </info>
+            <name> cacl_bmc </name>
+            <owner> </owner>
+            <pre></pre>
+            <post></post>
+        </Test>
+        <Case>
+            <tags> CACL, BMC </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
+            <tout> 55555 </tout>
+        </Case>
+    </global>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> Control Plane ACL Case </info>
+        <name> cacl_function </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts cacl/test_cacl_function.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> Control Plane ACL Ebtables Case </info>
+        <name> ebtables_application </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts cacl/test_ebtables_application.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> Control Plane ACL Application Case </info>
+        <name> cacl_application </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts cacl/test_cacl_application.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+</CASEDEF>

@@ -7,8 +7,8 @@ import random
 from retry.api import retry_call
 import pytest
 
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.config_templates.lag_lacp_config_template import LagLacpConfigTemplate
 from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.config_templates.vlan_config_template import VlanConfigTemplate

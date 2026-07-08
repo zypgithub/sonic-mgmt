@@ -17,8 +17,8 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine  # type: ignore
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine  # type: ignore
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
     assert_gnmi_firmware_version_matches_nvue,
 )
@@ -296,9 +296,10 @@ def test_ssd_install_interruption_recovery(engines, devices, topology_obj, rando
         # Step 6: Restore to latest firmware version (only if needed)
         if recovered_version is None or recovered_version != latest_version_name:
             with allure.step(f'Restore SSD firmware to {latest_version_name}'):
-                BmcTool.fetch_and_install_platform_component(platform_component=ssd_component, path=latest_path,
-                                                             name=latest_version_name, filename=latest_filename, topology_obj=topology_obj,
-                                                             test_name=test_name, skip_version_check=True).verify_result()
+                BmcTool.fetch_and_install_platform_component_without_reboot(
+                    ssd_component, latest_path, latest_version_name, latest_filename, test_name,
+                    skip_version_check=True,
+                ).verify_result()
 
                 # Verify restoration
                 BmcTool.verify_platform_component_version(ssd_component, latest_version_name)

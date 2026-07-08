@@ -96,7 +96,7 @@ def _proxy_ssh_engine_patches(timeout_multiplier: float):
     :param timeout_multiplier: The multiplier for the timeout.
     :return: None
     '''
-    from infra.tools.connection_tools import proxy_ssh_engine
+    from devts.infra.tools.connection_tools import proxy_ssh_engine
 
     setattr(proxy_ssh_engine, _VG_SSH_MULTIPLIER_ATTR, timeout_multiplier)
 

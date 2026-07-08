@@ -8,7 +8,7 @@ from sonic_py_common.general import check_output_pipe
 
 CONFIGURED_PORTS_PATH = "/etc/mloop_conf/"
 CONFIGURED_PORTS_FILE = "mloop_ports.json"
-SAISDKDUMP_PATH = "/proc/dbg_dump/netdev_dump"
+SAISDKDUMP_PATH = "/proc/dbg_dump/dev_1/netdev_dump"
 SERVICE_FILE = "persistent_mloop.conf"
 SERVICE_PATH = "/etc/supervisor/conf.d/"
 MAX_RETRIES = 10

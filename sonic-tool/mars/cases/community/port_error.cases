@@ -18,7 +18,7 @@
         <name> port_error </name>
         <cmd>
             <params>
-                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo ptp-256 --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=stdout --disable_loganalyzer  -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts layer1/test_port_error.py </static_args>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.ptp_topology:ptp-256]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=stdout --disable_loganalyzer  -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts layer1/test_port_error.py </static_args>
             </params>
         </cmd>
     </case>
@@ -36,7 +36,7 @@
         <name> intf_fec </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/test_intf_fec.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.ptp_topology:ptp-256]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/test_intf_fec.py </static_args>
              </params>
         </cmd>
     </case>
@@ -45,7 +45,7 @@
         <name> platform_api_sfp </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 2100 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/api/test_sfp.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.ptp_topology:ptp-256]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 2100 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/api/test_sfp.py </static_args>
              </params>
         </cmd>
     </case>
@@ -54,7 +54,7 @@
         <name> sfp_show </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfpshow.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.ptp_topology:ptp-256]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfpshow.py </static_args>
              </params>
         </cmd>
     </case>
@@ -71,7 +71,7 @@
         <name> sfp_util_weekly </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --all_ports --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.ptp_topology:ptp-256]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
              </params>
         </cmd>
     </case>
@@ -88,7 +88,7 @@
         <name> sfp_util </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.ptp_topology:ptp-256]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --limited_ports --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
              </params>
         </cmd>
     </case>

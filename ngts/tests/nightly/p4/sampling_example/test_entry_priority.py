@@ -6,7 +6,7 @@ import ngts.helpers.p4_sampling_fixture_helper as fixture_helper
 import random
 from dotted_dict import DottedDict
 from ngts.constants.constants import P4SamplingEntryConsts
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 import time
 
 

@@ -4,8 +4,8 @@ from typing import Dict
 
 import pytest
 
-from infra.tools.general_constants.constants import NogaConstants
-from infra.tools.topology_tools import nogaq
+from devts.infra.tools.general_constants.constants import NogaConstants
+from devts.infra.tools.topology_tools import nogaq
 import requests_cache
 from ngts.constants.constants import SerialLoggerConst
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict

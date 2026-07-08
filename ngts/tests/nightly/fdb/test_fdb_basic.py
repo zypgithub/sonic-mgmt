@@ -5,10 +5,10 @@ import time
 
 from ngts.tests.nightly.fdb.fdb_helper import traffic_validation, gen_test_interface_data, \
     DUMMY_MACS, verify_mac_saved_to_fdb_table, verify_mac_not_in_fdb_table
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.cli_wrappers.sonic.sonic_mac_clis import SonicMacCli
 from ngts.cli_util.sonic_docker_utils import SwssContainer
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from retry.api import retry_call
 from ngts.tests.nightly.fdb.fdb_helper import FDB_AGING_TIME
 

@@ -8,7 +8,7 @@ from tests.common.helpers.assertions import pytest_assert, pytest_require
 from tests.common.helpers.parallel import parallel_run
 
 pytestmark = [
-    pytest.mark.topology('t2')
+    pytest.mark.topology('t2', 'lrh', 'urh')
 ]
 
 logger = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ def check_route_receive(prefix, expected_community, unexpected_community, neighb
     output_json = node["host"].get_route(prefix)
     logger.info("Neighbor {} route info: {}".format(node["host"].hostname, output_json))
     hostname = node["host"].hostname
-    if neighbor_type == "sonic":
+    if neighbor_type in ("sonic", "csonic"):
         result = check_sonic_route_receive(present, output_json, expected_community, unexpected_community)
     elif neighbor_type == "eos":
         result = check_eos_route_receive(present, output_json, expected_community, unexpected_community, hostname,
@@ -335,7 +335,7 @@ def verify(duthost, announced_neighbors, not_announced_neighbors, ip_version, ne
     return result
 
 
-def test_prefix_list_tsa(common_setup_and_teardown, localhost, tbinfo, ptfhost, request):
+def test_prefix_list_tsa(skip_t2_isolated_topo, common_setup_and_teardown, localhost, tbinfo, ptfhost, request):
     (anchor_prefixes, anchor_contributing_routes, announced_neighbors, not_announced_neighbors,
      downstream_nbr_names, ip_version, duthost) = common_setup_and_teardown
     neighbor_type = request.config.getoption("neighbor_type")
@@ -382,7 +382,7 @@ def test_prefix_list_tsa(common_setup_and_teardown, localhost, tbinfo, ptfhost, 
                   "Prefix announcing is unexpected after TSB: {}".format(result["prefix_announcing"]))
 
 
-def test_prefix_list_specific_routes(common_setup_and_teardown, localhost, tbinfo, ptfhost,
+def test_prefix_list_specific_routes(skip_t2_isolated_topo, common_setup_and_teardown, localhost, tbinfo, ptfhost,
                                      request):
     (anchor_prefixes, anchor_contributing_routes, announced_neighbors, not_announced_neighbors,
      downstream_nbr_names, ip_version, duthost) = common_setup_and_teardown

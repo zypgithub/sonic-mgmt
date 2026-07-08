@@ -1,0 +1,6 @@
+# Host variables for mtvr-r730-04
+
+mgmt_bridge: br0
+mgmt_prefixlen: 20
+mgmt_gw: 10.245.32.1
+external_port: enp4s0f0

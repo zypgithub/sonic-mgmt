@@ -8,10 +8,10 @@ import time
 import re
 
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.nvos_tools.system.Health import HealthConsts
 import retry
 

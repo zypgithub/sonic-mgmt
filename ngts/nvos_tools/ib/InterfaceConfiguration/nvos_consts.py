@@ -5,7 +5,12 @@ class InternalNvosConsts:
     # Output dictionary
     OPERATIONAL_INDEX = 0
     APPLIED_INDEX = 1
-    DEFAULT_TIMEOUT = 120   # in MS
+    DEFAULT_TIMEOUT = 120  # Non-ACP ports (FNM/SW)
+    NVL5_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 60  # NVL5 ACP ports with LTX enabled
+    NVL5_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 30  # NVL5 ACP ports with LTX (fec-measure-mode) disabled
+    NVL6_ACP_LINK_UP_TIMEOUT_LTX_ENABLED = 375  # NVL6 ACP ports with fec-measure-mode enabled
+    NVL6_ACP_LINK_UP_TIMEOUT_LTX_DISABLED = 90  # NVL6 ACP ports with fec-measure-mode disabled
+    ACP_PORT_GOES_UP = 'acp port goes up'
     IB_TRAFFIC_SENDER_INTERFACE = "h1p1"
     IB_TRAFFIC_RECEIVER_INTERFACE = "h2p1"
     IB_TRAFFIC_LAT_TYPE = "ib_send_lat"
@@ -92,6 +97,7 @@ class IbInterfaceConsts:
     LINK_MTU = "mtu"
     LINK_VL_ADMIN_CAPABILITIES = "vl-capabilities"
     LINK_OPERATIONAL_VLS = "op-vls"
+    LINK_TO_LINK_UP = "time-to-link-up"
     LINK_IB_SUBNET = "ib-subnet"
     LINK_STATS = "counters"
     LINK_STATS_CARRIER_TRANSITION = "carrier-transitions"
@@ -233,12 +239,15 @@ class PhyRecoveryConsts:
     ENABLED = 'enabled'
     DISABLED = 'disabled'
     FW_DEFAULT = 'fw-default'
+    AUTO = 'auto'
+    FULL_DUPLEX = 'full-duplex'
 
     # NVL6 attributes
     LINK_DOWN_TIMEOUT = 'link-down-timeout'
     RECOVERY_SUPPORTED = 'recovery-supported'
     RECOVERY_STATUS = 'recovery-status'
     RECOVERY_NEGATIVE_TYPE = 'recovery-neg-type'
+    RECOVERY_NEG_TYPE_FORCE_PEER = 'force-peer'
     RECOVERY_ENTRY_REASON = 'recovery-entry-reason'
     PRESENT_MODE = 'preset-mode'
     PEQ_NUMBER_OF_RETRY_PRESET1 = 'peq-number-of-retry-preset1'
@@ -302,6 +311,16 @@ class PhyRecoveryConsts:
         STATE_60_TO_LINKUP_TIMEOUT: list(range(0, 65536)),
     }
 
+    phy_recovery_mutable_attributes = [
+        PEQ_NUMBER_OF_RETRY_PRESET3,
+        STATE_60_TIMEOUT,
+        STATE_61_TIMEOUT,
+        STATE_62_TIMEOUT,
+        STATE_65_TO_66_TIME_PRESET3,
+        STATE_66_TO_67_TIME_PRESET3,
+        STATE_67_TO_68_TIME_PRESET3
+    ]
+
     class SerdesEQMode(Enum):
         ENABLED = 'enabled'
         DISABLED = 'disabled'
@@ -327,7 +346,190 @@ class PhyRecoveryConsts:
         SerdesEQ.TIMEOUT: str(0),
     }
 
-    MODES = [ENABLED, DISABLED, FW_DEFAULT]
+    NVL5_MODES = [ENABLED, DISABLED, FW_DEFAULT]
+    NVL6_MODES = [ENABLED, DISABLED, AUTO]
+
+
+class TxBwLossMonitorConsts:
+    """Constants for tx-bandwidth-loss-monitor (zombie link) feature."""
+
+    # Field names in show output
+    STATE: str = 'state'
+    MONITOR_STATUS: str = 'monitor-status'
+
+    class State(Enum):
+        ENABLED: str = 'enabled'
+        DISABLED: str = 'disabled'
+        FW_DEFAULT: str = 'fw-default'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    class MonitorStatus(Enum):
+        NORMAL: str = 'normal'
+        NA: str = 'N/A'
+        WARNING: str = 'warning'
+        ALARM: str = 'alarm'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    # Default show values (port up, no config applied)
+    DEFAULT_OPER_STATE: str = State.DISABLED.value
+    DEFAULT_APPLIED_STATE: str = State.FW_DEFAULT.value
+    DEFAULT_MONITOR_STATUS: str = MonitorStatus.NA.value
+
+    # Link-down diagnostics opcode for BW-loss threshold exceeded
+    BW_LOSS_DIAG_CODE: str = '45'
+    BW_LOSS_DIAG_STATUS: str = 'BW_loss_threshold_exceeded'
+    # Same opcode as it appears in NVOS ``nv show interface <p> link phy detail``
+    # ``linkdown-reason-status-local`` field (uppercase-underscored).
+    NVOS_LINKDOWN_STATUS_BW_LOSS: str = 'BW_LOSS_THRESHOLD_EXCEEDED'
+
+    # NVOS phy-detail fields used by the injection test verification.
+    NVOS_PHY_DETAIL_LINKDOWN_CODE_LOCAL: str = 'linkdown-reason-code-local'
+    NVOS_PHY_DETAIL_LINKDOWN_STATUS_LOCAL: str = 'linkdown-reason-status-local'
+    NVOS_PHY_DETAIL_UNINTENTIONAL_LINK_DOWN: str = 'unintentional-link-down-events'
+    # ``link phy detail`` returns per-plane values joined with this separator
+    # (e.g. ``"45/23/23/23"``). First slot = most-recent link-down event.
+    NVOS_PHY_DETAIL_PLANE_SPLITTER: str = '/'
+
+    # Expected error fragment for invalid state input
+    ERR_MSG_INVALID_STATE: str = "is not one of"
+
+
+class FWRecoveryConsts:
+    # Define constants for recovery event fields
+    TOTAL_SUCCESSFUL_RECOVERY_EVENTS = 'total-successful-recovery-events'
+    TIME_IN_LAST_LOGIC_RECOVERY_EVENT = 'time-in-last-logic-recovery-event'
+    TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT = 'time-in-last-serdes-eq-recovery-event'
+    TIME_SINCE_LAST_RECOVERY = 'time-since-last-recovery'
+    LAST_LOGIC_RECOVERY_ATTEMPTS = 'last-logic-recovery-attempts'
+    LAST_SERDES_EQ_RECOVERY_ATTEMPTS = 'last-serdes-eq-recovery-attempts'
+    TIME_BETWEEN_LAST_TWO_RECOVERIES = 'time-between-last-two-recoveries'
+
+    ENABLED = 'enabled'
+    DISABLED = 'disabled'
+    FW_DEFAULT = 'fw-default'
+
+    # Default expected values
+    DEFAULT_FW_RECOVERY_COUNTERS = {
+        TOTAL_SUCCESSFUL_RECOVERY_EVENTS: 0,
+        TIME_IN_LAST_LOGIC_RECOVERY_EVENT: 0,
+        TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT: 0,
+        TIME_SINCE_LAST_RECOVERY: 0,
+        LAST_LOGIC_RECOVERY_ATTEMPTS: 0,
+        LAST_SERDES_EQ_RECOVERY_ATTEMPTS: 0,
+        TIME_BETWEEN_LAST_TWO_RECOVERIES: 0,
+    }
+
+    class SerdesEQMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+    class LogicRelockMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+    class SerdesEQ:
+        MODE = "serdes-eq-mode"
+        TIMEOUT = "serdes-eq-timeout"
+        SETTING_PREFIX = "serdes-eq"
+
+    class LogicRelock:
+        MODE = "logic-relock-mode"
+        TIMEOUT = "logic-relock-timeout"
+        SETTING_PREFIX = "logic-relock"
+
+    DEFAULT_PHY_RECOVERY_DICT = {
+        SerdesEQ.MODE: SerdesEQMode.ENABLED.value,
+        SerdesEQ.TIMEOUT: str(100),
+    }
+
+    MODES = [SerdesEQMode.DISABLED.value, SerdesEQMode.FW_DEFAULT.value, SerdesEQMode.ENABLED.value]
+
+    # Go once action constants
+    GO_ONCE_INVALID_PORT_TYPES = ['eth0', 'eth1', 'fnm1', 'lo']
+    GO_ONCE_LOG_MESSAGE = 'Got phy recovery event for port'
+
+
+class PhyDiagConsts:
+    """Constants for the phy team's ``phy_diag.py`` register-access tool.
+
+    Used by :class:`ngts.nvos_tools.infra.PhyDiagTool.PhyDiagTool` to drive
+    BW-loss-monitor injection (PPBMP + PTER) on Mellanox switches.
+    """
+
+    # Canonical NFS source path on the sonic-mgmt host. Not mounted on NVOS
+    # DUTs, so :meth:`PhyDiagTool.ensure_deployed` SCPs the package from
+    # here to the DUT before the test runs.
+    PHY_DIAG_SOURCE_DIR: str = (
+        "/auto/mswg/release/fwshared/phy/utils/phy_tools/"
+        "phy_tools_last_stable/phy_package"
+    )
+    # Deployed location on the DUT (where the SCP push lands). The phy_diag
+    # entry-point lives under ``phy_diag/phy_diag.py`` inside the package.
+    PHY_DIAG_DUT_DIR: str = "/tmp/phy_package"
+    PHY_DIAG_BIN: str = f"{PHY_DIAG_DUT_DIR}/phy_diag/phy_diag.py"
+
+    # Register names as phy_diag.py knows them. Note these differ from the
+    # bare ``mlxreg --reg_name`` form — phy_diag's ADB exposes specialized
+    # variants (e.g. ``PPBMP_BW_LOSS_MONITOR_PARAMETERS`` instead of
+    # ``PPBMP``, ``PTER_PHY_REG`` instead of ``PTER``).
+    REG_PPBMC: str = "PPBMC"
+    REG_PPBMP_BW_LOSS: str = "PPBMP_BW_LOSS_MONITOR_PARAMETERS"
+    REG_PTER_PHY: str = "PTER_PHY_REG"
+    REG_PDDR_LINK_DOWN_INFO: str = "PDDR_LINK_DOWN_INFO"
+
+    # PPBMC ``monitor_cntl`` bitmask — bit 5 (``0x20``) enables the literal
+    # ``Tx_BW_loss`` monitor type (phy_diag decodes it as enum ``Tx_BW_loss``).
+    # The FW default is ``0x24`` (bits 5+2 -- general BER monitoring) which
+    # does NOT classify our injection as a BW-loss event on the local port.
+    # We override to pure ``0x20`` so the local linkdown-reason-code is 45.
+    PPBMC_MONITOR_CNTL_TX_BW_LOSS: int = 0x20
+
+    # PPBMP ``monitor_group`` enum values discovered on Quantum3 (mt54004)
+    # firmware 35.2016.4994-002. Groups 0/1/2/5 are BER source enums and
+    # FW-locked for writes (``th_cap_exp_max=0``). Group 8 (``Tx_BW_loss``)
+    # is the actual zombie-link group and is writable (``time_window_set_cap=1``).
+    PPBMP_MONITOR_GROUP_RAW_BER_RS: int = 0
+    PPBMP_MONITOR_GROUP_RAW_BER_FC: int = 1
+    PPBMP_MONITOR_GROUP_EFFECTIVE_BER: int = 2
+    PPBMP_MONITOR_GROUP_SYMBOL_BER: int = 5
+    PPBMP_MONITOR_GROUP_TX_BW_LOSS: int = 8
+
+    # PPBMP knobs for the "trip-immediately" injection setup.
+    PPBMP_BW_LOSS_THRESHOLD_LOW: int = 1
+    PPBMP_TIME_WINDOW_DEFAULT: int = 100
+    PPBMP_TIME_WINDOW_W_EN: int = 1
+
+    # PTER ``error_type_admin`` enum (also reported as ``error_type_cap`` bitmap).
+    PTER_ERROR_TYPE_NONE: int = 0
+    PTER_ERROR_TYPE_RAW_BER: int = 1
+    PTER_ERROR_TYPE_EFFECTIVE_BER: int = 2
+    PTER_ERROR_TYPE_SYMBOL_ERRORS: int = 4
+
+    # PTER BER injection — verified-working values on Taipan Quantum3 FW
+    # 35.2016.4994-002 (matches the wiki's NVL6 recipe). Higher values
+    # (e.g. 15/15) are FW-rejected on some builds.
+    PTER_BER_MANTISSA_DEFAULT: int = 1
+    PTER_BER_EXP_DEFAULT: int = 4
+    PTER_INJECTION_TIME_MAX: int = 0xFFFF
+
+    # Regex matching the PTER response row that indicates the firmware armed
+    # the injection (``error_type_oper`` field is 1). Whitespace-tolerant so
+    # padding differences in phy_diag's table formatting don't break detection.
+    # If absent the FW silently rejected (engineering-FW-only path) — caller
+    # should skip rather than fail.
+    PTER_ARMED_REGEX: str = r"error_type_oper\s*\|\s*1\b"
+
+    # PDDR page selector for link-down info (the page that exposes
+    # ``local_reason_opcode = 45 BW_loss_threshold_exceeded``).
+    PDDR_PAGE_LINK_DOWN_INFO: int = 6
 
 
 class DataBaseNames:
@@ -343,8 +545,8 @@ class DelayedRecovery:
     DELAYED_RECOVERY_LOSS_TH_FORCE = "peer-fec-plr-align-loss-th-force"
     DELAYED_RECOVERY_RETRY_TH_FORCE = "peer-plr-retry-th-force"
     DELAYED_RECOVERY_DEFAULT_STATE = "disabled"
-    DELAYED_RECOVERY_DEFAULT_LOSS_TH = 127
-    DELAYED_RECOVERY_DEFAULT_RETRY_TH = 255
+    DELAYED_RECOVERY_DEFAULT_LOSS_TH = 126
+    DELAYED_RECOVERY_DEFAULT_RETRY_TH = 32
     DELAYED_RECOVERY_DEFAULT_FORCE_STATE = "enabled"
     DELAYED_RECOVERY_DEFAULT_FORCE_LOSS_TH = "disabled"
     DELAYED_RECOVERY_DEFAULT_FORCE_RETRY_TH = "disabled"

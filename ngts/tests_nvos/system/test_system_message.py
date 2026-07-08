@@ -15,9 +15,9 @@ from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tests_nvos.general.security.conftest import ssh_to_device_and_retrieve_raw_login_ssh_notification
 from ngts.nvos_constants.constants_nvos import CumulusConsts
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from infra.tools.connection_tools.utils import generate_strong_password
+from devts.infra.tools.connection_tools.utils import generate_strong_password
 from ngts.tests_nvos.general.security.security_test_tools.switch_authenticators import SshAuthenticator
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from retry.api import retry_call
 
 

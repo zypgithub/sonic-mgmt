@@ -20,17 +20,16 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
-from retry import retry
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr, GnmiServerStatus
+from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmiServerStatus, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
     validate_show_gnmi, validate_gnmi_server_in_health_issues, run_gnmi_client_in_the_background, \
-    verify_description_value, run_gnmi_client_and_parse_output, validate_gnmi_enabled_and_running, \
+    verify_description_value, run_gnmi_client_and_parse_output, validate_gnmi_enabled_and_running, wait_for_gnmi_ready, \
     validate_memory_and_cpu_utilization, get_infiniband_name_from_port_name, get_port_oid_from_infiniband_port, \
     create_gnmi_infiniband_list, validate_redis_cli_and_gnmi_commands_results, create_interface_state_commands_list, \
     create_gnmi_counter_list, create_platform_general_commands_list, change_interface_description, \
-    verify_msg_not_in_out_or_err, verify_msg_in_out_or_err, parse_gnmi_status, \
+    verify_msg_not_in_out_or_err, verify_msg_in_out_or_err, parse_gnmi_status, get_gnmi_status_clients, \
     run_gnmi_client_and_parse_multi_path_json_output, validate_notification_has_prefix_and_leaves
 from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
     assert_gnmi_firmware_version_matches_nvue,
@@ -50,21 +49,6 @@ def _get_counter(status_dict, key, default=0):
         val = status_dict[key]
         return int(val) if val is not None else default
     return default
-
-
-@retry(AssertionError, tries=5, delay=2)
-def _validate_docker_is_up(engine, docker):
-    assert docker in engine.run_cmd("docker ps"), f"docker {docker} is not running"
-
-
-def _get_clients(status_dict):
-    """Get client list from status dict."""
-    clients = status_dict.get(GnmiServerStatus.CLIENT)
-    if clients is None:
-        return []
-    if isinstance(clients, dict) and len(clients) == 0:
-        return []
-    return clients if isinstance(clients, list) else [clients]
 
 
 @pytest.mark.system
@@ -91,6 +75,7 @@ def test_gnmi_basic_flow_poll(engines, topology_obj):
 
 @pytest.mark.system
 @pytest.mark.gnmi
+@pytest.mark.nvos_ci
 def test_gnmi_basic_flow_once(engines, topology_obj):
     """
     Check gnmi basic flow: show command , disable and enable commands, validate stream updates to gnmi-client,
@@ -130,6 +115,7 @@ def test_gnmi_basic_flow_stream(random_api, engines, topology_obj):
             11. validate gnmi-server stream updates
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    TestToolkit.tested_api = random_api
     gnmi_basic_flow(engines, mode=GnmiMode.STREAM, mgmt_port_name=mgmt_port_name)
 
 
@@ -152,21 +138,16 @@ def test_simulate_gnmi_server_failure(random_api, engines):
             10. validate gnmi-server is running
             11. validate gnmi-server stream updates
     """
+    TestToolkit.tested_api = random_api
     system = System()
     gnmi_server_obj = system.gnmi_server
-    gnmi_table_name = "FEATURE|nv-gnmi"
-    docker_to_stop = "nv-gnmi"
     validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines, engines.dut.ip)
 
     try:
-        with allure.step(f"Stop {docker_to_stop} docker auto restart"):
-            DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                           db_config=gnmi_table_name,
-                                           param=NvosConst.DOCKER_AUTO_RESTART,
-                                           value=NvosConst.DOCKER_STATUS_DISABLED)
-
         with allure.step('Simulate gnmi server failure'):
-            engines.dut.run_cmd(f"docker stop {docker_to_stop}")
+            Tools.DatabaseTool.sonic_db_cli_hset(engines.dut, '', DatabaseConst.CONFIG_DB_NAME, "FEATURE|gnmi-server",
+                                                 "auto_restart", "disabled")
+            engines.dut.run_cmd("docker stop gnmi-server")
             validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_DISABLED)
             sleep_time_for_health_issue = 6
             logger.info(f"sleep {sleep_time_for_health_issue} seconds until the health output will be updated")
@@ -175,18 +156,10 @@ def test_simulate_gnmi_server_failure(random_api, engines):
             logger.info(f"{GnmiConsts.GNMI_DOCKER} appears in the health issues as we expect, "
                         f"after the gnmi-server failure")
     finally:
-        with allure.step(f"Ensure {docker_to_stop} docker is running"):
-            if docker_to_stop not in engines.dut.run_cmd("docker ps"):
-                engines.dut.run_cmd(f"docker start {docker_to_stop}")
-                _validate_docker_is_up(engines.dut, docker_to_stop)
-
-        with allure.step(f"Restore {docker_to_stop} docker auto restart"):
-            DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                           db_config=gnmi_table_name,
-                                           param=NvosConst.DOCKER_AUTO_RESTART,
-                                           value=NvosConst.DOCKER_STATUS_ENABLED)
-
-        with allure.step(f're-enable {docker_to_stop}'):
+        with allure.step('re-enable gnmi server'):
+            Tools.DatabaseTool.sonic_db_cli_hset(engines.dut, '', DatabaseConst.CONFIG_DB_NAME, "FEATURE|gnmi-server",
+                                                 "auto_restart", "enabled")
+            engines.dut.run_cmd("docker start gnmi-server")
             gnmi_server_obj.disable_gnmi_server()
             gnmi_server_obj.enable_gnmi_server()
             logger.info("sleep 90 sec until validate stream updates")
@@ -243,6 +216,7 @@ def test_gnmi_bad_flow(random_api, engines, devices, setup_name):
             3. Subscribe to the gnmi server for data that is not supported
             5. Subscribe to the gnmi server with bad xpath
     """
+    TestToolkit.tested_api = random_api
     system = System()
     gnmi_server_obj = system.gnmi_server
     xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
@@ -301,12 +275,9 @@ def test_gnmi_performance(engines, devices):
     """
     Run 10 gnmi-client process to the same switch, validate stream updates and switch state.
         Test flow:
-            1. show gnmi-server status (no clients)
-            2. create 10 gnmi_clients
-            3. show gnmi-server status (10 clients, 10 active subscriptions)
-            4. change port description
-            5. validate gnmi-server stream updates
-            6. stop clients, show gnmi-server status (no clients)
+            1. create 10 gnmi_clients
+            2. change port description
+            3. validate gnmi-server stream updates
     """
     num_engines = 10
     gnmi_clients_without_updates = 0
@@ -322,7 +293,7 @@ def test_gnmi_performance(engines, devices):
         out_before = gnmi_status.show(dut_engine=dut)
         status_before = parse_gnmi_status(out_before)
         with allure.independent_step("Expect no clients before setup"):
-            assert len(_get_clients(status_before)) == 0
+            assert len(get_gnmi_status_clients(status_before)) == 0
         with allure.independent_step("Expect total-active-subscriptions 0 before setup"):
             assert _get_counter(status_before, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == 0
 
@@ -337,7 +308,7 @@ def test_gnmi_performance(engines, devices):
         out_after_setup = gnmi_status.show(dut_engine=dut)
         status_after_setup = parse_gnmi_status(out_after_setup)
         with allure.independent_step(f"Expect {num_engines} clients"):
-            assert len(_get_clients(status_after_setup)) == num_engines
+            assert len(get_gnmi_status_clients(status_after_setup)) == num_engines
         with allure.independent_step(f"Expect total-active-subscriptions {num_engines}"):
             assert _get_counter(status_after_setup, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == num_engines
 
@@ -365,7 +336,7 @@ def test_gnmi_performance(engines, devices):
         out_after_teardown = gnmi_status.show(dut_engine=dut)
         status_after_teardown = parse_gnmi_status(out_after_teardown)
         with allure.independent_step("Expect no clients after teardown"):
-            assert len(_get_clients(status_after_teardown)) == 0
+            assert len(get_gnmi_status_clients(status_after_teardown)) == 0
         with allure.independent_step("Expect total-active-subscriptions 0 after teardown"):
             assert _get_counter(status_after_teardown, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == 0
 

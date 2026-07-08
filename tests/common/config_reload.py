@@ -24,6 +24,22 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 GOLDEN_CONFIG_TEMPLATE = os.path.join(TEMPLATE_DIR, 'golden_config_db.j2')
 DEFAULT_GOLDEN_CONFIG_PATH = '/etc/sonic/golden_config_db.json'
+C508O1X2_HWSKU = 'Mellanox-SN5640-C508O1X2'
+
+
+def _configure_c508o1x2_subport_after_minigraph(sonic_host):
+    """
+    Mellanox-SN5640-C508O1X2 uses uneven port 64 breakout; Ethernet508 needs subport 2
+    in CONFIG_DB after minigraph load (same as config_sonic_basedon_testbed.yml).
+    """
+    if sonic_host.facts.get('hwsku') != C508O1X2_HWSKU:
+        return
+
+    logger.info('Setting Ethernet508 subport=2 for %s', C508O1X2_HWSKU)
+    sonic_host.shell('sonic-db-cli CONFIG_DB hset "PORT|Ethernet508" subport 2')
+
+    logger.info('Saving subport configuration for %s', C508O1X2_HWSKU)
+    sonic_host.shell('sudo config save -y')
 
 
 def config_system_checks_passed(duthost, delayed_services=[]):
@@ -35,26 +51,34 @@ def config_system_checks_passed(duthost, delayed_services=[]):
         logging.info(fail_reason['stdout_lines'])
         return False
 
-    logging.info("Checking if Orchagent up for at least 2 min")
-    if duthost.is_multi_asic:
-        for asic in duthost.asics:
-            out = duthost.shell("systemctl show swss@{}.service --property ActiveState --value".format(asic.asic_index))
+    if duthost.is_bmc():
+        # BMC devices (DEVICE_METADATA.localhost.type == 'NetworkBmc') have no
+        # front-side ASIC. swss/syncd are intentionally not running, so the
+        # swss readiness gate below would never pass on BMC.
+        logging.info("Skipping swss readiness gate on BMC device")
+    else:
+        logging.info("Checking if Orchagent up for at least 2 min")
+        if duthost.is_multi_asic:
+            for asic in duthost.asics:
+                out = duthost.shell(
+                    "systemctl show swss@{}.service --property ActiveState --value".format(asic.asic_index))
+                if out["stdout"] != "active":
+                    return False
+
+                cmd = ("ps -o etimes -p $(systemctl show swss@{}.service --property ExecMainPID --value)"
+                       " | sed '1d'").format(asic.asic_index)
+                out = duthost.shell(cmd)
+                if int(out['stdout'].strip()) < 120:
+                    return False
+        else:
+            out = duthost.shell("systemctl show swss.service --property ActiveState --value")
             if out["stdout"] != "active":
                 return False
 
             out = duthost.shell(
-                "ps -o etimes -p $(systemctl show swss@{}.service --property ExecMainPID --value) | sed '1d'".format(
-                    asic.asic_index))
+                "ps -o etimes -p $(systemctl show swss.service --property ExecMainPID --value) | sed '1d'")
             if int(out['stdout'].strip()) < 120:
                 return False
-    else:
-        out = duthost.shell("systemctl show swss.service --property ActiveState --value")
-        if out["stdout"] != "active":
-            return False
-
-        out = duthost.shell("ps -o etimes -p $(systemctl show swss.service --property ExecMainPID --value) | sed '1d'")
-        if int(out['stdout'].strip()) < 120:
-            return False
 
     logging.info("Checking delayed services: %s", delayed_services)
     for service in delayed_services:
@@ -263,6 +287,8 @@ def config_reload(sonic_host, config_source='config_db', wait=120, start_bgp=Tru
                 'sonic-db-cli CONFIG_DB hset "DEVICE_METADATA|localhost" zebra_nexthop {}'.format(zebra_nexthop)
             )
         time.sleep(60)
+        if is_dut:
+            _configure_c508o1x2_subport_after_minigraph(sonic_host)
         if start_bgp:
             sonic_host.shell('config bgp startup all')
         if is_buffer_model_dynamic:

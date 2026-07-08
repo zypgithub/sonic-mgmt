@@ -61,6 +61,11 @@ class NvueClusterCli(NvueBaseCli):
         return NvueClusterCli.action_deprecated(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
+    def action_fetch(engine, resource_path, path):
+        remote_url = ImageConsts.SCP_PATH + path
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.FETCH.replace('@', ''), resource_path=resource_path, param_value=remote_url)
+
+    @staticmethod
     def action_install(engine, resource_path, file):
         return NvueClusterCli.action_deprecated(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path, param_value=file)
 
@@ -171,17 +176,30 @@ class NvueClusterCli(NvueBaseCli):
         )
 
     @staticmethod
-    @check_output
-    def action_import_rbac_file(engine, resource_path, remote_url):
-        path = resource_path.replace('/', ' ').strip()
-        cmd = f"nv action import {path} {remote_url}"
-        logging.info(f"Running '{cmd}' on dut using NVUE")
-        return engine.run_cmd(cmd)
+    def action_restore_sdn_trays_maintenance_state(engine, path, tray_id=''):
+        return NvueClusterCli.action(
+            action_str=ActionType.RESTORE.replace('@', ''),
+            resource_path=path,
+            main_param=(ClusterConsts.MAINTENANCE_STATE, tray_id),
+            flags=ClusterConsts.MAINTENANCE_STATE,
+            additional_params={},
+            engine=engine,
+            reboot_params=None,
+            send_user_confirmation=None,
+            expected_output='',
+            device=None,
+        )
 
     @staticmethod
     @check_output
-    def action_delete_rbac_file(engine, resource_path):
+    def show_file(engine, file='', exit_cmd=''):
+        cmd = "nv show sdn cmd files {file}".format(file=file)
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd_after_cmd([cmd, exit_cmd])
+
+    @staticmethod
+    def action_run_sdn_cmd(engine, resource_path, sdn_cmd_str):
         path = resource_path.replace('/', ' ').strip()
-        cmd = f"nv action delete {path}"
-        logging.info(f"Running '{cmd}' on dut using NVUE")
+        cmd = f'nv action run {path} cmd "{sdn_cmd_str}"'
+        logging.info("Running '%s' on dut using NVUE", cmd[:200] + ("..." if len(cmd) > 200 else ""))
         return engine.run_cmd(cmd)

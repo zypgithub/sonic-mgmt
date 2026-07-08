@@ -6,7 +6,12 @@ from tests.common.utilities import skip_release
 from tests.common.utilities import update_pfcwd_default_state
 from tests.common.config_reload import config_reload
 from tests.common.utilities import backup_config, restore_config, get_running_config,\
-    reload_minigraph_with_golden_config, file_exists_on_dut, NON_USER_CONFIG_TABLES
+    reload_minigraph_with_golden_config, file_exists_on_dut, compare_dicts_ignore_list_order, \
+    NON_USER_CONFIG_TABLES
+
+# Tables known to be overriden in run-time config, which will appear different
+# if the golden config is overridden empty.
+GOLDEN_OVERRRIDDEN_TABLES = ["FEATURE", "PORT"]
 
 GOLDEN_CONFIG = "/etc/sonic/golden_config_db.json"
 GOLDEN_CONFIG_BACKUP = "/etc/sonic/golden_config_db.json_before_override"
@@ -16,7 +21,7 @@ CONFIG_DB_BACKUP = "/etc/sonic/config_db.json_before_override"
 logger = logging.getLogger(__name__)
 
 pytestmark = [
-    pytest.mark.topology('t2', 't1'),
+    pytest.mark.topology('t2', 'lrh', 'urh', 't1'),
     pytest.mark.disable_loganalyzer,
 ]
 
@@ -32,6 +37,16 @@ def check_image_version(duthost):
         None.
     """
     skip_release(duthost, ["201811", "201911", "202012", "202106", "202111"])
+
+
+@pytest.fixture(scope="module", autouse=True)
+def skip_single_asic(duthost):
+    """
+    Skips this test if the DUT is a single-asic platform
+    """
+    if not duthost.is_multi_asic:
+        pytest.skip("Skip override-config-table multi-asic testing on single-asic platforms,\
+                    test provided golden config format is not compatible with single-asics")
 
 
 @pytest.fixture(scope="module")
@@ -89,27 +104,40 @@ def load_minigraph_with_golden_empty_input(duthost):
     initial_asic0_config = get_running_config(duthost, "asic0")
 
     empty_input = {}
+
+    problem_tuples = []
+
     reload_minigraph_with_golden_config(duthost, empty_input)
 
     # Test host running config override
     host_current_config = get_running_config(duthost)
     for table in initial_host_config:
-        if table in NON_USER_CONFIG_TABLES:
+        if table in NON_USER_CONFIG_TABLES or table in GOLDEN_OVERRRIDDEN_TABLES:
             continue
-        pytest_assert(
-            initial_host_config[table] == host_current_config[table],
-            "empty input compare fail! {}".format(table)
-        )
+
+        if table == "ACL_TABLE":
+            if not compare_dicts_ignore_list_order(initial_host_config[table],
+                                                   host_current_config[table]):
+                problem_tuples.append((table, None))
+        else:
+            if not initial_host_config[table] == host_current_config[table]:
+                problem_tuples.append((table, None))
 
     # Test asic0 running config override
     asic0_current_config = get_running_config(duthost, "asic0")
     for table in initial_asic0_config:
-        if table in NON_USER_CONFIG_TABLES:
+        if table in NON_USER_CONFIG_TABLES or table in GOLDEN_OVERRRIDDEN_TABLES:
             continue
-        pytest_assert(
-            initial_asic0_config[table] == asic0_current_config[table],
-            "empty input compare fail! {}".format(table)
-        )
+
+        if table == "ACL_TABLE":
+            if not compare_dicts_ignore_list_order(initial_asic0_config[table],
+                                                   asic0_current_config[table]):
+                problem_tuples.append((table, "asic0"))
+        else:
+            if not initial_asic0_config[table] == asic0_current_config[table]:
+                problem_tuples.append((table, "asic0"))
+
+    pytest_assert(not problem_tuples, "empty input compare fail: {}".format(problem_tuples))
 
 
 def load_minigraph_with_golden_partial_config(duthost):
@@ -200,9 +228,6 @@ def test_load_minigraph_with_golden_config(duthosts, setup_env, tbinfo, enum_ran
     don't have CLI to get new golden config that contains 'localhost' and 'asicxx'
     """
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
-    if not duthost.is_multi_asic:
-        pytest.skip("Skip override-config-table multi-asic testing on single-asic platforms,\
-                    test provided golden config format is not compatible with single-asics")
     topo_type = tbinfo["topo"]["type"]
     if topo_type == 't2' and not is_upstream_t2_dut(duthost, tbinfo):
         # Skip empty golden-config testing on upstream linecards,

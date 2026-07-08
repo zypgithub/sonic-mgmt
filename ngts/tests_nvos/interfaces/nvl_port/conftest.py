@@ -17,7 +17,7 @@ from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.cluster.cluster_tools import summarize_switch_ports
 from ngts.tests_nvos.interfaces.nvl_port.helpers import get_linked_ports_pair
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='module')

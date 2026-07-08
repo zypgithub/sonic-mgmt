@@ -5,7 +5,7 @@ from typing import List
 
 import requests
 
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.nvue.nvue_cluster_clis import NvueClusterCli
 from ngts.cli_wrappers.nvue.nvue_platform_clis import NvuePlatformCli
@@ -33,6 +33,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.system.Files import Files
 from ngts.nvos_tools.system.Health import Health
+from ngts.nvos_tools.system.Profile import Profile
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -228,6 +229,7 @@ class FaeSystem(BaseComponent):
         self.fatal = BaseComponent(self, path='/fatal')
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
         self.serial_console = BaseComponent(self, path='/serial-console')
+        self.profile = Profile(self)
         self.log = FaeLog(self)
         self.control = BaseComponent(self, path='/control')
         self.dockers = BaseComponent(self, path='/control/dockers')
@@ -235,6 +237,7 @@ class FaeSystem(BaseComponent):
         self.asic_debug_config = BaseComponent(self, path='/asic-debug-config')
         self.cpo = BaseComponent(self, path='/cpo')
         self.peer_port = FaePeerPort(self)
+        self.sto_event = StoEvent(self)
 
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """
@@ -252,3 +255,8 @@ class FaePeerPort(BaseComponent):
         BaseComponent.__init__(self, parent=parent_obj, path='/peer-port')
         self.state = BaseComponent(self, path='/state')
         self.interval = BaseComponent(self, path='/interval')
+
+
+class StoEvent(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/sto-debug')

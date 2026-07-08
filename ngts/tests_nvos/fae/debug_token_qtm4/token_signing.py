@@ -10,7 +10,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Tuple
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.SshCmdBuilder import ScpPassCmdBuilder
 from ngts.tests_nvos.fae.debug_token_qtm4.consts import (
     TokenSigningPaths,

@@ -2,12 +2,12 @@ import time
 import pytest
 import allure
 import logging
-from infra.tools.validations.traffic_validations.iperf.iperf_runner import IperfChecker
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.iperf.iperf_runner import IperfChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from retry.api import retry_call
 from ngts.config_templates.wjh_buffer_config_template import WjhBufferConfigTemplate
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.common.checkers import is_feature_ready
 from ngts.constants.constants import SonicConst, WJHConsts
 from ngts.tests.push_build_tests.general.wjh import utils

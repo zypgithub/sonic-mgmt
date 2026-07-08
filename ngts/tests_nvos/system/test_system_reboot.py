@@ -27,9 +27,86 @@ from ngts.tests_nvos.system.reboot_telemetry_helpers import (
 )
 from ngts.tools.test_utils import allure_utils as allure
 from retry.api import retry_call
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
+REBOOT_OUTPUT_FIELDS = {"gentime", "reason", "reason-type", "user"}
+
+
+def _verify_exact_reboot_fields(output, output_name):
+    output_fields = set(output.keys())
+    missing_fields = REBOOT_OUTPUT_FIELDS - output_fields
+    extra_fields = output_fields - REBOOT_OUTPUT_FIELDS
+    assert output_fields == REBOOT_OUTPUT_FIELDS, (
+        f"Unexpected fields in '{output_name}' output. "
+        f"Missing fields: {missing_fields or 'none'}; extra fields: {extra_fields or 'none'}"
+    )
+
+
+@pytest.mark.usefixtures("disable_els_init_state_for_taipan")
+@pytest.mark.system
+def test_system_reset_bit(engines, devices, topology_obj, test_name):
+    """
+    Test flow:
+        1. Clear system events to avoid stale reboot entries.
+        2. Trigger reboot by writing the system reset bit (linux iorw command).
+        3. Wait for the system to be ready on serial, then for NVOS to be functional.
+        4. Verify reboot show/reason/history output shape and reboot cause (reason/user).
+        5. Validate reboot reason and user against device expectations.
+        6. Assert reboot duration is within the expected range for reset-bit reboot.
+    """
+    if not devices.dut.sys_rst_n_bit_command:
+        pytest.skip("System reset bit trigger not supported on this platform")
+
+    system = System(None)
+    expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.RESET_BIT]
+
+    try:
+        with allure.step('Clear system events to remove older reboot system events'):
+            system.events.action(ActionConsts.CLEAR)
+
+        start_time = time.perf_counter()
+
+        with allure.step('Run linux command to trigger system reset via reset bit'):
+            DutUtilsTool.run_cmd_with_disconnect(engines.dut, devices.dut.sys_rst_n_bit_command, timeout=5)
+
+        with allure.step('Wait for system to be ready in serial'):
+            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=devices.dut.timeout_system_is_ready)
+
+        with allure.step(f"wait for system to become functional"):
+            DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
+
+        duration = time.perf_counter() - start_time
+
+        with allure.step("Check system reboot output"):
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show()).get_returned_value()
+            assert "reason" in output.keys(), "'reason' not in the output"
+
+            with allure.independent_step("Check system reboot reason output"):
+                output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
+                ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, ["gentime", "reason", "user"]).verify_result()
+
+            with allure.independent_step("Check system reboot history output"):
+                output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.history.show()).get_returned_value()
+                if output and len(output.keys()) > 0:
+                    ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output[list(output.keys())[0]],
+                                                                                      ["gentime", "reason", "user"]).verify_result()
+
+            with allure.independent_step("Check reboot cause"):
+                output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
+                assert expected_reason in output["reason"], f"{expected_reason} not found in show reboot output"
+                assert expected_user in output["user"], f"Reboot user is {output['user']} instead of '{expected_user}'"
+
+            with allure.independent_step("Validate reboot reason and user"):
+                ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
+
+            with allure.independent_step("Verify reboot time is within expected range"):
+                OperationTime.verify_operation_time(duration, "reset bit", devices).verify_result()
+
+    finally:
+        if not ping_device(engines.dut.ip):
+            logger.info("system is off and will now remote reboot the switch")
+            NvueGeneralCli(TestToolkit.engines.dut).remote_reboot_nvue(topology_obj)
 
 
 @pytest.mark.usefixtures("disable_els_init_state_for_taipan")
@@ -57,7 +134,7 @@ def test_reboot_command(engines, devices, test_name, topology_obj):
         result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot,
                                                            topology_obj=topology_obj, check_system_is_functional=False)
 
-    with allure.step(f"wait for system to become functional"):
+    with allure.step("wait for system to become functional"):
         DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
 
     with allure.step("Check system reboot output"):
@@ -66,7 +143,8 @@ def test_reboot_command(engines, devices, test_name, topology_obj):
 
         with allure.independent_step("Check system reboot reason output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
-            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, ["gentime", "reason", "user"]).verify_result()
+            _verify_exact_reboot_fields(output, "system reboot reason")
+            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, REBOOT_OUTPUT_FIELDS).verify_result()
 
         with allure.independent_step("Verify NVUE and gNMI reboot telemetry after reboot"):
             verify_reboot_telemetry_after_reboot(
@@ -121,7 +199,6 @@ def test_reboot_command_bad_flow(engines, devices):
         3. run nv action reboot system --type warm
         4. expected message: not supported for IB
     """
-    system = System()
     substring = 'Error: Invalid parameter'
     invalid_command = 'Error: Invalid Command:'
     err_message = 'Reboot types should not be supported in NVOS'
@@ -203,7 +280,7 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
 
 @pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.system
-@pytest.mark.timeout(6 * MINUTE)
+@pytest.mark.timeout(10 * MINUTE)
 def test_reboot_via_remote_reboot(engines, devices, topology_obj):
     """
     Test flow:
@@ -321,8 +398,8 @@ def validate_lspci_status(engines, cap_arr, sta_arr, line_sta, line_cap):
     with allure.step("Validating speed in LnkCap and LnkSta"):
         number_gts_sta = get_number_gts(sta_arr, "")
         number_gts_cap = get_number_gts(cap_arr, "")
-        assert number_gts_sta, f"The string number_gts_sta is empty: {cap_arr}"
-        assert number_gts_cap, f"The string number_gts_cap is empty: {sta_arr}"
+        assert number_gts_sta, f"The string number_gts_sta is empty: {sta_arr}"
+        assert number_gts_cap, f"The string number_gts_cap is empty: {cap_arr}"
         assert number_gts_cap in number_gts_sta, \
             f"Speed NUMBER GT/s mismatch: LnkCap={number_gts_cap}, LnkSta={number_gts_sta}"
 

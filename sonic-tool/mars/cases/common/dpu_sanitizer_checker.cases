@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+  <global>
+    <Test>
+      <name> DPU Sanitizer Checker tests </name>
+      <info> DPU Sanitizer Checker tests </info>
+      <owner> SONiC Verification </owner>
+    </Test>
+    <Case>
+      <tags> dpu_sanitizer_checker </tags>
+      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+      <tout> 3600 </tout>
+    </Case>
+  </global>
+
+  <case>
+    <name> DPU Sanitizer Checker </name>
+    <info> </info>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/scripts/check_and_store_sanitizer_dump.py --raw_options "\'--test_name dpu_address_sanitizer --dpu_asan --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals\'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> Sanitizer Bug Handler </name>
+    <info> </info>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/scripts/sanitizer_bug_handler.py  --raw_options "\'--dpu_asan --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals\'"</static_args>
+      </params>
+    </cmd>
+  </case>
+</CASEDEF>

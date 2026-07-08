@@ -22,6 +22,7 @@ from tests.common.reboot import reboot
 from tests.common.config_reload import config_reload
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.dualtor.dual_tor_utils import toggle_all_aa_ports_to_rand_selected_tor  # noqa: F401
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 DEFAULT_VXLAN_PORT = 4789
 PTF_LOG_PATH = "/tmp/generic_hash_test.GenericHashTest.log"
@@ -692,6 +693,12 @@ def test_reboot(rand_selected_dut, tbinfo, ptfhost, localhost, fine_params, mg_f
         restore_vxlan_port: fixture to restore vxlan port to default
         global_hash_capabilities: module level fixture to get the dut hash capabilities
     """
+    # TODO: remove this skip once warm/fast reboot is supported on sn6600_ld
+    # (https://redmine.mellanox.com/issues/5008193).
+    if reboot_type in ("warm", "fast") \
+            and "sn6600_ld" in rand_selected_dut.facts.get("platform", "") \
+            and is_redmine_issue_active([5008193])[0]:
+        pytest.skip("warm/fast reboot is not supported on sn6600_ld (RM 5008193)")
     ecmp_algorithm, ecmp_test_hash_field, ipver, inner_ipver, encap_type = fine_params.split('-')
     skip_unsupported_field_for_ecmp_test(ecmp_test_hash_field, encap_type)
     with allure.step('Randomly select an ecmp hash field to test '

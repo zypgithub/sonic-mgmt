@@ -2,7 +2,7 @@ import logging
 import os
 
 import pytest
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts

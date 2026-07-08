@@ -23,7 +23,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.SudoScope import sudo_scope_if
 
@@ -181,6 +181,15 @@ def test_rsyslog_multiple_servers_configuration(engines):
     finally:
         with allure.step("Cleanup syslog configurations"):
             system.syslog.servers.unset(apply=True)
+        with allure.step("Wait for rsyslog to become active after reconfiguration"):
+            # Reconfiguring syslog bounces rsyslogd. Give it up to 30s to stabilize back to
+            # 'active' so the loganalyzer teardown can place its end-marker (which requires a
+            # running rsyslog); otherwise the teardown can catch rsyslog mid-restart and fail.
+            end_time = time.time() + 30
+            while time.time() < end_time:
+                if engines.dut.run_cmd("systemctl is-active rsyslog").strip() == "active":
+                    break
+                time.sleep(5)
 
 
 @pytest.mark.system
@@ -743,7 +752,7 @@ def test_rsyslog_filter(engines, random_api, devices):
             with allure.step("Validate show commands"):
                 if devices.dut.is_eth():
                     system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].show(should_succeed=False)
-                if devices.dut.is_ib():
+                else:
                     expected_selector_dictionary.update({SyslogConsts.FILTER: {}})
                     system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].verify_filter_options(
                         expected_selector_dictionary)
@@ -1159,10 +1168,10 @@ def test_syslog_selector_priority_with_all_options(random_api):
 
         with allure.step("Unset selector priority and Validate"):
             system.syslog.servers.servers_dict[remote_server_ip].unset_selector_priority(priority, apply=True)
-            if TestToolkit.devices.dut.is_ib():
-                expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].update({SyslogConsts.SELECTOR: {}})
             if TestToolkit.devices.dut.is_eth():
                 expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].pop(SyslogConsts.SELECTOR)
+            else:
+                expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].update({SyslogConsts.SELECTOR: {}})
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
             system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(expected_server_dictionary[remote_server_ip])
 

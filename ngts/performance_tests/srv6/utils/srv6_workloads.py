@@ -1,7 +1,7 @@
 import ipaddress
 import os
 import random
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.performance_constants import MRCConsts, PerfConsts
 from ngts.helpers.performance.traffic_helpers import (create_srv6_json_traffic_stream, dscp_to_tc)
 

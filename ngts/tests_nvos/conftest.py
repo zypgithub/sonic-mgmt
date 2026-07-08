@@ -7,6 +7,7 @@ import logging
 import os
 import random
 import smtplib
+import subprocess
 import time
 import json
 from email.mime.text import MIMEText
@@ -19,11 +20,11 @@ import pytest
 from dotted_dict import DottedDict
 from retry import retry
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from infra.tools.exceptions.setup_issue import SetupIssue
-from infra.tools.general_constants.air_constants import NvidiaAirConstants
-from infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.exceptions.setup_issue import SetupIssue
+from devts.infra.tools.general_constants.air_constants import NvidiaAirConstants
+from devts.infra.tools.linux_tools.linux_tools import scp_file
 from ngts.helpers.object_filters import filter_objects
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tools.mars_test_cases_results.Connect_to_MSSQL import ConnectMSSQL
@@ -59,6 +60,8 @@ from ngts.tests.nightly.logging.test_log_analyzer_errors_during_deploy_sonic imp
     get_new_start_string, insert_new_start_string
 from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker, get_marker_arg_value, is_cur_test_passed
 from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
+from ngts.tests_nvos.infra import nvos_hub as _nvos_hub
+from ngts.tests_nvos.infra.nvos_hub import nvos_hub_ai_investigation  # noqa: F401
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import is_ipv6_setup, wait_for_ldap_nvued_restart_workaround
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
@@ -143,6 +146,20 @@ def pytest_addoption(parser: pytest.Parser):
         metavar="API",
         help="Pin random_api parametrization to NVUE or OpenApi (same strings as test ids). "
              "If unset, NVOS_FIXED_RANDOM_API is used. Default behavior is one random API per run.",
+    )
+    parser.addoption(
+        "--nvos-hub-ai-investigation",
+        action="store_true",
+        default=False,
+        help="Force-enable NVOS Hub AI-investigation auto-queue on test failures. "
+             "ON by default only for MARS regression runs (REGRESSION_TYPE in "
+             "RegressionType.mars_types(): regression, sonic_main, sonic_public, "
+             "sonic_dpu_build); OFF for CI runs and local/manual runs. Pass this flag (or set "
+             "env var NVOS_HUB_AI_INVESTIGATION to one of 1/true/yes/on) to opt in on any "
+             "other run. To force it off anywhere (including a regression run) set "
+             "NVOS_HUB_AI_INVESTIGATION to one of 0/false/no/off. When enabled, every failing "
+             "test fires a best-effort POST to the dashboard and a deep investigation card is "
+             "auto-generated; the Allure report gets a link to it.",
     )
 
 
@@ -229,6 +246,15 @@ def show_platform_initial_state(engines):
         logger.info(f"Platform firmware initial state:\n{firmware_output}")
 
 
+@pytest.fixture(scope='session')
+def update_platform_expected_values():
+    """Update device-specific expected platform values before platform output validation."""
+    with allure.step('Update platform expected values'):
+        platform = Platform()
+        output = OutputParsingTool.parse_show_output_to_dict(platform.show()).get_returned_value()
+        TestToolkit.get_device().update_show_platform_output(output)
+
+
 @pytest.fixture(autouse=True)
 def check_disk_usage(request, engines):
     marker_name = 'check_disk_usage'
@@ -295,7 +321,7 @@ def check_ib_output(request):
 
 
 @pytest.fixture(autouse=True)
-def track_serial_console(request, topology_obj, engines, devices):
+def track_serial_console(request, topology_obj, engines, devices, is_air):
     """
     fixture to track serial console during test run,
         and if the test is failing, attach the serial console output to allure report (for better debug).
@@ -303,7 +329,7 @@ def track_serial_console(request, topology_obj, engines, devices):
     This will apply for all test that has any of the defined interesting markers below.
     """
     interesting_markers = ['track_serial_console', 'reboot', 'factory_reset', 'reset_factory']
-    should_track_serial_console = any(is_cur_test_has_marker(request, marker) for marker in interesting_markers)
+    should_track_serial_console = not is_air and any(is_cur_test_has_marker(request, marker) for marker in interesting_markers)
 
     if should_track_serial_console:
         with allure.step('start tracking serial console into file'):
@@ -339,6 +365,79 @@ def track_serial_console(request, topology_obj, engines, devices):
         else:
             with allure.step('test passed. not attaching serial console log'):
                 pass
+
+
+def _reset_ansible_ssh_control_masters():
+    """Close ansible's ssh ControlMaster sockets so the next ansible task reconnects.
+
+    A reboot under test kills the remote sshd session, but ansible.cfg uses
+    'ControlMaster=auto -o ControlPersist=7200s' with a ~35-minute ServerAlive window
+    (ServerAliveInterval=30 * ServerAliveCountMax=70), so the local master socket keeps
+    multiplexing to the dead session and every subsequent ansible task (loganalyzer
+    analyze_logs, sysdumps, serial log analyzer) blocks until the pytest test timeout.
+    Rebuilding the host object does NOT help: ControlMaster=auto re-attaches to the same
+    dead master. We must drop the master itself.
+
+    ansible's default ControlPath is a hash ('%C'), so we cannot map a socket back to a
+    host; for a reboot test it is safe to close them all -- any unrelated master simply
+    reconnects on next use. 'ssh -O exit' only talks to the local control socket (no
+    network), so it cannot hang; we still bound it and fall back to removing the socket file.
+    """
+    cp_dir = os.path.join(os.environ.get("ANSIBLE_HOME", os.path.expanduser("~/.ansible")), "cp")
+    try:
+        sockets = [os.path.join(cp_dir, name) for name in os.listdir(cp_dir)]
+    except OSError:
+        sockets = []
+    closed = 0
+    for sock in sockets:
+        closed_this = False
+        try:
+            res = subprocess.run(["ssh", "-O", "exit", "-o", "ControlPath={}".format(sock), "none"],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10, check=False)
+            closed_this = res.returncode == 0
+        except (subprocess.TimeoutExpired, OSError):
+            closed_this = False
+        if not closed_this:
+            # ssh -O exit did not confirm a clean close (no/wedged master or timeout):
+            # remove the socket file so a fresh master is created on the next connect.
+            try:
+                os.unlink(sock)
+                closed_this = True
+            except OSError:
+                pass
+        if closed_this:
+            closed += 1
+    logging.info("Reset %d ansible ssh ControlMaster socket(s) under %s after reboot", closed, cp_dir)
+
+
+@pytest.fixture(autouse=True)
+def reset_ansible_connection_after_reboot(loganalyzer):
+    """Refresh the ansible ssh connection after any test that rebooted the DUT.
+
+    The NVOS 'duthosts' ansible engines are session-scoped (built once and reused), so
+    nothing re-establishes them after a per-test reboot. Combined with ansible's
+    persistent ControlMaster (see _reset_ansible_ssh_control_masters), the first ansible
+    consumer in teardown -- typically loganalyzer's analyze_logs, but also sysdumps /
+    serial log analyzer -- blocks on the dead master until the whole-test pytest timeout
+    fires (observed as 'Failed: Timeout >900.0s' on test_reboot_test).
+
+    Detection is automatic and marker-free: every reboot/reset/install flow sets the
+    process-wide flag pytest.dut_rebooted from DutUtilsTool (in wait_on_system_reboot and
+    the readiness waits wait_for_nvos/cumulus_to_become_functional). Here we read it in
+    teardown and, if a reboot happened, close the stale ControlMaster so the next ansible
+    task reconnects fresh. New reboot tests are covered with no @pytest.mark.reboot to
+    remember.
+
+    Depends on 'loganalyzer' purely for ordering: teardown is LIFO, so by setting up
+    after loganalyzer we guarantee this reset runs BEFORE loganalyzer's analyze_logs. The
+    reset itself is not gated on loganalyzer being enabled.
+    """
+    yield
+
+    if getattr(pytest, 'dut_rebooted', False):
+        pytest.dut_rebooted = False
+        with allure.step('Reset ansible ssh ControlMaster after reboot'):
+            _reset_ansible_ssh_control_masters()
 
 
 @pytest.fixture(scope='session')
@@ -1059,6 +1158,26 @@ def skip_coredump_check(request):
     pytest.skip_coredump_check = request.config.getoption('--skip_coredump_check')
 
 
+def _parse_coredump_ls_output(raw: str) -> list:
+    """Drop bash prompt noise that mlx shells append after ``ls`` (e.g. cen* permission errors)."""
+    names = []
+    for line in (raw or '').splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if (
+            line.startswith('sudo ') or
+            line.startswith('-bash:') or
+            line.startswith('rm:') or
+            'cumulus@' in line or
+            'Permission denied' in line or
+            ':' in line
+        ):
+            continue
+        names.append(line)
+    return names
+
+
 @pytest.fixture(scope='function', autouse=True)
 def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
     yield
@@ -1066,9 +1185,11 @@ def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
         logger.info('NVOS: Skip coredump check')
         return
     else:
-        files = engines.dut.run_cmd(f"sudo ls {CoreDumpConsts.COREDUMP_PATH}").strip().split("\n")
+        files = _parse_coredump_ls_output(
+            engines.dut.run_cmd('sudo ls -1 %s 2>/dev/null' % (CoreDumpConsts.COREDUMP_PATH,), validate=False)
+        )
 
-        if not files or files == ['']:
+        if not files:
             logger.info(f'No core dumps found in {pytest.test_name}')
         else:
             for file in files:
@@ -1545,3 +1666,9 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
                 item.add_marker(la_failed_marker)
                 # 2) Tell Allure directly – this does NOT depend on marker collection
                 allure.dynamic.tag(la_failed_marker)
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    # NVOS Hub: PATCH each queued failure with the final Allure URL once the
+    # upload completes. The autouse fixture is imported at module top.
+    _nvos_hub.terminal_summary_impl(config)

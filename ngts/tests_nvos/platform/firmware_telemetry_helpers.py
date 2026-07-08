@@ -5,7 +5,7 @@ from typing import List
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.helpers import validate_gnmi_server_docker_state
+from ngts.tests_nvos.system.gnmi.helpers import wait_for_gnmi_ready
 from ngts.tests_nvos.system.gnmi.mapping.helpers import parse_gnmic_flat_output, run_gnmic_once_flat
 from ngts.tests_nvos.system.reboot_telemetry_helpers import gnmi_client_for_dut
 
@@ -32,6 +32,13 @@ def _normalize_gnmi_firmware_value(value) -> str:
     return "" if value is None else str(value).strip().strip('"').strip("'")
 
 
+def canonicalize_fw_version(value) -> str:
+    # FW versions appear with either dots ('35.2016.4938-002', from build metadata)
+    # or underscores ('35_2016_4938-002', baked into filenames and reported by the
+    # device). Treat them as the same value when comparing expected vs actual.
+    return _normalize_gnmi_firmware_value(value).replace('.', '_')
+
+
 def _assert_gnmi_firmware_version_from_flat(
     component_name: str, path: str, out: str
 ) -> str:
@@ -48,9 +55,8 @@ def _assert_gnmi_firmware_version_from_flat(
 def _assert_gnmi_matches_nvue_from_value(
     component_name: str, path: str, actual: str, nvue_version: str
 ) -> None:
-    expected = str(nvue_version).strip().strip('"').strip("'")
-    assert actual == expected, (
-        f"Firmware mismatch for {component_name!r}: gNMI={actual!r}, NVUE={expected!r}, path={path!r}"
+    assert canonicalize_fw_version(actual) == canonicalize_fw_version(nvue_version), (
+        f"Firmware mismatch for {component_name!r}: gNMI={actual!r}, NVUE={nvue_version!r}, path={path!r}"
     )
 
 
@@ -58,8 +64,7 @@ def assert_gnmi_firmware_version_matches_nvue(
     gnmi_client: GnmiClient, component_name: str, nvue_version: str
 ) -> None:
     """Single gNMI Get: assert firmware-version is present/not N/A and matches NVUE."""
-    # Wait for 'nv-gnmi' docker after FW-install reboot (NVUE returns first, socket races).
-    validate_gnmi_server_docker_state(TestToolkit.engines, should_run=True)
+    wait_for_gnmi_ready(TestToolkit.engines)
     path = _firmware_version_gnmi_path(component_name)
     out, _duration = run_gnmic_once_flat(path, client=gnmi_client)
     actual = _assert_gnmi_firmware_version_from_flat(component_name, path, out)

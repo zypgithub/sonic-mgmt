@@ -10,7 +10,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 validate_traffic_results,
                                                                 set_ports_admin_state,
                                                                 skip_test_on_unsupported_os, get_obj_method)
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.constants.constants import CliType
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_leaf_traffic

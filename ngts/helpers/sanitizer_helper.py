@@ -76,7 +76,8 @@ def create_sanitizer_dump(dut_engine, dumps_folder, test_name):
     with allure.step('Generating a dump with sanitizer files'):
         now = datetime.now()
         date_time = now.strftime("%m_%d_%Y_%H-%M-%S")
-        sanitizer_dump_filename = f"{test_name}_sanitizer_files_{date_time}.tar.gz".replace("::", "_")
+        dut_name = dut_engine.dut_name + "_" if hasattr(dut_engine, 'dut_name') else ''
+        sanitizer_dump_filename = f"{dut_name}{test_name}_sanitizer_files_{date_time}.tar.gz".replace("::", "_")
         sanitizer_dump_path = f"/tmp/{sanitizer_dump_filename}"
         add_date_to_files_name(dut_engine)
         dut_engine.run_cmd(f"sudo tar -czvf {sanitizer_dump_path} -C {SonicConst.SANITIZER_FOLDER_PATH} .")
@@ -112,10 +113,12 @@ def check_dump_was_created(dut_engine, sanitizer_dump_filename):
     assert find_res == sanitizer_dump_filename, f"file {sanitizer_dump_filename} was not created yet"
 
 
-def get_sanitizer_dumps(dumps_folder):
+def get_sanitizer_dumps(dumps_folder, dut_name=None):
     sanitizer_dumps_paths = []
     existing_sanitizer_files = check_dump_folder_for_existing_sanitizer_files(dumps_folder)
     for file_name in existing_sanitizer_files:
+        if dut_name and dut_name not in file_name:
+            continue
         sanitizer_dump_path = os.path.join(dumps_folder, file_name)
         sanitizer_dumps_paths.append(sanitizer_dump_path)
     return sanitizer_dumps_paths

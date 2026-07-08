@@ -10,7 +10,7 @@ import logging
 import shlex
 import json
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.ngts_types import EnginesT, TopologyT
 

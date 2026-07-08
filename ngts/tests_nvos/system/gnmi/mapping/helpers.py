@@ -1,6 +1,6 @@
 import os
 import random
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union, Any
 from ngts.tools.test_utils import allure_utils as allure
 import yaml
 from .constants import MappingFields
@@ -8,7 +8,6 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode
 from ngts.nvos_constants.constants_nvos import DatabaseConst
-from typing import Any, Optional, Union
 
 Converted = Union[int, float, str, bool]
 
@@ -336,6 +335,16 @@ def parse_gnmic_flat_output(output: str) -> Optional[str]:
         return None
     val = last[sep_idx + 1:]
     return val.strip().strip('"').strip("'")
+
+
+def parse_gnmic_flat_path(line: str) -> Optional[str]:
+    """Return the path portion of a gnmic --format flat line, or None."""
+    if not line:
+        return None
+    if ": " in line:
+        return line.split(": ", 1)[0]
+    sep_idx = max(line.rfind("="), line.rfind(":"))
+    return line[:sep_idx] if sep_idx != -1 else None
 
 
 def parse_internal_path(internal_path: str) -> Optional[Dict[str, str]]:

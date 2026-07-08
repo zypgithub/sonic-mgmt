@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 import allure
 
@@ -10,12 +9,12 @@ from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
-from ngts.nvos_tools.nmx.Loglevel import Loglevel
-from ngts.nvos_tools.nmx.Manager import Manager
-from ngts.nvos_tools.nmx.Logstream import Logstream
-from ngts.nvos_tools.nmx.Type import Type
-from ngts.nvos_tools.nmx.RbacCluster import RbacApp
 from ngts.nvos_tools.nmx.ClusterInternal import ClusterInternal
+from ngts.nvos_tools.nmx.Loglevel import Loglevel
+from ngts.nvos_tools.nmx.Logstream import Logstream
+from ngts.nvos_tools.nmx.Manager import Manager
+from ngts.nvos_tools.nmx.RbacCluster import RbacApp
+from ngts.nvos_tools.nmx.Type import Type
 
 logger = logging.getLogger()
 
@@ -25,10 +24,10 @@ class Apps(BaseComponent):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
                          path='/apps')
-        self.app_name: Dict[str, ClusterApp] = DefaultDict(
+        self.app_name: dict[str, ClusterApp] = DefaultDict(
             lambda app_name: ClusterApp(parent=self, app_name=app_name))
         self.installed = BaseComponent(self, path='/installed')
-        self.running = BaseComponent(self, path='/running')
+        self.running = BaseComponent(self, path='/running', force_api=ApiType.NVUE)
 
 
 class ClusterApp(BaseComponent):

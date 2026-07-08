@@ -31,15 +31,11 @@ def _called_with_apply_true(fn, args, kwargs) -> bool:
 
 
 class _GnmiConfigSettlingMixin:
-    """Wraps ``BaseComponent.set``/``unset`` to wait for the gNMI server to
-    settle whenever the call actually applied a config change.
+    """Wait for gNMI server config to settle after applied set/unset calls.
 
-    Sleeps only when ``apply=True`` was passed: a non-applied ``set`` is just
-    staging and there is nothing on the server to settle.
-
-    Note: applied only to ``gnmi-server`` itself (set/unset on the resource and
-    on per-field config like ``certificate``). ``gnmi-server/mtls`` does NOT
-    use this mix in and keeps its plain :class:`BaseComponent` behaviour.
+    Non-applied set/unset calls only stage configuration, so there is nothing
+    on the server to settle. This mixin is applied only to gnmi-server itself;
+    gnmi-server/mtls keeps the plain BaseComponent behavior.
     """
 
     def set(self, *args, **kwargs):
@@ -68,7 +64,6 @@ class Status(BaseComponent):
 class GnmiServer(_GnmiConfigSettlingMixin, MTLSableServerResource):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/gnmi-server')
-        self.status = Status(self)
 
     def enable_gnmi_server(self, apply=True):
         return self.set(GnmiConsts.GNMI_STATE_FIELD, GnmiConsts.GNMI_STATE_ENABLED, apply=apply)

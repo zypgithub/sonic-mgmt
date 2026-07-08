@@ -9,7 +9,7 @@ from retry import retry
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, MultiNosSharedData
 from ngts.nvos_tools.infra.FilesTool import FilesTool
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 
 
 def _file_is_gzip(filepath):
@@ -53,6 +53,22 @@ class PerformanceCommon:
         self.engine = engine
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
+
+    def get_chip_type(self):
+        """Return the DUT chip type from Noga metadata when available."""
+        if getattr(self, "chip_type", None):
+            return self.chip_type
+        try:
+            return self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific'][
+                'chip_type']
+        except (AttributeError, KeyError, TypeError):
+            return None
+
+    def get_power_sensor_env_variables(self):
+        """Return validator env vars for power sensor collection."""
+        if self.get_chip_type() == "SPC6":
+            return [f'{PerfConsts.SENSORS_CMD_ENV_VAR}="{PerfConsts.SPC6_SENSORS_CMD}"']
+        return []
 
     def configure_dummy_acls(self, template_path, dut_ports, num_acls):
         """Configure dummy ACLs for pipeline lookup stress. Must be implemented by child class."""
@@ -102,6 +118,10 @@ class PerformanceCommon:
         Default implementation does nothing (for SONiC/Cumulus).
         Overridden in DvsPerformance for DVS-specific behavior.
         """
+        pass
+
+    def validate_ingress_buffer_mode_active(self):
+        """Assert ingress buffer mode (IBM) is active. NVUE-only; no-op on other CLIs."""
         pass
 
     def save_configuration_file(self, conf_path, conf_json, dst_dut_dir="/tmp"):
@@ -394,7 +414,7 @@ class PerformanceCommon:
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
         logging.info("Running traffic validator on the dut")
         self._create_sdk_dump_dirs()
-        env_variables = []
+        env_variables = self.get_power_sensor_env_variables()
         for env_var_name, param_val in samples_params_dict.items():
             set_interval_cmd = f"export {env_var_name}={param_val}"
             env_variables.append(f"{env_var_name}={param_val}")
@@ -463,7 +483,8 @@ class PerformanceCommon:
         return test_specific_values
 
     def get_sensors_data(self):
-        sensors_cmd = r"sensors *-i2c-5-*"
+        sensors_cmd = (PerfConsts.SPC6_SENSORS_CMD if self.get_chip_type() == "SPC6"
+                       else PerfConsts.DEFAULT_SENSORS_CMD)
         output = self.execute_cmd(sensors_cmd)
         return output
 
@@ -634,6 +655,7 @@ class PerformanceCommon:
             )
 
         os.environ[PerfConsts.SDK_DUMP_FILE_SYSTEM] = sonic_mgmt_path
+        os.makedirs(os.path.dirname(sonic_mgmt_path), exist_ok=True)
         self.engine.copy_file(source_file=remote_name, file_system=sdk_dump_file_system,
                               dest_file=sonic_mgmt_path,
                               overwrite_file=True, verify_file=False, direction='get')

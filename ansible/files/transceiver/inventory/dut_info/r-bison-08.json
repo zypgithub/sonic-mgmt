@@ -1,0 +1,32 @@
+{
+  "Ethernet0:256": {
+    "vendor_name": "PINEWAVE",
+    "vendor_pn": "T-OH8CNT-NMT",
+    "cmis_revision": "5.2",
+    "gold_firmware_version": "36.233.0"
+  },
+  "Ethernet0:256:8": {
+    "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x1-0x1"
+  },
+  "Ethernet1:256:8": {
+    "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x2-0x2"
+  },
+  "Ethernet2:256:8": {
+    "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x4-0x4"
+  },
+  "Ethernet3:256:8": {
+    "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x8-0x8"
+  },
+  "Ethernet4:256:8": {
+    "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x10-0x10"
+  },
+  "Ethernet5:256:8": {
+    "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x20-0x20"
+  },
+  "Ethernet6:256:8": {
+    "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x40-0x40"
+  },
+  "Ethernet7:256:8": {
+    "transceiver_configuration": "DR-100-OSFP-OSFP_8X_100G-0x80-0x80"
+  }
+}

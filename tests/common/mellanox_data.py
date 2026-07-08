@@ -1,13 +1,9 @@
 import functools
 import logging
+import pytest
 import os
 import re
-import random
-import string
-import allure
-import pytest
-from tests.common.helpers.assertions import pytest_assert
-from tests.sed_password_change.conftest import SED_Change_Password_General
+from tests.common.helpers.sed_password_helper import SED_Change_Password_General
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +16,15 @@ SPC3_HWSKUS = ["ACS-MSN4700", "Mellanox-SN4700-O28", "ACS-MSN4600C", "ACS-MSN441
                "Mellanox-SN4280-O8C40", "Mellanox-SN4280-C48", "Mellanox-SN4280-O8V40", "Mellanox-SN4280-O8C80", "ACS-SN4700D"]
 SPC4_HWSKUS = ["ACS-SN5600", "Mellanox-SN5600-V256", "Mellanox-SN5600-C256S1", "Mellanox-SN5600-C224O8",
                'Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8']
-SPC5_HWSKUS = ["Mellanox-SN5640-C512S2", "Mellanox-SN5640-C448O16", "Mellanox-SN5810_LD-O128A2"]
-SPC6_HWSKUS = ["ACS-SN6600", "ACS-SN6600_LD", "Mellanox-SN6600_LD-V512C2", "Mellanox-SN6600_LD-V448P16C2", "ACS-SN6600_LD-SPIL-8", "ACS-SN6810_LD"]
+SPC5_HWSKUS = ["Mellanox-SN5640-C512S2", "Mellanox-SN5640-C448O16",
+               "Mellanox-SN5640-C508O1X2", "Mellanox-SN5810_LD-O128A2"]
+SPC6_HWSKUS = ["ACS-SN6600", "ACS-SN6600_LD", "Mellanox-SN6600_LD-V512C2", "Mellanox-SN6600_LD-V448P16C2", "ACS-SN6600_LD-SPIL-8", "ACS-SN6810_LD", "Mellanox-SN6600_LD-P128C2", "Mellanox-SN6600_LD-P64O128C2"]
 
 SWITCH_HWSKUS = SPC1_HWSKUS + SPC2_HWSKUS + SPC3_HWSKUS + SPC4_HWSKUS + SPC5_HWSKUS + SPC6_HWSKUS
 
 LOSSY_ONLY_HWSKUS = ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8', 'Mellanox-SN5640-C512S2',
-                     'Mellanox-SN5640-C448O16']
+                     'Mellanox-SN5640-C448O16', 'Mellanox-SN6600_LD-P64O128C2',
+                     'Mellanox-SN5640-C508O1X2', 'Mellanox-SN6600_LD-P128C2']
 NO_QOS_HWSKUS = []
 
 PSU_CAPABILITIES = [
@@ -506,6 +504,71 @@ SWITCH_MODELS = {
             "sodimm": {
                 "start": 1,
                 "number": 2
+            }
+        }
+    },
+    "x86_64-nvidia_sn6600_ld-r0": {
+        "chip_type": "spectrum6",
+        "reboot": {
+            "cold_reboot": True,
+            "fast_reboot": True,
+            "warm_reboot": True
+        },
+        "fans": {
+            "number": 0,
+            "hot_swappable": True
+        },
+        "psus": {
+            "number": 0,
+            "hot_swappable": True,
+            "capabilities": PSU_CAPABILITIES[1]
+        },
+        "cpu_pack": {
+            "number": 0
+        },
+        "cpu_cores": {
+            "number": 0
+        },
+        "leak_sensors": {
+            "number": 2
+        },
+        "ports": {
+            "number": 512
+        },
+        "thermals": {
+            "cpu_core": {
+                "start": 0,
+                "number": 1
+            },
+            "module": {
+                "start": 1,
+                "number": 65
+            },
+            "cpu_pack": {
+                "number": 1
+            },
+            "cpu_ambient": {
+                "number": 0
+            },
+            "asic_ambient": {
+                "number": 1
+            },
+            "port_ambient": {
+                "number": 0
+            },
+            "fan_ambient": {
+                "number": 0
+            },
+            "pch": {
+                "number": 0
+            },
+            "sodimm": {
+                "start": 1,
+                "number": 2
+            },
+            "pmic":{
+                "start": 1,
+                "number": 22
             }
         }
     },
@@ -1596,9 +1659,25 @@ SWITCH_MODELS = {
         "fans": {
             "number": 0
         },
-        "cpu_pack": {
+        "cpu_cores": {
             "number": 0
-        }
+        },
+        "cpu_pack": {
+            "number": 1
+        },
+        "thermals": {
+            "module": {
+                "start": 1,
+                "number": 128
+            },
+            "cpu_pack": {
+                "number": 1
+            },
+            "sodimm": {
+                "start": 1,
+                "number": 2
+            }
+         }
     },
     "x86_64-nvidia_sn6810_ld-r0": {
         "chip_type": "spectrum6",
@@ -1675,11 +1754,6 @@ def is_mellanox_device(dut):
 
 
 @read_only_cache()
-def is_weak_server_testbed(dut):
-    return "simx" in dut.facts["platform"]
-
-
-@read_only_cache()
 def get_platform_data(dut):
     """
     Get the platform physical data for the given dut object
@@ -1753,7 +1827,7 @@ class SED_Change_Password_Mellanox(SED_Change_Password_General):
     PRIMARY_SED_TPM_BANK = '0x81010001'
     SECONDARY_SED_TPM_BANK = '0x81010002'
     THIRD_SED_TPM_BANK = '0x81010003'
-    SED_AUTH_PASS = (
+    TPM_AUTH_PASS = (
         "$(dd if=/sys/firmware/efi/efivars/TpmSealCtx-36bfcbde-d710-4903-ba2e-c03ec245dcee "
         "bs=1 skip=4 2>/dev/null | base64 -d)"
     )
@@ -1761,86 +1835,23 @@ class SED_Change_Password_Mellanox(SED_Change_Password_General):
     MINIMAL_PASSWORD_LENGTH = 8
     MAXIMUM_PASSWORD_LENGTH = 124
 
-    def get_disk_name(self, duthost):
-        """
-        Return The disk device path
-        """
-        result = duthost.shell("sudo sedutil-cli --scan", module_ignore_errors=True)
-        pytest_assert(result['rc'] == 0, f"Failed to scan for SED disks: {result['stderr']}")
-
-        output = result['stdout']
-        if '/dev/' in output:
-            # Find /dev/xxx pattern
-            start = output.find("/dev/")
-            if start != -1:
-                end = output.find(" ", start)
-                if end != -1:
-                    return output[start:end]
-                return output[start:].split()[0]
-
-        pytest_assert(False, "Cannot find SED-enabled disk device")
-
-    def verify_default_pass(self, duthost, localhost, verify_sed_pass_works):
-        """
-        Verify that the default SED password is set correctly.
-        """
-        real_default_pass = self.get_sed_pass_from_tpm_bank(duthost, self.THIRD_SED_TPM_BANK)
-
-        if not self.verify_pass_saved(duthost, real_default_pass) or \
-            not self.verify_sed_pass_works(duthost, real_default_pass):
-            logger.warning("TPM banks/SED password mismatch with the default SED password. Attempting cold reboot to recover.")
-            from tests.common.reboot import reboot
-            reboot(duthost, localhost, reboot_type='cold', safe_reboot=True)
-            raise Exception("TPM banks/SED password mismatch with the default SED password.")
-
-        return real_default_pass
-
-    def set_sed_pass_in_tpm_bank(self, duthost, tpm_bank, password):
+    def set_sed_pass_in_tpm_bank(self, duthost, tpm_bank, password, tpm_auth_pass=None):
         """
         Store a new SED password in the specified TPM bank.
         """
-        logger.info(f"Setting SED password in TPM bank {tpm_bank}")
-        commands = [
-            'sudo rm -f seal.* prim.ctx',
-            f'sudo tpm2_evictcontrol -C o -c "{tpm_bank}" > /dev/null 2>&1',
-            'sudo tpm2_createprimary -C o --key-algorithm=rsa --key-context=prim.ctx > /dev/null 2>&1',
-            f'echo "{password}" | sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx -p "{self.SED_AUTH_PASS}" -i - '
-            '> /dev/null 2>&1',
-            'sudo tpm2_load -C prim.ctx -u seal.pub -r seal.priv -n seal.name -c seal.ctx',
-            f'sudo tpm2_evictcontrol -C o -c seal.ctx "{tpm_bank}"',
-            'sudo rm -f seal.* prim.ctx',
-        ]
-        for command in commands:
-            result = duthost.shell(command, module_ignore_errors=True)
-            pytest_assert(result['rc'] == 0, f"Failed to execute command: {command}\nError: {result['stderr']}")
+        super().set_sed_pass_in_tpm_bank(duthost, tpm_bank, password, self.TPM_AUTH_PASS)
 
     def get_primary_sed_tpm_bank(self):
         return self.PRIMARY_SED_TPM_BANK
 
-    def get_sed_pass_from_tpm_bank(self, duthost, tpm_bank):
-        """
-        Retrieve the SED password from the specified TPM bank.
-        """
-        result = duthost.shell(f"sudo tpm2_unseal -c '{tpm_bank}' -p \"{self.SED_AUTH_PASS}\"", module_ignore_errors=True)
-        if result['rc'] == 0:
-            return result['stdout'].strip()
-        logger.warning(f"Failed to get SED password from TPM bank {tpm_bank}: {result['stderr']}")
-        return None
+    def get_secondary_sed_tpm_bank(self):
+        return self.SECONDARY_SED_TPM_BANK
 
-    def verify_pass_saved(self, duthost, expected_pass):
-        """
-        Verify that both TPM banks (primary and secondary) have the expected password.
-        """
-        logger.info(f"Verifying TPM banks have password: {expected_pass}")
+    def get_third_sed_tpm_bank(self):
+        return self.THIRD_SED_TPM_BANK
 
-        password_primary = self.get_sed_pass_from_tpm_bank(duthost, self.PRIMARY_SED_TPM_BANK)
-        assert password_primary == expected_pass, \
-            f"Primary TPM bank password mismatch. Expected: '{expected_pass}', Got: '{password_primary}'"
-
-        password_secondary = self.get_sed_pass_from_tpm_bank(duthost, self.SECONDARY_SED_TPM_BANK)
-        assert password_secondary == expected_pass, \
-            f"Secondary TPM bank password mismatch. Expected: '{expected_pass}', Got: '{password_secondary}'"
-        return True
+    def get_sed_pass_from_tpm_bank(self, duthost, tpm_bank, tpm_auth_pass=None):
+        return super().get_sed_pass_from_tpm_bank(duthost, tpm_bank, self.TPM_AUTH_PASS)
 
     def get_min_and_max_pass_len(self, duthost):
         """
@@ -1848,11 +1859,17 @@ class SED_Change_Password_Mellanox(SED_Change_Password_General):
         """
         return (self.MINIMAL_PASSWORD_LENGTH, self.MAXIMUM_PASSWORD_LENGTH)
 
+    def get_default_sed_pass(self, duthost):
+        """
+        Get the default SED password from the device.
+        """
+        return self.get_sed_pass_from_tpm_bank(duthost, self.THIRD_SED_TPM_BANK)
+
     def verify_sed_pass_change_feature_enabled(self, duthost):
         """Verify SED password change feature is enabled.
             1. Check SED-enabled NVME disk exists
             2. Check LockingEnabled=Y
-            3. Check both TPM banks configured
+            3. Check third TPM bank is configured
             Skips test if not.
         """
         logger.info("Check SED-enabled NVME disk exists")
@@ -1860,24 +1877,13 @@ class SED_Change_Password_Mellanox(SED_Change_Password_General):
         if scan['rc'] != 0:
             pytest.skip("No SED-enabled NVME disk found")
 
-        logger.info("Check LockingEnabled=Y")
-        disk = self.get_disk_name(duthost)
-        locking = duthost.shell(f"sedutil-cli --query {disk} | grep 'LockingEnabled = Y'",
-                                module_ignore_errors=True)
-        if locking['rc'] != 0:
-            pytest.skip("SED LockingEnabled is not Y")
+        super().verify_sed_pass_change_feature_enabled(duthost)
 
-        logger.info("Check both TPM banks configured")
+        logger.info("Check third TPM bank configured")
         tpm = duthost.shell("tpm2_getcap handles-persistent", module_ignore_errors=True)
-        if tpm['rc'] != 0:
-            pytest.skip("Failed to query TPM handles")
 
-        if any(bank not in tpm['stdout'] for bank in (
-            self.PRIMARY_SED_TPM_BANK,
-            self.SECONDARY_SED_TPM_BANK,
-            self.THIRD_SED_TPM_BANK
-        )):
-            pytest.skip("Required TPM banks not configured")
+        if self.THIRD_SED_TPM_BANK not in tpm['stdout']:
+            pytest.skip("Required third TPM bank not configured")
 
 
 def is_innolight_cable(port_info):

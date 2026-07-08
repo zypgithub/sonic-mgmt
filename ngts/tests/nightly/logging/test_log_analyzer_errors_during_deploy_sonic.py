@@ -105,7 +105,7 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
         if is_dark_mode:
             pytest.skip("Skip the [switch-dpu_errors_only] test while it's dark mode")
         # Find the log of bfb installation success and insert start_string after it
-        bfb_installation_success_pattern = "sonic-bfb-installer.sh.*Installation Successful"
+        bfb_installation_success_pattern = "sonic-bfb-installer.*Installation Successful"
         bfb_installation_success_log = find_install_image_log(dut_host, bfb_installation_success_pattern, 'tail')
         if not bfb_installation_success_log:
             assert False, "BFB installation success log is not found."
@@ -138,6 +138,8 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
 
     ignore_regex_dpu_errors = [
         r".*kernel.*mlx5_core.*err.*",
+        r".*ERR.*kernel.*mlx5_core.*",
+        r".*ERR systemd-udevd.*0000:0[1278]:00.0: Worker.*processing SEQNUM=\d+ killed.*",
     ]
     if flavor == 'switch-ignore_dpu_errors':
         ignore_regex.extend(ignore_regex_dpu_errors)

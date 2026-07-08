@@ -1,6 +1,6 @@
 import logging
 import time
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 
 logger = logging.getLogger()
 

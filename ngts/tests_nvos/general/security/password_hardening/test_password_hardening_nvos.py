@@ -3,10 +3,10 @@ import re
 import string
 
 import pytest
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.connection_tools.utils import generate_strong_password
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.utils import generate_strong_password
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import TestFlowType

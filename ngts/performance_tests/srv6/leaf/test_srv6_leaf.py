@@ -1,4 +1,5 @@
 import os
+import time
 import allure
 import logging
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_few_traffic
@@ -20,8 +21,8 @@ from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.leaf.conftest import get_bisection_traffic
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import validate_per_tc
-from infra.tools.exceptions.test_issue import TestIssue
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 
@@ -95,6 +96,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                                   vary_src_ip=is_drop_over_max)
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=self.shaper_value)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+            self.wait_for_traffic_to_stabilize("bisection")  # TODO: see wait_for_traffic_to_stabilize — replace fixed sleep
 
         with allure.step("Verifying the traffic for all egress ports"):
             additional_validations = self.get_additional_validations(traffic_type,
@@ -112,8 +114,15 @@ class TestSRv6Leaf(TestSRv6Base):
                 run_validation(config)
             finally:
                 if is_drop_over_max:
-                    with allure.step("Remove dummy ACLs"):
-                        self.cli_object.performance.remove_dummy_acls()
+                    with allure.step("Stop traffic and reload DUT configuration to clean residual state"):
+                        stop_traffic(self.players)
+                        reload_start = time.time()
+                        logger.info(f"Config reload start: {reload_start:.3f}")
+                        self.cli_object.general.reload_configuration(force=True)
+                        self.cli_object.general.verify_dockers_are_up()
+                        reload_end = time.time()
+                        logger.info(f"Config reload + dockers verified end: {reload_end:.3f} "
+                                    f"(duration: {reload_end - reload_start:.3f}s)")
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=MRCConsts.SHAPER_VALUE_AFTER_TEST)
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
@@ -214,6 +223,7 @@ class TestSRv6Leaf(TestSRv6Base):
             run_traffic(self.players, self.scenario, bisection_traffic_jsons)
         with allure.step("run many to one traffic"):
             run_traffic(self.players, self.scenario, many_to_one_traffic_jsons)
+        self.wait_for_traffic_to_stabilize("victim-flow")  # TODO: see wait_for_traffic_to_stabilize — replace fixed sleep
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()

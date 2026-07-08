@@ -8,7 +8,7 @@ import random
 import os
 from retry import retry
 from ngts.constants.constants import *
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 
 SCAPY_TEMPLATE_DIR = MarsConstants.SONIC_MGMT_DIR + '/ngts/helpers/scapy_send_template.py'
 
@@ -75,6 +75,26 @@ def verify_sflow_interface_configuration(cli_obj, interface_name, status, sample
     show_sflow_intf = cli_obj.sflow.show_sflow_interface()
     assert re.search(fr"{interface_name}\s+\|\s+{status}\s+\|\s+{sample_rate}",
                      show_sflow_intf), f"Interface {interface_name} is not properly configured"
+
+
+def verify_hsflowd_ready(engines, collector_ips):
+    for ip in collector_ips:
+        res = engines.dut.run_cmd(
+            f"docker exec -i sflow sh -c "
+            f"\"grep -q 'collector={ip}' {SflowConsts.HSFLOWD_AUTOGEN_FILE} && echo exist\""
+        )
+        if res.strip() != 'exist':
+            return False
+    return True
+
+
+@retry(Exception, tries=24, delay=10)
+def wait_until_hsflowd_ready(engines, collector_ips):
+    logger.info("Waiting for hsflowd collector(s): %s", collector_ips)
+    assert verify_hsflowd_ready(engines, collector_ips), (
+        f"hsflowd not ready yet for collector(s) {collector_ips}, will check again in 10 seconds; "
+        f"check docker exec sflow cat {SflowConsts.HSFLOWD_AUTOGEN_FILE}"
+    )
 
 
 def get_agent_id_from_hsflowd(engines):

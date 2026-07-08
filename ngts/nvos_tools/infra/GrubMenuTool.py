@@ -3,7 +3,7 @@ import time
 
 import pexpect
 
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -19,6 +19,7 @@ class GrubMenuTool:
     GRUB_ESC_PATTERN = 'Press the ESC'
     CUMULUS_ESC_PATTERN = 'error: terminal `serial\' isn\'t found.'
     GRUB_SHELL_PATTERN = 'grub>'
+    GRUB_RESCUE_PATTERN = 'grub rescue>'
     NAVIGATION_FAILED = f'Grub menu navigation tool failed'
 
     @classmethod
@@ -113,4 +114,20 @@ class GrubMenuTool:
             target_patterns, timeout=timeout
         )
         logger.info("GRUB recovery succeeded via ONIE-BOOT label search")
+        return output, index
+
+    @classmethod
+    def recover_from_grub_rescue(cls, serial_engine: PexpectSerialEngine, target_patterns, timeout=60):
+        """
+        Recover from a bare grub rescue> prompt by loading the normal module
+        from the ONIE boot partition and switching to the normal GRUB menu.
+        """
+        logger = logging.getLogger()
+        logger.info("Detected grub rescue> prompt — attempting normal.mod recovery")
+
+        # gpt2 is the common ONIE boot partition on Cumulus platforms.
+        serial_engine.run_cmd('set prefix=(hd0,gpt2)/grub', cls.GRUB_RESCUE_PATTERN, timeout=10)
+        serial_engine.run_cmd('insmod normal', cls.GRUB_RESCUE_PATTERN, timeout=10)
+        output, index = serial_engine.run_cmd('normal', target_patterns, timeout=timeout)
+        logger.info("GRUB rescue recovery succeeded")
         return output, index

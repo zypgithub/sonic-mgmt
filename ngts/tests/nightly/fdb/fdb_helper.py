@@ -5,7 +5,7 @@ from retry import retry
 
 from ngts.helpers.network import generate_mac
 from retry.api import retry_call
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.cli_wrappers.sonic.sonic_mac_clis import SonicMacCli
 
 

@@ -1,16 +1,17 @@
 import allure
 import logging
 import pytest
-from ngts.constants.constants import CliType, InfraConst
+from ngts.constants.constants import InfraConst
 from ngts.helpers.performance.performance_counter_helpers import should_validate_performance_counters
 from ngts.helpers.performance.performance_setup_helpers import (restore_basic_configuration, apply_test_configuration,
                                                                 run_traffic, run_validation, get_topology_obj,
-                                                                skip_test_on_unsupported_os, ValidationConfig)
+                                                                skip_test_on_unsupported_os, ValidationConfig,
+                                                                validate_perf_dut_ingress_buffer_mode)
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic, get_spcx_ra_leaf_traffic
 from ngts.performance_tests.spcx_ra.split_x1_800G_configuration.conftest import get_conf_args
-from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 logger = logging.getLogger()
@@ -62,7 +63,10 @@ class TestSPCXRA_x1Split_800G:
             pytest.skip("Skipping test due to active Redmine issue 4584138")
 
         test_name = get_perf_test_name(request)
-
+        with allure.step("Ensure and validate ingress buffer mode (IBM) on DUT"):
+            self.cli_object.performance.set_ibm(self.scenario, self.conf_args, self.chip_type)
+            if isinstance(self.cli_object, NvueCli):
+                validate_perf_dut_ingress_buffer_mode(self.players)
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 

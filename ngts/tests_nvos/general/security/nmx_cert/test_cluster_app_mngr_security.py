@@ -178,6 +178,7 @@ def test_cluster_app_mngr_security_cli(test_api, app_name, engines, ca_type):
     with allure.step("check values after disable cluster"):
         with allure.step("disable cluster"):
             disable_cluster()
+            time.sleep(30)
         with allure.independent_step("Verify outputs contain the required fields"):
             with allure.independent_step("verify manager show - expect item does not exist"):
                 verify_manager_show(app_name, expect_item_not_exist=True)
@@ -587,12 +588,39 @@ def test_cluster_app_mngr_connection_after_restore_encryption(app_name, ca_type)
                 run_manager_hello_request(app_name, client_mode, cert, cert, cert, cert).verify_result(expect_success)
 
 
+_MANAGER_NO_CONN_INITIAL_SLEEP_SEC = 5
+_MANAGER_NO_CONN_RETRY_SLEEP_SEC = 5
+_MANAGER_NO_CONN_VERIFICATION_ATTEMPTS = 3
+
+
 def verify_no_client_connection(app_name, server_cert: CertInfo, server_ca: CertInfo, skip_etc_mapping: bool = False):
+    """Verify that a client cannot connect in any encryption mode.
+
+    Waits briefly for state propagation, then retries up to
+    _MANAGER_NO_CONN_VERIFICATION_ATTEMPTS times per mode, tolerating
+    transient successes caused by the server still shutting down.
+    """
+    time.sleep(_MANAGER_NO_CONN_INITIAL_SLEEP_SEC)
     for client_mode in EncryptionMode.ALL_MODES:
         with allure.independent_step(f"verify client connection: client mode: {client_mode}. expect success: False"):
-            run_manager_hello_request(
-                app_name, client_mode, server_cert, server_ca, server_ca, server_cert, skip_etc_mapping=skip_etc_mapping
-            ).verify_result(False)
+            for attempt in range(_MANAGER_NO_CONN_VERIFICATION_ATTEMPTS):
+                if attempt > 0:
+                    time.sleep(_MANAGER_NO_CONN_RETRY_SLEEP_SEC)
+                result = run_manager_hello_request(
+                    app_name,
+                    client_mode,
+                    server_cert,
+                    server_ca,
+                    server_ca,
+                    server_cert,
+                    skip_etc_mapping=skip_etc_mapping,
+                )
+                if not result.result:
+                    result.verify_result(False)
+                    break
+                result.ignore_result()
+            else:
+                result.verify_result(False)
 
 
 @pytest.mark.nmx

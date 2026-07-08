@@ -108,7 +108,11 @@ class Log(BaseLog):
                 if not log_search_errors:
                     break
 
-                output = engine.run_cmd(f'sudo cat {RemarkableLogsConsts.LOGS_PATH}{log_file} | grep -E -a "{grep_logs}"')
+                if log_file.endswith('.gz'):
+                    cmd = 'zcat'
+                else:
+                    cmd = 'cat'
+                output = engine.run_cmd(f'sudo {cmd} {RemarkableLogsConsts.LOGS_PATH}{log_file} | grep -E -a "{grep_logs}"')
 
                 if output:
                     lines = output.splitlines()

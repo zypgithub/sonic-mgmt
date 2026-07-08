@@ -90,9 +90,23 @@ def _get_pdu_controller(duthost, conn_graph_facts):
 
     return pdu_manager_factory(duthost.hostname, pdu_links, pdu_info, pdu_vars)
 
+# TODO: SPC6 systems WA - remove this once we have remote reboot implemented for non-LD systems
+def get_noga_remote_reboot_cmd(duthost, request):
+    try:
+        setup_name = request.config.option.setup_name
+        from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
+        topology = get_topology_by_setup_name_and_aliases(setup_name, slow_cli=False)
+        remote_reboot_cmd = topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['remote_reboot']
+        if remote_reboot_cmd:
+            logger.info(f"Using noga remote_reboot cmd for {duthost.hostname}")
+            return remote_reboot_cmd
+        else:
+            pytest.fail(f"No noga remote_reboot cmd found for {duthost.hostname}")
+    except Exception as e:
+        pytest.fail(f"Failed to get noga remote_reboot cmd for {duthost.hostname}: ERROR={e}")
 
 @pytest.fixture(scope="module")
-def pdu_controller(duthosts, conn_graph_facts):
+def pdu_controller(duthosts, conn_graph_facts, request):
     """
     @summary: Fixture for controlling power supply to PSUs of DUT
     @param duthost: Fixture duthost defined in sonic-mgmt/tests/conftest.py
@@ -101,11 +115,14 @@ def pdu_controller(duthosts, conn_graph_facts):
     """
     duthost = get_sup_node_or_random_node(duthosts)
     controller = _get_pdu_controller(duthost, conn_graph_facts)
-
+    # TODO: SPC6 systems WA - remove this once we have remote reboot implemented for non-LD systems
+    if '_ld' in duthost.facts["platform"]:
+        remote_reboot_cmd = get_noga_remote_reboot_cmd(duthost, request)
+        controller = {"remote_reboot_cmd": remote_reboot_cmd}
     yield controller
 
     logger.info("pdu_controller fixture teardown, ensure that all PDU outlets are turned on after test")
-    if controller:
+    if controller and not isinstance(controller, dict):
         controller.turn_on_outlet()
         controller.close()
 

@@ -272,12 +272,14 @@ def test_reboot_test(validate_health_history, verify_no_kernel_errors, engines):
 
     system.validate_health_status(OK)
     last_status_line = system.health.history.search_line(HealthConsts.SUMMARY_REGEX_OK)[-1]
+    expected_led = HealthConsts.LED_OK_STATUS if TestToolkit.devices.dut.is_eth() else None
 
     with allure.step('Reboot the system'):
         system.reboot.action_reboot()
 
     start_time = time.time()
-    system.health.wait_until_health_status_change_after_reboot(OK)
+    system.health.wait_until_health_status_change_after_reboot(
+        OK, expected_led=expected_led)
     end_time = time.time()
     duration = end_time - start_time
 
@@ -309,6 +311,10 @@ def test_reboot_test(validate_health_history, verify_no_kernel_errors, engines):
     with allure.step("Validate health history file indicates reboot occurred and print the status again"):
         logger.info("Validate health history file indicates reboot occurred and print the status again")
         system.health.history.validate_new_summary_line_in_history_file_after_boot(last_status_line)
+
+    with allure.step("Verify system health status and status-led after reboot"):
+        system.validate_health_status(
+            HealthConsts.OK, expected_led=expected_led)
 
 
 @pytest.mark.bug(redmine=4969519, note="show system health intermittent failure")
@@ -625,6 +631,13 @@ def test_asic_health_fatal_state_marks_all_unhealthy(engines):
         pytest.skip("No ASIC instances in health output")
     instance_ids = list(asic_instances.keys())
 
+    initially_healthy_components = []
+    for comp in (HealthConsts.Component.Software, HealthConsts.Component.Switch):
+        if comp in health_out and HealthConsts.Component.INSTANCE in health_out[comp]:
+            comp_instances = health_out[comp][HealthConsts.Component.INSTANCE]
+            if "ALL" in comp_instances and comp_instances["ALL"].get(HealthConsts.Component.STATE) == HealthConsts.Component.HEALTHY:
+                initially_healthy_components.append(comp)
+
     try:
         with allure.step("Set ASIC_HEALTH fatal_state to true (triggers all ASICs unhealthy)"):
             _set_asic_health_fatal_state(engines, "true")
@@ -642,6 +655,11 @@ def test_asic_health_fatal_state_marks_all_unhealthy(engines):
             for inst in instance_ids:
                 _assert_asic_instance(system, inst, HealthConsts.Component.STATE, HealthConsts.Component.HEALTHY,
                                       tries=3, delay=_HEALTH_POLL_WAIT_SEC)
+        if initially_healthy_components:
+            with allure.step(f"Validate initially healthy components recovered: {initially_healthy_components}"):
+                for comp in initially_healthy_components:
+                    _assert_component_instance(system, comp, "ALL", HealthConsts.Component.STATE,
+                                               HealthConsts.Component.HEALTHY, tries=3, delay=_HEALTH_POLL_WAIT_SEC)
         with allure.step("Wait for system is ready (recovery after fatal state)"):
             DutUtilsTool.wait_for_nvos_to_become_functional(
                 engines.dut, throw_exception_on_unhealthy=False).verify_result()
@@ -1275,7 +1293,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines, reset_health
 
 def validate_system_event(system, latest_event_id, events_to_search):
     events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '')).get_returned_value()
-    newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
+    newer_events = [events[event]['text'] for event in list(events) if int(event) > int(latest_event_id)]
     assert bool(set(events_to_search) & set(newer_events)), "None of events:{} found in events".format(events_to_search)
 
 

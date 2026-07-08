@@ -280,6 +280,29 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             self.dut_name = random.choice(dpu_duts)
             self.Logger.info(f"the dpu dut is  :{self.dut_name}")
 
+        if self.sonic_topo == "bmc-dual-mgmt":
+            # BMC tests run against the BMC host, not the switch. Mars provides the bare switch
+            # dut_name (e.g. slm-chipless-2700a1-146), while the BMC host registered in
+            # ansible/inventory (and as the testbed 'dut:' entry) is '<dut>-bmc'. The testbed name
+            # is already '<dut>-bmc-dual-mgmt' (computed above from dut_name + sonic_topo), so only
+            # --host-pattern (driven by dut_name) needs the -bmc suffix.
+            self.Logger.info(f"BMC mode: original dut_name={self.dut_name}, testbed={testbed}")
+            self.dut_name = f'{self.dut_name}-bmc'
+            self.Logger.info(f"BMC mode: overridden dut_name={self.dut_name}")
+
+        if is_smartswitch_test:
+            if '--dpu-pattern' in self.raw_options:
+                # For tests that require exact number of DPUs(e.g. HA tests)
+                # it should be specified in the cases file
+                if len(self.dut_name_list) > 1:
+                    self.raw_options = self.raw_options.replace('dut-a-dpu-', self.dut_name_list[0] + '-dpu-')
+                    self.raw_options = self.raw_options.replace('dut-b-dpu-', self.dut_name_list[1] + '-dpu-')
+                else:
+                    self.raw_options = self.raw_options.replace('dut-dpu-', self.dut_name_list[0] + '-dpu-')
+            else:
+                # For general smartswitch tests, we provide all available DPUs
+                self.raw_options += f" --dpu-pattern {','.join(dpu_duts)}"
+
         # The test script file must come first, see explaination on https://github.com/Azure/sonic-mgmt/pull/2131
         cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
                ../ansible/library/ --testbed {TESTBED} --setup_name={SETUP_NAME} --testbed_file ../ansible/testbed.yaml \
@@ -299,8 +322,6 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                          TESTBED=testbed,
                          SONIC_MGMT_PATH=self.sonic_mgmt_path
                          )
-        if is_smartswitch_test:
-            cmd += f" --dpu-pattern {','.join(dpu_duts)}"
         # Take the first epoint as just one is specified in *.setup file. Currently supported are: SONIC_MGMT or NGTS
         # Take the first player as just one is specified in *.setup file
         epoint = self.EPoints[0]
@@ -350,6 +371,9 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
     def convert_topos(self, is_smartswitch_test=False):
         # Convert the topology name to topology type(for example, t0-64 to t0)
         # and append type "any" for 'any' type in the topology mark
+        if self.sonic_topo == "t1-smartswitch-ha":
+            topos.append('t1-smartswitch-ha')
+            return
         testbed_type_index = 0
         topos = [self.sonic_topo.split('-')[testbed_type_index]]
         topos.append("any")

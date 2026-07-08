@@ -12,6 +12,7 @@ from tests.common.utilities import wait_until
 from tests.common.helpers.syslog_helpers import is_mgmt_vrf_enabled
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.reboot import reboot, SONIC_SSH_PORT, SONIC_SSH_REGEX
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ipaddress import IPv4Address, IPv6Address, ip_address, ip_network, IPv6Network
 from tests.common.fixtures.duthost_utils import backup_and_restore_config_db_on_duts  # noqa F401
 from tests.common.config_reload import config_reload
@@ -738,9 +739,21 @@ class TestSSIP:
             self.duthost.command("sudo config save -y")
 
         reboot_type = request.config.getoption("--ssip_reboot_type")
+        # TODO: remove this override once warm/fast reboot is supported on sn6600_ld
+        # (https://redmine.mellanox.com/issues/5008193).
+        sn6600_ld_warm_unsupported = (
+            "sn6600_ld" in self.duthost.facts.get("platform", "")
+            and is_redmine_issue_active([5008193])[0]
+        )
         if reboot_type == "random":
             reboot_type_list = ["cold", "warm", "fast", "soft"]
+            if sn6600_ld_warm_unsupported:
+                reboot_type_list = [rt for rt in reboot_type_list if rt not in ("warm", "fast")]
             reboot_type = random.choice(reboot_type_list)
+        elif reboot_type in ("warm", "fast") and sn6600_ld_warm_unsupported:
+            logger.info("Overriding {} reboot with cold reboot on sn6600_ld due to "
+                        "RM 5008193 (warm/fast-reboot unsupported on this platform).".format(reboot_type))
+            reboot_type = "cold"
         with allure.step("Do {}".format(reboot_type)):
             reboot(self.duthost, localhost, reboot_type=reboot_type, reboot_helper=None, reboot_kwargs=None)
 

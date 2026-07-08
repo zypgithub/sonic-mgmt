@@ -1,3 +1,4 @@
+# flake8: noqa: E231
 import logging
 import time
 
@@ -11,7 +12,7 @@ from packets import rand_udp_port_packets
 from tests.common.helpers.assertions import pytest_assert
 from configs.privatelink_config import TUNNEL1_ENDPOINT_IPS, TUNNEL2_ENDPOINT_IPS
 from tests.common import config_reload
-from tests.common.dash_utils import verify_tunnel_packets
+from tests.common.dash_utils import apply_dash_configs, verify_tunnel_packets
 from dash_eni_counter_utils import get_eni_counter_oid, get_eni_meter_counters
 
 logger = logging.getLogger(__name__)
@@ -51,93 +52,60 @@ def common_setup_teardown(
         yield
         return
     dpuhost = dpuhosts[dpu_index]
-    logger.info(pl.ROUTING_TYPE_PL_CONFIG)
 
     if single_endpoint:
         tunnel_config = pl.TUNNEL1_CONFIG
-    else:
-        tunnel_config = pl.TUNNEL2_CONFIG
-
-    base_config_messages = {
-        **pl.APPLIANCE_FNIC_CONFIG,
-        **pl.ROUTING_TYPE_PL_CONFIG,
-        **pl.ROUTING_TYPE_VNET_CONFIG,
-        **pl.VNET_CONFIG,
-        **pl.METER_POLICY_V4_CONFIG,
-        **pl.ROUTE_GROUP1_CONFIG,
-        **pl.ROUTE_GROUP2_CONFIG,
-        **pl.ROUTE_GROUP3_CONFIG,
-        **tunnel_config,
-    }
-    logger.info(base_config_messages)
-
-    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index)
-
-    if single_endpoint:
         rg1_vm_subnet_route_config = pl.VM_SUBNET_ROUTE_WITH_TUNNEL_SINGLE_ENDPOINT
         rg2_vm_subnet_route_config = pl.RG2_VM_SUBNET_ROUTE_WITH_TUNNEL_SINGLE_ENDPOINT
         rg3_vm_subnet_route_config = pl.RG3_VM_SUBNET_ROUTE_WITH_TUNNEL_SINGLE_ENDPOINT
     else:
+        tunnel_config = pl.TUNNEL2_CONFIG
         rg1_vm_subnet_route_config = pl.VM_SUBNET_ROUTE_WITH_TUNNEL_MULTI_ENDPOINT
         rg2_vm_subnet_route_config = pl.RG2_VM_SUBNET_ROUTE_WITH_TUNNEL_MULTI_ENDPOINT
         rg3_vm_subnet_route_config = pl.RG3_VM_SUBNET_ROUTE_WITH_TUNNEL_MULTI_ENDPOINT
 
-    # Route-Group1 rule creation
-    route_messages = {
-        **pl.PE_SUBNET_ROUTE_CONFIG,
-        **rg1_vm_subnet_route_config
-    }
-    logger.info(route_messages)
-    apply_messages(localhost, duthost, ptfhost, route_messages, dpuhost.dpu_index)
-
-    # Route-Group2 rule creation
-    route_messages = {
-        **pl.METERCLASSOR_PE_SUBNET_ROUTE_CONFIG,
-        **rg2_vm_subnet_route_config,
-    }
-    logger.info(route_messages)
-    apply_messages(localhost, duthost, ptfhost, route_messages, dpuhost.dpu_index)
-
-    # Route-Group3 rule creation
-    route_messages = {
-        **pl.METERCLASSAND_PE_SUBNET_ROUTE_CONFIG,
-        **rg3_vm_subnet_route_config,
-    }
-    logger.info(route_messages)
-    apply_messages(localhost, duthost, ptfhost, route_messages, dpuhost.dpu_index)
-
     # inbound routing not implemented in Pensando SAI yet, so skip route rule programming
+    route_rule_configs = []
     if 'pensando' not in dpuhost.facts['asic_type']:
-        route_rule_messages = {
-            **pl.VM_VNI_ROUTE_RULE_CONFIG,
-            **pl.INBOUND_VNI_ROUTE_RULE_CONFIG,
-            **pl.TRUSTED_VNI_ROUTE_RULE_CONFIG
-        }
-        logger.info(route_rule_messages)
-        apply_messages(localhost, duthost, ptfhost, route_rule_messages, dpuhost.dpu_index)
+        route_rule_configs = [
+            pl.VM_VNI_ROUTE_RULE_CONFIG,
+            pl.INBOUND_VNI_ROUTE_RULE_CONFIG,
+            pl.TRUSTED_VNI_ROUTE_RULE_CONFIG,
+        ]
 
-    meter_rule_messages = {
-        **pl.METER_RULE2_V4_CONFIG,
-    }
-    logger.info(meter_rule_messages)
-    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpuhost.dpu_index)
-
-    logger.info(pl.ENI_FNIC_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_FNIC_CONFIG, dpuhost.dpu_index)
-
-    logger.info(pl.ENI_ROUTE_GROUP1_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
+    # ``apply_dash_configs`` buckets entries by DASH table name and applies
+    # them in dependency order (see ``DashPhase`` in ``tests/common/dash_utils.py``):
+    # GROUP_1 (APPLIANCE) -> GROUP_2 (ROUTING_TYPE/METER_POLICY/OUTBOUND_PORT_MAP/VNET) ->
+    # GROUP_3 (METER_RULE) -> GROUP_4 (TUNNEL/OUTBOUND_PORT_MAP_RANGE/ENI/ROUTE_GROUP) ->
+    # GROUP_5 (ROUTE_RULE/ROUTE/VNET_MAPPING) -> GROUP_6 (ENI_ROUTE).
+    apply_dash_configs(
+        localhost, duthost, ptfhost, dpuhost.dpu_index,
+        pl.APPLIANCE_FNIC_CONFIG,
+        pl.ROUTING_TYPE_PL_CONFIG,
+        pl.ROUTING_TYPE_VNET_CONFIG,
+        pl.VNET_CONFIG,
+        pl.METER_POLICY_V4_CONFIG,
+        pl.ROUTE_GROUP1_CONFIG,
+        pl.ROUTE_GROUP2_CONFIG,
+        pl.ROUTE_GROUP3_CONFIG,
+        tunnel_config,
+        pl.PE_SUBNET_ROUTE_CONFIG,
+        rg1_vm_subnet_route_config,
+        pl.METERCLASSOR_PE_SUBNET_ROUTE_CONFIG,
+        rg2_vm_subnet_route_config,
+        pl.METERCLASSAND_PE_SUBNET_ROUTE_CONFIG,
+        rg3_vm_subnet_route_config,
+        *route_rule_configs,
+        pl.METER_RULE2_V4_CONFIG,
+        pl.ENI_FNIC_CONFIG,
+        pl.ENI_ROUTE_GROUP1_CONFIG,
+    )
 
     yield
 
     # Route rule removal is broken so config reload to cleanup for now
     # https://github.com/sonic-net/sonic-buildimage/issues/23590
     config_reload(dpuhost, safe_reload=True, yang_validate=False)
-    # apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index, False)
-    # apply_messages(localhost, duthost, ptfhost, pl.ENI_TRUSTED_VNI_CONFIG, dpuhost.dpu_index, False)
-    # apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpuhost.dpu_index, False)
-    # apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpuhost.dpu_index, False)
-    # apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index, False)
 
 
 @pytest.mark.parametrize("metering_tc", ['ENI_METERPOLICY_HIT', 'MAPPING_METERCLASS_HIT',
@@ -207,15 +175,21 @@ def test_fnic_dash_metering(localhost, duthost, ptfhost, ptfadapter, dash_pl_con
         # need a lot of packets to check ECMP distribution
         num_packets = 1000
 
-    # For PL Rx packets, in case of PT (6to4), adjust packet length field used
-    # for metering and vnic stats such that the translation is also taken into consideration.
-    # Default PL rx inner packet length is 100 bytes.
-    # Expected Meter Rx Bytes = 100 - 20(IPv6 headerlen 40 bytes - IPv4 header len 20 bytes)
-    # so expected Rx packet meter is 80 bytes.
-    exp_rx_bytes = num_packets * 80
+    # Per the FNIC + PrivateLink metering clarification (SONiC HLD PR #2361), every packet that
+    # lands on the DPU increments the matched bucket's inbound (rx) bytes, and every packet sent
+    # by the DPU increments its outbound (tx) bytes. A full round trip touches the same bucket
+    # with four packets. The default inner packet length is 100 bytes, and the 4to6/6to4 IP
+    # transforms grow/shrink the inner L3 by 20 bytes:
+    #   vm_to_dpu  : 100 B IPv4 (lands on DPU  -> inbound)
+    #   dpu_to_pe  : 120 B IPv6 (sent by DPU,  4to6 +20 -> outbound)
+    #   pe_to_dpu  : 100 B IPv6 (lands on DPU  -> inbound)
+    #   dpu_to_vm  :  80 B IPv4 (sent by DPU,  6to4 -20 -> outbound)
+    #
+    # Inbound (rx) bytes per round trip: vm_to_dpu (100) + pe_to_dpu (100) = 200 bytes
+    exp_rx_bytes = num_packets * 200
 
-    # Default Tx inner packet length is 100 bytes
-    exp_tx_bytes = num_packets * 100
+    # Outbound (tx) bytes per round trip: dpu_to_pe (120) + dpu_to_vm (80) = 200 bytes
+    exp_tx_bytes = num_packets * 200
 
     # Associate Route-Group2 with ENI
     if metering_tc == 'ROUTE_METERCLASS_OR_HIT' or metering_tc == 'ROUTE_MAPPING_METERCLASS_OR_HIT':

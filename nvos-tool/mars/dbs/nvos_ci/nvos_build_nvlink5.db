@@ -49,5 +49,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_cluster_app_mngr_security_cli.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/simx/nvos_chipsim_build_sanity.cases </cases>
+	</test>
 
 </DBDEF>

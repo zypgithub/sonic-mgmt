@@ -1,11 +1,12 @@
 import base64
+import json
 import subprocess
 from json.decoder import JSONDecodeError
 
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.linux_tools.linux_tools import scp_file
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import *
 from ngts.constants.constants import InfraConst
@@ -23,6 +24,7 @@ from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBo
 from ngts.constants.constants import SerialLoggerConst
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.cli_wrappers.nvue.nvue_json_utils import parse_nvue_json_cli_output
 
 logger = logging.getLogger()
 
@@ -113,9 +115,12 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             image_url = f"{MarsConstants.HTTP_SERVER_NBU_NFS}{image_path}"
         else:
             assert nos_image.startswith(
-                'http://'), f'Argument "nos_image" should start with one of ["/auto/", "http://"]. ' \
+                ('http://', 'https://')), f'Argument "nos_image" should start with one of ["/auto/", "http://", "https://"]. ' \
                 f'Actual "nos_image"={nos_image}'
-            image_path = f'/auto/{nos_image.split("/auto/")[1]}'
+            if '/auto/' in nos_image:
+                image_path = f'/auto/{nos_image.split("/auto/")[1]}'
+            else:
+                image_path = '/' + nos_image.split('/', 3)[-1]
             image_url = nos_image
         return image_path, image_url
 
@@ -193,7 +198,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def _scp_image(self, ssh_engine, image_path, file_name_on_switch):
         logger.info('onie-nos-install failed because of wget error. install with scp')
         with allure.step('Upload nvos to switch with scp'):
-            if not image_path.startswith('/auto'):
+            if not image_path.startswith('/auto') and '/auto/' in image_path:
                 image_path = f'/auto/{image_path.split("/auto/")[1]}'
             scp_engine = LinuxSshEngine(ssh_engine.ip,
                                         DefaultConnectionValues.ONIE_USERNAME,
@@ -605,7 +610,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def get_asic_model(self, engine):
         output = engine.run_cmd("nv show platform -o json")
         try:
-            output = json.loads(output)
+            output = parse_nvue_json_cli_output(output)
         except JSONDecodeError as j:
             logging.error("Interface output is not a valid JSON object")
             logging.error(f"Output is : {output}")
@@ -794,7 +799,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
     def get_dut_mac_address(self):
         output = self.engine.run_cmd("nv show platform -o json", print_output=False)
-        output = json.loads(output)
+        output = parse_nvue_json_cli_output(output)
         return output['system-mac']
 
     def pre_installation_steps(self, context, threads_dict):

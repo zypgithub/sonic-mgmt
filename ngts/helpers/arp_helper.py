@@ -3,7 +3,7 @@ import allure
 
 from retry.api import retry_call
 from ngts.cli_wrappers.sonic.sonic_arp_clis import SonicArpCli
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 
 logger = logging.getLogger()
 

@@ -14,10 +14,10 @@ from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
 from ngts.helpers.system_helpers import copy_files_to_syncd
-from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.cli_wrappers.common.sdk_clis_common import SdkCliCommon
 
 logger = logging.getLogger()
@@ -295,8 +295,14 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
         return dut_is_alive
 
     def prepare_for_installation(self, topology_obj, dut_alias='dut'):
+        logger.info(f"prepare_for_installation: starting for dut_alias={dut_alias} ip={self.engine.ip}")
         switch_in_onie = False
-        if self.check_dut_is_alive() and not self.check_if_in_dvs():
+        is_alive = self.check_dut_is_alive()
+        in_dvs = self.check_if_in_dvs()
+        logger.info(f"prepare_for_installation: ip={self.engine.ip} alive={is_alive} in_dvs={in_dvs}")
+        if is_alive and not in_dvs:
+            logger.info(f"prepare_for_installation: ip={self.engine.ip} attempting confirm_onie_boot_mode_install "
+                        f"(assumes DUT is already in ONIE)")
             try:
                 SonicOnieCli(self.engine.ip, self.engine.ssh_port).confirm_onie_boot_mode_install()
                 switch_in_onie = True
@@ -308,12 +314,15 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
                 if self.switch_dut_to_onie_by_remote_reboot(topology_obj, dut_alias):
                     switch_in_onie = True
         else:
+            logger.info(f"prepare_for_installation: ip={self.engine.ip} taking serial/remote-reboot path "
+                        f"(alive={is_alive}, in_dvs={in_dvs})")
             if self.switch_dut_to_onie_by_remote_reboot(topology_obj, dut_alias):
                 switch_in_onie = True
             elif self.switch_dut_to_onie_by_serial_on_dut_stuck_on_selecting_os_page(topology_obj, dut_alias):
                 switch_in_onie = True
             elif self.switch_dut_from_sonic_to_onie_by_serial_on_dut_is_not_alive(topology_obj, dut_alias):
                 switch_in_onie = True
+        logger.info(f"prepare_for_installation: ip={self.engine.ip} done, switch_in_onie={switch_in_onie}")
         return switch_in_onie
 
     def boot_into_onie_by_serial_on_remote_reboot(self, topology_obj, dut_alias='dut'):
@@ -486,8 +495,10 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
         dut_ip = engine.ip
         dut_ssh_port = engine.ssh_port
 
+        logger.info(f"install_image_onie: ip={dut_ip} starting onie-nos-install with image_path={image_path}")
         with allure.step('Installing image by "onie-nos-install"'):
             SonicOnieCli(dut_ip, dut_ssh_port).install_image(image_path=image_path)
+        logger.info(f"install_image_onie: ip={dut_ip} onie-nos-install returned, switch will reboot into new image")
 
         with allure.step('Waiting for switch shutdown after reload command'):
             logger.info('Waiting for switch shutdown after reload command')
@@ -500,6 +511,7 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
         with allure.step('Waiting for CLI bring-up after reload'):
             logger.info('Waiting for CLI bring-up after reload')
             time.sleep(sonic_cli_ssh_connect_timeout)
+        logger.info(f"install_image_onie: ip={dut_ip} install flow finished")
 
     @staticmethod
     def is_performance_setup(str_with_setup_name):
@@ -521,10 +533,8 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
         try:
             engine = LinuxSshEngine(self.engine.ip, username=SSHConsts.DVS_CREDS['username'],
                                     password=SSHConsts.DVS_CREDS['password'])
-            output = engine.run_cmd("cat /etc/motd")
-            if PerfConsts.DVS_WELCOME_MESSAGE in output:
-                return True
-            return False
+            dvs_marker = engine.run_cmd("command -v dvs_start.sh")
+            return bool(dvs_marker.strip()) and "dvs_start.sh" in dvs_marker
         except Exception:
             return False
 
@@ -543,7 +553,8 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
         logger.info(f"Reboot to ONIE with boot-mode {mode}")
         with allure.step(f"Reboot to ONIE with boot-mode {mode}"):
             if mode == "uninstall":
-                timeout = PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE[chip_type]
+                timeout = PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE.get(
+                    chip_type, PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE_DEFAULT)
             else:
                 timeout = PerfConsts.TIMEOUT_FOR_INSTALL_MODE
 
@@ -557,7 +568,10 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
                 self.engine.reload("sudo onie-select -i -f && sudo reboot", wait_after_ping=PerfConsts.TIMEOUT_FOR_INSTALL_MODE, ssh_after_reload=False)
             else:
                 logger.info("Cumulus/NVOS detected wiping out the entire system")
-                self.engine.reload("sudo onie-select -k -f && sudo reboot", wait_after_ping=PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE[chip_type], ssh_after_reload=False)
+                uninstall_wait = PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE.get(
+                    chip_type, PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE_DEFAULT)
+                self.engine.reload("sudo onie-select -k -f && sudo reboot", wait_after_ping=uninstall_wait,
+                                   ssh_after_reload=False)
         else:
             onie_reboot_script_path = self.prepare_onie_reboot_script_on_dut()
             if target_cli_type == "NVUE":

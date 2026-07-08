@@ -1,0 +1,149 @@
+"""Cumulus lab interface names and OTEL attribute labels for mgmt VRF tests."""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass
+from typing import Optional, Tuple
+
+import pytest
+
+from ngts.tests_nvos.system.telemetry.otel.cumulus.constants import CumulusOtelConst
+
+# (test_iface, tx_iface, rx_iface) — tried in order when probing the DUT.
+_INTERFACE_TRIPLETS: Tuple[Tuple[str, str, str], ...] = (
+    ("swp1s0", "swp1s1", "swp1s2"),  # mlx-3700 / split-port spine
+    ("swp61s0", "swp61s1", "swp61s2"),  # mlx-5
+    ("swp1", "swp2", "swp3"),  # flat front-panel naming (e.g. SN5600 lab)
+)
+
+_SWP_NAME_RE = re.compile(r"^swp\S+", re.MULTILINE)
+
+
+@dataclass(frozen=True)
+class CumulusLabInterfaces:
+    tx_iface: str
+    rx_iface: str
+    test_iface: str
+    labels: Tuple[str, ...]
+
+
+def _swp_sort_key(name: str) -> Tuple[int, ...]:
+    """Natural order: swp2 before swp10; swp1s1 before swp1s10 when present."""
+    nums = [int(x) for x in re.findall(r"\d+", name)]
+    return tuple(nums) if nums else (0,)
+
+
+def dut_interface_exists(dut, iface: str) -> bool:
+    """True when ``nv show interface <iface>`` returns a real interface object."""
+    out = dut.run_cmd(
+        f"nv show interface {iface} -o json 2>&1",
+        validate=False,
+        print_output=False,
+    )
+    lowered = out.lower()
+    if "does not exist" in lowered or "invalid command" in lowered:
+        return False
+    if "error:" in lowered:
+        return False
+    return "oper-status" in lowered or f'"{iface}"' in out
+
+
+def discover_swp_interfaces_on_dut(dut) -> Tuple[str, ...]:
+    """Return sorted front-panel ``swp*`` names from ``nv show interface``."""
+    out = dut.run_cmd(
+        "nv show interface -o json 2>&1",
+        validate=False,
+        print_output=False,
+    )
+    if "error:" not in out.lower() and "does not exist" not in out.lower():
+        try:
+            payload = json.loads(out)
+            if isinstance(payload, dict):
+                names = [k for k in payload if k.startswith("swp")]
+                if names:
+                    return tuple(sorted(names, key=_swp_sort_key))
+        except json.JSONDecodeError:
+            pass
+
+    table = dut.run_cmd(
+        "nv show interface 2>&1",
+        validate=False,
+        print_output=False,
+    )
+    names = sorted(
+        {m.group(0) for m in _SWP_NAME_RE.finditer(table)},
+        key=_swp_sort_key,
+    )
+    return tuple(names)
+
+
+def resolve_cumulus_lab_interfaces(hostname: str) -> Optional[CumulusLabInterfaces]:
+    """Map DUT hostname to traffic/histogram interfaces (Cumulus mlx lab naming).
+
+    Returns ``None`` when the hostname is unknown (e.g. default ``cumulus``) so
+    callers can probe the DUT.
+    """
+    host = (hostname or "").lower()
+    if any(tag in host for tag in ("mlx-3", "mlx-4", "mlx-3700", "3700-225")):
+        return CumulusLabInterfaces(
+            tx_iface="swp1s1",
+            rx_iface="swp1s2",
+            test_iface="swp1s0",
+            labels=CumulusOtelConst.INTF_LABELS,
+        )
+    if "mlx-5" in host:
+        return CumulusLabInterfaces(
+            tx_iface="swp61s1",
+            rx_iface="swp61s2",
+            test_iface="swp61s0",
+            labels=CumulusOtelConst.INTF_LABELS,
+        )
+    return None
+
+
+def resolve_cumulus_lab_interfaces_on_dut(dut, hostname: str = "") -> CumulusLabInterfaces:
+    """Resolve lab interfaces from hostname or by probing ``nv show interface``."""
+    host = (hostname or "").strip()
+    if host:
+        lab = resolve_cumulus_lab_interfaces(host)
+        if lab is not None:
+            return lab
+
+    for test_iface, tx_iface, rx_iface in _INTERFACE_TRIPLETS:
+        if dut_interface_exists(dut, test_iface):
+            return CumulusLabInterfaces(
+                test_iface=test_iface,
+                tx_iface=tx_iface,
+                rx_iface=rx_iface,
+                labels=CumulusOtelConst.INTF_LABELS,
+            )
+
+    swps = discover_swp_interfaces_on_dut(dut)
+    if swps:
+        test_iface = swps[0]
+        tx_iface = swps[1] if len(swps) > 1 else swps[0]
+        rx_iface = swps[2] if len(swps) > 2 else swps[0]
+        return CumulusLabInterfaces(
+            test_iface=test_iface,
+            tx_iface=tx_iface,
+            rx_iface=rx_iface,
+            labels=CumulusOtelConst.INTF_LABELS,
+        )
+
+    pytest.fail(
+        "Could not resolve Cumulus lab swp interfaces "
+        f"(hostname={hostname!r}); nv show interface has no swp* ports"
+    )
+
+
+def histogram_interfaces_on_dut(dut, hostname: str = "") -> Tuple[str, ...]:
+    """Minimal swp set for histogram / ``histogram-export-service`` on single-DUT lab.
+
+    SSIM ``OtelMgmtVrfNoTLSConfig`` enables histogram on every spine ``swp`` in a
+    multi-node topo. NGTS health test01 only needs a few ports (same three used for
+    interface up/down in SSIM health). Full-fabric parity is not required here.
+    """
+    lab = resolve_cumulus_lab_interfaces_on_dut(dut, hostname)
+    return tuple(dict.fromkeys((lab.test_iface, lab.tx_iface, lab.rx_iface)))

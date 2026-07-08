@@ -90,6 +90,11 @@ class Interface(BaseComponent):
                         "'{state}'".format(port=self.port_obj.name, state=logical_state)
                     result_obj.result = False
 
+            allure.attach(
+                body=f"It took port {self.port_obj.name} {timeout - timer} seconds to reach state {state}",
+                name=f"{self.port_obj.name} link-up time",
+                attachment_type=allure.attachment_type.TEXT,
+            )
             return result_obj
 
     @retry(Exception, tries=10, delay=5)
@@ -144,15 +149,6 @@ class Interface(BaseComponent):
             raise ValueError("interface_name must be provided for per-interface clear")
         return self.action_clear_counters(interface_name=interface_name, engine=dut_engine,
                                           fae_param=fae_param, expected_str=expected_str)
-
-    def filter(self, dut_engine=None, filter_name="", value=""):
-        with allure.step(f"filter using {filter_name}={value}"):
-            if not dut_engine:
-                dut_engine = TestToolkit.get_engine()
-            cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
-            result_obj = SendCommandTool.execute_command_expected_str(
-                cli_wrapper.filter, "", dut_engine, filter_name, value)
-            return result_obj
 
     def filter(self, dut_engine=None, filter_name="", value=""):
         with allure.step(f"filter using {filter_name}={value}"):

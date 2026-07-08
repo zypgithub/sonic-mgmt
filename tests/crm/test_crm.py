@@ -91,6 +91,29 @@ def handle_default_acl_rules(duthost, tbinfo):
         duthost.shell('acl-loader delete DATAACL')
         RESTORE_CMDS["test_acl_counter"].append({"data_acl": data_acl})
 
+def wait_for_acl_entry_count_stable(asichost, timeout=30, interval=3):
+    """
+    Wait until ASIC_DB ACL_ENTRY count stabilizes (two consecutive reads match).
+    This ensures orchagent has finished processing ACL deletions/additions.
+    """
+    cmd = "{} ASIC_DB KEYS \"*SAI_OBJECT_TYPE_ACL_ENTRY*\"".format(asichost.sonic_db_cli)
+    previous_count = None
+
+    def _count_stable():
+        nonlocal previous_count
+        keys = asichost.shell(cmd)["stdout"].split()
+        current_count = len(keys) if keys != [''] else 0
+
+        if previous_count is not None and current_count == previous_count:
+            logger.info(f"ACL entry count stabilized at {current_count}")
+            return True
+
+        logger.info(f"ACL entry count: {current_count} (previous: {previous_count})")
+        previous_count = current_count
+        return False
+
+    return wait_until(timeout, interval, 0, _count_stable)
+
 
 def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
     """ Create acl rule defined in config file. Return ACL table key. """
@@ -105,7 +128,7 @@ def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
     # Define test cleanup commands
     RESTORE_CMDS[test_name].append("rm -rf {}".format(dut_conf_file_path))
     RESTORE_CMDS[test_name].append("acl-loader delete")
-
+    expected_used = entry_num
     if entry_num == 1:
         logger.info("Generating config for ACL rule, ACL table - DATAACL")
         duthost.template(src=os.path.join(template_dir, acl_rules_template), dest=dut_conf_file_path, force=True)
@@ -116,7 +139,7 @@ def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
         for seq_id in range(2, entry_num + 2):
             acl_entry_config[str(seq_id)] = copy.deepcopy(acl_entry_template)
             acl_entry_config[str(seq_id)]["config"]["sequence-id"] = seq_id
-
+        expected_used = len(acl_entry_config.keys())
         with tempfile.NamedTemporaryFile(suffix=".json", prefix="acl_config", mode="w") as fp:
             json.dump(acl_config, fp)
             fp.flush()
@@ -132,19 +155,33 @@ def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
 
     # Wait for ACL configuration to propagate by polling for ACL table key
     logger.info("Waiting for ACL configuration to propagate...")
-    acl_tbl_key = {"value": None}
+
+    acl_tbl_key = None
 
     def _acl_config_applied():
+        nonlocal acl_tbl_key
         try:
-            acl_tbl_key["value"] = get_acl_tbl_key(asichost)
+            acl_tbl_key = get_acl_tbl_key(asichost)
             return True
-        except Exception:
+        except BaseException:
+            acl_tbl_key = None
             return False
+
+    wait_for_acl_entry_count_stable(asichost, timeout=30, interval=3)
 
     pytest_assert(wait_until(CONFIG_UPDATE_TIME * 3, CRM_POLLING_INTERVAL, 0, _acl_config_applied),
                   "ACL configuration did not propagate within timeout")
 
-    collector["acl_tbl_key"] = acl_tbl_key["value"]
+    collector["acl_tbl_key"] = acl_tbl_key
+
+    logger.info(f"Waiting for ACL entry counter update")
+    acl_entry_stats_cmd = "{db_cli} COUNTERS_DB HMGET {acl_tbl_key} \
+                            crm_stats_acl_entry_used \
+                            crm_stats_acl_entry_available"\
+                            .format(db_cli=asichost.sonic_db_cli, acl_tbl_key=collector["acl_tbl_key"])
+    wait_for_crm_counter_update(acl_entry_stats_cmd, duthost, expected_used=expected_used, oper_used=">=",
+                                timeout=CRM_UPDATE_TIME, interval=CRM_POLLING_INTERVAL)
+
 
 
 def generate_mac(num):
@@ -227,29 +264,46 @@ def apply_fdb_config(duthost, test_name, vlan_id, iface, entry_num):
 
 
 def get_acl_tbl_key(asichost):
-    """ Get ACL entry keys """
-    cmd = "{} ASIC_DB KEYS \"*SAI_OBJECT_TYPE_ACL_ENTRY*\"".format(asichost.sonic_db_cli)
-    acl_tbl_keys = asichost.shell(cmd)["stdout"].split()
+    """ Get ACL entry keys.
+    """
+    db_cli = asichost.sonic_db_cli
+    cmd = (
+        'keys=$({db} ASIC_DB KEYS "*SAI_OBJECT_TYPE_ACL_ENTRY*"); '
+        'for k in $keys; do '
+        '  et=$({db} ASIC_DB HGET "$k" SAI_ACL_ENTRY_ATTR_FIELD_ETHER_TYPE); '
+        '  case "$et" in '
+        '    *2048*) '
+        '      tid=$({db} ASIC_DB HGET "$k" SAI_ACL_ENTRY_ATTR_TABLE_ID); '
+        '      if [ -n "$tid" ]; then echo "$tid"; exit 0; fi ;; '
+        '  esac; '
+        'done; '
+        'exit 1'
+    ).format(db=db_cli)
 
-    # Get ethertype for ACL entry and match ACL which was configured to ethertype value
-    cmd = "{db_cli} ASIC_DB HGET {item} \"SAI_ACL_ENTRY_ATTR_FIELD_ETHER_TYPE\""
-    for item in acl_tbl_keys:
-        out = asichost.shell(cmd.format(db_cli=asichost.sonic_db_cli, item=item))["stdout"]
-        logging.info(out)
-        if "2048" in out:
-            key = item
-            break
-    else:
-        pytest.fail("Ether type was not found in SAI ACL Entry table")
+    result = asichost.shell(cmd, module_ignore_errors=True)
+    oid = (result.get("stdout") or "").strip()
+    if result.get("rc", 1) != 0 or not oid:
+        pytest.fail("Valid ACL entry (EtherType=2048 with TABLE_ID) not found")
 
-    # Get ACL table key
-    cmd = "{db_cli} ASIC_DB HGET {key} \"SAI_ACL_ENTRY_ATTR_TABLE_ID\""
-    oid = asichost.shell(cmd.format(db_cli=asichost.sonic_db_cli, key=key))["stdout"]
     logging.info(oid)
-    pytest_assert(oid, "ACL table ID was not found in SAI ACL Entry table")
-    acl_tbl_key = "CRM:ACL_TABLE_STATS:{0}".format(oid.replace("oid:", ""))
+    return "CRM:ACL_TABLE_STATS:{0}".format(oid.replace("oid:", ""))
 
-    return acl_tbl_key
+
+def reset_crm_threshold_state(asichost, crm_cli_res, crm_used, crm_avail):
+    """
+    Clear stale orchagent CRM threshold state before verification.
+
+    Orchagent logs THRESHOLD_EXCEEDED only on a state transition. Re-applying an
+    exceed threshold while the resource is already marked exceeded (e.g. after a
+    prior test run) produces no syslog and causes LogAnalyzer to fail.
+    """
+    reset_cmd = (
+        'bash -c "crm config thresholds {res} type used && '
+        'crm config thresholds {res} low 0 && '
+        'crm config thresholds {res} high {high}"'
+    ).format(res=crm_cli_res, high=crm_used + crm_avail)
+    asichost.command(reset_cmd)
+    wait_until(1, 1, CRM_UPDATE_TIME, lambda: True)
 
 
 def verify_thresholds(duthost, asichost, **kwargs):
@@ -264,6 +318,8 @@ def verify_thresholds(duthost, asichost, **kwargs):
             "ASIC/counters DB checks are not applicable in virtual testbeds."
         )
         return
+    crm_used, crm_avail = get_crm_stats(kwargs['crm_cmd'], duthost)
+    reset_crm_threshold_state(asichost, kwargs['crm_cli_res'], crm_used, crm_avail)
     loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='crm_test')
     for key, value in list(THR_VERIFY_CMDS.items()):
         logger.info("Verifying CRM threshold '{}'".format(key))
@@ -309,7 +365,7 @@ def verify_thresholds(duthost, asichost, **kwargs):
         with loganalyzer:
             asichost.command(cmd)
             # Make sure CRM counters updated
-            wait_until(CRM_UPDATE_TIME, CRM_POLLING_INTERVAL, 0, lambda: True)
+            wait_until(1, 1, CRM_UPDATE_TIME, lambda: True)
 
 
 def get_crm_stats(cmd, duthost):
@@ -731,7 +787,7 @@ def test_crm_route(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_fro
 
     # Make sure CRM counters updated - use polling to wait for route counter to update
     logger.info(f"Waiting for route counters to update after adding {total_routes} routes...")
-    expected_min_used = crm_stats_route_used + total_routes - CRM_COUNTER_TOLERANCE
+    expected_min_used = crm_stats_route_used + max(1, total_routes - CRM_COUNTER_TOLERANCE)
 
     def check_route_added():
         return get_route_used() >= expected_min_used
@@ -774,7 +830,7 @@ def test_crm_route(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_fro
 
     # Make sure CRM counters updated - use polling to wait for route counter to update
     logger.info(f"Waiting for route counters to update after deleting {total_routes} routes...")
-    expected_max_used = crm_stats_route_used + CRM_COUNTER_TOLERANCE
+    expected_max_used = crm_stats_route_used + min(total_routes - 1, CRM_COUNTER_TOLERANCE)
 
     def check_route_deleted():
         return get_route_used() <= expected_max_used
@@ -988,7 +1044,7 @@ def test_crm_neighbor(duthosts, enum_rand_one_per_hwsku_frontend_hostname,
                                         ip_ver=ip_ver)
     nexthop_used, nexthop_available = get_crm_stats(get_nexthop_stats, duthost)
     if is_cisco_device(duthost):
-        CISCO_8000_ADD_NEIGHBORS = nexthop_available
+        CISCO_8000_ADD_NEIGHBORS = min(2000, nexthop_available)
     asic_type = duthost.facts['asic_type']
     skip_stats_check = True if asic_type == "vs" else False
     RESTORE_CMDS["crm_threshold_name"] = "ipv{ip_ver}_neighbor".format(ip_ver=ip_ver)
@@ -1006,7 +1062,11 @@ def test_crm_neighbor(duthosts, enum_rand_one_per_hwsku_frontend_hostname,
     crm_stats_neighbor_used, crm_stats_neighbor_available = get_crm_stats(get_neighbor_stats, duthost)
 
     # Add reachability to the neighbor
-    if is_cisco_device(duthost):
+    # Cisco and broadcom-dnx VOQ platforms need the host IP on the interface
+    # so the neighbor address is in-subnet and gets programmed by orchagent.
+    needs_host_ip = is_cisco_device(duthost) or \
+        duthost.facts.get("platform_asic") == "broadcom-dnx"
+    if needs_host_ip:
         asichost.config_ip_intf(crm_interface[0], host, "add")
     # Add neighbor
     asichost.shell(neighbor_add_cmd)
@@ -1021,7 +1081,7 @@ def test_crm_neighbor(duthosts, enum_rand_one_per_hwsku_frontend_hostname,
                   "\"crm_stats_ipv4_neighbor_available\" counter was not decremented")
 
     # Remove reachability to the neighbor
-    if is_cisco_device(duthost):
+    if needs_host_ip:
         asichost.config_ip_intf(crm_interface[0], host, "remove")
     # Remove neighbor
     asichost.shell(neighbor_del_cmd)
@@ -1235,6 +1295,12 @@ def verify_acl_crm_stats(duthost, asichost, enum_rand_one_per_hwsku_frontend_hos
     crm_stats_acl_entry_used = 0
     crm_stats_acl_entry_available = 0
 
+    wait_for_crm_counter_update(
+        get_acl_entry_stats, duthost,
+        expected_used=crm_stats_acl_entry_used + 4,
+        oper_used=">=", timeout=60, interval=2,
+    )
+
     # Get new "crm_stats_acl_entry" used and available counter value
     new_crm_stats_acl_entry_used, new_crm_stats_acl_entry_available = get_crm_stats(get_acl_entry_stats, duthost)
     # Verify "crm_stats_acl_entry_used" counter was incremented
@@ -1338,7 +1404,6 @@ def test_acl_counter(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_f
     acl_tbl_key = asic_collector["acl_tbl_key"]
 
     RESTORE_CMDS["crm_threshold_name"] = "acl_counter"
-
     crm_stats_acl_counter_used = 0
     crm_stats_acl_counter_available = 0
 
@@ -1529,13 +1594,14 @@ def test_crm_fdb_entry(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum
     # Wait for FDB clear to complete using wait_until polling
     logger.info("Waiting for FDB clear to complete...")
     fdb_clear_result = {'used': None, 'avail': None}
+    check_fdb_available = not is_cel_e1031_device(duthost)
 
     def _fdb_final_clear():
         used, avail = get_crm_stats(get_fdb_stats, duthost)
         fdb_clear_result['used'] = used
         fdb_clear_result['avail'] = avail
-        if used == 0:
-            logger.debug("FDB cleared successfully")
+        if used == 0 and (not check_fdb_available or avail >= crm_stats_fdb_entry_available):
+            logger.debug("FDB cleared successfully and CRM counters recovered")
             return True
         return False
 
@@ -1550,6 +1616,6 @@ def test_crm_fdb_entry(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum
     # Verify "crm_stats_fdb_entry_available" counter was incremented
     # For E1031, refer CS00012270660, SDK for Helix4 chip does not support retrieving max l2 entry, HW and
     # SW CRM available counter would be out of sync, so this is not applicable for e1031 device
-    if not is_cel_e1031_device(duthost):
+    if check_fdb_available:
         pytest_assert(new_crm_stats_fdb_entry_available - crm_stats_fdb_entry_available >= 0,
                       "Counter 'crm_stats_fdb_entry_available' was not incremented")

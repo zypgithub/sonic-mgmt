@@ -226,7 +226,11 @@ class MockSensors:
                 return
             else:
                 self._cache_regular_file_value(file_path)
-        self.dut.run_cmd(f'sudo echo {value} > {file_path}')
+        self.cli_object.hw_mgmt.suspend_thermal_control()
+        try:
+            self.dut.run_cmd(f'sudo echo {value} > {file_path}')
+        finally:
+            self.cli_object.hw_mgmt.resume_thermal_control()
 
     def remove_file(self, file_path):
         """

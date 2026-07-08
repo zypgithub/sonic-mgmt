@@ -5,6 +5,7 @@ This module handles all communication with the Allure server.
 """
 
 import logging
+import time
 from datetime import datetime
 from typing import List, Optional
 
@@ -567,11 +568,31 @@ def fetch_report_summary(
         report_url=report_url
     )
 
-    # Get summary statistics
+    # Get summary statistics. allure-docker-service makes the report URL
+    # reachable before it finishes indexing widgets/summary.json, so a
+    # fresh upload can return statistic.total=0 for tens of seconds to a
+    # few minutes after MARS uploads results. Retry with back-off before
+    # giving up; without this the email pipeline sends a misleading
+    # "All Tests Passed" message on race-with-indexing reports.
     logger.debug("Fetching summary statistics...")
-    summary_data = client.get_report_summary(project_name, report_id)
-    if summary_data:
-        stats = summary_data.get("statistic", {})
+    summary_data = None
+    stats = {}
+    retry_delays = [0, 30, 60, 120, 240]  # cumulative ~7-8 min worst case
+    for attempt, delay in enumerate(retry_delays, start=1):
+        if delay:
+            logger.info(
+                f"summary.total=0 on attempt {attempt - 1}/{len(retry_delays) - 1}; "
+                f"report may still be indexing - sleeping {delay}s before retry"
+            )
+            time.sleep(delay)
+        summary_data = client.get_report_summary(project_name, report_id)
+        if not summary_data:
+            continue
+        stats = summary_data.get("statistic", {}) or {}
+        if stats.get("total", 0) > 0:
+            break
+
+    if summary_data and stats.get("total", 0) > 0:
         summary.passed = stats.get("passed", 0)
         summary.failed = stats.get("failed", 0)
         summary.broken = stats.get("broken", 0)
@@ -579,8 +600,7 @@ def fetch_report_summary(
         summary.unknown = stats.get("unknown", 0)
         summary.total = stats.get("total", 0)
 
-        if summary.total > 0:
-            summary.pass_rate = (summary.passed / summary.total) * 100
+        summary.pass_rate = (summary.passed / summary.total) * 100
 
         # Parse time info
         time_info = summary_data.get("time", {})
@@ -592,6 +612,14 @@ def fetch_report_summary(
             summary.duration_minutes = time_info["duration"] / 1000 / 60
 
         logger.info(f"Summary: {summary}")
+    elif summary_data:
+        summary.error = (
+            "Report widgets/summary.json still reports total=0 after retries; "
+            "report is either empty or allure-docker-service has not finished indexing. "
+            "Aborting to avoid sending a misleading email."
+        )
+        logger.error(summary.error)
+        return summary
     else:
         summary.error = "Failed to fetch summary data"
         logger.error(summary.error)

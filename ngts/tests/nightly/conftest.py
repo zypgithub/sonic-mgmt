@@ -5,7 +5,7 @@ import logging
 
 from retry.api import retry_call
 from ngts.constants.constants import InterfacesTypeConstants, FecConstants
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.helpers.interface_helpers import get_alias_number
 from ngts.helpers.general_helper import is_smartswitch_platform

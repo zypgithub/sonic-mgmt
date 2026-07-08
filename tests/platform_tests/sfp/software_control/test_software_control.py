@@ -5,7 +5,7 @@ from tests.platform_tests.sfp.util import get_sfp_type_per_interface, get_dev_co
     DICT_WRITABLE_BYTE_FOR_PAGE_0, read_write_eeprom_by_page_and_byte_to_interfaes_list_by_sfp_type
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.platform.transceiver_utils import get_passive_cable_port_list
-from tests.common.platform.interface_utils import get_lport_to_first_subport_mapping
+from tests.common.platform.interface_utils import get_lport_to_first_subport_mapping, get_xcvr_presence_data
 from tests.common.utilities import wait_until
 from tests.common.helpers.assertions import pytest_assert
 from tests.platform_tests.conftest import check_pmon_uptime_minutes
@@ -35,6 +35,28 @@ class TestSoftwareControlFunctional:
     def verify_pmon_uptime(self):
         pytest_assert(wait_until(360, 10, 0, check_pmon_uptime_minutes, self.duthost),
                 "Pmon docker is not ready for test")
+
+    def test_all_modules_in_software_control_mode(self):
+        """
+        @summary: When CMIS host management is enabled every physically-present
+        module must be in software control (``control == 1``).
+
+        Uses ``show interface transceiver presence`` (via ``get_xcvr_presence_data``)
+        to determine which modules are physically present, and
+        ``get_ports_supporting_sc`` to obtain the list of ports whose sysfs
+        ``control`` file equals ``1``.
+        """
+        hostname = self.duthost.hostname
+        ports_presence_status = get_xcvr_presence_data(self.duthost)
+        sw_control_ports = set(helpers.get_ports_supporting_sc(self.duthost))
+        present_ports = {port for port, is_present in ports_presence_status.items() if is_present}
+        service_ports = set(helpers.get_service_ports(self.duthost.facts["platform"]))
+        violations = sorted(present_ports - sw_control_ports - service_ports)
+
+        assert not violations, (
+            f"{len(violations)} present module(s) not in software control "
+            f"on [{hostname}]: {', '.join(violations)}"
+        )
 
     def test_sc_check_show_interfaces_transceiver_eeprom(self):
         """
@@ -88,6 +110,18 @@ class TestSoftwareControlFunctional:
         """
         @summary: Check that BER per Software Control module is not bigger than cable BER threshold
         """
+        for port in list(self.sc_port_list):
+            # Temporary workaround for RM 4798961; remove once the cable BER issue is fixed.
+            redis_output = helpers.transform_redis_transceiver_data(
+                self.duthost, "TRANSCEIVER_INFO", self.enum_frontend_asic_index, [port]
+            )
+            model = redis_output.get(port, {}).get(helpers.SC_REDIS_VENDOR_PM_KEY, "").strip()
+            if model in {"FCBN950QE2C06-MS", "FCBN950QE2C08-MS"}:
+                from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+                if is_redmine_issue_active([4798961])[0]:
+                    self.sc_port_list.remove(port)
+                    logger.warning(f"Exclude {port} from BER check due to active RM 4798961")
+
         mlxlink_ber_all_interfaces = helpers.get_mlxlink_ber_all_interfaces(self.duthost, self.sc_port_list)
         for port in self.sc_port_list:
             mlxlink_output = mlxlink_ber_all_interfaces[port]

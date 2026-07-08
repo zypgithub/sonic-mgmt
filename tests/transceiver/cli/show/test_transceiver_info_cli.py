@@ -9,7 +9,8 @@ from tests.transceiver.transceiver_test_base import TransceiverTestBase
 from tests.transceiver.utils.cli_parser_helper import parse_eeprom
 
 pytestmark = [
-    pytest.mark.topology('ptp-256')
+    pytest.mark.topology('ptp-256'),
+    pytest.mark.topology('ptp-130')
 ]
 
 CMD_SFP_EEPROM = "show interfaces transceiver info"

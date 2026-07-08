@@ -9,9 +9,9 @@ from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.validations.traffic_validations.ip_over_ib_traffic.ip_over_ib_traffic_runner import IPoIBTrafficChecker
-from infra.tools.validations.traffic_validations.ib_traffic.ib_traffic_checker import IBTrafficChecker
-from infra.tools.validations.traffic_validations.ib_traffic.ib_traffic_const import IBTrafficConst
+from devts.infra.tools.validations.traffic_validations.ip_over_ib_traffic.ip_over_ib_traffic_runner import IPoIBTrafficChecker
+from devts.infra.tools.validations.traffic_validations.ib_traffic.ib_traffic_checker import IBTrafficChecker
+from devts.infra.tools.validations.traffic_validations.ib_traffic.ib_traffic_const import IBTrafficConst
 
 logger = logging.getLogger()
 
@@ -41,8 +41,9 @@ class TrafficGeneratorTool:
                     logger.info("Sending ib traffic")
                     IBTrafficChecker(players, validation_obj).run_validation()
                     return ResultObj(True, "IB traffic validation ended successfully")
-                except BaseException as ex:
-                    return ResultObj(False, "IB traffic validation failed - check log for more info.")
+                except Exception as ex:
+                    logger.exception("IB traffic validation failed")
+                    return ResultObj(False, f"IB traffic validation failed: {ex}")
 
     @staticmethod
     def send_ib_traffic_with_params(players, should_success, traffic_params):
@@ -75,8 +76,9 @@ class TrafficGeneratorTool:
                 traffic_checker_obj.process_init_delay = 3
                 traffic_checker_obj.run_validation()
                 return ResultObj(True, "IB traffic validation ended successfully")
-            except BaseException as ex:
-                return ResultObj(False, "IB traffic validation failed - check log for more info.")
+            except Exception as ex:
+                logger.exception("IB traffic validation failed")
+                return ResultObj(False, f"IB traffic validation failed: {ex}")
 
     @staticmethod
     def send_ipoib_traffic(players, interfaces, should_success, reverse_direction=False):
@@ -177,20 +179,45 @@ class TrafficGeneratorTool:
 
         return ping_outputs
 
+    _IB_HOST_INTERFACE_UP_TIMEOUT_SEC = 60
+    _IB_HOST_INTERFACE_UP_POLL_INTERVAL_SEC = 3
+
+    @staticmethod
+    def _wait_for_ib_host_interface_up(host, host_label):
+        # Poll ibdev2netdev until '(Up)' or deadline. Host IB link can stay Down for
+        # several seconds after install_system_image_and_start_opensm returns while
+        # SM activates the route; a single one-shot check races that transition.
+        deadline = time.time() + TrafficGeneratorTool._IB_HOST_INTERFACE_UP_TIMEOUT_SEC
+        last_output = ''
+        while True:
+            last_output = host.run_cmd(IbConsts.IB_DEV_2_NET_DEV)
+            if '(Up)' in last_output:
+                return last_output
+            if time.time() >= deadline:
+                break
+            logger.info(
+                "Host %s IB interface not Up yet, retrying in %ds: %s",
+                host_label,
+                TrafficGeneratorTool._IB_HOST_INTERFACE_UP_POLL_INTERVAL_SEC,
+                last_output.strip(),
+            )
+            time.sleep(TrafficGeneratorTool._IB_HOST_INTERFACE_UP_POLL_INTERVAL_SEC)
+        raise AssertionError(
+            f"Host {host_label} interface is not Up after "
+            f"{TrafficGeneratorTool._IB_HOST_INTERFACE_UP_TIMEOUT_SEC}s. "
+            f"ibdev2netdev output: {last_output}"
+        )
+
     @staticmethod
     def start_traffic_between_2_hosts(host_a, host_b, traffic_duration, server_output, client_output):
         with allure.step('start send traffic from Host A to Host B'):
-            # Get device info from host_a and verify interface is Up
-            ha_output = host_a.run_cmd(IbConsts.IB_DEV_2_NET_DEV)
+            # Wait for host_a IB interface to come Up (poll-with-deadline)
+            ha_output = TrafficGeneratorTool._wait_for_ib_host_interface_up(host_a, 'A')
             ha_device = ha_output.split()[0]
-            assert '(Up)' in ha_output, (f"Host A interface is not Up. "
-                                         f"ibdev2netdev output: {ha_output}")
 
-            # Get device info from host_b and verify interface is Up
-            hb_output = host_b.run_cmd(IbConsts.IB_DEV_2_NET_DEV)
+            # Wait for host_b IB interface to come Up (poll-with-deadline)
+            hb_output = TrafficGeneratorTool._wait_for_ib_host_interface_up(host_b, 'B')
             hb_device = hb_output.split()[0]
-            assert '(Up)' in hb_output, (f"Host B interface is not Up. "
-                                         f"ibdev2netdev output: {hb_output}")
 
             logger.info(f"Host A device: {ha_device} is Up")
             logger.info(f"Host B device: {hb_device} is Up")
@@ -264,13 +291,13 @@ class TrafficGeneratorTool:
 
     def stop_ibping_between_2_hosts(self, host_a, host_b, server_file, client_file):
         with allure.step('Stop pinging from Host A to Host B and verify results'):
-            with allure.step(f"Stop ibping running on client"):
+            with allure.step("Stop ibping running on client"):
                 self.stop_command_run_on_host(host_b, 'ibping', True)
 
-            with allure.step(f"Stop ibping running on server"):
+            with allure.step("Stop ibping running on server"):
                 self.stop_command_run_on_host(host_a, 'ibping', True)
 
-            with allure.step(f"Verify the traffic has no packet loss"):
+            with allure.step("Verify the traffic has no packet loss"):
                 cmd = f'grep "% packet loss" {client_file}'
                 ping_output = host_b.run_cmd(cmd)
 

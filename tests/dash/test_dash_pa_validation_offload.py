@@ -10,7 +10,7 @@ from constants import LOCAL_PTF_INTF
 from gnmi_utils import apply_messages
 from copy import deepcopy
 from packets import outbound_pl_packets
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.helpers.assertions import pytest_assert
 from tests.common import config_reload

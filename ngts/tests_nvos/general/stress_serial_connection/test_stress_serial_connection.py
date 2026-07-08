@@ -5,7 +5,7 @@ import logging
 from pexpect.exceptions import EOF
 import pytest
 
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils import allure_utils as allure
 

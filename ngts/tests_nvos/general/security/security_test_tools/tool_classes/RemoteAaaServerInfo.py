@@ -6,9 +6,7 @@ import socket
 import copy
 import abc
 import re
-
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
 from ..constants import AaaConsts, AuthMedium, UserRole
@@ -19,7 +17,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.system.Ldap import Ldap
 from ..tool_classes.UserInfo import UserInfo
 from .. import resource_utils
-
+from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
 try:
     UsersPerAuthMedium = dict[str, dict[str, list[UserInfo]]]
 except TypeError:  # backward compatibility for Python 3.7

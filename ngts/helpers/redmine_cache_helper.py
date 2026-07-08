@@ -3,7 +3,7 @@ import logging
 import os
 
 from ngts.constants.constants import Sonic_Cache
-from infra.tools.redmine.redmine_api import get_issues_active_status, get_issues_status
+from devts.infra.tools.redmine.redmine_api import get_issues_active_status, get_issues_status
 
 logger = logging.getLogger(__name__)
 

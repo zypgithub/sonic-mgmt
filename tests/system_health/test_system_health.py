@@ -73,21 +73,6 @@ DEFAULT_LED_CONFIG = {
 }
 
 
-# Similar colors treated as equivalent fault indicators (e.g. red/orange/amber).
-FAULT_COLOR_GROUPS = [
-    {'red', 'orange', 'amber'},
-    {'red_blink', 'orange_blink', 'amber_blink'},
-]
-
-
-def _get_color_group(color):
-    """Return the color group for the given color, or None."""
-    for group in FAULT_COLOR_GROUPS:
-        if color in group:
-            return group
-    return None
-
-
 @pytest.fixture(autouse=True, scope="module")
 def check_image_version(duthost):
     """Skip the test for unsupported images."""
@@ -393,7 +378,7 @@ def test_pdb_device_checker(duthosts, enum_rand_one_per_hwsku_hostname,
                 'Mock PDB power good, but it is still out of power'
 
         health_detail = duthost.shell('show system-health detail')['stdout']
-        pdb_type_pattern = re.compile(r'PDB\s+\d+.*\bPDB\b', re.IGNORECASE)
+        pdb_type_pattern = re.compile(r'PDB\s+\d+.*\b(PDB|PSU)\b', re.IGNORECASE)
         pdb_type_lines = [line for line in health_detail.splitlines()
                           if pdb_type_pattern.search(line)]
         logger.info(f'PDB entries in system-health detail: {pdb_type_lines}')
@@ -422,20 +407,21 @@ def test_external_checker(duthosts, enum_rand_one_per_hwsku_hostname):
 @pytest.mark.parametrize('ignore_log_analyzer_by_vendor', [['mellanox']], indirect=True)
 def test_system_health_config(duthosts, enum_rand_one_per_hwsku_hostname,
                               device_mocker_factory, ignore_log_analyzer_by_vendor,  # noqa F811
-                              is_support_mock_asic, is_support_psu):    # noqa F811
+                              is_support_mock_asic, is_support_psu, is_support_fan):    # noqa F811
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
     device_mocker = device_mocker_factory(duthost)
     wait_system_health_boot_up(duthost)
-    logger.info(
+    if is_support_fan:
+        logger.info(
         'Ignore fan check, verify there is no error information about fan')
-    with ConfigFileContext(duthost, os.path.join(FILES_DIR, IGNORE_FAN_CHECK_CONFIG_FILE)):
-        time.sleep(DEFAULT_INTERVAL)
-        mock_result, fan_name = device_mocker.mock_fan_presence(False)
-        expect_value = EXPECT_FAN_MISSING.format(fan_name)
-        if mock_result:
-            assert wait_until(THERMAL_CHECK_INTERVAL, 10, 2,
-                              check_health_field_not_equal, duthost, fan_name, expect_value), \
-                'Fan check is still performed after it is configured to be ignored'
+        with ConfigFileContext(duthost, os.path.join(FILES_DIR, IGNORE_FAN_CHECK_CONFIG_FILE)):
+            time.sleep(DEFAULT_INTERVAL)
+            mock_result, fan_name = device_mocker.mock_fan_presence(False)
+            expect_value = EXPECT_FAN_MISSING.format(fan_name)
+            if mock_result:
+                assert wait_until(THERMAL_CHECK_INTERVAL, 10, 2,
+                                check_health_field_not_equal, duthost, fan_name, expect_value), \
+                    'Fan check is still performed after it is configured to be ignored'
 
     logger.info(
         'Ignore ASIC check, verify there is no error information about ASIC')
@@ -465,7 +451,7 @@ def test_system_health_config(duthosts, enum_rand_one_per_hwsku_hostname,
                         duthost, STATE_DB, HEALTH_TABLE_NAME, psu_name)
                     return not value or expect_value != value
 
-                assert wait_until(DEFAULT_INTERVAL, FAST_INTERVAL, 0, _check_psu_is_ignored, duthost, psu_name), \
+                assert wait_until(DEFAULT_INTERVAL, FAST_INTERVAL, FAST_INTERVAL, _check_psu_is_ignored, duthost, psu_name), \
                     'PSU check is still performed after it is configured to be ignored'
 
 
@@ -563,6 +549,29 @@ def check_system_health_info(duthost, category, expected_value):
         duthost, STATE_DB, HEALTH_TABLE_NAME, category)
     return value == expected_value
 
+def check_system_health_led_info(duthost):
+    system_health_summary = duthost.shell('show system-health summary')['stdout']
+
+    "System status LED  red"
+    system_led_res = re.findall(r"System status LED\s+(\w+)", system_health_summary)
+    if system_led_res:
+        system_led_status = system_led_res[0].strip()
+    logger.info(f"System status LED is {system_led_status}")
+
+    # Regex to find all status names and values
+    status_data = re.findall(r"(\w+):\s+Status:\s+(\w+)", system_health_summary)
+    status_dict = {name: status for name, status in status_data}
+    logger.info(f"Status dict is {status_dict}")
+
+    if all(status == "OK" for status in status_dict.values()):
+        assert system_led_status.lower() == 'green', \
+            f"System status LED is not green, but it is {system_led_status}"
+    else:
+        assert system_led_status.lower() in ["yellow", "amber", "red"], \
+            f"System status LED is not yellow, amber, or red, but it is {system_led_status}"
+
+    return True
+
 
 def check_health_field_contains(duthost, field, expected):
     """Check that STATE_DB HEALTH_TABLE field contains expected substring."""
@@ -585,36 +594,52 @@ def check_health_field_not_equal(duthost, field, unexpected):
     return not value or value != unexpected
 
 
-def check_system_health_led_info(duthost):
-    system_health_summary = duthost.shell('show system-health summary')['stdout']
-
-    "System status LED  red"
-    system_led_res = re.findall(r"System status LED\s+(\w+)", system_health_summary)
-    if system_led_res:
-        system_led_status = system_led_res[0].strip()
-    logger.info(f"System status LED is {system_led_status}")
-
-    # Regex to find all status names and values
-    status_data = re.findall(r"(\w+):\s+Status:\s+(\w+)", system_health_summary)
+def _fetch_led_and_status(duthost):
+    """Fetch system health summary and return (led_color_lower, status_dict)."""
+    summary = duthost.shell('show system-health summary')['stdout']
+    # Use [\w ]+ to capture multi-word colors like "blinking green"
+    led_res = re.findall(r"System status LED\s+([\w ]+)", summary)
+    led_status = led_res[0].strip().lower() if led_res else ""
+    status_data = re.findall(r"(\w+):\s+Status:\s+(\w+)", summary)
     status_dict = {name: status for name, status in status_data}
+    return led_status, status_dict
+
+
+def check_system_health_led_info(duthost):
+    led_cfg = get_system_health_config(duthost, "led_color", DEFAULT_LED_CONFIG)
+    expected_normal = led_cfg["normal"].lower()
+    not_normal = {color.lower() for key, color in led_cfg.items() if key != "normal"}
+
+    # Cache the consistent snapshot captured inside the closure to avoid a
+    # re-fetch that could observe a different value on a flapping LED.
+    # last_observed is always updated so assertion messages show real state on timeout.
+    consistent_snapshot = {}
+    last_observed = {}
+
+    def _led_consistent():
+        led, status_dict = _fetch_led_and_status(duthost)
+        last_observed['led'] = led
+        last_observed['status_dict'] = status_dict
+        all_ok = all(status == "OK" for status in status_dict.values())
+        if led == expected_normal if all_ok else led in not_normal:
+            consistent_snapshot['led'] = led
+            consistent_snapshot['status_dict'] = status_dict
+            return True
+        return False
+
+    # LED update by system-health daemon is asynchronous; wait for it to reflect current status
+    result = wait_until(WAIT_TIMEOUT, 10, 0, _led_consistent)
+
+    system_led_status = consistent_snapshot.get('led', last_observed.get('led', ''))
+    status_dict = consistent_snapshot.get('status_dict', last_observed.get('status_dict', {}))
+    logger.info(f"System status LED is {system_led_status}")
     logger.info(f"Status dict is {status_dict}")
 
-    led_cfg = get_system_health_config(duthost, "led_color", DEFAULT_LED_CONFIG)
-
-    system_status_lower = system_led_status.lower()
     if all(status == "OK" for status in status_dict.values()):
-        # Logic for healthy system: must match the 'normal' key value
-        expected_normal = led_cfg["normal"].lower()
-        assert system_status_lower == expected_normal, \
+        assert result and system_led_status == expected_normal, \
             f"System status LED is not the configured 'normal' color ({expected_normal}), but it is {system_led_status}"
     else:
-        # Faulted system: LED must match a configured non-normal color or similar equivalent.
-        not_normal = {color for key, color in led_cfg.items() if key != "normal"}
-        for color in list(not_normal):
-            color_group = _get_color_group(color)
-            if color_group:
-                not_normal.update(color_group)
-        assert system_status_lower in not_normal, \
+        assert result and system_led_status in not_normal, \
             f"System status LED '{system_led_status}' does not match any colors defined in config: {not_normal}"
 
     return True

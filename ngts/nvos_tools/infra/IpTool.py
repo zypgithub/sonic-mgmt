@@ -7,7 +7,7 @@ from typing import List
 
 import allure
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import IbConsts, IpConsts
 from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner

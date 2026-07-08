@@ -606,8 +606,8 @@ class DebugTokenConsts(DebugTokenConstsBase):
             if not match:
                 continue
 
-            version_underscore = match.group(1)  # e.g., "41_2018_0220"
-            version_name = version_underscore.replace('_', '.')  # e.g., "41.2018.0220"
+            version_underscore = match.group(1)  # e.g., "41_2018_250" or "41_2018_0526_004"
+            version_name = DebugFwPatterns.version_name_from_filename(bin_filename)
 
             # Find matching mfa file with same version
             mfa_filename = f"{DebugFwFilenames.DEBUG_FW_PREFIX}{version_underscore}.mfa"

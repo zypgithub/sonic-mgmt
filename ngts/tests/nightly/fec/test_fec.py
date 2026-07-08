@@ -10,8 +10,8 @@ from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.tests.nightly.conftest import reboot_reload_random, cleanup, save_configuration
 from ngts.constants.constants import AutonegCommandConstants, SonicConst, \
     LinuxConsts, FecConstants
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tests.nightly.fec.conftest import get_tested_lb_dict_tested_ports
 from ngts.helpers.interface_helpers import get_lb_mutual_speed, speed_string_to_int_in_mb
 from ngts.tests.nightly.auto_negotition.auto_fec_common import TestAutoFecBase

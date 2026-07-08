@@ -9,7 +9,7 @@ from ngts.tests.conftest import get_dut_loopbacks
 from ngts.helpers.breakout_helpers import get_dut_breakout_modes
 from ngts.helpers.interface_helpers import get_speed_in_G_format
 from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 """
 

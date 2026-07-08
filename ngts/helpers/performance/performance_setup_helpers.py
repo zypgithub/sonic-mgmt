@@ -4,15 +4,16 @@ import allure
 import os
 import json
 import pytest
+import shutil
 from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, Cl_Consts
 from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc, validate_counters, validate_no_drops_on_tg_ports
+from ngts.helpers.performance.traffic_helpers import validate_bw, validate_bw_utilization_fairness, validate_tc, validate_counters, validate_no_drops_on_tg_ports
 from ngts.helpers.performance.performance_counter_helpers import validate_performance_counters
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
@@ -81,6 +82,7 @@ class ValidationConfig:
     test_name: str
     scenario: str
     chip_type: str
+    max_bw_utilization_variance: float = PerfConsts.DEFAULT_FAIRNESS_THRESHOLD
     run_validate_counters: bool = True
     run_validate_no_drops_on_tg_ports: bool = True
     validate_bw_rx: bool = True
@@ -121,6 +123,11 @@ class ValidationConfig:
                 'bandwidth', validate_bw,
                 lambda: {'bw_threshold': self.bw_threshold, 'validate_bw_rx': self.validate_bw_rx},
                 lambda: not is_simx and self.bw_threshold is not None,
+            ),
+            _validation_spec(
+                'bw_fairness', validate_bw_utilization_fairness,
+                lambda: {'max_bw_utilization_variance': self.max_bw_utilization_variance},
+                lambda: not is_simx and self.max_bw_utilization_variance is not None,
             ),
             _validation_spec(
                 'tc', validate_tc,
@@ -227,6 +234,47 @@ def apply_test_configuration(players, scenario, conf_args,
     else:
         for player_alias in players_aliases:
             players[player_alias]['cli'].performance.apply_configuration_file(scenario, conf_args)
+
+
+def validate_perf_dut_ingress_buffer_mode(players):
+    """Cumulus (NVUE) DUT only: assert IBM (ingress buffer) AR profile is active."""
+    cli_obj = players[PerfConsts.DUT_ALIAS]["cli"]
+    if not isinstance(cli_obj, NvueCli):
+        return
+    cli_obj.performance.validate_ingress_buffer_mode_active()
+
+
+def allure_attach_performance_conf_context(players, conf_args, attach_dut_applied_yaml=True):
+    """Attach ``conf_args`` as JSON and, when possible, the DUT-applied NVUE file to Allure.
+
+    The applied YAML is read from ``/home/cumulus/tmp.yaml`` on the DUT after ``nv config replace``
+    (same path used by ``NvuePerformanceCli.apply_configuration_file``).
+
+    Args:
+        players: Pytest players dict.
+        conf_args: Scenario / Jinja parameter dict passed to performance templates.
+        attach_dut_applied_yaml: When True, try to attach DUT ``tmp.yaml`` contents.
+
+    Returns:
+        None
+    """
+    try:
+        payload = json.dumps(conf_args, indent=2, sort_keys=True, default=str)
+    except TypeError:
+        payload = str(conf_args)
+    allure.attach(payload, name="performance_conf_args.json", attachment_type=allure.attachment_type.JSON)
+    if not attach_dut_applied_yaml:
+        return
+    dut = players.get(PerfConsts.DUT_ALIAS)
+    if not dut or "engine" not in dut:
+        return
+    try:
+        yaml_path = f"{Cl_Consts.CL_HOME_DIR}/tmp.yaml"
+        out = dut["engine"].run_cmd(f"sudo cat {yaml_path} 2>/dev/null || true")
+        if out and str(out).strip():
+            allure.attach(str(out), name="dut_applied_tmp.yaml", attachment_type=allure.attachment_type.YAML)
+    except Exception as exc:
+        logger.info("allure_attach_performance_conf_context: skip DUT tmp.yaml (%s)", exc)
 
 
 def configure_mloops(players, validate_mloops=True, is_simx=False,
@@ -437,6 +485,7 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
             logging.info(f"[{player_alias}] Validations to run: {list(validations_to_run.keys())}\n")
 
             for name, validation in validations_to_run.items():
+                logger.info(f"Running validation: {name}")
                 validation.func(traffic_json, **(validation.extra_args or {}), violations_list=player_violations)
 
             if player_violations:
@@ -444,6 +493,22 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
                 all_violations.append(player_header)
                 all_violations.extend([f"  - {violation}" for violation in player_violations])
                 all_violations.append("")
+
+        if attach_to_allure:
+            with allure.step("Adding SDK dump reference to allure report"):
+                sdk_dump_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
+                                             "sdk_dumps", config.scenario, "sdk_dump")
+                create_sdk_dump(config.players, sdk_dump_path)
+                shared_dump_path = copy_sdk_dump_to_shared_storage(sdk_dump_path, config.players,
+                                                                   config.test_name, config.scenario)
+                if shared_dump_path:
+                    dump_reference = (f"SDK dump file: {os.path.basename(shared_dump_path)}\n"
+                                      f"Full path: {shared_dump_path}")
+                    allure.attach(dump_reference, "SDK dump location",
+                                  attachment_type=allure.attachment_type.TEXT)
+                else:
+                    logger.warning("SDK dump was not copied to shared storage; "
+                                   "no reference attached to allure report.")
 
         if all_violations and not ignore_violations:
             raise TestIssue("\n".join(all_violations))
@@ -588,6 +653,62 @@ def create_sdk_dump(players, full_path):
         str: SDK dump file contents.
     """
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_sdk_dump(full_path)
+
+
+def _is_gzip_file(path):
+    """Return True if ``path`` starts with the gzip magic header bytes."""
+    try:
+        with open(path, 'rb') as fh:
+            return fh.read(len(PerfConsts.GZIP_MAGIC_BYTES)) == PerfConsts.GZIP_MAGIC_BYTES
+    except OSError:
+        return False
+
+
+def copy_sdk_dump_to_shared_storage(local_dump_path, players, test_name, scenario):
+    """Copy a locally fetched SDK dump to the shared performance dumps directory.
+
+    The local ``create_sdk_dump`` artifact is overwritten on every test run, so we mirror
+    it to ``PerfConsts.SHARED_SDK_DUMPS_DIR`` under a unique name built from timestamp,
+    DUT hostname, scenario and test_name. A ``.gz`` suffix is added when the source file
+    is still gzipped, so the destination matches the actual byte stream.
+
+    Failures to fetch the hostname or to copy the file are logged and swallowed so a
+    storage hiccup never fails the test.
+
+    Args:
+        local_dump_path (str): Path to the dump file produced by ``create_sdk_dump``.
+        players: Test players dict (DUT entry used to fetch hostname).
+        test_name (str): Test identifier, e.g. ``ValidationConfig.test_name``.
+        scenario (str): Test scenario identifier, e.g. ``ValidationConfig.scenario``.
+
+    Returns:
+        Optional[str]: Destination path on success, ``None`` if the copy was skipped or
+        failed.
+    """
+    if not os.path.exists(local_dump_path):
+        logger.warning(f"SDK dump not found at {local_dump_path}; skipping shared copy.")
+        return None
+
+    try:
+        hostname = players[PerfConsts.DUT_ALIAS]['cli'].chassis.get_hostname()
+    except Exception as exc:
+        logger.warning(f"Could not fetch DUT hostname for shared SDK dump filename: {exc}")
+        hostname = "unknown-host"
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    extension = ".gz" if _is_gzip_file(local_dump_path) else ""
+    file_name = f"{timestamp}_{hostname}_{scenario}_{test_name}_sdk_dump{extension}"
+    dest_path = os.path.join(PerfConsts.SHARED_SDK_DUMPS_DIR, file_name)
+
+    try:
+        os.makedirs(PerfConsts.SHARED_SDK_DUMPS_DIR, exist_ok=True)
+        shutil.copy2(local_dump_path, dest_path)
+    except OSError as exc:
+        logger.warning(f"Failed to copy SDK dump to shared storage {dest_path}: {exc}")
+        return None
+
+    logger.info(f"SDK dump copied to shared storage: {dest_path}")
+    return dest_path
 
 
 def configure_incremental_dips_on_tg(players, step="basic_test_configuration - configure_incremental_dips_on_tg"):

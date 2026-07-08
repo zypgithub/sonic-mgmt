@@ -5,6 +5,7 @@ import random
 
 import pytest
 
+from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.PhotonicsTool import PhotonicsTool
@@ -12,10 +13,41 @@ from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.platform.constants import TransceiversConsts
+from ngts.tests_nvos.platform.test_platform_transceiver import (
+    _is_gnmi_unavailable,
+    validate_gnmi_transceiver_physical_channel_fields,
+)
+from ngts.tests_nvos.system.gnmi.constants import GnmiConstants
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+
+
+def _build_gnmi_client_or_warn(engines):
+    """Best-effort GnmiClient, built once and reused by the caller.
+
+    Returns None and attaches an Allure warning on any failure (construction
+    or an unreachable gNMI server); never skips or fails the test, so the
+    photonics NVUE assertions stay decoupled from gNMI server health.
+    """
+    try:
+        client = GnmiClient(
+            engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT,
+            engines.dut.username, engines.dut.password,
+            cmd_time=60, verify_tools_installed=True,
+        )
+        _, err = client.gnmic_capabilities(skip_cert_verify=True)
+        if _is_gnmi_unavailable(err):
+            allure.attach('gNMI unavailable WARNING',
+                          f"gNMI server unavailable on {engines.dut.ip}: {err.strip()}")
+            return None
+        return client
+    except Exception as exc:
+        allure.attach('gNMI client WARNING',
+                      f"GnmiClient construction failed: {exc}")
+        return None
 
 
 def _get_transceiver_lists(transceivers: list[str]) -> tuple[list[str], list[str]]:
@@ -67,70 +99,84 @@ def test_show_transceiver_els(engines, devices, nv_command, test_api):
     els_rand = random.choice(els_list)
     els_rand_output = all_data[els_rand]
 
-    with allure.step(f"Verify fields and sub-dict structures for {els_rand}"):
-        with allure.independent_step(f"Verify {els_rand} top-level fields"):
-            expected_fields = set(TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_ELS])
-            actual_fields = set(els_rand_output.keys())
-            ValidationTool.validate_set_equal(actual_fields, expected_fields).verify_result()
+    with allure.step("ELS transceiver validation steps"):
+        with allure.independent_step(f"Verify fields and sub-dict structures for {els_rand}"):
+            with allure.independent_step(f"Verify {els_rand} top-level fields"):
+                expected_fields = set(TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_ELS])
+                actual_fields = set(els_rand_output.keys())
+                ValidationTool.validate_set_equal(actual_fields, expected_fields).verify_result()
 
-        with allure.independent_step(f"Verify {els_rand} temperature sub-dict"):
-            ValidationTool.validate_subset_in_superset(
-                set(TransceiversConsts.ELS_TEMPERATURE_FIELDS), els_rand_output['temperature'].keys()
-            ).verify_result()
-
-        with allure.independent_step(f"Verify {els_rand} voltage sub-dict"):
-            ValidationTool.validate_subset_in_superset(
-                set(TransceiversConsts.ELS_VOLTAGE_FIELDS), els_rand_output['voltage'].keys()
-            ).verify_result()
-
-        with allure.independent_step(f"Verify {els_rand} els-initialization sub-dict"):
-            init_data = els_rand_output['els-initialization']
-            assert init_data, f"{els_rand}: els-initialization is empty"
-            for laser_name, laser_data in init_data.items():
+            with allure.independent_step(f"Verify {els_rand} temperature sub-dict"):
                 ValidationTool.validate_subset_in_superset(
-                    set(TransceiversConsts.ELS_INIT_LASER_FIELDS), laser_data.keys()
+                    set(TransceiversConsts.ELS_TEMPERATURE_FIELDS), els_rand_output['temperature'].keys()
                 ).verify_result()
 
-        for ch_name, ch_data in els_rand_output['channel'].items():
-            with allure.independent_step(f"Verify {els_rand} {ch_name} fields"):
+            with allure.independent_step(f"Verify {els_rand} voltage sub-dict"):
                 ValidationTool.validate_subset_in_superset(
-                    set(TransceiversConsts.ELS_CHANNEL_FIELDS), ch_data.keys()
+                    set(TransceiversConsts.ELS_VOLTAGE_FIELDS), els_rand_output['voltage'].keys()
                 ).verify_result()
 
-    with allure.step("Verify port-mapping, oe-mapping, fault-condition, els-oper-state for each ELS"):
-        for els in els_list:
-            els_output = all_data[els]
-
-            with allure.independent_step(f"Verify {els} mappings"):
-                actual_ports = set(els_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys())
-                expected_ports = set(transceivers_els_to_port_mapping[els])
-                ValidationTool.validate_set_equal(actual_ports, expected_ports).verify_result()
-
-                actual_oes = set(els_output[PlatformConsts.TRANSCEIVER_OE_MAPPING].keys())
-                expected_oes = set(transceivers_els_to_oe_mapping[els])
-                ValidationTool.validate_set_equal(actual_oes, expected_oes).verify_result()
-
-                if els_output[PlatformConsts.TRANSCEIVER_STATUS] == PlatformConsts.INSERTED:
-                    ValidationTool.verify_field_value_in_output(
-                        els_output, PlatformConsts.TRANSCEIVER_FAULT_CONDITION, 'false'
+            with allure.independent_step(f"Verify {els_rand} els-initialization sub-dict"):
+                init_data = els_rand_output['els-initialization']
+                assert init_data, f"{els_rand}: els-initialization is empty"
+                for _laser_name, laser_data in init_data.items():
+                    ValidationTool.validate_subset_in_superset(
+                        set(TransceiversConsts.ELS_INIT_LASER_FIELDS), laser_data.keys()
                     ).verify_result()
 
-                    ValidationTool.verify_field_value_in_output(
-                        els_output, PlatformConsts.TRANSCEIVER_ELS_OPER_STATE,
-                        PlatformConsts.TRANSCEIVER_ELS_OPER_STATE_LASER_ACTIVE
+            for ch_name, ch_data in els_rand_output['channel'].items():
+                with allure.independent_step(f"Verify {els_rand} {ch_name} fields"):
+                    ValidationTool.validate_subset_in_superset(
+                        set(TransceiversConsts.ELS_CHANNEL_FIELDS), ch_data.keys()
                     ).verify_result()
 
-    with allure.step("Verify ELS transceivers have unique serial numbers"):
-        els_transceivers = {name: data for name, data in all_data.items()
-                            if name.startswith(TransceiversConsts.TRANSCEIVERS_ELS)}
-        els_serial_numbers = [data[TransceiversConsts.TRANSCEIVERS_VENDOR_SN] for name, data in els_transceivers.items()
-                              if TransceiversConsts.TRANSCEIVERS_VENDOR_SN in data]
-        assert len(els_serial_numbers) == len(els_transceivers), \
-            f"Not all ELS transceivers have serial numbers: {len(els_serial_numbers)}/{len(els_transceivers)}"
-        unique_serials = set(els_serial_numbers)
-        assert len(unique_serials) == len(els_transceivers), \
-            f"ELS serial numbers are not unique: {len(unique_serials)} unique out of {len(els_transceivers)} ELS. " \
-            f"Duplicates: {[sn for sn in els_serial_numbers if els_serial_numbers.count(sn) > 1]}"
+        with allure.independent_step("Verify port-mapping, oe-mapping, fault-condition, els-oper-state for each ELS"):
+            for els in els_list:
+                els_output = all_data[els]
+
+                with allure.independent_step(f"Verify {els} mappings"):
+                    actual_ports = set(els_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys())
+                    expected_ports = set(transceivers_els_to_port_mapping[els])
+                    ValidationTool.validate_set_equal(actual_ports, expected_ports).verify_result()
+
+                    actual_oes = set(els_output[PlatformConsts.TRANSCEIVER_OE_MAPPING].keys())
+                    expected_oes = set(transceivers_els_to_oe_mapping[els])
+                    ValidationTool.validate_set_equal(actual_oes, expected_oes).verify_result()
+
+                    if els_output[PlatformConsts.TRANSCEIVER_STATUS] == PlatformConsts.INSERTED:
+                        ValidationTool.verify_field_value_in_output(
+                            els_output, PlatformConsts.TRANSCEIVER_FAULT_CONDITION, 'false'
+                        ).verify_result()
+
+                        ValidationTool.verify_field_value_in_output(
+                            els_output, PlatformConsts.TRANSCEIVER_ELS_OPER_STATE,
+                            PlatformConsts.TRANSCEIVER_ELS_OPER_STATE_LASER_ACTIVE
+                        ).verify_result()
+
+        with allure.independent_step("Verify ELS transceivers have unique serial numbers"):
+            els_transceivers = {name: data for name, data in all_data.items()
+                                if name.startswith(TransceiversConsts.TRANSCEIVERS_ELS)}
+            els_serial_numbers = [data[TransceiversConsts.TRANSCEIVERS_VENDOR_SN] for name, data in els_transceivers.items()
+                                  if TransceiversConsts.TRANSCEIVERS_VENDOR_SN in data]
+            assert len(els_serial_numbers) == len(els_transceivers), \
+                f"Not all ELS transceivers have serial numbers: {len(els_serial_numbers)}/{len(els_transceivers)}"
+            unique_serials = set(els_serial_numbers)
+            assert len(unique_serials) == len(els_transceivers), \
+                f"ELS serial numbers are not unique: {len(unique_serials)} unique out of {len(els_transceivers)} ELS. " \
+                f"Duplicates: {[sn for sn in els_serial_numbers if els_serial_numbers.count(sn) > 1]}"
+
+        with allure.independent_step('gNMI ELS field-set validation'):
+            gnmi_client = _build_gnmi_client_or_warn(engines)
+            with allure.independent_step(f"Verify {els_rand} gNMI physical-channels field-set"):
+                if gnmi_client is None:
+                    allure.attach('gNMI ELS skipped', 'client unavailable')
+                else:
+                    # Use the actual ELS status since it may be Removed
+                    els_status = els_rand_output[PlatformConsts.TRANSCEIVER_STATUS]
+                    validate_gnmi_transceiver_physical_channel_fields(
+                        gnmi_client, els_rand, els_status,
+                        expected_field_set=GnmiConstants.EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS_ELS,
+                    )
 
 
 @pytest.mark.platform
@@ -158,51 +204,63 @@ def test_show_transceiver_oe(engines, devices, nv_command, test_api):
     oe_rand = random.choice(oe_list)
     oe_rand_output = all_data[oe_rand]
 
-    with allure.step(f"Verify fields and sub-dict structures for {oe_rand}"):
-        with allure.independent_step(f"Verify {oe_rand} top-level fields"):
-            expected_fields = set(TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_OE])
-            actual_fields = set(oe_rand_output.keys())
-            ValidationTool.validate_set_equal(actual_fields, expected_fields).verify_result()
+    with allure.step("OE transceiver validation steps"):
+        with allure.independent_step(f"Verify fields and sub-dict structures for {oe_rand}"):
+            with allure.independent_step(f"Verify {oe_rand} top-level fields"):
+                expected_fields = set(TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_OE])
+                actual_fields = set(oe_rand_output.keys())
+                ValidationTool.validate_set_equal(actual_fields, expected_fields).verify_result()
 
-        with allure.independent_step(f"Verify {oe_rand} temperature sub-dict"):
-            ValidationTool.validate_subset_in_superset(
-                set(TransceiversConsts.OE_TEMPERATURE_FIELDS), oe_rand_output['temperature'].keys()
-            ).verify_result()
-
-        with allure.independent_step(f"Verify {oe_rand} voltage sub-dict"):
-            ValidationTool.validate_subset_in_superset(
-                set(TransceiversConsts.OE_VOLTAGE_FIELDS), oe_rand_output['voltage'].keys()
-            ).verify_result()
-
-        for ch_name, ch_data in oe_rand_output['channel'].items():
-            with allure.independent_step(f"Verify {oe_rand} {ch_name}"):
+            with allure.independent_step(f"Verify {oe_rand} temperature sub-dict"):
                 ValidationTool.validate_subset_in_superset(
-                    set(TransceiversConsts.OE_CHANNEL_FIELDS), ch_data.keys()
+                    set(TransceiversConsts.OE_TEMPERATURE_FIELDS), oe_rand_output['temperature'].keys()
                 ).verify_result()
 
-                # Validate rx-power sub-dict
+            with allure.independent_step(f"Verify {oe_rand} voltage sub-dict"):
                 ValidationTool.validate_subset_in_superset(
-                    set(TransceiversConsts.OE_RX_POWER_FIELDS), ch_data['rx-power'].keys()
+                    set(TransceiversConsts.OE_VOLTAGE_FIELDS), oe_rand_output['voltage'].keys()
                 ).verify_result()
 
-                # Validate tx-power sub-dict
-                ValidationTool.validate_subset_in_superset(
-                    set(TransceiversConsts.OE_TX_POWER_FIELDS), ch_data['tx-power'].keys()
-                ).verify_result()
+            for ch_name, ch_data in oe_rand_output['channel'].items():
+                with allure.independent_step(f"Verify {oe_rand} {ch_name}"):
+                    ValidationTool.validate_subset_in_superset(
+                        set(TransceiversConsts.OE_CHANNEL_FIELDS), ch_data.keys()
+                    ).verify_result()
 
-    with allure.step("Verify status and mappings for each OE"):
-        for oe in oe_list:
-            oe_output = all_data[oe]
+                    # Validate rx-power sub-dict
+                    ValidationTool.validate_subset_in_superset(
+                        set(TransceiversConsts.OE_RX_POWER_FIELDS), ch_data['rx-power'].keys()
+                    ).verify_result()
 
-            with allure.independent_step(f"Verify {oe}"):
-                ValidationTool.verify_field_value_in_output(
-                    oe_output, PlatformConsts.TRANSCEIVER_STATUS, PlatformConsts.INSERTED
-                ).verify_result()
+                    # Validate tx-power sub-dict
+                    ValidationTool.validate_subset_in_superset(
+                        set(TransceiversConsts.OE_TX_POWER_FIELDS), ch_data['tx-power'].keys()
+                    ).verify_result()
 
-                els_mapping = oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]
-                actual_ports = set(oe_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys())
-                expected_ports = set(transceivers_els_to_port_mapping[els_mapping])
-                ValidationTool.validate_set_equal(actual_ports, expected_ports).verify_result()
+        with allure.independent_step("Verify status and mappings for each OE"):
+            for oe in oe_list:
+                oe_output = all_data[oe]
+
+                with allure.independent_step(f"Verify {oe}"):
+                    ValidationTool.verify_field_value_in_output(
+                        oe_output, PlatformConsts.TRANSCEIVER_STATUS, PlatformConsts.INSERTED
+                    ).verify_result()
+
+                    els_mapping = oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]
+                    actual_ports = set(oe_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys())
+                    expected_ports = set(transceivers_els_to_port_mapping[els_mapping])
+                    ValidationTool.validate_set_equal(actual_ports, expected_ports).verify_result()
+
+        with allure.independent_step('gNMI OE field-set validation'):
+            gnmi_client = _build_gnmi_client_or_warn(engines)
+            with allure.independent_step(f"Verify {oe_rand} gNMI physical-channels field-set"):
+                if gnmi_client is None:
+                    allure.attach('gNMI OE skipped', 'client unavailable')
+                else:
+                    validate_gnmi_transceiver_physical_channel_fields(
+                        gnmi_client, oe_rand, PlatformConsts.INSERTED,
+                        expected_field_set=GnmiConstants.EXPECTED_TRANSCEIVER_PHYSICAL_CHANNEL_FIELDS_OE,
+                    )
 
 
 @pytest.mark.platform

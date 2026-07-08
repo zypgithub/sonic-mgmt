@@ -1,5 +1,6 @@
 import copy
 import os
+import re
 from datetime import datetime
 from enum import StrEnum
 
@@ -137,7 +138,8 @@ class SonicConst:
     TIMEZONE = 'Asia/Jerusalem'
     BASIC_SESSION_INFO_FILE_NAME = "basic_session_info.json"
 
-    BREAKOUT_MODE_WITH_DIFF_LANE_SUPPORTED_SPEEDS_REGEX = r"\dx\d+G\(\d\)\+\dx\d+G\(\d\)"  # i.e, 2x25G(2)+1x50G(2)
+    # i.e, 2x400G[200G](4)+1x800G[400G](4) or 2x25G(2)+1x50G(2)
+    BREAKOUT_MODE_WITH_DIFF_LANE_SUPPORTED_SPEEDS_REGEX = r"\dx\d+G(?:\[[\d+G,]+\])?\(\d+\)\+\dx\d+G(?:\[[\d+G,]+\])?\(\d+\)"
 
     # 1x100G[50G,25G,1G]
     BREAKOUT_MODE_WITH_ADDITIONAL_SUPPORTED_SPEEDS_REGEX = r"\dx\d+G\[[\d+G,]+\]|\dx\d+\[[\d,]+\]"
@@ -188,8 +190,12 @@ class SonicConst:
         "Mellanox-SN5600-C256S1": 100,
         "Mellanox-SN5600-C224O8": 100,
         "Mellanox-SN5640-C512S2": 100,
-        "Mellanox-SN5640-C448O16": 100
+        "Mellanox-SN5640-C448O16": 100,
+        "ACS-SN6600_LD-SPIL-8": 200,           # SPC6 leaf: 8×200G split, 512 ports at 200G each
+        "Mellanox-SN6600_LD-P64O128C2": 800,  # SPC6 leaf alt SKU (2+2+4 split) — kept for reference
+        "Mellanox-SN6600_LD-P128C2": 800,     # TODO: confirm correct downstream port speed for SPC6 spine with arch
     }
+    NO_DYNAMIC_BUFFER_HWSKU_PREFIXES = ('MELLANOX-SN5640', 'MELLANOX-SN6600_LD')
 
 
 class CliType:
@@ -234,6 +240,9 @@ class DbConstants:
                    CliType.SKYNET: {'server': 'm-il-misql-01-prd.public.fbd32f5072b8.database.windows.net,3342', 'database': 'skynet',
                                     'username': os.getenv("SKYNET_SERVER_USER"),
                                     'password': os.getenv("SKYNET_SERVER_PASSWORD")}}
+
+    MARS_RESPOND_TABLE = 'mars_respond'
+    MARS_RESPOND_CI_TABLE = 'mars_respond_ci'
 
 
 class InfraConst:
@@ -408,9 +417,13 @@ class PlatformTypesConstants:
     PLATFORM_SALAMANDRA = 'x86_64-nvidia_sn6600-r0'
     PLATFORM_SALAMANDRA_SIMX = 'x86_64-nvidia_sn6600_simx-r0'
     PLATFORM_CHAMELEON_SINGLE_SIMX = 'x86_64-nvidia_sn5810_ld_simx-r0'
+    PLATFORM_SALAMANDRA_LD = 'x86_64-nvidia_sn6600_ld-r0'
+    PLATFORM_SALAMANDRA_LD_SIMX = 'x86_64-nvidia_sn6600_ld_simx-r0'
+    PLATFORM_CHAMELEON_SINGLE_LD = 'x86_64-nvidia_sn6810_ld-r0'
 
     BISON_PLATFORMS = [PLATFORM_BISON, PLATFORM_BISON_SIMX]
     SALAMANDRA_PLATFORMS = [PLATFORM_SALAMANDRA, PLATFORM_SALAMANDRA_SIMX]
+    SALAMANDRA_LD_PLATFORMS = [PLATFORM_SALAMANDRA_LD, PLATFORM_SALAMANDRA_LD_SIMX]
     LOGS_ON_TMPFS_PLATFORMS = [PLATFORM_PANTHER]
 
 
@@ -1323,14 +1336,15 @@ class MarsConstants:
     EXTRA_PACKAGE_PATH_LIST = ["/usr/lib64/python2.7/site-packages"]
 
     TOPO_ARRAY = (
-        "t0-56-po2vlan", "t0", "t1-lag", "t1-lag-c224o8", "t1-28-lag", "t1-32-lag", "ptf32",
+        "t0-56-po2vlan", "t0", "t0-16", "t1-lag", "t1-lag-c224o8", "t1-28-lag", "t1-32-lag", "ptf32",
         "t0-64", "t0-64-256", "t0-c256", "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120",
-        "t0-256", "t1-56-lag", "t1-isolated-d82u1", "t1-isolated-d224u8", "t0-isolated-d128u128s1",
-        "t0-isolated-d16u16s1", "t0-isolated-d16u16s2", "t0-28", "dualtor", "dualtor-64",
+        "t0-256", "t1-56-lag", "t1-isolated-d32u1s2", "t1-isolated-d82u1", "t1-isolated-d224u8", "t1-isolated-d448u15-lag", "t0-isolated-d128u128s1",
+        "t0-isolated-d16u16s1", "t0-isolated-d16u16s2", "t0-28", "dualtor", "dualtor-64", "t0-isolated-d256u256s2",
         "dualtor-aa", "t0-isolated-d2u254s1", "t1-isolated-d254u2s1", "dualtor-64-breakout",
-        "dualtor-aa-64-breakout", "t0-88-o8c80", "ptp-256", "t1-isolated-d28u1", "t1-isolated-d56u2",
-        "t0-isolated-d32u32s2", "t0-isolated-v6-d32u32s2", "t0-isolated-d2u254s2", "t1-isolated-v6-d56u1-lag", "t1-48-lag",
-        "t0-isolated-d128u128s2", "t0-isolated-d2u510s2", "t1-isolated-d510u2"
+        "dualtor-aa-64-breakout", "t0-88-o8c80", "ptp-256", "ptp-130", "t1-isolated-d28u1", 't1-isolated-d28u4',
+        "t1-isolated-d56u2", "t0-isolated-d32u32s2", "t0-isolated-v6-d32u32s2", "t0-isolated-d2u254s2", "t0-isolated-d32u32s2-mix",
+        "t1-isolated-v6-d56u1-lag", "t1-48-lag", "t1-isolated-d56u1-lag", "t0-isolated-d128u128s2", "t0-isolated-d2u510s2", "t1-isolated-d510u2",
+        "bmc-dual-mgmt"
     )
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa", "dualtor-64-breakout", "dualtor-aa-64-breakout")
     TOPO_ARRAY_HA = ("t1-smartswitch-ha",)
@@ -1348,9 +1362,9 @@ class MarsConstants:
 
     BRANCH_PTF_MAPPING = {'202012': '42007',
                           '202106': '42007',
-                          'master': '1092864'
+                          'master': '1123724'
                           }
-    DEFAULT_PTF_TAG = '1092864'
+    DEFAULT_PTF_TAG = '1123724'
 
 
 class AppExtensionInstallationConstants:
@@ -1425,12 +1439,93 @@ class SonicDeployConstants:
     DEFAULT_HWSKU_FILE_PATH = 'ansible/files/hwsku_vars/default_hwsku.json'
     PRODUCTION_DUTS = ["bobcat-10", "mtvr-moose-11"]
     DPU_DATA_INTERFACES = ['Ethernet224', 'Ethernet232', 'Ethernet240', 'Ethernet248']
+    SINGLE_SERVICE_PORT_PLATFORMS = [PlatformTypesConstants.PLATFORM_MOOSE_SIMX]
     ADD_TOPO_TIMEOUT = 3600
     ADD_TOPO_TIMEOUT_FACTOR = 1
-    ADD_TOPO_TIMEOUT_SCALE = 14400
+    ADD_TOPO_TIMEOUT_SCALE = 7200
+    ADD_TOPO_TIMEOUT_BGP_SCALE = 14400
     REMOVE_TOPO_TIMEOUT = 600
     REMOVE_TOPO_TIMEOUT_SCALE = 3600
-    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't0-isolated-d2u510s2', 't1-isolated-d510u2', 't1-isolated-v6-d56u1-lag']
+    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't1-isolated-d448u15-lag',
+                             't0-isolated-d2u510s2', 't1-isolated-d510u2', 't1-isolated-v6-d56u1-lag',
+                             't0-isolated-d256u256s2', 't1-isolated-d508u1s2', 't2-isolated-d128s2']
+    BGP_SCALE_TOPOLOGIES_LIST = ['t0-isolated-d2u510s2']
+    # 'slm-' DUTs are excluded from gen-mg in start_community_background_threads by default.
+    # BMC setups (e.g. bmc-dual-mgmt) still need their minigraph generated, so list the
+    # 'slm-' DUT names that must run gen-mg here. Value is the DUT name used to build the
+    # gen-mg command (the switch dut_name, e.g. 'slm-chipless-2700a1-146'), not the '-bmc' host.
+    SLM_GEN_MG_ALLOWLIST = ['slm-chipless-2700a1-146']
+
+
+class BmcDeployConstants:
+    """
+    Constants used for BMC SONiC image installation.
+
+    Reference: https://nvidia.atlassian.net/wiki/spaces/SW/pages/3239673921/BMC+SONiC#2.-Image-installation
+    """
+    # TFTP + HTTP server
+    BMC_TFTP_SERVER_IP = "10.228.227.54"
+    BMC_HTTP_SERVER_URL = f"http://{BMC_TFTP_SERVER_IP}:8080"
+
+    # File parameters
+    BMC_FIT_FILE_NAME = "sonic_tftp_install.fit"
+    BMC_EMMC_IMG_FILE_NAME = "sonic-aspeed-arm64-emmc.img.gz"
+
+    # U-Boot parameters
+    UBOOT_PROMPT = "=> "
+    UBOOT_AUTOBOOT_HINT = "Hit any key to stop autoboot"
+    UBOOT_LOAD_ADDR = "0x432000000"
+    UBOOT_BOOTCONF_DEFAULT = "sonic-ast2700-nvidia-spc6-bmc"
+    UBOOT_BOOTARGS_TAILS = (
+        'console=ttyS12,115200n8 earlycon=uart8250,mmio32,0x14c33b00 ',
+        'root=/dev/ram0 rw ',
+        'sonic_install.tftp_server=${{serverip}} ',
+        'sonic_install.bmc_image={http_server}/{emmc_img} ',
+    )
+
+    # Marker parameter
+    EMMC_WRITE_DONE_MARKER = "U-Boot environment updated"
+    BMC_LOGIN_PROMPT = "login:"
+
+    # Post-install SSH credentials (verify login + chrony clock sync).
+    BMC_SONIC_OS_USERNAME = os.getenv("SONIC_SWITCH_USER")
+    BMC_SONIC_OS_PASSWORD = os.getenv("SONIC_SWITCH_PASSWORD")
+
+    # BMC DEVICE_METADATA
+    BMC_DEVICE_METADATA_TYPE = "NetworkBmc"
+
+    # DHCP recovery workaround (Redmine #5091238): after a reboot / power-cycle
+    # the ftgmac100 NIC reports link up but no DHCP offer arrives, so eth0 never
+    # gets a lease. A systemd timer periodically reloads the driver and re-runs
+    # dhclient whenever eth0 has no IPv4 address (a oneshot at boot is not enough
+    # - the IP can flap right after boot and the lease can drop at runtime). The
+    # script and units are staged in ngts/common/ and installed during the BMC
+    # deploy; the timer is what gets enabled.
+    BMC_DHCP_WA_TIMER_NAME = "bmc-net-recover.timer"
+    BMC_DHCP_WA_SCRIPT_SRC = "bmc_net_recover.sh"
+    BMC_DHCP_WA_SERVICE_SRC = "bmc-net-recover.service"
+    BMC_DHCP_WA_TIMER_SRC = "bmc-net-recover.timer"
+    BMC_DHCP_WA_SCRIPT_DST = "/usr/local/bin/bmc_net_recover.sh"
+    BMC_DHCP_WA_SERVICE_DST = "/etc/systemd/system/bmc-net-recover.service"
+    BMC_DHCP_WA_TIMER_DST = "/etc/systemd/system/bmc-net-recover.timer"
+
+    # AST HW types allowed to run a SONiC BMC image. AST2600 is
+    # OpenBMC-only. AST2700-A1 is here temporarily; drop it once
+    # AST2700-A1 is moved to OpenBMC-only.
+    SONIC_BMC_SUPPORTED_HW_TYPES = ('AST2700-A1', 'AST2700-A2')
+
+    # BMC HWSKU
+    BMC_HWSKU = "NVIDIA-AST2700-BMC"
+
+    # Timeouts (seconds).
+    UBOOT_PROMPT_TIMEOUT = 120         # time to interrupt autoboot and reach U-Boot prompt
+    DHCP_TIMEOUT = 60                  # one DHCP attempt timeout
+    DHCP_RETRY_LIMIT = 3               # number of DHCP retries when the first attempt fails
+    TFTP_DOWNLOAD_TIMEOUT = 900        # time to download the FIT image via TFTP
+    TFTP_DOWNLOAD_RETRY_LIMIT = 3      # retries when TFTP fails (e.g. ARP retry exceeded)
+    EMMC_WRITE_TIMEOUT = 1800          # time for the eMMC write to finish
+    BMC_BOOT_TIMEOUT = 900             # time for the BMC to come up and present login prompt
+    BMC_CHRONY_SETTLE_SECONDS = 5      # wait after starting chrony before forcing 'chronyc -a makestep'
 
 
 class RebootTestConstants:
@@ -1630,9 +1725,10 @@ class BugHandlerConst:
     BH_1_5_2_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_5_2/bin/"
     BH_1_5_3_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_5_3/bin/"
     BH_2026_1_1_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/2026_1_1/bin/"
+    BH_2026_6_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/2026_6/bin/"
     BUG_HANDLER_PATH = {
-        "SONiC-Design": BH_2026_1_1_PATH,
-        "SONiC-Verification": BH_2026_1_1_PATH,
+        "SONiC-Design": BH_2026_6_PATH,
+        "SONiC-Verification": BH_2026_6_PATH,
         "'NVOS - Design'": "/auto/sw_tools/Internal/BugHandling/RELEASES/2026_2/bin/",
         "default": BH_1_5_2_PATH
     }
@@ -1664,6 +1760,7 @@ class BugHandlerConst:
     BUG_HANDLER_STATUS = "status"
     BUG_HANDLER_ACTION = "action"
     BUG_HANDLER_BUG_ID = "bug_id"
+    LA_BUG_HANDLER_ATTACHMENT_PREFIX = "la_bug_handler_"
     BUG_HANDLER_MESSAGES = "messages"
     LA_RM_ISSUES_DICT = "la_rm_issues_dict"
     BUG_HANDLER_FAILURE_EXCEPTION = "The log analyzer bug handler has failed"
@@ -1712,6 +1809,8 @@ class FatalStateConsts:
 
 class GnmiConsts:
     GNMI_DOCKER = 'nv-gnmi'
+    GNMI_SOCKET_PATH = '/var/run/nv-gnmi/gnmi.sock'
+    GNMI_READY_STABILIZATION_SEC = 2
     GNMI_STATE_FIELD = 'state'
     GNMI_STATE_ENABLED = 'enabled'
     GNMI_STATE_DISABLED = 'disabled'
@@ -1771,7 +1870,7 @@ class IndependentModuleConst:
     IM_INTERFACE_SETTINGS_FILE_PATH = "/usr/share/sonic/device/{PLATFORM}"
     PLATFORM_GENERATION = ['4280', '4700', '5600', '5610']
     AOC_VENDOR_PN = ['MMS1V00-WM', 'MMS4X00-NS', 'MFA7U10-H003', 'MMA4Z00-NS', '7123-G78-09', 'ALQA9N11ADLA1580',
-                     'ALQA9N03ADLA1580', 'T-OH8CNT-NMT']
+                     'ALQA9N03ADLA1580', 'T-OH8CNT-NMT', 'MMS1X00-NS400', 'T-RH8ENH-NMT', '980-9IAU9-00XM0H']
 
 
 class SSHConsts:
@@ -1779,6 +1878,12 @@ class SSHConsts:
     CL_CREDS = {"username": os.getenv("CUMULUS_SWITCH_USER"), "password": os.getenv("CUMULUS_SWITCH_PASSWORD")}
     DVS_CREDS = {"username": os.getenv("DVS_ROOT_USER"), "password": os.getenv("DVS_ROOT_PASSWORD")}
     SSH_CREDS_DICT = {"SONiC": SONIC_CREDS, "Cumulus": CL_CREDS, "DVS": DVS_CREDS}
+
+    CLI_TYPE_TO_NOS = {
+        CliType.NVUE: "Cumulus",
+        CliType.SONIC: "SONiC",
+        CliType.DVS: "DVS",
+    }
 
 
 class DoroceConsts:
@@ -1845,7 +1950,7 @@ class WJHConsts:
 
 class FanoutVersionConsts:
     EXPECTED_MLNX_VERSION = ["3.10.4206", "3.10.4302"]
-    EXPECTED_SONIC_VERSION_LIST = ["202412_RC.172-b633d62aa_Internal", "202505_RC.94-7d1d472f8_Internal", "202511_RC.111-135a11a91_Internal"]
+    EXPECTED_SONIC_VERSION_LIST = ["202511_RC.119-8bde1a082_Internal", "202511_RC.129-48da86131_Internal", "master_SPC6_ES.52-7abae559a_Internal"]
 
 
 class SerialConsts:
@@ -1883,3 +1988,31 @@ class SimxCommunityConsts:
     FILES_TO_TEMPLATE = {'sonic_nvidia_devices.j2', 'sonic_nvidia_links.j2', 'fanout_port_config.ini', 'lab.j2', 'testbed.j2', 'inventory.j2'}
     # HwSKU -> simx_community platform subdir when different from filtered_platform (e.g. V448P16S2 uses SN6600_LD)
     HWSKU_PLATFORM_DIR_OVERRIDE = {"Mellanox-SN6600-V448P16S2": "SN6600_LD"}
+
+
+class TxSquelchConsts:
+    SAI_TX_SQUELCH_MODE_KV = "SAI_KEY_TX_SQUELCH_MODE"
+
+    SUPPORTED_HWSKUS = frozenset({
+        "Mellanox-SN5640-C448O16",
+        "Mellanox-SN5640-C512S2",
+        "Mellanox-SN6600_LD-P128C2",
+        "Mellanox-SN6600_LD-P64O128C2"
+    })
+
+    # KV mode values: 0=AUTO, 1=ENABLE, 2=DISABLE.
+    TX_SQUELCH_MODE_AUTO = "0"
+    TX_SQUELCH_MODE_ENABLE = "1"
+    TX_SQUELCH_MODE_DISABLE = "2"
+    ALL_TX_SQUELCH_MODES = [
+        TX_SQUELCH_MODE_ENABLE,
+        TX_SQUELCH_MODE_DISABLE,
+        TX_SQUELCH_MODE_AUTO
+    ]
+
+    # Expected SDK string per KV mode.
+    KV_TO_SQUELCH_STR = {
+        TX_SQUELCH_MODE_ENABLE: "enabled",
+        TX_SQUELCH_MODE_DISABLE: "disabled",
+        TX_SQUELCH_MODE_AUTO: "enabled"
+    }

@@ -58,3 +58,4 @@ ptf-r-tigon-21 ansible_host=10.215.20.122 ansible_ssh_user="{{ lookup('env','PTF
 
 [pdu]
 pdu-10-208-2-11 ansible_host=10.208.2.11 protocol=snmp
+pdu-10-208-0-17 ansible_host=10.208.0.17 protocol=snmp

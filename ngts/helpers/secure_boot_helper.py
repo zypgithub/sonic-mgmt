@@ -11,11 +11,11 @@ from tests.common.utilities import wait_until
 from ngts.constants.constants import MarsConstants
 from ngts.helpers.json_file_helper import extract_fw_data
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
-from infra.tools.general_constants.constants import DockerBringupConstants
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DockerBringupConstants
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli
 from ngts.tests.nightly.secure.constants import SecureBootConsts, SonicSecureBootConsts, SecureUpgradeConsts
 
@@ -108,11 +108,11 @@ class SonicSecureBootHelper(SecureBootHelper):
                                                            "Debian GNU/Linux.*",
                                                            "Please press Enter to activate this console",
                                                            DefaultConnectionValues.LOGIN_REGEX,
-                                                           DefaultConnectionValues.DEFAULT_PROMPTS[0],
+                                                           rf"{DefaultConnectionValues.DEFAULT_USER}@[^\r\n]*:.*[$#]",
                                                            "Malformed binary after Attribute Certificate Table",
                                                            "GNU GRUB  version"],
                                                     timeout=SonicSecureBootConsts.ONIE_TIMEOUT)
-            if respond <= 2:
+            if respond in [0, 1, 2, 5]:
                 logger.info("SONIC mode")
                 return True
             else:
@@ -183,6 +183,11 @@ class SonicSecureBootHelper(SecureBootHelper):
         image_name = http_image_path.split('/')[-1]
         local_image_file = '/tmp/' + image_name
         logger.info('Starting download sonic image via http')
+        try:
+            resolv_conf = self.serial_engine.run_cmd_and_get_output('cat /etc/resolv.conf')
+            logger.info(f"ONIE DNS info /etc/resolv.conf:{resolv_conf}")
+        except Exception as e:
+            logger.warning(f"Failed to read /etc/resolv.conf: {e}")
         download_image_cmd = f"wget -O {local_image_file} {http_image_path}"
         retry_call(self.serial_engine.run_cmd,
                    fargs=[download_image_cmd, "100%"],
@@ -257,9 +262,10 @@ class SonicSecureBootHelper(SecureBootHelper):
                                    DefaultConnectionValues.DEFAULT_PROMPTS)
 
     def ensure_onie_mode(self):
-        _, respond = self.serial_engine.run_cmd('\r', ["ONIE:"],
-                                                timeout=3)
-        assert respond == 0, "Switch is not in ONIE mode"
+        output, respond = self.serial_engine.run_cmd('\r', ["ONIE:"],
+                                                     timeout=3)
+        if respond != 0:
+            raise RuntimeError(f"Switch is not in ONIE mode. Output: {output}")
 
     def login_into_onie_mode(self):
         """
@@ -296,6 +302,7 @@ class SonicSecureBootHelper(SecureBootHelper):
                                        DefaultConnectionValues.DEFAULT_PROMPTS)
             self.serial_engine.run_cmd(DefaultConnectionValues.ONIE_PASSWORD, DefaultConnectionValues.DEFAULT_PROMPTS)
         self.serial_engine.run_cmd('\r', DefaultConnectionValues.DEFAULT_PROMPTS)
+        self.ensure_onie_mode()
 
         self.serial_engine.run_cmd_and_get_output('onie-stop')
 
@@ -616,6 +623,7 @@ class SonicSecureBootHelper(SecureBootHelper):
         """
         This function will remove the staged onie pkg after onie update failure
         """
+        self.ensure_onie_mode()
         _, respond = self.serial_engine.run_cmd('onie-fwpkg purge', ["Removing all pending firmware updates (y/N)?"])
         if respond == 0:
             self.serial_engine.run_cmd('y')

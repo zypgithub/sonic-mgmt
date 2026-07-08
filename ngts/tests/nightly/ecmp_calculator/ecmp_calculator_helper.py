@@ -7,7 +7,7 @@ import copy
 
 from jinja2 import Template
 from retry.api import retry_call
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.tests.nightly.ecmp_calculator.constants import DATA_V4, DATA_V6, OUTER_NOLY_PACKET_BASIC_DATA, \
     OUTER_INNER_PACKET_BASIC_DATA, OUTER_NOLY_PACKET_V6_BASIC_DATA, OUTER_INNER_PACKET_V6_BASIC_DATA
 

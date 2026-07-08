@@ -13,7 +13,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from urllib.parse import urlencode
 from perscache import Cache
-from infra.tools.redmine.redmine_api import get_issue_list_info
+from devts.infra.tools.redmine.redmine_api import get_issue_list_info
 from ngts.helpers.bug_handler.bug_handler_helper import is_current_ver_newer_or_equal_than_fixed_ver
 from ngts.helpers.redmine_cache_helper import access_redmine_cache
 

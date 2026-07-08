@@ -6,7 +6,7 @@ import string
 
 import pexpect
 
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool

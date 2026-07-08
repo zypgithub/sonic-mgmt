@@ -99,6 +99,11 @@ class snmpPduController(PduControllerBase):
         RARITAN_PORT_STATUS_BASE_OID = "1.3.6.1.4.1.13742.6.4.1.2.1.3"
         RARITAN_PORT_CONTROL_BASE_OID = "1.3.6.1.4.1.13742.6.4.1.2.1.2"
         RARITAN_PORT_POWER_BASE_OID = "1.3.6.1.4.1.13742.6.5.4.3.1.4"
+        # MIB OID for 'RNX UPDU'
+        RNX_PORT_NAME_BASE_OID = "1.3.6.1.4.1.55108.2.9.2.1.2"
+        RNX_PORT_STATUS_BASE_OID = "1.3.6.1.4.1.55108.2.9.2.1.81"
+        RNX_PORT_CONTROL_BASE_OID = "1.3.6.1.4.1.55108.2.9.2.1.80"
+        RNX_PORT_POWER_BASE_OID = "1.3.6.1.4.1.55108.2.9.2.1.53"
         self.STATUS_ON = "1"
         self.STATUS_OFF = "0"
         self.CONTROL_ON = "1"
@@ -149,6 +154,17 @@ class snmpPduController(PduControllerBase):
             self.PORT_POWER_BASE_OID = RARITAN_PORT_POWER_BASE_OID
             self.STATUS_ON = "7"
             self.STATUS_OFF = "8"
+            self.CONTROL_OFF = "0"
+            self.has_lanes = False
+            self.max_lanes = 1
+        elif self.pduType == "RNX":
+            self.PORT_NAME_BASE_OID = RNX_PORT_NAME_BASE_OID
+            self.PORT_STATUS_BASE_OID = RNX_PORT_STATUS_BASE_OID
+            self.PORT_CONTROL_BASE_OID = RNX_PORT_CONTROL_BASE_OID
+            self.PORT_POWER_BASE_OID = RNX_PORT_POWER_BASE_OID
+            self.STATUS_ON = "1"
+            self.STATUS_OFF = "0"
+            self.CONTROL_ON = "1"
             self.CONTROL_OFF = "0"
             self.has_lanes = False
             self.max_lanes = 1

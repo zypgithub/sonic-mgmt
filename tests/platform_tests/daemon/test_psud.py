@@ -16,6 +16,7 @@ from tests.common.fixtures.duthost_utils import get_pdb_num
 from tests.common.platform.daemon_utils import check_pmon_daemon_enable_status
 from tests.common.platform.processes_utils import check_critical_processes
 from tests.common.utilities import compose_dict_from_cli, skip_release, wait_until
+from tests.platform_tests.cli.util import get_skip_mod_list
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ expected_stopped_status = "STOPPED"
 expected_exited_status = "EXITED"
 
 daemon_name = "psud"
+daemon_dut_hostname_fixture = "enum_supervisor_dut_hostname"
 
 SIG_STOP_SERVICE = None
 SIG_TERM = "-15"
@@ -59,15 +61,6 @@ def teardown_module(duthosts, enum_supervisor_dut_hostname):
     logger.info(
         "Tearing down: to make sure all the critical services, interfaces and transceivers are good")
     check_critical_processes(duthost, watch_secs=10)
-
-
-@pytest.fixture
-def check_daemon_status(duthosts, enum_supervisor_dut_hostname):
-    duthost = duthosts[enum_supervisor_dut_hostname]
-    daemon_status, daemon_pid = duthost.get_pmon_daemon_status(daemon_name)
-    if daemon_status != "RUNNING":
-        duthost.start_pmon_daemon(daemon_name)
-        time.sleep(10)
 
 
 def check_if_daemon_restarted(duthost, daemon_name, pre_daemon_pid):
@@ -201,6 +194,10 @@ def test_pmon_psud_running_status(duthosts, enum_supervisor_dut_hostname, data_b
 
     pdb_num = get_pdb_num(duthost)
     if pdb_num > 0:
+        if 'simx' in duthost.facts.get('platform', ''):
+            logger.info("Skipping PDB STATE_DB checks on SIMX platform")
+            return
+
         pdb_keys = _get_pdb_keys(data_before_restart)
         pytest_assert(len(pdb_keys) > 0,
                       "PDB platform detected but no PSU_INFO|PDB * keys found in STATE_DB")
@@ -246,6 +243,7 @@ def test_pmon_psud_psu_status_and_led(duthosts, enum_supervisor_dut_hostname, da
     pytest_assert(data_before_restart['keys'], "No PSU_INFO keys found in STATE_DB")
     pytest_assert(data_before_restart['data'], "No PSU_INFO data found in STATE_DB")
 
+    psu_skip_list = get_skip_mod_list(duthost, ['psus'])
     present_psu_count = 0
     psu_status_failures = []
     psu_led_failures = []
@@ -253,6 +251,10 @@ def test_pmon_psud_psu_status_and_led(duthosts, enum_supervisor_dut_hostname, da
     for psu_key, psu_data in data_before_restart['data'].items():
         psu_name = psu_key.replace("PSU_INFO|", "")
         presence = psu_data.get("presence", "false")
+
+        if psu_name in psu_skip_list:
+            logger.info("PSU {} is in skip list, skipping validation".format(psu_name))
+            continue
 
         if presence.lower() != "true":
             logger.info("PSU {} is not present, skipping status and LED check".format(psu_name))

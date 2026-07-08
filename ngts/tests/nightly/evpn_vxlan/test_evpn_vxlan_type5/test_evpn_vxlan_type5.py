@@ -19,7 +19,7 @@ from ngts.helpers.vxlan_helper import send_and_validate_traffic, verify_ecmp_cou
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from scapy.layers.inet6 import IP
 from scapy.layers.inet6 import IPv6
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 
 """
 

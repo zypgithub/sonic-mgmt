@@ -16,6 +16,7 @@ ACL_SCALE_TEST_NAME = 'test_acl_config_scale'
 CONFIG_DB_DUT_PATH = '/etc/sonic/config_db.json'
 CONFIG_DB_DUT_TEMP_PATH = '/tmp/config_db.json'
 CONFIG_DB_COPY_NAME = 'config_db_copy.json'
+CONFIG_DB_COPY_PATH = os.path.join('/tmp', CONFIG_DB_COPY_NAME)
 PRE_RUNNING_CONFIG_PATH = '/tmp/pre_running_config.json'
 MAX_PORTS_TEST_LIST = [REBOOT_TEST_NAME, ACL_SCALE_TEST_NAME]
 INDEPENDENT_MODULE_PLATFORMS = [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_GAUR,
@@ -56,7 +57,8 @@ def pytest_collection_modifyitems(session, config, items):
                                       PlatformTypesConstants.PLATFORM_LEOPARD: 116,
                                       PlatformTypesConstants.PLATFORM_LEOPARD_DC: 116,
                                       PlatformTypesConstants.PLATFORM_MOOSE: 244,
-                                      PlatformTypesConstants.PLATFORM_GAUR: 244
+                                      PlatformTypesConstants.PLATFORM_GAUR: 244,
+                                      PlatformTypesConstants.PLATFORM_CHAMELEON_SINGLE_LD: 504,
                                       }
 
         setup_name = session.config.option.setup_name
@@ -71,7 +73,7 @@ def pytest_collection_modifyitems(session, config, items):
         # Save available config_db.json from DUT to sonic-mgmt docker /tmp folder
         logger.info(f'Copy original config_db.json from DUT to sonic-mgmt /tmp folder')
         dut_engine.copy_file(source_file=f"{PRE_RUNNING_CONFIG_PATH}",
-                             dest_file=f'/tmp/{CONFIG_DB_COPY_NAME}', file_system='/tmp/', direction='get')
+                             dest_file=CONFIG_DB_COPY_PATH, file_system='/tmp/', direction='get')
 
         if platform in PlatformTypesConstants.BISON_PLATFORMS:
             logger.info("Bison is already configured to max ports")
@@ -118,7 +120,7 @@ def pytest_collection_modifyitems(session, config, items):
         config_db_file_name = f'{sonic_ver}_config_db.json'
         orig_config_db_shared_path = os.path.join(shared_path, config_db_file_name)
 
-        original_config_db = read_config_db_from_shared_location(orig_config_db_shared_path)
+        original_config_db = get_original_config_db(orig_config_db_shared_path, CONFIG_DB_COPY_PATH)
         existing_ports_num = len(original_config_db['PORT'])
 
         if expected_ports_num != existing_ports_num:
@@ -146,7 +148,7 @@ def reload_config(session, platform_params, chip_type, dut_cli_object):
     dut_engine = topology.players['dut']['engine']
     cli_object = SonicCli(topology)
     logger.info(f'Copy original config_db.json file from sonic-mgmt /tmp folder to  DUT /tmp/ folder')
-    dut_engine.copy_file(source_file=f"/tmp/{CONFIG_DB_COPY_NAME}",
+    dut_engine.copy_file(source_file=CONFIG_DB_COPY_PATH,
                          dest_file=CONFIG_DB_DUT_TEMP_PATH, file_system='/tmp/',
                          overwrite_file=True, verify_file=False)
     logger.info(f'Copy db file from DUT /tmp folder to DUT {CONFIG_DB_DUT_PATH}')
@@ -164,8 +166,24 @@ def reload_config(session, platform_params, chip_type, dut_cli_object):
     dut_cli_object.general.reload_flow(ports_list=None, topology_obj=topology, reload_force=True)
 
 
-def read_config_db_from_shared_location(config_db_path):
-    # Get config from shared location
+def get_original_config_db(shared_config_db_path, dut_config_db_copy_path):
+    if os.path.exists(shared_config_db_path):
+        logger.info(f'Loading config_db from shared location: {shared_config_db_path}')
+        return read_config_db_from_file(shared_config_db_path)
+
+    logger.info(
+        f'Shared config_db not found at {shared_config_db_path}, '
+        f'using pre-test DUT config from {dut_config_db_copy_path}'
+    )
+    if not os.path.exists(dut_config_db_copy_path):
+        raise FileNotFoundError(
+            f'config_db not found at shared path ({shared_config_db_path}) '
+            f'or local copy ({dut_config_db_copy_path})'
+        )
+    return read_config_db_from_file(dut_config_db_copy_path)
+
+
+def read_config_db_from_file(config_db_path):
     with open(config_db_path) as conf_obj:
         config_db = json.load(conf_obj)
     return config_db
@@ -230,9 +248,18 @@ def generate_config_db(config_db, engine, expected_num_of_ports, platform, dut_h
     nonsplitable_ports = get_nonsplitable_ports(platform, topology, physical_dut_ports)
     target_ports = {}
     # Add ports connected from DUT to hosts
+    if platform == PlatformTypesConstants.PLATFORM_CHAMELEON_SINGLE_LD:
+        port_speed = "200000"
+        # Remove the port connected to server, which is not connected to host A and B
+        physical_dut_ports.pop("Ethernet4")
+        # Remove service ports
+        physical_dut_ports.pop("Ethernet512")
+        physical_dut_ports.pop("Ethernet513")
+
     for port in dut_host_ports:
         target_ports[port] = config_db['PORT'][port]
-        physical_dut_ports.pop(port)
+        if port in physical_dut_ports:
+            physical_dut_ports.pop(port)
 
     aliases_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
     added_ports_counter = len(target_ports)

@@ -19,7 +19,7 @@ from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_one_traffic
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import (get_ports_avg_bw, get_tc_occ, convert_to_percentage)
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 
 logger = logging.getLogger()
 

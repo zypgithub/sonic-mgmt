@@ -3,7 +3,7 @@ import json
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
 
-from infra.tools.nvidia_air_tools.air import (
+from devts.infra.tools.nvidia_air_tools.air import (
     SONIC_MGMT_RPYC_PORT,
     SONIC_MGMT_SSH,
     generate_port_mapping_dict,
@@ -12,8 +12,8 @@ from infra.tools.nvidia_air_tools.air import (
     get_simulation_hosts_services_dict,
     get_project_from_simulation_name
 )
-from infra.tools.general_constants.air_constants import HostsConstants, Project
-from infra.tools.nvidia_air_tools.air_metadata import SimulationMetadataHandler, SimulationMetadata
+from devts.infra.tools.general_constants.air_constants import HostsConstants, Project
+from devts.infra.tools.nvidia_air_tools.air_metadata import SimulationMetadataHandler, SimulationMetadata
 
 SETUPS_LOCATION = {Project.SONIC: "/auto/sw_regression/system/SONIC/MARS/conf/topo/",
                    **{p: "/auto/sysgwork/G/MARS_conf/stm_nvos/topo/" for p in Project.get_team_projects('NVOS')}}

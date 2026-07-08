@@ -4,11 +4,11 @@ import pytest
 from retry.api import retry_call
 from copy import deepcopy
 from ngts.config_templates.ip_config_template import IpConfigTemplate
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.tests.nightly.auto_negotition.conftest import get_all_advertised_speeds_sorted_string, get_interface_cable_width, \
     get_matched_types, convert_speeds_to_mb_format
 from ngts.constants.constants import AutonegCommandConstants, PlatformTypesConstants
-from ngts.helpers.interface_helpers import get_alias_number, get_lb_mutual_speed, speed_string_to_int_in_mb
+from ngts.helpers.interface_helpers import get_alias_number, get_alias_letter, get_lb_mutual_speed, speed_string_to_int_in_mb
 from ngts.tests.nightly.conftest import compare_actual_and_expected
 from ngts.tests.nightly.auto_negotition.auto_fec_common import TestAutoFecBase
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
@@ -65,6 +65,18 @@ class TestAutoNegBase(TestAutoFecBase):
         self.is_simx = is_simx
         self.dut_mac = self.cli_objects.dut.mac.get_mac_address_for_interface("eth0")
         self.dut_hostname = self.cli_objects.dut.chassis.get_hostname()
+
+    def get_sibling_split_ports(self, port):
+        """Return all sibling sub-ports sharing the same physical port, excluding the port itself.
+        For example, Ethernet40 (etp6a) -> [Ethernet42, Ethernet44, Ethernet46] (etp6b/c/d).
+        Returns an empty list for non-split ports or ports not in ports_aliases_dict (e.g. host ports).
+        """
+        port_alias = self.ports_aliases_dict.get(port, '')
+        if not port_alias or not get_alias_letter(port_alias):
+            return []
+        base_num = get_alias_number(port_alias)
+        return [p for p, alias in self.ports_aliases_dict.items()
+                if p != port and get_alias_letter(alias) and get_alias_number(alias) == base_num]
 
     def generate_subset_conf(self, tested_lb_dict):
         """
@@ -514,6 +526,21 @@ class TestAutoNegBase(TestAutoFecBase):
         """
         return ",".join(types_list)
 
+    def _apply_port_speed_type_config(self, cli_object, port, port_conf_dict):
+        """Apply speed, type, advertised speeds/types and toggle a single port."""
+        physical_interface_type = self.physical_interfaces_types_dict.get(port)
+        self.configure_interface_type(cli_object, port, 'none',
+                                      physical_interface_type=physical_interface_type)
+        cli_object.interface.set_interface_speed(port, port_conf_dict[AutonegCommandConstants.SPEED])
+        self.configure_interface_type(cli_object, port, port_conf_dict[AutonegCommandConstants.TYPE],
+                                      physical_interface_type=physical_interface_type)
+        cli_object.interface.config_advertised_speeds(port, port_conf_dict[AutonegCommandConstants.ADV_SPEED])
+        self.configure_advertised_interface_types(cli_object, port,
+                                                  port_conf_dict[AutonegCommandConstants.ADV_TYPES],
+                                                  physical_interface_type=physical_interface_type)
+        cli_object.interface.disable_interface(port)
+        cli_object.interface.enable_interface(port)
+
     def configure_ports(self, engine, cli_object, conf, base_interfaces_speeds, cleanup_list, set_cleanup=True):
         """
         configure the ports speed, advertised speed, type and advertised type based on conf dictionary
@@ -529,24 +556,18 @@ class TestAutoNegBase(TestAutoFecBase):
         """
         with allure.step('Configuring speed, advertised speed, type and advertised type on ports: {}'
                          .format(list(conf.keys()))):
+            synced_siblings = set()
             for port, port_conf_dict in conf.items():
-                physical_interface_type = self.physical_interfaces_types_dict.get(port)
                 if set_cleanup:
                     self.set_speed_type_cleanup(port, engine, cli_object, base_interfaces_speeds, cleanup_list)
+                self._apply_port_speed_type_config(cli_object, port, port_conf_dict)
 
-                self.configure_interface_type(cli_object, port, 'none',
-                                              physical_interface_type=physical_interface_type)
-                cli_object.interface. \
-                    set_interface_speed(port, port_conf_dict[AutonegCommandConstants.SPEED])
-                self.configure_interface_type(cli_object, port, port_conf_dict[AutonegCommandConstants.TYPE],
-                                              physical_interface_type=physical_interface_type)
-                cli_object.interface. \
-                    config_advertised_speeds(port, port_conf_dict[AutonegCommandConstants.ADV_SPEED])
-                self.configure_advertised_interface_types(cli_object, port,
-                                                          port_conf_dict[AutonegCommandConstants.ADV_TYPES],
-                                                          physical_interface_type=physical_interface_type)
-                cli_object.interface.disable_interface(port)
-                cli_object.interface.enable_interface(port)
+                for sibling in self.get_sibling_split_ports(port):
+                    if sibling in conf or sibling in synced_siblings:
+                        continue
+                    logger.info("Syncing sibling split port {} with same config as {}".format(sibling, port))
+                    self._apply_port_speed_type_config(cli_object, sibling, port_conf_dict)
+                    synced_siblings.add(sibling)
 
     @staticmethod
     @skip_for_interface_type_rj45
@@ -559,7 +580,17 @@ class TestAutoNegBase(TestAutoFecBase):
         cli_object.interface.config_advertised_interface_types(port, interface_type_list)
 
     @staticmethod
-    def configure_port_auto_neg(cli_object, ports_list, conf, cleanup_list, mode='enabled',
+    def _apply_port_auto_neg_mode(cli_object, port, mode, cleanup_list):
+        """Apply auto-negotiation mode on a single port and register cleanup."""
+        cli_object.interface.config_auto_negotiation_mode(port, mode)
+        if mode == 'enabled':
+            cleanup_list.append((cli_object.interface.config_auto_negotiation_mode,
+                                 (port, 'disabled')))
+        if mode == 'off':
+            cleanup_list.append((cli_object.interface.config_auto_negotiation_mode,
+                                 (port, 'on')))
+
+    def configure_port_auto_neg(self, cli_object, ports_list, conf, cleanup_list, mode='enabled',
                                 set_expected_mlxlink_autoneg=True):
         """
         configure the auto neg mode on the port.
@@ -571,17 +602,20 @@ class TestAutoNegBase(TestAutoFecBase):
         :return: none
         """
         with allure.step('configuring auto negotiation mode {} on ports {}'.format(mode, ports_list)):
+            synced_siblings = set()
             for port in ports_list:
-                cli_object.interface.config_auto_negotiation_mode(port, mode)
+                self._apply_port_auto_neg_mode(cli_object, port, mode, cleanup_list)
                 conf[port][AutonegCommandConstants.AUTONEG_MODE] = mode
                 if set_expected_mlxlink_autoneg:
                     conf[port]['expected_mlxlink_autoneg'] = mode
-                if mode == 'enabled':
-                    cleanup_list.append((cli_object.interface.config_auto_negotiation_mode,
-                                         (port, 'disabled')))
-                if mode == 'off':
-                    cleanup_list.append((cli_object.interface.config_auto_negotiation_mode,
-                                         (port, 'on')))
+
+                for sibling in self.get_sibling_split_ports(port):
+                    if sibling in ports_list or sibling in conf or sibling in synced_siblings:
+                        continue
+                    logger.info("Syncing AN mode '{}' on sibling split port {} (same physical port as {})".format(
+                        mode, sibling, port))
+                    self._apply_port_auto_neg_mode(cli_object, sibling, mode, cleanup_list)
+                    synced_siblings.add(sibling)
 
     def generate_default_conf(self, tested_lb_dict, use_min_speed=False):
         """

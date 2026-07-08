@@ -14,13 +14,13 @@ from retry.api import retry_call
 import ngts.helpers.json_file_helper as json_file_helper
 from ngts.helpers.system_helpers import set_timezone as system_set_timezone
 from ngts.scripts.sonic_deploy.sonic_only_methods import validate_and_get_asic_count
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.general_constants.constants import DefaultTestServerCred, SonicSimxConstants
-from infra.tools.general_constants.air_constants import HostsConstants
-from infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from infra.tools.utilities.onie_sonic_clis import SonicOnieCli as SonicOnieCliDevts
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.general_constants.constants import DefaultTestServerCred, SonicSimxConstants
+from devts.infra.tools.general_constants.air_constants import HostsConstants
+from devts.infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.utilities.onie_sonic_clis import SonicOnieCli as SonicOnieCliDevts
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_util.cli_constants import SonicConstant
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
@@ -54,6 +54,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 logger = logging.getLogger()
 DUMMY_COMMAND = 'echo dummy_command'
 NOT_SUPPORTED_DPB_SKU_LIST = ['Mellanox-SN5810_LD-O128A2', 'ACS-SN6810_LD']
+PLATFORMS_TO_NOT_UPDATE_PLATFORM_PARAMS = ['sn6600_ld', 'sn4280']
 
 
 class SonicGeneralCli:
@@ -188,10 +189,25 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def load_configuration(self, config_file):
         self.engine.run_cmd('sudo config load -y {}'.format(config_file), validate=True)
 
+    def is_switch_ready_to_reload(self):
+        # TERM=dumb avoids TTY control sequences in stdout over SSH
+        out = self.engine.run_cmd(
+            'TERM=dumb systemctl show swss.service --property=ActiveEnterTimestampMonotonic --value',
+            validate=True)
+        swss_up_time = float(out.strip()) / 1000000
+        now_out = self.engine.run_cmd("python3 -c 'import time; print(time.monotonic())'", validate=True)
+        now_time = float(now_out.strip())
+        active_sec = now_time - swss_up_time
+        logger.info("SWSS has been active for {:.2f} seconds".format(active_sec))
+        if active_sec < 120:
+            raise Exception("SWSS has been active for less than 120s; not ready for reload")
+
     def reload_configuration(self, force=False):
         cmd = 'sudo config reload -y'
         if force:
             cmd += ' -f'
+        else:
+            retry_call(self.is_switch_ready_to_reload, tries=12, delay=10)
         self.engine.run_cmd(cmd, validate=True)
 
     def save_configuration(self):
@@ -459,7 +475,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         """
         # Get default docker list if not provided
         if dockers_list is None:
-            dockers_list = self._get_default_dockers_list()
+            dockers_list = self._get_default_dockers_list(running_config=running_config)
 
         # Filter dockers based on SONiC branch version
         dockers_list = self._filter_dockers_by_branch(dockers_list)
@@ -626,18 +642,30 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         self.configure_dhclient_if_simx()
 
-    def init_telemetry_keys(self):
+    def init_telemetry_keys(self, engine=None):
+        """
+        Generate the streaming-telemetry server/root certificates under
+        /etc/sonic/telemetry.
+
+        :param engine: SSH engine identifying the host the certificates are
+            generated on. Defaults to self.engine, i.e. the DUT this CLI object
+            is bound to (the switch/fanout in the normal post-installation flow).
+            Pass an explicit engine to target a different host -- e.g. a BMC
+            reached over a dedicated SSH engine to bmc_ip during the BMC-only
+            deploy flow, where the switch post-installation is skipped.
+        """
+        engine = engine or self.engine
         logger.info("Create telemetry directory")
-        self.engine.run_cmd(f"sudo mkdir {SonicConst.TELEMETRY_PATH}")
-        self.engine.run_cmd(f"sudo chmod 0755 {SonicConst.TELEMETRY_PATH}")
+        engine.run_cmd(f"sudo mkdir {SonicConst.TELEMETRY_PATH}")
+        engine.run_cmd(f"sudo chmod 0755 {SonicConst.TELEMETRY_PATH}")
         logger.info("Generate server cert using openssl.")
-        self.engine.run_cmd(f"sudo openssl req -x509 -sha256 -nodes -newkey rsa:2048 "
-                            f"-keyout {SonicConst.TELEMETRY_SERVER_KEY} -subj '/CN=ndastreamingservertest' "
-                            f"-out {SonicConst.TELEMETRY_SERVER_CER}")
+        engine.run_cmd(f"sudo openssl req -x509 -sha256 -nodes -newkey rsa:2048 "
+                       f"-keyout {SonicConst.TELEMETRY_SERVER_KEY} -subj '/CN=ndastreamingservertest' "
+                       f"-out {SonicConst.TELEMETRY_SERVER_CER}")
         logger.info("Generate dsmsroot cert using openssl")
-        self.engine.run_cmd(f"sudo openssl req -x509 -sha256 -nodes -newkey rsa:2048 "
-                            f"-keyout {SonicConst.TELEMETRY_DSMSROOT_KEY} -subj '/CN=ndastreamingclienttest' "
-                            f"-out {SonicConst.TELEMETRY_DSMSROOT_CER}")
+        engine.run_cmd(f"sudo openssl req -x509 -sha256 -nodes -newkey rsa:2048 "
+                       f"-keyout {SonicConst.TELEMETRY_DSMSROOT_KEY} -subj '/CN=ndastreamingclienttest' "
+                       f"-out {SonicConst.TELEMETRY_DSMSROOT_CER}")
 
     def deploy_sonic(self, image_path, is_skipping_migrating_package=False):
         tmp_target_path = '/home/admin/sonic-mellanox.bin'
@@ -1018,7 +1046,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                            logger=logger)
 
     def update_platform_params(self, platform_params, setup_name):
-        if "4280" in platform_params["platform"]:
+        if platform_params.filtered_platform in PLATFORMS_TO_NOT_UPDATE_PLATFORM_PARAMS:
             return
         if hasattr(self, 'cli_obj'):  # SONiC only
             current_platform_summary = self.cli_obj.chassis.parse_platform_summary()
@@ -1058,7 +1086,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         else:
             if not self.is_performance_setup(setup_name):
                 with allure.step("Apply qos and dynamic buffer config"):
-                    no_dynamic = platform_params["hwsku"].upper().startswith("MELLANOX-SN5640")
+                    no_dynamic = platform_params["hwsku"].upper().startswith(SonicConst.NO_DYNAMIC_BUFFER_HWSKU_PREFIXES)
                     self.cli_obj.qos.reload_qos(no_dynamic=no_dynamic, platform_params=platform_params)
                     self.verify_dockers_are_up(dockers_list=['swss'], platform_params=platform_params)
                     self.cli_obj.qos.stop_buffermgrd(platform_params=platform_params)

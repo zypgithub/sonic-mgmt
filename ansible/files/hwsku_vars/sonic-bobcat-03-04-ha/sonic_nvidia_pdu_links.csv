@@ -1,0 +1,5 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-245-2-15,20,mtvr-bobcat-03,PSU1,
+pdu-10-245-2-34,20,mtvr-bobcat-03,PSU2,
+pdu-10-245-2-15,24,mtvr-bobcat-04,PSU1,
+pdu-10-245-2-34,24,mtvr-bobcat-04,PSU2,

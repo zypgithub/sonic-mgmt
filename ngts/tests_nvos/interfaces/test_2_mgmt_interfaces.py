@@ -1,11 +1,11 @@
 from functools import partial
-from infra.tools.connection_tools.pexpect_serial_engine import pexpect
+from devts.infra.tools.connection_tools.pexpect_serial_engine import pexpect
 import pytest
 import time
 import re
 import subprocess
 from typing import Dict, Callable, List
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from retry import retry
 from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
@@ -21,7 +21,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import IbConsts, SystemConsts, NvosConst, AclConsts, ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.ngts_types.engines_T import EnginesT
 from ngts.nvos_tools.infra.IpCmdBuilder import IpCmdBuilder
 from ngts.nvos_tools.infra.TcpdumpCmdBuilder import TcpdumpCmdBuilder
@@ -203,7 +203,7 @@ def skip_if_engines_does_not_exist_in_setup(required_engines_list, engines):
         pytest.skip("Skip this test cause don't have the required engines {}".format(not_existed_engines))
 
 
-@retry(Exception, tries=10, delay=2)
+@retry(Exception, tries=12, delay=2)
 def wait_for_hostname_changed(system, dhcp_hostname):
     with allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname)):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()

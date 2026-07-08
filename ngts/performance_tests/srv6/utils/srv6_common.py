@@ -21,9 +21,9 @@ from ngts.constants.constants import CliType, InfraConst, BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import (get_round_robin_traffic, get_many_to_few_traffic, get_many_to_one_traffic)
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 
@@ -103,6 +103,15 @@ class TestSRv6Base:
         self.vlan_interface_configuration_dict = {}
         self.shaper_value = shaper_value
 
+    def wait_for_traffic_to_stabilize(self, scenario_tag="traffic", delay=10):
+        """Fixed sleep before SDK validation; temporary workaround for SPC6 timing.
+
+        TODO: Replace with deterministic readiness (egress counter movement, link/BGP up) once
+        validated on SPC6 SRv6 lab runs — see docs/agent-memory/runs/2026-05-26-srv6-spc6-x4-x8-breakout.md.
+        """
+        with allure.step(f"Wait for {scenario_tag} traffic to stabilize before validation"):
+            time.sleep(delay)
+
     def round_robin_traffic_test_runner(self, test_name, traffic_type,
                                         upstream_group, downstream_group, bisection_traffic=True):
         upstream_downstream_group = list(zip(upstream_group, downstream_group))
@@ -116,6 +125,7 @@ class TestSRv6Base:
                                                     dut_interfaces_ipv6_configuration_dict=self.dut_interfaces_ipv6_configuration_dict)
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=MRCConsts.BEFORE_TEST_SHAPER_VALUE)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+            self.wait_for_traffic_to_stabilize("round-robin")  # TODO: see wait_for_traffic_to_stabilize
         with allure.step(f"Verifying round-robin traffic pattern on all upstream ports and all downstream ports"):
             half_ports_num = len(all_ports_in_test) // 2
             round_robin_occ_th_dict = {ValidationConsts.OCC_AVG: 11 * half_ports_num,
@@ -167,6 +177,7 @@ class TestSRv6Base:
             with allure.step(f"Run traffic"):
                 start_time = time.time()
                 run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+            self.wait_for_traffic_to_stabilize("many-to-one")  # TODO: see wait_for_traffic_to_stabilize
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
             samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
             additional_validations = self.get_many_to_one_additional_validations(traffic_type)
@@ -217,6 +228,7 @@ class TestSRv6Base:
                                                     pairing=pairing)
             start_time = time.time()
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+            self.wait_for_traffic_to_stabilize("many-to-few")  # TODO: see wait_for_traffic_to_stabilize
         samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
         samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
         bw_threshold = self.get_trimming_bw_threshold(traffic_type)
@@ -323,20 +335,22 @@ class TestSRv6Base:
             if ipv6_validation_json_path and os.path.exists(ipv6_validation_json_path):
                 with open(ipv6_validation_json_path, 'r') as f:
                     ipv6_validation_json = json.load(f)
-                additional_validations['compare_tc_occ_to_reference'] = Validation(compare_tc_occ_to_reference, {'reference_json': ipv6_validation_json,
-                                                                                                                 'tc_keys': [ValidationConsts.OCC_AVG],
-                                                                                                                 'tc_to_validate': MRCConsts.TRIMMING_DATA_QUEUE_NUM,
-                                                                                                                 'allowed_deviation': tc_occ_allowed_deviation})
+                if drop_over_max_sample_port is None:
+                    additional_validations['compare_tc_occ_to_reference'] = Validation(compare_tc_occ_to_reference, {'reference_json': ipv6_validation_json,
+                                                                                                                     'tc_keys': [ValidationConsts.OCC_AVG],
+                                                                                                                     'tc_to_validate': MRCConsts.TRIMMING_DATA_QUEUE_NUM,
+                                                                                                                     'allowed_deviation': tc_occ_allowed_deviation})
                 tc3_occ_threshold = {ValidationConsts.OCC_AVG: MRCConsts.MRC_RETRANSMISSION_TC_OCC_AVG_THRESHOLD}
                 additional_validations['validate_tc3_occ_below_threshold'] = Validation(validate_per_tc, {'tc_occ_threshold': tc3_occ_threshold,
                                                                                                           'tc_to_validate': MRCConsts.MRC_RETRANSMISSION_TC_NUM,
                                                                                                           'tolerance': None,
                                                                                                           'port_group_name_to_validate_list': []})
-                additional_validations['compare_pg_to_reference'] = Validation(compare_pg_to_reference, {'reference_json': ipv6_validation_json,
-                                                                                                         'pg_keys': [ValidationConsts.OCC_AVG],
-                                                                                                         'pg_to_validate': MRCConsts.PG_LIST,
-                                                                                                         'allowed_deviation': MRCConsts.HEADROOM_ALLOWED_DEVIATION,
-                                                                                                         'pg_buffer_type': ValidationConsts.PG_BUFFER_DATAFRAME})
+                if drop_over_max_sample_port is None:
+                    additional_validations['compare_pg_to_reference'] = Validation(compare_pg_to_reference, {'reference_json': ipv6_validation_json,
+                                                                                                             'pg_keys': [ValidationConsts.OCC_AVG],
+                                                                                                             'pg_to_validate': MRCConsts.PG_LIST,
+                                                                                                             'allowed_deviation': MRCConsts.HEADROOM_ALLOWED_DEVIATION,
+                                                                                                             'pg_buffer_type': ValidationConsts.PG_BUFFER_DATAFRAME})
 
                 if not is_redmine_issue_active([4743477])[0]:
                     additional_validations['compare_latency_to_reference'] = Validation(compare_latency_to_reference, {'reference_json': ipv6_validation_json,

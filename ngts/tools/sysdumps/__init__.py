@@ -8,12 +8,13 @@ import shlex
 import time
 
 import allure
+from ngts.scripts.collect_simx_logs_on_not_success import collect_hypervisor_logs
 from ngts.scripts.sonic_deploy.community_only_methods import is_dualtor_topo
 import pytest
 
 from ngts.conftest import update_topology_with_cli_class
 from ngts.constants.constants import SETUPS_WITH_NON_DEFAULT_PTF, PytestConst
-from ngts.helpers.general_helper import get_dut_cli_objs_from_topo_obj
+from ngts.helpers.general_helper import get_dut_cli_objs_from_topo_obj, is_bmc_testbed
 from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
 from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, \
     clean_stored_cmds_with_fixture_scope_list
@@ -103,19 +104,94 @@ def collect_dualtor_logs(hypervisor_engine, dumps_folder):
                 hypervisor_engine.run_cmd(f"rm -f {tar_file_path}")
 
 
+def _collect_one_neighbor_dump_nbrhost(neighbor_name, host, dumps_folder, duration, item_clean_name):
+    """
+    Generate dump on one neighbor using community nbrhosts host (SonicHost: shell + fetch).
+    Mirrors collect_techsupport_on_dut(request, nbrhosts[nbr]['host']) from tests/conftest.py.
+    """
+    res = host.shell('sudo generate_dump -s "-{} seconds"'.format(duration))
+    if res.get('rc') != 0:
+        logger.error(f"generate_dump failed on {neighbor_name}: {res}")
+        return
+    remote_dump_path = res.get('stdout_lines', [])[-1] if res.get('stdout_lines') else None
+    if not remote_dump_path:
+        logger.error(f"No dump path in output for {neighbor_name}: {res}")
+        return
+    dest_file = os.path.join(dumps_folder, f'sysdump_{neighbor_name}_{item_clean_name}.tar.gz')
+    try:
+        host.fetch(src=remote_dump_path, dest=f'{dumps_folder}/', flat=True)
+        local_fetched = os.path.join(dumps_folder, os.path.basename(remote_dump_path))
+        if os.path.isfile(local_fetched) and local_fetched != dest_file:
+            os.rename(local_fetched, dest_file)
+        os.chmod(dest_file, 0o777)
+        complete_msg = f"Completed {neighbor_name} sysdump: {dest_file}"
+        with allure.step(complete_msg):
+            logger.info(complete_msg)
+    except Exception as err:
+        logger.error(f"Failed to fetch dump from {neighbor_name}: {err}")
+    try:
+        host.shell('sudo rm -rf {}'.format(remote_dump_path))
+    except Exception as err:
+        logger.warning(f"Failed to remove remote dump on {neighbor_name}: {err}")
+
+
+def _get_nbrhosts_for_item(item):
+    """
+    Get nbrhosts: first from funcargs; if missing, try to build from tbinfo + ansible_adhoc + creds
+    (only works when those fixtures are in the test's request closure, e.g. test has localhost/duthost).
+    """
+    nbrhosts = item.funcargs.get('nbrhosts', None)
+    if nbrhosts is not None:
+        return nbrhosts
+    logger.warning("nbrhosts not available, skipping neighbor dumps")
+
+
+def collect_neighbor_logs(item, dumps_folder, duration):
+    """
+    Collect dumps from all neighbor VMs in parallel. Only used for tests under tests/upgrade_path
+    with sonic neighbor_type.
+    """
+    item_clean_name = item.name.replace('/', '_').replace('[', '_').replace(']', '_')
+
+    nbrhosts = _get_nbrhosts_for_item(item)
+    if not nbrhosts:
+        logger.warning("nbrhosts not available, skipping neighbor dumps")
+        return
+
+    num_workers = min(len(nbrhosts), 8)
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = {}
+        for neighbor_name, device in nbrhosts.items():
+            host = device['host']
+            futures[executor.submit(
+                _collect_one_neighbor_dump_nbrhost,
+                neighbor_name, host, dumps_folder, duration, item_clean_name
+            )] = neighbor_name
+        for future in as_completed(futures):
+            neighbor_name = futures[future]
+            try:
+                future.result()
+            except Exception as err:
+                logger.error(f"Failed to collect dump from {neighbor_name}: {err}")
+
+
 def generate_and_copy_dump(item, dumps_folder, topology_obj, duration):
     switch_type = get_switch_type(topology_obj)
     dut_engine = topology_obj.players['dut']['engine']
     collect_stored_cmds_then_attach_to_allure_report(topology_obj)
     generate_dump_method[switch_type](topology_obj, dut_engine, dumps_folder, duration, item)
-    if switch_type == TopologyConsts.SONIC:
+    testbed = item.config.option.testbed
+    # BMC testbeds run on the BMC host directly; their topology has no 'hypervisor' player
+    # and PTF/dualtor log collection does not apply.
+    if switch_type == TopologyConsts.SONIC and not is_bmc_testbed(testbed):
         hypervisor_engine = topology_obj.players['hypervisor']['engine']
-        testbed = item.config.option.testbed
         setup_name = item.config.option.setup_name
         if 'ptf-any' not in testbed:
             collect_ptf_logs(hypervisor_engine, dumps_folder, setup_name)
         if is_dualtor_topo(testbed):
             collect_dualtor_logs(hypervisor_engine, dumps_folder)
+        if 'upgrade_path' in item.name and 'sonic' in item.config.option.neighbor_type:
+            collect_neighbor_logs(item, dumps_folder, duration)
 
 
 def is_performance_setup(item):
@@ -140,11 +216,6 @@ def pytest_runtest_makereport(item, call):
                         'sysdump will not be created ###')
             return
         suite_name = item.parent.name
-        if test_suites_dumps.get(suite_name, 0) > 2:
-            logger.info('### The number of sysdumps for this test suite is more than 3, '
-                        'sysdump will not be created ###')
-            return
-        test_suites_dumps[suite_name] += 1
 
         with allure.step('The test case has failed, generating a sysdump'):
             try:
@@ -152,6 +223,8 @@ def pytest_runtest_makereport(item, call):
                 # Set up configuration for Community test infra as it doesn't have topology_obj
                 if (topology_obj := item.funcargs.get('topology_obj')) is None:
                     topology_obj = get_topology_obj(item)
+                    duration = 7200
+                elif "test_sanity_checker" in suite_name:
                     duration = 7200
                 else:
                     duration = get_test_duration(item)
@@ -163,7 +236,11 @@ def pytest_runtest_makereport(item, call):
                     dump_path = f'{dumps_folder}/{existing_dump_file}'
                     with allure.step(f'The test case has failed, dump already exists at log folder {dump_path}'):
                         pass
+                elif test_suites_dumps.get(suite_name, 0) > 2:
+                    logger.info('### The number of sysdumps for this test suite is more than 3, '
+                                'sysdump will not be created ###')
                 else:
+                    test_suites_dumps[suite_name] += 1
                     with allure.step('The test case has failed, generating a sysdump'):
                         generate_and_copy_dump(item, dumps_folder, topology_obj, duration)
             except BaseException as err:
@@ -231,7 +308,27 @@ def generate_and_copy_sonic_dump_runner(topology_obj, device_engine, device_alia
         str: The path to the generated sysdump file
     """
     logger.info(f"Started {device_alias} sysdump")
-    output = device_engine.run_cmd('sudo generate_dump -s \"-{} seconds\"'.format(duration), validate=True)
+    # Retry generate_dump if another techsupport instance is already running.
+    retry_timeout = 360
+    retry_interval = 30
+    start_time = time.time()
+    output = None
+    while True:
+        try:
+            output = device_engine.run_cmd(f'sudo generate_dump -s \"-{duration} seconds\"', validate=True)
+        except Exception as err:
+            elapsed = time.time() - start_time
+            if "Another instance of techsupport" in str(err) and elapsed < retry_timeout:
+                logger.warning(f"Another techsupport instance is running on {device_alias}. "
+                               f"Retrying in {retry_interval}s (elapsed: {elapsed:.0f}s / {retry_timeout}s)")
+                time.sleep(retry_interval)
+                continue
+            raise
+        break
+
+    if not output or not output.strip():
+        raise RuntimeError(f"generate_dump produced no output on {device_alias}")
+
     remote_dump_path = output.splitlines()[-1]
     logger.debug(f"Remote dump path for {device_alias}: {remote_dump_path}")
     dest_file = dumps_folder + f'/sysdump_{device_alias}_' + item_clean_name + '.tar.gz'
@@ -354,7 +451,15 @@ def generate_and_copy_sonic_dump(topology_obj, dut_engine, dumps_folder, duratio
     item_clean_name = item.name.replace('/', '_').replace('[', '_').replace(']', '_')
     with allure.step('Generate Techsupport of last {} seconds'.format(duration)):
         logger.debug(f"item.location: {item.location}, item.name: {item.name}, item.originalname: {item.originalname}")
-        if item.originalname == "test_check_errors_in_log_during_deploy_sonic_image":
+        if is_bmc_testbed(item.config.option.testbed):
+            # Test runs against the BMC; the switch DUT engine from noga points to the switch IP
+            # which is not the right target. Use the BMC engine attached by conftest._attach_bmc_player.
+            bmc_engine = topology_obj.players.get('bmc', {}).get('engine')
+            if bmc_engine is None:
+                logger.warning("BMC testbed detected but no 'bmc' player attached in topology; skipping sysdump")
+                return
+            duts_to_dump = {"dut": bmc_engine}
+        elif item.originalname == "test_check_errors_in_log_during_deploy_sonic_image":
             # log analyzer is special since it runs on specific DUT parameter "switch" or "dpu"
             # this is to avoid the duplicate dumps of the DPU and SWITCH
             duts_to_dump = {"dut": item.funcargs['dut_host']}
@@ -383,6 +488,8 @@ def generate_and_copy_sonic_dump(topology_obj, dut_engine, dumps_folder, duratio
     if is_simx and not is_air:
         with allure.step('Dump SIMX VM logs'):
             dump_simx_data(topology_obj, dumps_folder, name_prefix=item_clean_name)
+        with allure.step('Collect hypervisor logs'):
+            collect_hypervisor_logs(topology_obj, dumps_folder, name_prefix=item_clean_name)
     logger.debug(f"Storing the DUT sysdump {dut_dump_file}")
     store_dest_file_path(dut_dump_file, item_clean_name)
 

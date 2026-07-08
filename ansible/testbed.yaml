@@ -1462,6 +1462,24 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: mtvr-bobcat-03-t1-smartswitch-ha
+  group-name: vm-t1
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-bobcat-03
+  ptf_ip: 10.245.44.122/20
+  ptf_ipv6:
+  server: server_86
+  vm_base: VM5101
+  dut:
+    - mtvr-bobcat-03
+    - mtvr-bobcat-03-dpu-0
+    - mtvr-bobcat-03-dpu-1
+    - mtvr-bobcat-03-dpu-2
+    - mtvr-bobcat-03-dpu-3
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: mtvr-bobcat-04-t0-28
   group-name: vm-t2
   topo: t0-28
@@ -1533,6 +1551,70 @@
     - mtvr-bobcat-04-dpu-3
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: mtvr-bobcat-04-t1-smartswitch-ha
+  group-name: vm-t2
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-bobcat-04
+  ptf_ip: 10.245.44.152/20
+  ptf_ipv6:
+  server: server_87
+  vm_base: VM5233
+  dut:
+    - mtvr-bobcat-04
+    - mtvr-bobcat-04-dpu-0
+    - mtvr-bobcat-04-dpu-1
+    - mtvr-bobcat-04-dpu-2
+    - mtvr-bobcat-04-dpu-3
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: sonic-bobcat-03-04-ha
+  group-name: vm-t2
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-bobcat-03
+  ptf_ip: 10.245.44.122/20
+  ptf_ipv6:
+  server: server_86
+  vm_base: VM5101
+  dut:
+    - mtvr-bobcat-03
+    - mtvr-bobcat-04
+    - mtvr-bobcat-03-dpu-0
+    - mtvr-bobcat-03-dpu-1
+    - mtvr-bobcat-03-dpu-2
+    - mtvr-bobcat-03-dpu-3
+    - mtvr-bobcat-04-dpu-0
+    - mtvr-bobcat-04-dpu-1
+    - mtvr-bobcat-04-dpu-2
+    - mtvr-bobcat-04-dpu-3
+  inv_name: lab
+  comment: Smartswitch HA testbed
+
+- conf-name: sonic-bobcat-03-04-ha-t1-smartswitch-ha
+  group-name: vm-t2
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-bobcat-03
+  ptf_ip: 10.245.44.122/20
+  ptf_ipv6:
+  server: server_86
+  vm_base: VM5101
+  dut:
+    - mtvr-bobcat-03
+    - mtvr-bobcat-04
+    - mtvr-bobcat-03-dpu-0
+    - mtvr-bobcat-03-dpu-1
+    - mtvr-bobcat-03-dpu-2
+    - mtvr-bobcat-03-dpu-3
+    - mtvr-bobcat-04-dpu-0
+    - mtvr-bobcat-04-dpu-1
+    - mtvr-bobcat-04-dpu-2
+    - mtvr-bobcat-04-dpu-3
+  inv_name: lab
+  comment: Smartswitch HA testbed
 
 - conf-name: bobcat-1250-t0-28
   group-name: vm-t1
@@ -2732,20 +2814,6 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-moose-10-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - mtvr-moose-10
-  inv_name: lab
-  comment: Mellanox MTVR testbed
-
 - conf-name: mtvr-moose-11-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -3358,6 +3426,7 @@
     - r-bison-04
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-04-t1
   group-name: vm-t1
@@ -3442,6 +3511,21 @@
     - r-bison-04
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-04-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-04
+  ptf_ip: 10.215.51.62/20
+  ptf_ipv6:
+  server: server_91
+  vm_base: VM6837
+  dut:
+    - r-bison-04
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-04-t1-isolated-v6-d56u1-lag
   group-name: vm-t1
@@ -3582,6 +3666,7 @@
     - r-bison-06
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-06-t1
   group-name: vm-t1
@@ -3639,6 +3724,20 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: r-bison-06-t1-isolated-d56u1-lag
+  group-name: vm-t1
+  topo: t1-isolated-d56u1-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-06
+  ptf_ip: 10.215.49.42/20
+  ptf_ipv6:
+  server: server_90
+  vm_base: VM6325
+  dut:
+    - r-bison-06
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: r-bison-06-t1-isolated-v6-d56u1-lag
   group-name: vm-t1
   topo: t1-isolated-v6-d56u1-lag
@@ -3652,6 +3751,21 @@
     - r-bison-06
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-06-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-06
+  ptf_ip: 10.215.49.42/20
+  ptf_ipv6:
+  server: server_90
+  vm_base: VM6325
+  dut:
+    - r-bison-06
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-06-t1-isolated-d510u2
   group-name: vm-t1
@@ -3764,6 +3878,7 @@
     - r-bison-08
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-08-t1
   group-name: vm-t1
@@ -3820,6 +3935,35 @@
     - r-bison-08
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-08-t1-isolated-d32u1s2
+  group-name: vm-t1
+  topo: t1-isolated-d32u1s2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-08
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_95
+  vm_base: VM5557
+  dut:
+    - r-bison-08
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-08-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-08
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_95
+  vm_base: VM5557
+  dut:
+    - r-bison-08
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-08-t1-isolated-d510u2
   group-name: vm-t1
@@ -3932,6 +4076,7 @@
     - r-bison-16
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-16-t1-isolated-d28u1
   group-name: vm-t1
@@ -3974,6 +4119,21 @@
     - r-bison-16
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.34.2/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-16-t1-isolated-d510u2
   group-name: vm-t1
@@ -4072,10 +4232,25 @@
     - r-bison-18
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-18-t0-isolated-d2u510s2
   group-name: vm-t1
   topo: t0-isolated-d2u510s2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-18
+  ptf_ip: 10.215.60.122/16
+  ptf_ipv6:
+  server: server_97
+  vm_base: VM7773
+  dut:
+    - r-bison-18
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-18-t1-isolated-d32u1s2
+  group-name: vm-t1
+  topo: t1-isolated-d32u1s2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-18
   ptf_ip: 10.215.60.122/16
@@ -4142,6 +4317,21 @@
     - r-bison-18
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-18-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-18
+  ptf_ip: 10.215.60.122/16
+  ptf_ipv6:
+  server: server_97
+  vm_base: VM7773
+  dut:
+    - r-bison-18
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-18-t1-isolated-d28u1
   group-name: vm-t1
@@ -4254,10 +4444,25 @@
   - r-bison-20
   inv_name: lab
   comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-20-t0-isolated-d2u510s2
   group-name: vm-t1
   topo: t0-isolated-d2u510s2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-20
+  ptf_ip: 10.215.20.3/16
+  ptf_ipv6: null
+  server: server_98
+  vm_base: VM8285
+  dut:
+  - r-bison-20
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-20-t1-isolated-d32u1s2
+  group-name: vm-t1
+  topo: t1-isolated-d32u1s2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-20
   ptf_ip: 10.215.20.3/16
@@ -4324,6 +4529,22 @@
   - r-bison-20
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-20-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-20
+  ptf_ip: 10.215.20.3/16
+  ptf_ipv6: null
+  server: server_98
+  vm_base: VM8285
+  dut:
+  - r-bison-20
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
+
 
 - conf-name: r-bison-20-t1-isolated-d28u1
   group-name: vm-t1
@@ -4506,6 +4727,21 @@
   - r-bison-22
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bison-22-t1-isolated-d448u15-lag
+  group-name: vm-t1
+  topo: t1-isolated-d448u15-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-22
+  ptf_ip: 10.215.206.3/16
+  ptf_ipv6: null
+  server: server_99
+  vm_base: VM9917
+  dut:
+  - r-bison-22
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  use_converged_peers: True
 
 - conf-name: r-bison-22-t1-isolated-d28u1
   group-name: vm-t1
@@ -9917,20 +10153,6 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: r-bison-simx-71-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - r-bison-simx-71
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
 - conf-name: r-spider-05-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -10337,58 +10559,6 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: juliet-152-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-152
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-154-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-154
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-156-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-156
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-158-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-158
-  comment: Mellanox MTR testbed
-
 - conf-name: juliet-142-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -10445,34 +10615,6 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: juliet-124-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-124
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-1221-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-1221
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
 - conf-name: juliet-184-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -10498,6 +10640,34 @@
   vm_base: VM0000
   dut:
     - rosalind-surrogate-41
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: fit-nos-vrt-mec-80-089-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - fit-nos-vrt-mec-80-089
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: fit-nos-vrt-mec-80-088-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - fit-nos-vrt-mec-80-088
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -10571,7 +10741,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: rosalind-eb2-2102-ptf-any
+- conf-name: rosalind-mec-2102-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -10581,7 +10751,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - rosalind-eb2-2102
+    - rosalind-mec-2102
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -10599,7 +10769,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: rosalind-eb1-2152-ptf-any
+- conf-name: rosalind-mec-2152-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -10609,7 +10779,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - rosalind-eb1-2152
+    - rosalind-mec-2152
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -10655,7 +10825,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: rosalind-nvos-2164-ptf-any
+- conf-name: rosalind-mec-2164-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -10665,7 +10835,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - rosalind-nvos-2164
+    - rosalind-mec-2164
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -10694,6 +10864,34 @@
   vm_base: VM0000
   dut:
     - rosalind-nvos-2184
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: rosalind-c03-2243-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - rosalind-c03-2243
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: rosalind-c03-2156-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - rosalind-c03-2156
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -10781,19 +10979,6 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: juliet-52-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-52
-  comment: Mellanox MTR testbed
-
 - conf-name: juliet-54-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -10861,34 +11046,6 @@
   vm_base: VM0000
   dut:
     - juliet-136
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-160-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-160
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-160-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-160
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -11435,34 +11592,6 @@
   vm_base: VM0000
   dut:
     - croc-skt-208
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: mtvr-croc-19-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - mtvr-croc-19
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: mtvr-croc-50-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - mtvr-croc-50
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -12194,7 +12323,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: nvos-chipsim-64-ptf-any
+- conf-name: portia-chipsim-81-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -12204,11 +12333,11 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - nvos-chipsim-64
+    - portia-chipsim-81
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: nvos-chipsim-65-ptf-any
+- conf-name: portia-chipsim-86-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -12218,11 +12347,11 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - nvos-chipsim-65
+    - portia-chipsim-86
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: nvos-chipsim-66-ptf-any
+- conf-name: portia-chipsim-87-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -12232,189 +12361,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - nvos-chipsim-66
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: nvos-chipsim-67-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - nvos-chipsim-67
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: nvos-chipsim-68-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - nvos-chipsim-68
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-croc-chipsim-81-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-croc-chipsim-81
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-croc-chipsim-82-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-croc-chipsim-82
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-croc-chipsim-83-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-croc-chipsim-83
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-croc-chipsim-84-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-croc-chipsim-84
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-nvl-chipsim-85-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-nvl-chipsim-85
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-nvl-chipsim-86-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-nvl-chipsim-86
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-qtm4-chipsim-87-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-qtm4-chipsim-87
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-qtm4-chipsim-88-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-qtm4-chipsim-88
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-sonic-mgmt-chipsim-61-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-sonic-mgmt-chipsim-61
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: ci-sonic-mgmt-chipsim-62-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - ci-sonic-mgmt-chipsim-62
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: portia-chipsim-63-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - portia-chipsim-63
+    - portia-chipsim-87
   inv_name: lab
   comment: Mellanox MTR testbed
 
@@ -14651,8 +14598,8 @@
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-salamandra-1
-  ptf_ip: 10.215.13.189/16
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
   ptf_ipv6:
   server: server_54
   vm_base: VM0000
@@ -14660,6 +14607,22 @@
     - r-salamandra-01
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-salamandra-01-bmc-dual-mgmt
+  group-name: rsal01bm
+  topo: bmc-dual-mgmt
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-salamandra-01
+  ptf_ip: 10.213.86.105/16
+  ptf_ipv6:
+  server: server_3
+  vm_base:
+  dut:
+    - r-salamandra-01-bmc
+  bmc_host: r-salamandra-01
+  inv_name: lab
+  auto_recover: 'False'
+  comment: BMC dual-mgmt testbed for r-salamandra-01
 
 - conf-name: salamandra-chipless-109-ptf-any
   group-name: vm-t1
@@ -14675,6 +14638,22 @@
   inv_name: lab
   comment: Mellanox MTL testbed
 
+- conf-name: slm-chipless-2700a1-146-bmc-dual-mgmt
+  group-name: slm146bm
+  topo: bmc-dual-mgmt
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-chipless-2700a1-146
+  ptf_ip: 10.213.86.104/16
+  ptf_ipv6:
+  server: server_3
+  vm_base:
+  dut:
+    - slm-chipless-2700a1-146-bmc
+  bmc_host: slm-chipless-2700a1-146
+  inv_name: lab
+  auto_recover: 'False'
+  comment: BMC dual-mgmt testbed for slm-chipless-2700a1-146
+
 - conf-name: leopard-dgx-208-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -14687,3 +14666,379 @@
   dut:
      - leopard-dgx-208
   comment: NvidiaAir testbed
+
+- conf-name: slm-60-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-60
+  ptf_ip: 10.215.13.190/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - slm-60
+  inv_name: lab
+  comment: Mellanox MTL testbed
+
+- conf-name: slm-30-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-30
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-32-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-32
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-16-ptp-130
+  group-name: vm-t1
+  topo: ptp-130
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-16
+  ptf_ip: 10.220.184.168/23
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - slm-16
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-16-t1-isolated-d28u1
+  group-name: vm-t1
+  topo: t1-isolated-d28u1
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-16
+  ptf_ip: 10.220.184.168/23
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - slm-16
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-16-t1-isolated-d28u4
+  group-name: vm-t1
+  topo: t1-isolated-d28u4
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-16
+  ptf_ip: 10.220.184.168/23
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - slm-16
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-18-t1-isolated-d28u1
+  group-name: vm-t1
+  topo: t1-isolated-d28u1
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-18
+  ptf_ip: 10.220.184.12/23
+  ptf_ipv6:
+  server: server_21
+  vm_base: VM2601
+  dut:
+    - slm-18
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-18-t1-isolated-d28u4
+  group-name: vm-t1
+  topo: t1-isolated-d28u4
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-18
+  ptf_ip: 10.220.184.12/23
+  ptf_ipv6:
+  server: server_21
+  vm_base: VM2601
+  dut:
+    - slm-18
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-180-t0-16
+  group-name: vm-t1
+  topo: t0-16
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-180
+  ptf_ip: 10.220.185.7/23
+  ptf_ipv6:
+  server: server_14
+  vm_base: VM1401
+  dut:
+    - slm-180
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-180-t0-isolated-d32u32s2-mix
+  group-name: vm-t1
+  topo: t0-isolated-d32u32s2-mix
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-180
+  ptf_ip: 10.220.185.7/23
+  ptf_ipv6:
+  server: server_14
+  vm_base: VM1401
+  dut:
+    - slm-180
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-18-ptp-130
+  group-name: vm-t1
+  topo: ptp-130
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-18
+  ptf_ip: 10.220.184.12/23
+  ptf_ipv6:
+  server: server_21
+  vm_base: VM2601
+  dut:
+    - slm-18
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-110-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-110
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-109-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-109
+  ptf_ip: 10.215.13.189/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-109
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-111-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-111
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-112-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-112
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-31-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-31
+  inv_name: lab
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-233-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-233
+  comment: Mellanox MEC testbed
+
+- conf-name: slm-113-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+     - slm-113
+  comment: Mellanox MEC testbed
+
+- conf-name: mtvr-panther-05-t0
+  group-name: vm-t1
+  topo: t0
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-05
+  ptf_ip: 10.245.42.62/20
+  ptf_ipv6:
+  server: server_14
+  vm_base: VM1401
+  dut:
+    - mtvr-panther-05
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-05_setup
+
+- conf-name: mtvr-panther-05-t1-lag
+  group-name: vm-t1
+  topo: t1-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-05
+  ptf_ip: 10.245.42.62/20
+  ptf_ipv6:
+  server: server_14
+  vm_base: VM1401
+  dut:
+    - mtvr-panther-05
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-05_setup
+
+- conf-name: mtvr-panther-05-t0-56
+  group-name: vm-t1
+  topo: t0-56
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-05
+  ptf_ip: 10.245.42.62/20
+  ptf_ipv6:
+  server: server_14
+  vm_base: VM1401
+  dut:
+    - mtvr-panther-05
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-05_setup
+
+- conf-name: mtvr-panther-07-t0
+  group-name: vm-t1
+  topo: t0
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-07
+  ptf_ip: 10.245.44.42/20
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - mtvr-panther-07
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-07_setup
+
+- conf-name: mtvr-panther-07-t1-lag
+  group-name: vm-t1
+  topo: t1-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-07
+  ptf_ip: 10.245.44.42/20
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - mtvr-panther-07
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-07_setup
+
+- conf-name: mtvr-panther-07-t0-56
+  group-name: vm-t1
+  topo: t0-56
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-07
+  ptf_ip: 10.245.44.42/20
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - mtvr-panther-07
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-07_setup
+
+- conf-name: mtvr-panther-10-t0
+  group-name: vm-t1
+  topo: t0
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-10
+  ptf_ip: 10.245.20.62/20
+  ptf_ipv6:
+  server: server_14
+  vm_base: VM1401
+  dut:
+    - mtvr-panther-10
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-10_setup
+
+- conf-name: mtvr-panther-10-t1-lag
+  group-name: vm-t1
+  topo: t1-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-10
+  ptf_ip: 10.245.20.62/20
+  ptf_ipv6:
+  server: server_14
+  vm_base: VM1401
+  dut:
+    - mtvr-panther-10
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-10_setup
+
+- conf-name: mtvr-panther-10-t0-56
+  group-name: vm-t1
+  topo: t0-56
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-10
+  ptf_ip: 10.245.20.62/20
+  ptf_ipv6:
+  server: server_14
+  vm_base: VM1401
+  dut:
+    - mtvr-panther-10
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-10_setup

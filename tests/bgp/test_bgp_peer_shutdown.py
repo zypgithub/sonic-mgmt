@@ -17,7 +17,7 @@ from tests.common.utilities import wait_until, delete_running_config
 from tests.common.utilities import is_ipv6_only_topology
 
 pytestmark = [
-    pytest.mark.topology('t0', 't1', 't2', 'm1', 'lt2', 'ft2', 'c0'),
+    pytest.mark.topology('t0', 't1', 't2', 'lrh', 'urh', 'm1', 'lt2', 'ft2', 'c0'),
 ]
 
 TEST_ITERATIONS = 5
@@ -59,10 +59,23 @@ def common_setup_teardown(
 
     if dut_type in ["ToRRouter", "SpineRouter", "BackEndToRRouter", "LowerSpineRouter"]:
         neigh_type = "LeafRouter"
+    elif dut_type == "UpperSpineRouter" and confed_asn is not None:
+        # On confederation-based UT2 topologies the UpperSpineRouter peers with
+        # AZNGHub neighbors using the confederation ASN, not the per-DUT ASN.
+        neigh_type = "AZNGHub"
+        dut_asn = int(confed_asn)
     elif dut_type in ["UpperSpineRouter", "FabricSpineRouter"]:
         neigh_type = "LowerSpineRouter"
         if dut_type == "FabricSpineRouter" and confed_asn is not None:
             # For FT2, we need to use vtysh to configure BGP neigh if BGP confed is enabled
+            use_vtysh = True
+    elif dut_type in ["LowerRegionalHub"]:
+        neigh_type = "SpineRouter"  # or "UpperSpineRouter"
+        if confed_asn is not None:
+            use_vtysh = True
+    elif dut_type in ["UpperRegionalHub"]:
+        neigh_type = "LowerRegionalHub"
+        if confed_asn is not None:
             use_vtysh = True
     else:
         neigh_type = "ToRRouter"

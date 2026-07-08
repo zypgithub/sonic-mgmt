@@ -6,10 +6,10 @@ import shlex
 import time
 import pexpect
 from retry import retry
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_constants.constants_nvos import CumulusConsts, NvosConst
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.tools.test_utils import allure_utils as allure
@@ -42,8 +42,7 @@ class CumulusGeneralCli(NvueGeneralCli):
             if latest_version:
                 sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version, sdk_branch=sdk_branch)
 
-            deb_file_path = os.path.join(Cl_Consts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version),
-                                         PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version))
+            deb_file_path = self.resolve_sdk_git_deb_path(sdk_version)
             self.engine.copy_file(source_file=f'{deb_file_path}',
                                   dest_file=f'{PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)}',
                                   file_system='/tmp/', overwrite_file=True, verify_file=False)
@@ -68,10 +67,12 @@ class CumulusGeneralCli(NvueGeneralCli):
             self.engine.run_cmd('sudo apt-get update -y', timeout=60, retry_run=True)
             self.engine.run_cmd('sudo apt install python3.11 -y', timeout=60, retry_run=True)
             self.engine.run_cmd('sudo mkdir /home/cumulus/venv', timeout=20, retry_run=True)
-            self.engine.run_cmd('sudo apt install python3.11-venv -y', timeout=120, retry_run=True)
-            self.engine.run_cmd('python -m venv sdk_env --system-site-packages', timeout=120, retry_run=True)
-            self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install --upgrade pip --root-user-action=ignore', timeout=120, retry_run=True)
-            self.engine.send_cmd_with_retry('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore', retries=5, timeout=120)
+            self.engine.run_cmd('virtualenv --python=python3.11 --system-site-packages /home/cumulus/sdk_env',
+                                timeout=120, retry_run=True, validate=True)
+            self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install --upgrade pip --root-user-action=ignore',
+                                timeout=120, retry_run=True, validate=True)
+            self.engine.send_cmd_with_retry('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore',
+                                            retries=5, timeout=120)
 
     def install_apt_get_pkg(self):
         with allure.step('Install apt-get packages'):
@@ -128,9 +129,9 @@ class CumulusGeneralCli(NvueGeneralCli):
     def _wait_nos_to_become_functional(self, engine, topology_obj="", dut_alias=None, serial_engine=None):
         serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
         with allure.step('wait for System is ready in serial'):
-            logger.info(f"Waiting for system to be ready")
+            logger.info(f"Waiting for system to be ready - can take up to 30 minutes")
             system_ready_pattern = 'login:'
-            serial_engine.run_cmd('', system_ready_pattern, timeout=2 * self.device.timeout_system_is_ready)
+            serial_engine.run_cmd('', system_ready_pattern, timeout=30 * 60)
         with allure.step('Set default password'):
             logging.info(f"Login using default user {self.device.default_username}")
             _, index = serial_engine.run_cmd(self.device.default_username, ["Password:"], timeout=5)
@@ -246,8 +247,16 @@ class CumulusGeneralCli(NvueGeneralCli):
             onie_menu_pointer = 1
             cumulus_esc_pointer = 2
             grub_shell_pointer = 3
-            login_prompt_pointer = 4
-            grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.CUMULUS_ESC_PATTERN, GrubMenuTool.GRUB_SHELL_PATTERN, 'login:']
+            grub_rescue_pointer = 4
+            login_prompt_pointer = 5
+            grub_menu_patterns = [
+                'ONIE\\s+',
+                onie_menu_entry,
+                GrubMenuTool.CUMULUS_ESC_PATTERN,
+                GrubMenuTool.GRUB_SHELL_PATTERN,
+                GrubMenuTool.GRUB_RESCUE_PATTERN,
+                CumulusConsts.LOGIN_BOOT_PATTERN
+            ]
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
             respond = self._wait_for_grub_with_key_spam(serial_engine, all_patterns, timeout=240)
 
@@ -268,6 +277,13 @@ class CumulusGeneralCli(NvueGeneralCli):
                 with allure.step('Recover from GRUB shell'):
                     logger.info('Detected grub> shell, attempting recovery to ONIE menu')
                     output, respond = GrubMenuTool.recover_from_grub_shell(
+                        serial_engine, all_patterns, timeout=60
+                    )
+
+            if respond == grub_rescue_pointer:
+                with allure.step('Recover from GRUB rescue prompt'):
+                    logger.info('Detected grub rescue> prompt, attempting recovery to ONIE menu')
+                    output, respond = GrubMenuTool.recover_from_grub_rescue(
                         serial_engine, all_patterns, timeout=60
                     )
 

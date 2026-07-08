@@ -601,10 +601,16 @@ def is_value_compatible_with_type(value: str, expected_type: str) -> tuple:
     Instead, we check if the value VIOLATES the expected type's constraints.
 
     Compatibility rules:
-    - sai_uint8_t: single integer 0-255
-    - sai_uint32_t: single integer 0-4294967295 (any non-negative int is fine)
-    - sai_u32_list_t: list format "count:val1:val2..." with non-negative values
-    - sai_s32_list_t: list format "count:val1:val2..." (can have negative values)
+    - sai_uint8_t: integer 0-255, or per-plane "v0/v1/.../vN" where each vN is uint8
+    - sai_uint32_t: integer 0-4294967295, or per-plane "v0/v1/.../vN" where each vN is uint32
+    - sai_u32_list_t: SAI list "count:val1:val2..." with non-negative values,
+      OR per-plane "v0/v1/.../vN" where each vN is a non-negative u32
+    - sai_s32_list_t: SAI list "count:val1:val2..." (signed values allowed),
+      OR per-plane "v0/v1/.../vN" where each vN is a signed 32-bit int
+
+    Multi-plane ports (e.g. QTM3 4-plane IB ports) report list-typed attributes
+    as '/'-separated per-plane scalars instead of the SAI 'count:v1:v2' form, so
+    both shapes are accepted.
 
     Args:
         value: The string value from JSON output
@@ -614,31 +620,43 @@ def is_value_compatible_with_type(value: str, expected_type: str) -> tuple:
         tuple: (is_compatible: bool, error_reason: str or None)
     """
     value = value.strip()
-    is_list_format = ":" in value
+    is_sai_list = ":" in value
+    is_per_plane = "/" in value
 
-    # List types
+    # List types - either traditional SAI "count:v1:v2..." or per-plane "v0/v1/..."
     if expected_type in ("sai_u32_list_t", "sai_s32_list_t"):
-        if not is_list_format:
-            return False, f"Expected list format (count:val1:val2...) but got single value '{value}'"
-        # For list types, just verify format is correct
-        parts = value.split(":")
-        if not parts[0].isdigit():
-            return False, f"List format invalid - first part '{parts[0]}' should be count"
-        return True, None
+        allow_negative = expected_type == "sai_s32_list_t"
+        if is_sai_list:
+            parts = value.split(":")
+            if not parts[0].isdigit():
+                return False, f"List format invalid - first part '{parts[0]}' should be count"
+            return True, None
+        if is_per_plane:
+            for part in value.split("/"):
+                try:
+                    num = int(part)
+                except ValueError:
+                    return False, f"Per-plane value '{part}' is not a valid integer"
+                if not allow_negative and num < 0:
+                    return False, f"Value {num} is negative, invalid for u32 list"
+            return True, None
+        return False, f"Expected list ('count:v1:v2...') or per-plane ('v0/v1/...') format, got '{value}'"
 
-    # Single value types (uint8, uint32)
+    # Single value types (uint8, uint32) - also accept per-plane "v0/v1/v2/v3" format
     if expected_type in ("sai_uint8_t", "sai_uint32_t"):
-        if is_list_format:
-            return False, f"Expected single value but got list format '{value}'"
-        try:
-            num = int(value)
+        if is_sai_list:
+            return False, f"Expected single value but got SAI list format '{value}'"
+        scalars = value.split("/") if is_per_plane else [value]
+        for part in scalars:
+            try:
+                num = int(part)
+            except ValueError:
+                return False, f"Value '{part}' is not a valid integer"
             if expected_type == "sai_uint8_t" and (num < 0 or num > 255):
                 return False, f"Value {num} out of range for uint8 (0-255)"
             if expected_type == "sai_uint32_t" and num < 0:
                 return False, f"Value {num} is negative, invalid for uint32"
-            return True, None
-        except ValueError:
-            return False, f"Value '{value}' is not a valid integer"
+        return True, None
 
     # Unknown type
     return False, f"Unknown expected type: {expected_type}"

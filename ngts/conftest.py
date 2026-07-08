@@ -8,7 +8,6 @@ NOTE: Add here only fixtures and methods that can be used for canonical and comm
 if your methods only apply for canonical setups please add them in ngts/tests/conftest.py
 
 """
-from typing import Callable, List
 import json
 import logging
 import os
@@ -21,14 +20,15 @@ import pytest
 from dotted_dict import DottedDict
 from paramiko.ssh_exception import SSHException
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.general_constants.air_constants import NvidiaAirConstants
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.general_constants.air_constants import NvidiaAirConstants
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType, SonicConst
+from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType
 from ngts.constants.constants import SerialLoggerConst
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_objs_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
@@ -42,10 +42,12 @@ from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_
 from ngts.tools.infra import get_topology_from_noga
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type, is_ipv6_setup
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.scripts.allure_summary.bug_marker import apply_bug_markers, finalize_bug_categories
 from ngts.scripts.sonic_deploy.sonic_only_methods import detect_asic_count, SonicInstallationSteps
 
-logger = logging.getLogger()
-CleanUpT = Callable[[Callable[[], None]], None]
+from ngts.ngts_types import CleanUpT
+
+logger = logging.getLogger(__name__)
 
 
 def _disable_logging_root_handlers():
@@ -53,7 +55,7 @@ def _disable_logging_root_handlers():
     Disable logging root handlers if pytest is running in live mode (-s / --capture=no).
     """
     root, has_live_hdlr = logging.getLogger(), False
-    stream_hdlrs: List[logging.StreamHandler] = []
+    stream_hdlrs: list[logging.StreamHandler] = []
 
     from _pytest.logging import _LiveLoggingStreamHandler
 
@@ -94,6 +96,12 @@ def pytest_collection(session: pytest.Session):
 
     platform = json.loads(devinfo).get('platform')
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_PLATFORM_TYPE, platform)
+
+    # If pytest is running in collect-only mode, skip the rest of the code
+    # WHY? because we want the collection mode to run faster
+    if session.config.getoption('--collect-only'):
+        return
+
     if is_deploy_run():
         # Required for prevent SSH attempts into DUT at the beginning of deploy image test(in case when device in ONIE)
         branch = 'master'
@@ -105,6 +113,30 @@ def pytest_collection(session: pytest.Session):
 
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_BRANCH_NAME, branch)
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_IMAGE_TYPE, image)
+
+
+def pytest_collection_modifyitems(config, items):
+    # Promote @pytest.mark.bug(redmine=...) into native Allure issue links and
+    # a "known_bug" tag, so the report shows a clickable Redmine link on each
+    # failing test and the tag is filterable in the Allure UI - same UI
+    # control as the existing "flaky" chip.
+    apply_bug_markers(items)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # After all tests have written their result JSONs, stamp a sentinel into
+    # failed-test messages and emit categories.json so the Allure dashboard
+    # gets a "Failures caused by open bugs" bucket alongside flaky/new-failed.
+    alluredir = getattr(session.config.option, "allure_report_dir", None)
+    if alluredir:
+        # Pass setup_name so setup_filters on platform-specific bugs are
+        # honored. Without it, a taipan-only bug whose error_pattern hits
+        # a crocodile failure's statusMessage would attach incorrectly.
+        try:
+            setup_name = session.config.getoption("--setup_name", default=None)
+        except Exception:
+            setup_name = None
+        finalize_bug_categories(alluredir, setup_name=setup_name)
 
 
 pytest_plugins = (
@@ -121,6 +153,7 @@ pytest_plugins = (
     'ngts.tools.ports_modifier',
     'tests.common.plugins.random_seed',
     'tests.common.plugins.cli_coverage',
+    'tests.common.plugins.allure_wrapper.ai_rca.per_test_analysis_attachment',
 )
 
 
@@ -151,6 +184,9 @@ def pytest_addoption(parser):
     parser.addoption("--test_name", action="store", default=None,
                      help="a parameter for script check_and_store_sanitizer_dump.py, "
                           "will check for sanitizer failures and store dump under test name")
+    parser.addoption("--dpu_asan", action="store_true", default=False,
+                     help="a boolean parameter for script check_and_store_sanitizer_dump.py, "
+                          "indicates if DPU address sanitizer dumps should be checked")
     parser.addoption("--send_mail", action="store", default=False,
                      help="a boolean parameter for script check_and_store_sanitizer_dump.py, "
                           "will send mail with the sanitizer failures")
@@ -539,7 +575,8 @@ def initial_topology_obj(setup_name, request, is_performance):
 
     with allure.step('Cleaning-up the topology object'):
         for player_name, player_attributes in topology.players.items():
-            player_attributes['engine'].disconnect()
+            if disconnect := getattr(player_attributes['engine'], 'disconnect', None):
+                disconnect()
 
 
 @pytest.fixture(scope='session')
@@ -595,6 +632,10 @@ def update_topology_with_cli_class(topology, request=None, is_performance=False)
     # TODO: determine player type by topology attribute, rather than alias
     nvos_setup = False
     for player_key, player_info in topology.players.items():
+        if player_key == 'bmc':
+            # BMC is a synthetic player attached by add_bmc_player; it has no noga_query_data
+            # and its cli is already set at attach time.
+            continue
         cli_type = player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
         if player_key == 'dut' or player_key == PerfConsts.LEFT_TG_ALIAS or player_key == PerfConsts.RIGHT_TG_ALIAS:
             if cli_type in NvosCliTypes.NvueCliTypes:
@@ -743,7 +784,7 @@ def is_code_coverage_run(topology_obj, should_skip_checking_fixture):
         return pytest.is_code_coverage
 
     try:
-        pytest.is_code_coverage = bool(topology_obj.players['dut']['cli'].general.echo('${COVERAGE_FILE}'))
+        pytest.is_code_coverage = bool(topology_obj.players['dut']['cli'].general.echo('${COVERAGE_FILE}').strip())
         logger.info(f'Code coverage image: {pytest.is_code_coverage}')
     except SSHException as err:
         logger.warning(f'Unable to check if its code coverage run. Assuming that the device is not reachable. '
@@ -936,8 +977,10 @@ def setups_list():
 
 
 @pytest.fixture()
-def show_setup_versions(topology_obj):
+def show_setup_versions(topology_obj, request):
     cli_objs: dict[str, SonicGeneralCliDefault] = get_dut_cli_objs_from_topo_obj(topology_obj)
+
+    nos_replacement_pending = bool(request.config.getoption('--target_cli_type'))
 
     def _attach_setup_versions():
         clis: dict[str, SonicGeneralCliDefault] = cli_objs
@@ -951,7 +994,10 @@ def show_setup_versions(topology_obj):
         except Exception:
             logger.info('could not get setup versions')
 
-    _attach_setup_versions()
+    if nos_replacement_pending:
+        logger.info("Skipping pre-install setup versions: NOS replacement in progress")
+    else:
+        _attach_setup_versions()
     yield
     _attach_setup_versions()
 
@@ -999,7 +1045,7 @@ def register_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
 
 
 @pytest.fixture
-def unregister_cleanup(request: pytest.FixtureRequest):
+def unregister_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
     """
     Fixture for removing a finalizer from the request
     :param request: pytest builtin
@@ -1024,48 +1070,6 @@ def unregister_cleanup(request: pytest.FixtureRequest):
         except ValueError:  # the function pointer is not registered in the stack
             pass
     return _unregister_cleanup
-
-
-@pytest.fixture
-def register_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
-    """
-    Fixture for registering cleanup functions
-    :param request: pytest builtin
-    :return: function for registering cleanup
-
-    Usage:
-    ```python
-    def my_cleanup():
-        print("cleanup")
-
-    def test_my_test():
-        # do something
-        register_cleanup(my_cleanup)
-        # do something
-    ```
-    for more advanced usage, consider using the `partial` function
-
-    Example:
-    ```python
-    from functools import partial
-
-    def my_cleanup(engines):
-        print("cleanup")
-
-    def test_my_test():
-        # do something
-        register_cleanup(partial(my_cleanup, engines))
-        # do something
-    ```
-    """
-    def _register(fn):
-        # Wrap the cleanup function with an allure step
-        def wrapped_fn():
-            with allure.step("Cleanup stage"):
-                fn()
-
-        request.addfinalizer(wrapped_fn)
-    return _register
 
 
 @pytest.fixture(scope='session')
@@ -1085,31 +1089,3 @@ def is_ib_router(request, engines):
     :return: True or False, if run is ib_router type
     """
     return request.config.getoption('--ib_router')
-
-
-@pytest.fixture
-def unregister_cleanup(request: pytest.FixtureRequest):
-    """
-    Fixture for removing a finalizer from the request
-    :param request: pytest builtin
-    :return: function for removing a finalizer
-
-    Usage:
-    ```python
-    def my_cleanup():
-        ...
-
-    def test_my_test(register_cleanup, unregister_cleanup):
-        # do something
-        register_cleanup(my_cleanup)
-        # do something
-        unregister_cleanup(my_cleanup)
-        # do something
-    ```
-    """
-    def _unregister_cleanup(cleanup_func):
-        try:
-            request.session._setupstate.stack[request.node][0].remove(cleanup_func)
-        except ValueError:  # the function pointer is not registered in the stack
-            pass
-    return _unregister_cleanup

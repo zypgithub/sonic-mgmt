@@ -7,6 +7,7 @@ import allure
 import pytest
 import sys
 import time
+import yaml
 from pathlib import Path
 
 from ngts.helpers import json_file_helper
@@ -18,6 +19,7 @@ from ngts.scripts.sonic_deploy.community_only_methods import get_generate_minigr
     config_y_cable_simulator, add_host_for_y_cable_simulator
 from retry.api import retry_call, retry
 from ngts.helpers.run_process_on_host import run_background_process_on_host
+from ngts.helpers.interface_helpers import get_service_port
 from ngts.common.util import get_installed_dpu_info, get_specified_installed_dpus_from_noga
 
 logger = logging.getLogger()
@@ -161,11 +163,31 @@ class SonicInstallationSteps:
                                                     setup_name=setup_name,
                                                     dut_names=[dut_name],
                                                     sonic_topo=sonic_topo)
+        is_scale_topo = sonic_topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST
+        is_bgp_scale_topo = sonic_topo in SonicDeployConstants.BGP_SCALE_TOPOLOGIES_LIST
+
+        if (not is_dualtor_topo(sonic_topo) and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
+                "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
+                'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
+                "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and
+                (not dut_name.startswith('slm-') or dut_name in SonicDeployConstants.SLM_GEN_MG_ALLOWLIST) and
+                not setup_name.endswith('-ha') and
+                "r-bison-18" != dut_name and "r-bison-08" != dut_name):
+            gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
+            if is_scale_topo:
+                logger.info(f"Scale topo {sonic_topo}: running gen-mg foreground to avoid a race condition with add-topo for converged topos")
+                execute_script(gen_mg_cmd, ansible_path)
+            else:
+                run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
+                                               exec_path=ansible_path, deploy_sequential=deploy_sequential)
+
         if not deploy_image_only:
             add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type,
                                                                        ptf_tag, hwsku, parallel)
-            if sonic_topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST:
+            if is_scale_topo:
                 add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT_SCALE
+            elif is_bgp_scale_topo:
+                add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT_BGP_SCALE
             else:
                 add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT
             logger.info(f"Using add topology timeout: {add_topo_timeout}s for topology: {sonic_topo}")
@@ -173,14 +195,6 @@ class SonicInstallationSteps:
                                            exec_path=ansible_path, deploy_sequential=deploy_sequential)
         else:
             logger.info("Skipping add-topo as deploy_image_only is True")
-
-        if (not is_dualtor_topo(sonic_topo) and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
-                "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
-                'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
-                "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and not setup_name.endswith('-ha')):
-            gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
-            run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
-                                           exec_path=ansible_path, deploy_sequential=deploy_sequential)
 
     @staticmethod
     def copy_csv_inventory_lab(setup_name, destination_hwsku, is_air=False):
@@ -378,7 +392,7 @@ class SonicInstallationSteps:
                 logger.info("Running CMD: {}".format(cmd))
 
                 # Get timeout based on topology type
-                if topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST:
+                if topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST or topo in SonicDeployConstants.BGP_SCALE_TOPOLOGIES_LIST:
                     remove_timeout = SonicDeployConstants.REMOVE_TOPO_TIMEOUT_SCALE
                 else:
                     remove_timeout = SonicDeployConstants.REMOVE_TOPO_TIMEOUT
@@ -423,6 +437,8 @@ class SonicInstallationSteps:
               "ptf_imagetag={PTF_TAG} -vvvvv".format(SWITCH=dut_name,
                                                      TOPO=sonic_topo, PTF_TAG=ptf_tag, NEIGHBOR_TYPE=neighbor_type,
                                                      HWSKU=hwsku)
+        if SonicInstallationSteps._is_use_converged_peers(setup_name, dut_name, sonic_topo):
+            cmd += " -e max_fp_num=127"
         if parallel:
             cmd += " --parallel"
         return cmd
@@ -517,6 +533,37 @@ class SonicInstallationSteps:
         SonicInstallationSteps.copy_json_to_dut(platform_json_obj, 'platform.json', platform_json_path, dut_engine)
 
     @staticmethod
+    def configure_single_service_port_mloop(dut_engine, platform):
+        if platform not in SonicDeployConstants.SINGLE_SERVICE_PORT_PLATFORMS:
+            return
+
+        service_ports = get_service_port(platform)
+        if not service_ports:
+            raise Exception(f"Failed to resolve service ports for platform {platform}")
+
+        persistent_mloop_dir = os.path.realpath(
+            os.path.join(os.path.dirname(__file__), "../../../sonic-tool/persistent_mloop")
+        )
+        service_conf = "persistent_mloop.conf"
+        script_name = "persistent_mloop.py"
+
+        dut_engine.copy_file(source_file=os.path.join(persistent_mloop_dir, service_conf),
+                             dest_file=service_conf,
+                             file_system='/tmp',
+                             direction='put')
+        dut_engine.copy_file(source_file=os.path.join(persistent_mloop_dir, script_name),
+                             dest_file=script_name,
+                             file_system='/tmp',
+                             direction='put')
+
+        dut_engine.run_cmd(f"docker cp /tmp/{service_conf} syncd:/etc/supervisor/conf.d/{service_conf}", validate=True)
+        dut_engine.run_cmd(f"docker cp /tmp/{script_name} syncd:/usr/bin/{script_name}", validate=True)
+        dut_engine.run_cmd(f"docker exec syncd chmod +x /usr/bin/{script_name}", validate=True)
+
+        ports_arg = " ".join(service_ports)
+        dut_engine.run_cmd(f"docker exec syncd python3 /usr/bin/{script_name} --ports {ports_arg}", validate=True)
+
+    @staticmethod
     def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name, platform_params,
                                 apply_base_config, target_version, is_shutdown_bgp, reboot_after_install,
                                 deploy_only_target, fw_pkg_path, reboot, additional_apps, setup_info, dut_alias,
@@ -597,6 +644,11 @@ class SonicInstallationSteps:
             need_gen_mingraph = True
         if "air-6600" in setup_name:
             hwskus = ['Mellanox-SN6600-C512S4', 'ACS-SN6600', 'Mellanox-SN6600-V448P16S2']
+            if is_community(sonic_topo):
+                need_gen_mingraph = True
+        if ("r-bison-06" in setup_name or "r-bison-08" in setup_name or "r-bison-16" in setup_name or
+                "r-bison-18" in setup_name or "r-bison-20" in setup_name or "r-bison-22" in setup_name):
+            hwskus = ['Mellanox-SN5640-C512X2', 'Mellanox-SN5640-C508O1X2', 'Mellanox-SN5640-O128X2']
             need_gen_mingraph = True
 
         for hwsku in hwskus:
@@ -648,6 +700,11 @@ class SonicInstallationSteps:
                 cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
                                         local_flags=False, platform_params=platform_params)
                 SonicInstallationSteps.enable_issu(cli.engine, platform_params)
+
+        # Disable IM on t1-isolated-d32u1s2 topo temporarily for hwsku Mellanox-SN5640-C508O1X2
+        # TODO: It should be removed after the software control supported.
+        if "t1-isolated-d32u1s2" in sonic_topo:
+            dut_engine.run_cmd("sudo cmis_host_mgmt.py --disable")
 
         # Community only steps
         if is_community(sonic_topo):
@@ -941,8 +998,14 @@ class SonicInstallationSteps:
                                                     is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path=fw_pkg_path, cli=cli)
 
                 if not is_community(sonic_topo):
-                    cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
-                                             chip_type=chip_type, enable_im=True)
+                    required_reload_config = cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
+                                                                      chip_type=chip_type, enable_im=True)
+                    if required_reload_config:
+                        logger.info("IM is configured, but required to reload config to apply IM configuration")
+                        cli.cli_obj.general.reload_flow(
+                            ports_list=None, topology_obj=topology_obj, reload_force=True,
+                            platform_params=platform_params)
+
             with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
                 cli.engine.disconnect()
                 system_set_timezone(cli.engine, set_timezone)
@@ -1020,6 +1083,15 @@ class SonicInstallationSteps:
             assert version >= lowest_valid_version, \
                 'Current hw-management version {} is lower than the required version {}.'.format(
                     version, lowest_valid_version)
+
+    @staticmethod
+    def _is_use_converged_peers(setup_name, dut_name, sonic_topo):
+        conf_name = setup_name if (is_dualtor_topo(sonic_topo) or setup_name.endswith("-ha")) else f"{dut_name}-{sonic_topo}"
+        testbed_yaml = os.path.join(os.path.dirname(__file__), "../../../ansible/testbed.yaml")
+        with open(testbed_yaml, "r") as f:
+            tb = yaml.safe_load(f) or []
+        entry = next((x for x in tb if x.get("conf-name") == conf_name), None)
+        return bool(entry and entry.get("use_converged_peers", False))
 
 
 def is_community(sonic_topo):

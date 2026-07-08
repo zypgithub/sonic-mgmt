@@ -34,6 +34,11 @@ def test_firmware_install_same_version(devices: DevicesT, random_api: str, test_
         Test flow:
             1.Select a random component on device
             2. Fetch and install same firmware version on component without using 'skip-version-check' option
+
+        Known limitations:
+            - CPLD: skipped when Bug #4800718 is active
+            - SSD: skipped when Bug #4998785 is active — SSD pkg reports "package does not support upgrade
+              for the current SSD FW version" instead of the expected "Same image already installed" message
     """
 
     with allure.step("Select a random component to test"):
@@ -42,6 +47,10 @@ def test_firmware_install_same_version(devices: DevicesT, random_api: str, test_
 
     if component == constants.FW_COMPONENT_CPLD and redmine_helpers.is_bug_active(4800718):
         pytest.skip("Bug #4800718 is active - skipping CPLD firmware install same version test")
+
+    if component == constants.FW_COMPONENT_SSD and redmine_helpers.is_bug_active(4998785):
+        pytest.skip("Bug #4998785 is active - SSD pkg does not support upgrade for current SSD FW version, "
+                    "skipping SSD firmware install same version test")
 
     with allure.step("Install same fw version without using 'skip-version-check' option"):
         result = install_same_firmware_version(devices=devices,
@@ -68,7 +77,6 @@ def test_firmware_install_same_version_skip_check(devices: DevicesT, random_api:
 
     with allure.step("Select a random component to test"):
         component = select_random_component(devices)
-        component = 'erot'
         platform_component = getattr(Platform().firmware, component)
 
     with allure.step("Install same fw version while using 'skip-version-check' option"):
@@ -249,6 +257,15 @@ def _select_random_sma_component(devices: DevicesT) -> tuple[str, FWComponentsTo
     return sma_name, firmware_component
 
 
+def _fw_package_supports_ssd() -> bool:
+    """Return True if the FW package has SSD entries for this device's part number."""
+    _, filename, version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+    if version_name is None:
+        logger.info("Excluding SSD from component list: package %r does not support SSD model", filename)
+        return False
+    return True
+
+
 def select_random_component(devices: DevicesT) -> str:
     """
         @summary: Select a random component on tested device
@@ -264,6 +281,8 @@ def select_random_component(devices: DevicesT) -> str:
     # Add SSD for switches that support SSD firmware updates (if not already from components_list)
     if devices.dut.supports_ssd_upgrade and constants.FW_COMPONENT_SSD not in components_list:
         components_list.append(constants.FW_COMPONENT_SSD)
+    if constants.FW_COMPONENT_SSD in components_list and not _fw_package_supports_ssd():
+        components_list.remove(constants.FW_COMPONENT_SSD)
 
     with allure.step("Randomize a components from components list"):
         logger.info(f"Components list = {components_list}")

@@ -71,6 +71,11 @@ def test_deploy_and_upgrade_air(topology_obj, engines, target_version, sonic_top
                                                                chip_type=chip_type, deploy_dpu=False, is_air=True,
                                                                custom_config_db_air_path=custom_config_db_air_path)
 
+                with allure.step('Configure persistent mloop on single service port'):
+                    SonicInstallationSteps.configure_single_service_port_mloop(
+                        dut_engine=dut['engine'], platform=platform_params['platform']
+                    )
+
             # Remove .pytest_cache folder after deploy - otherwise  - cached info from old image will be used in skip tests
             cache_full_path = os.path.join(os.path.dirname(__file__), '../../.pytest_cache')
             shutil.rmtree(cache_full_path, ignore_errors=True)

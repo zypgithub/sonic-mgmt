@@ -4,16 +4,17 @@ import allure
 import logging
 import pytest
 import random
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports, validate_counters_sample
 from ngts.helpers.performance.performance_counter_helpers import should_validate_performance_counters
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, apply_test_configuration, configure_mloops, restore_basic_configuration, run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
                                                                 set_ports_admin_state,
-                                                                skip_test_on_unsupported_os, get_obj_method)
+                                                                skip_test_on_unsupported_os, get_obj_method,
+                                                                validate_perf_dut_ingress_buffer_mode)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, ValidationConsts
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.constants import CliType, InfraConst
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
@@ -39,7 +40,7 @@ class TestSPCXRA_x2Split_400G:
         self.chip_type = chip_type
         self.ip = InfraConst.IPV6 if basic_setup_configuration else InfraConst.IPV4
         self.is_ipv6 = basic_setup_configuration
-        self.conf_args = get_conf_args(self.is_ipv6)
+        self.conf_args = get_conf_args(self.is_ipv6, self.chip_type)
         self.traffic_jsons = get_spcx_ra_spine_traffic(players, self.conf_args)
 
     def apply_custom_configuration(self, scenario_config=None):
@@ -89,6 +90,11 @@ class TestSPCXRA_x2Split_400G:
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size):
 
         test_name = get_perf_test_name(request)
+
+        with allure.step("Ensure and validate ingress buffer mode (IBM) on DUT"):
+            self.cli_object.performance.set_ibm(self.scenario, self.conf_args, self.chip_type)
+            if isinstance(self.cli_object, NvueCli):
+                validate_perf_dut_ingress_buffer_mode(self.players)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)

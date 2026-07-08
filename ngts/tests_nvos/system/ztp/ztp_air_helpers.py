@@ -3,7 +3,7 @@ import logging
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from infra.tools.general_constants.air_constants import NvidiaAirConstants, HostsConstants
+from devts.infra.tools.general_constants.air_constants import NvidiaAirConstants, HostsConstants
 
 logger = logging.getLogger(__name__)
 

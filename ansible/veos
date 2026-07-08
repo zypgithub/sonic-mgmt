@@ -138,6 +138,7 @@ all:
           - t1-f2-d10u8
           - t1-isolated-d128
           - t1-isolated-d28u1
+          - t1-isolated-d28u4
           - t1-isolated-d224u8
           - t1-isolated-d254u2s1
           - t1-isolated-v6-d128
@@ -174,6 +175,7 @@ all:
           - t0-c256
           - t0-backend
           - t0-f2-d40u8
+          - t0-f2-d40u8-po2vlan
           - t0-standalone-32
           - t0-standalone-64
           - t0-standalone-128
@@ -225,11 +227,13 @@ all:
           - c0-lo
           - dpu-1
           - ft2-64
+          - ft2-16
           - lt2-p32o64
           - lt2-o128
           - ptp-256
           - urh
           - lrh
+          - bmc-dual-mgmt
       children:
         server_1:
         server_2:

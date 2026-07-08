@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+  <global>
+    <Test>
+      <group> NVOS </group>
+      <name> NVOS Zombie Link Tests </name>
+      <info> Tests for tx-bandwidth-loss-monitor (zombie link) on NVL5 / NVL6 / XDR </info>
+      <owner> NVOS Team </owner>
+    </Test>
+    <Case>
+      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+      <tout> 3600 </tout>
+      <tags>ALL</tags>
+    </Case>
+  </global>
+
+  <case>
+    <name> zombie link test </name>
+    <info> Test tx-bandwidth-loss-monitor (zombie link); the test skips per-platform when no eligible ports are exposed </info>
+    <tout> 1800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/zombie_link/test_zombie_link.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --release_name=[[conf:extra_info.release_name]] --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> zombie link injection test </name>
+    <info> Functional BW-loss injection via PhyDiagTool; skips when phy_diag.py is not deployed or the firmware silently rejects the PTER arm </info>
+    <tout> 1800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/zombie_link/test_zombie_link_injection.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --release_name=[[conf:extra_info.release_name]] --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+</CASEDEF>

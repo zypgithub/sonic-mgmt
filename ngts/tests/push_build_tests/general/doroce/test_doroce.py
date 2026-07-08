@@ -5,8 +5,8 @@ import random
 import time
 from retry.api import retry_call
 
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
-from infra.tools.validations.traffic_validations.iperf.iperf_runner import IperfChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.iperf.iperf_runner import IperfChecker
 from ngts.common.checkers import is_feature_installed
 from ngts.constants.constants import AppExtensionInstallationConstants, SonicConst, DoroceConsts
 

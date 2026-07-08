@@ -1,7 +1,7 @@
 import logging
 
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.acl.test_acl_basic import ping_from_switch

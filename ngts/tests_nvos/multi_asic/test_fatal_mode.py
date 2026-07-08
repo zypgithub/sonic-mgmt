@@ -1,9 +1,12 @@
+import contextlib
 import logging
 import os
 import re
+import threading
 import time
 from contextlib import ExitStack
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Union
 
 import pytest
@@ -12,6 +15,7 @@ from retry.api import retry_call
 from ngts.nvos_constants.constants_nvos import ApiType, HealthConsts, NvosConst, ActionConsts, SystemConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra import ExceptionTool
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, wait_until_cli_is_up, wait_on_systemctl_initialization
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.FilesTool import EngineFile
@@ -22,6 +26,12 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
+# Reuse the canonical ASIC_HEALTH fatal-state helper from test_system_health.py so we
+# don't carry a second copy that can silently diverge (Harel review #698). The helper
+# takes ``engines`` there; we adapt via SimpleNamespace in _set_asic_health_fatal_state below.
+from ngts.tests_nvos.system.test_system_health import (
+    _set_asic_health_fatal_state as _shared_set_asic_health_fatal_state,
+)
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
@@ -60,6 +70,17 @@ SAI_HEALTH_SIM_KEY = "SAI_SDK_HEALTH_EVENT_SIMULATION"
 SAI_HEALTH_SIM_LINE = f"{SAI_HEALTH_SIM_KEY}=1"
 SAI_SIM_NOT_ENABLED_MARKER = "Health event simulation not enabled at SDK init"
 SAI_SIM_RC_RE = re.compile(r"sim_rc=(-?\d+)")
+
+# Overlap: tech-support on primary SSH, fatal inject on secondary after delay.
+TECH_SUPPORT_FATAL_INJECT_DELAY_SEC = 5
+# Strictly below @pytest.mark.timeout(45 * MINUTE) so the join-timeout assertion path runs
+# (and gives a useful failure message) before pytest kills the test outright.
+TECH_SUPPORT_CONCURRENT_JOIN_TIMEOUT_SEC = 40 * MINUTE
+# Single-ASIC overlap: cause 5 (CATAS) triggers fatal; inject count follows fae events-count.
+
+
+def _overlap_fatal_inject_events(events_count: int) -> list:
+    return [5] * events_count
 
 #  FIXTURES AND TEARDOWN
 ################################################################################
@@ -110,6 +131,90 @@ def _ensure_sim_enabled_content(original: str) -> str:
     return "\n".join(other_lines + [SAI_HEALTH_SIM_LINE]) + "\n"
 
 
+def _patch_sai_profile_handles(handles: list) -> int:
+    """Ensure every handle's sai.profile contains SAI_SDK_HEALTH_EVENT_SIMULATION=1."""
+    modified = 0
+    for handle in handles:
+        current = handle.get_content()
+        new_content = _ensure_sim_enabled_content(current)
+        if new_content != current:
+            handle.replace_whole_content(new_content)
+            modified += 1
+    return modified
+
+
+def _container_sai_profile_sim_line(engine, asic: int = 1) -> str:
+    """Return grep output for the sim key inside syncd's mounted hwsku sai.profile."""
+    container = f"syncd-ibv0{asic - 1}"
+    return engine.run_cmd(
+        f'docker exec {container} grep {SAI_HEALTH_SIM_KEY} /usr/share/sonic/hwsku/sai.profile 2>&1'
+    ).strip()
+
+
+def _sai_health_sim_probe(engine, asic: int = 1, retries: int = 18, delay_sec: int = 10) -> tuple:
+    """Probe whether sx_api_dbg_health_event_simulate is enabled (sim_rc 0 = OK)."""
+    container = f"syncd-ibv0{asic - 1}"
+    cause = FATAL_HEALTH_EVENT_SIMULATION["warning"]
+    py_script = (
+        'from python_sdk_api.sx_api import *; '
+        'rc, h = sx_api_open(None); '
+        f'p = new_sx_dbg_health_event_simulate_params_t_p(); p.cause = {cause}; '
+        'rc_sim = sx_api_dbg_health_event_simulate(h, SX_ACCESS_CMD_SET, p); '
+        'delete_sx_dbg_health_event_simulate_params_t_p(p); '
+        'sx_api_close(h); '
+        "print('sim_rc=' + str(rc_sim))"
+    )
+    cmd = f'docker exec {container} python3 -c "{py_script}" 2>&1'
+    output = ""
+    for attempt in range(retries):
+        output = engine.run_cmd(cmd)
+        if "is not running" in output or "Error response from daemon" in output:
+            logger.info(
+                "SAI sim probe: %s not ready (attempt %s/%s), retrying in %ss",
+                container, attempt + 1, retries, delay_sec)
+            time.sleep(delay_sec)
+            continue
+        match = SAI_SIM_RC_RE.search(output)
+        return (int(match.group(1)) if match else -1), output
+    return -1, output
+
+
+def _reboot_dut_for_sai_profile(engine) -> None:
+    with allure.step("Reboot DUT so syncd reloads sai.profile with SAI_SDK_HEALTH_EVENT_SIMULATION"):
+        System().reboot.action_reboot(engine, params='force').verify_result()
+        System().validate_health_status(HealthConsts.OK)
+        _reset_base_prompt(engine)
+
+
+def _ensure_sai_health_simulation_active(engine, asic_amount: int, handles: list) -> None:
+    """Per-ASIC sai.profile may be regenerated at boot without the sim flag; patch and reboot if needed."""
+    with allure.step("Verify SAI health-event simulation is active in running syncd"):
+        post_modified = _patch_sai_profile_handles(handles)
+        rc_sim, probe_out = _sai_health_sim_probe(engine)
+        if rc_sim == 0:
+            return
+
+        logger.info(
+            "SAI sim probe sim_rc=%s (post_modified=%s); rebooting once to reload SDK from patched profiles",
+            rc_sim, post_modified)
+        _reboot_dut_for_sai_profile(engine)
+        post_reboot_modified = _patch_sai_profile_handles(handles)
+        rc_sim, probe_out = _sai_health_sim_probe(engine)
+        container_profile = ""
+        try:
+            container_profile = _container_sai_profile_sim_line(engine)
+        except Exception as exc:  # noqa: BLE001
+            container_profile = f"(could not read container sai.profile: {exc})"
+
+        assert rc_sim == 0, (
+            f"{SAI_HEALTH_SIM_KEY}=1 is not active in running syncd (sim_rc={rc_sim}). "
+            f"post_reboot_modified={post_reboot_modified}. "
+            f"Container sai.profile grep: {container_profile!r}. "
+            f"hwsku={_resolve_active_hwsku_dir(engine)!r}. "
+            f"The image may not support health-event simulation on this build. "
+            f"Probe output:\n{probe_out}")
+
+
 def _revert_engine_file_safely(handle: EngineFile) -> None:
     """ExitStack callback: revert one handle, log + swallow on failure so other
     handles still get reverted (ExitStack already runs all callbacks, but we
@@ -156,16 +261,21 @@ def enable_sai_health_event_simulation(engines, devices):
                 if new_content != handle.original_content:
                     handle.replace_whole_content(new_content)
                     modified_count += 1
-            if modified_count == 0:
-                logger.info(f"All {len(handles)} sai.profile files already have "
-                            f"{SAI_HEALTH_SIM_LINE}, skipping setup reboot")
+            rc_before, _ = _sai_health_sim_probe(engine)
+            need_reboot = modified_count > 0 or rc_before != 0
+            if not need_reboot:
+                logger.info(f"All {len(handles)} sai.profile files already have {SAI_HEALTH_SIM_LINE} "
+                            "and SAI sim probe passed; skipping setup reboot")
             else:
                 setup_modified_files = True
-                logger.info(f"Modified {modified_count} sai.profile file(s); rebooting")
+                logger.info(
+                    f"SAI sim setup: modified_count={modified_count}, probe sim_rc={rc_before}; rebooting")
                 with allure.step("Reboot DUT to apply SAI profile change"):
                     System().reboot.action_reboot(engine, params='force').verify_result()
                     System().validate_health_status(HealthConsts.OK)
                     _reset_base_prompt(engine)
+
+            _ensure_sai_health_simulation_active(engine, devices.dut.asic_amount, handles)
 
         yield
 
@@ -229,6 +339,12 @@ def assert_fatal_logs(engines, request):
     test_name = request.node.name
     if test_negative_fatal_flow_with_warnings.__name__ in test_name:
         logger.info("Fatal log check not needed for test_negative_fatal_flow_with_warnings as it doesn't create fatal events")
+        return
+    if test_all_asic_fatal_while_tech_support_generating.__name__ in test_name:
+        logger.info(
+            "Fatal log check skipped: STATE_DB ASIC_HEALTH path does not log "
+            f'"{SAI_LOG_STRING}" lines to {FATAL_LOG_FILE}'
+        )
         return
 
     with allure.step(f'Find lines for fatal events in {FATAL_LOG_FILE}'):
@@ -324,7 +440,7 @@ def test_fatal_flow_until_reboot(engines, devices, random_api, random_asic, test
         _set_settings(reboot_count=2, clear_time=4)  # longer clear-time so we have enough time to generate tech-support
         _trigger_soft_reset(False, random_asic, events_count_setting)
 
-        with allure.step(f"Trigger switch reboot 1 or 2 times (randomly)"):
+        with allure.step("Trigger switch reboot 1 or 2 times (randomly)"):
             repetitions = RandomizationTool.select_random_value([1, 2]).get_returned_value()
             for _ in range(repetitions):
                 _trigger_reboot(random_asic, events_count_setting)
@@ -338,6 +454,61 @@ def test_fatal_flow_until_reboot(engines, devices, random_api, random_asic, test
         if to_wait < 0:
             to_wait = 0
         _wait_to_exit_fatal(2 + to_wait // 60)
+
+
+@pytest.mark.timeout(12 * MINUTE, func_only=True)
+@pytest.mark.checklist
+@pytest.mark.fatal_mode
+def test_single_asic_fatal_while_tech_support_generating(engines, random_asic, test_name, events_count_setting):
+    """
+    Single-ASIC fatal during tech-support: SAI ``sx_api_dbg_health_event_simulate`` (cause 5) on one ASIC.
+
+    After the first ASIC enters System-Fatal, further injections on other ASICs are not exercised here.
+    """
+    overlap_events = _overlap_fatal_inject_events(events_count_setting)
+
+    def inject_worker(secondary):
+        _simulate_events(overlap_events, random_asic, engine=secondary)
+
+    _run_fatal_during_tech_support_overlap(
+        engines,
+        test_name,
+        events_count_setting,
+        overlap_description=(
+            f"SAI health-event simulate on ASIC{random_asic} only "
+            f"(events={overlap_events}, fae_events_count={events_count_setting})"
+        ),
+        inject_worker=inject_worker,
+    )
+
+
+@pytest.mark.timeout(15 * MINUTE, func_only=True)
+@pytest.mark.checklist
+@pytest.mark.fatal_mode
+@pytest.mark.disable_loganalyzer
+def test_all_asic_fatal_while_tech_support_generating(engines, test_name, events_count_setting):
+    """
+    All-ASIC fatal during tech-support: STATE_DB ``ASIC_HEALTH|STATE fatal_state=true`` (one write).
+
+    Trigger: ``sonic-db-cli STATE_DB hset ASIC_HEALTH|STATE fatal_state true`` on a second SSH session.
+    Recovery: ``fatal_state false`` (fire-and-forget) in test teardown — same pattern as
+    ``test_asic_health_fatal_state_marks_all_unhealthy`` in ``test_system_health.py``.
+    """
+    def inject_worker(secondary):
+        _set_asic_health_fatal_state(secondary, "true")
+
+    _run_fatal_during_tech_support_overlap(
+        engines,
+        test_name,
+        events_count_setting,
+        overlap_description=(
+            f"STATE_DB ASIC_HEALTH fatal_state=true (all ASICs unhealthy), "
+            f"fae_events_count={events_count_setting}"
+        ),
+        inject_worker=inject_worker,
+        recover_asic_health_fatal_state=True,
+        overlap_tarball_fatal_via_state_db=True,
+    )
 
 
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
@@ -364,12 +535,12 @@ def test_fatal_flow_until_close_ports(engines, devices, random_api, random_asic,
             else:
                 raise
 
-        _assert_system_fatal_mode(True, )
+        _assert_system_fatal_mode(True)
         _assert_close_ports()
 
     with allure.step("Assert system remains in fatal mode with closed ports even after the clear-time"):
         _wait(1, 30)
-        _assert_system_fatal_mode(True, )
+        _assert_system_fatal_mode(True)
         _assert_close_ports()
 
     _manual_reboot(engines.dut)
@@ -427,12 +598,12 @@ def _test_disable_fatal_mode_reboot(engines, devices, random_asic):
     TestToolkit.tested_api = ApiType.OPENAPI
     _set_settings(reboot_state=NvosConst.DISABLED)
 
-    with allure.step(f"Trigger fatal mode with no restart"):
+    with allure.step("Trigger fatal mode with no restart"):
         _simulate_events(2, random_asic)
         _assert_syncd_restart(expect_restart=False)
         _assert_system_fatal_mode(True, True)
 
-    with allure.step(f"Simulate more events and assert still no restart"):
+    with allure.step("Simulate more events and assert still no restart"):
         _simulate_events(2, random_asic)
         _assert_syncd_restart(expect_restart=False)
         _assert_system_fatal_mode(True, False)
@@ -511,31 +682,63 @@ def _trigger_reboot(asic: int, number_of_events):
     with allure.step(_trigger_reboot.__name__ + ': Generating health-events to trigger fatal-mode reboot'):
         _simulate_events(number_of_events, asic, False)
         _assert_reboot()
-        _assert_system_fatal_mode(True, )
+        _assert_system_fatal_mode(True)
 
 
-def _simulate_events(number_of_events: Union[int, list], asic: int, verify_non_fatal=True):
+def _thread_safe_allure_step(title):
+    """allure.step that is a no-op on worker threads.
+
+    Allure's step context is not thread-safe: spans opened on a non-main thread can be dropped
+    or attached under the wrong parent. The outer "Concurrent: tech-support on primary SSH..."
+    step on the main thread already frames worker activity; emit a plain log line instead so
+    the report stays coherent.
+    """
+    if threading.current_thread() is threading.main_thread():
+        return allure.step(title)
+    logger.info("[%s] %s", threading.current_thread().name, title)
+    return contextlib.nullcontext()
+
+
+def _simulate_events(
+    number_of_events: Union[int, list, tuple],
+    asic: int,
+    verify_non_fatal=True,
+    engine=None,
+):
     """
     Generates health-events relevant for fatal mode, on a given ASIC.
-    number_of_events can instead contain an ordered list of the actual event_ids.
+    number_of_events can instead contain an ordered list/tuple of the actual event_ids.
+    If ``engine`` is given, all injections go through it (secondary SSH while the primary
+    session is busy, e.g. tech-support ``nv action generate``); otherwise the default
+    ``TestToolkit.engines.dut`` is used.
     todo If verify_non_fatal: after each event except the last, verify system is not in fatal mode.
     """
     len_events = number_of_events if isinstance(number_of_events, int) else len(number_of_events)
-    with allure.step(f"{_simulate_events.__name__}: Simulating {len_events} MFDEs on ASIC{asic}"):
-        event_list = (number_of_events if isinstance(number_of_events, list) else _get_random_event_list(number_of_events))
+    with _thread_safe_allure_step(f"{_simulate_events.__name__}: Simulating {len_events} MFDEs on ASIC{asic}"):
+        event_list = (
+            list(number_of_events)
+            if isinstance(number_of_events, (list, tuple))
+            else _get_random_event_list(number_of_events)
+        )
         for event_id in event_list:
-            _simulate_event(event_id, asic)
+            _simulate_event(event_id, asic, engine=engine)
             _wait(0, WAIT_BETWEEN_EVENTS_SECONDS)  # fatal doesn't work if we don't wait between events
 
 
-def _simulate_event(event_id, asic):
+def _simulate_event(event_id, asic, engine=None):
     """Simulates a health event on the given ASIC via SAI sx_api_dbg_health_event_simulate.
+
+    ``engine`` defaults to ``TestToolkit.engines.dut`` so existing call sites are unchanged;
+    pass a secondary SSH session to overlap with a long-running primary command.
+
     Asserts the SDK accepted the call: if the per-ASIC sai.profile is missing
     SAI_SDK_HEALTH_EVENT_SIMULATION=1, the SDK logs 'Health event simulation
     not enabled at SDK init' and returns non-zero — without this assert, the
     test silently no-ops the injection and only fails much later on a missing
-    fatal-event log line, which obscures the root cause."""
-    with allure.step(f"{_simulate_event.__name__}({event_id=}, {asic=})"):
+    fatal-event log line, which obscures the root cause.
+    """
+    engine = engine if engine is not None else TestToolkit.engines.dut
+    with _thread_safe_allure_step(f"{_simulate_event.__name__}({event_id=}, {asic=})"):
         cause = FATAL_HEALTH_EVENT_SIMULATION[event_id]
         container = f"syncd-ibv0{asic - 1}"
         # Inner script is wrapped in double-quotes by `docker exec ... python3 -c "..."`,
@@ -552,12 +755,7 @@ def _simulate_event(event_id, asic):
             "print('sim_rc=' + str(rc_sim))"
         )
         cmd = f'docker exec {container} python3 -c "{py_script}" 2>&1'
-        # Capture dut_time AFTER the simulation completes. The sx_api call returns
-        # only after the kernel has logged the "Health-Check: new failure" line,
-        # so this gives us a timestamp very close to the log entry. Capturing
-        # before the call would leave docker-exec startup overhead (~2-5s)
-        # outside the assert_fatal_logs ±3s window.
-        output = _send_command_timing(TestToolkit.engines.dut, cmd)
+        output = _send_command_timing(engine, cmd)
         assert SAI_SIM_NOT_ENABLED_MARKER not in output, (
             f"sx_api_dbg_health_event_simulate rejected the call on {container}: "
             f"SAI_SDK_HEALTH_EVENT_SIMULATION=1 missing from the sai.profile that "
@@ -572,8 +770,210 @@ def _simulate_event(event_id, asic):
             f"sx_api_dbg_health_event_simulate(cause={cause}) returned rc={rc_sim} "
             f"on {container} (0=OK, 3=PARAM_ERROR, 13=unsupported). "
             f"Full output:\n{output}")
-        dut_time = ClockTools.get_local_time_from_show_system_date_time_output(System().datetime.show())
+        # Capture dut_time AFTER the call returns. The sx_api call returns only after the
+        # kernel has logged the "Health-Check: new failure" line, so this gives us a
+        # timestamp very close to the log entry. Capturing before the call would leave
+        # docker-exec startup overhead (~2-5s) outside the assert_fatal_logs ±5s window.
+        date_json = (
+            System().datetime.show()
+            if engine is TestToolkit.engines.dut
+            else engine.run_cmd("nv show system date-time -o json", validate=True)
+        )
+        dut_time = ClockTools.get_local_time_from_show_system_date_time_output(date_json)
         fatal_event_timestamps.append(dut_time)
+
+
+def _set_asic_health_fatal_state(engine, value, fire_and_forget=False, timeout_sec=10):
+    """Delegate to ``test_system_health._set_asic_health_fatal_state`` (Harel review #698).
+
+    That helper expects ``engines`` (with a ``.dut`` attribute); here we usually have just
+    one ``engine`` (the primary ``TestToolkit.engines.dut`` or a secondary SSH session
+    created for the tech-support overlap). Wrap it in a minimal namespace so we can reuse
+    the canonical helper without copying its body.
+    """
+    _shared_set_asic_health_fatal_state(
+        SimpleNamespace(dut=engine), value,
+        fire_and_forget=fire_and_forget, timeout_sec=timeout_sec,
+    )
+
+
+def _run_fatal_during_tech_support_overlap(
+    engines,
+    test_name,
+    events_count_setting,
+    overlap_description,
+    inject_worker,
+    recover_asic_health_fatal_state=False,
+    overlap_tarball_fatal_via_state_db=False,
+):
+    """Shared tech-support + fatal overlap harness.
+
+    ``inject_worker(secondary_ssh_engine)`` runs on a second SSH session after
+    ``TECH_SUPPORT_FATAL_INJECT_DELAY_SEC`` while primary generates tech-support.
+
+    When ``overlap_tarball_fatal_via_state_db`` is True (STATE_DB ``ASIC_HEALTH fatal_state``),
+    tarball validation accepts ``etc/system_fatal`` / ``log/fatal.log.gz`` as well as ``dump/fatal_reason``.
+    """
+    fatal_confirmed = False
+    exc_holder = {"tech": None, "inject": None}
+    results = {}
+    overlap_clear_time_min = 6
+
+    def tech_support_worker():
+        try:
+            out, duration = System().techsupport.action_generate(engines.dut, test_name=test_name)
+            results["duration"] = duration
+            if isinstance(out, str) and out.endswith(".tar.gz"):
+                results["folder"] = out
+            else:
+                exc_holder["tech"] = RuntimeError(
+                    f"tech-support did not return a tarball path: {out!r} duration={duration}"
+                )
+        except Exception as e:
+            exc_holder["tech"] = e
+            logger.exception("tech-support worker failed")
+
+    def inject_worker_thread():
+        try:
+            time.sleep(TECH_SUPPORT_FATAL_INJECT_DELAY_SEC)
+            conn_result = ConnectionTool.create_ssh_conn(
+                engines.dut.ip, engines.dut.username, engines.dut.password
+            )
+            conn_result.verify_result()
+            secondary = conn_result.get_returned_value()
+            try:
+                inject_worker(secondary)
+            finally:
+                secondary.disconnect()
+        except Exception as e:
+            exc_holder["inject"] = e
+            logger.exception("fatal inject worker failed")
+
+    t_tech = None
+    t_inj = None
+    try:
+        _set_settings(reboot_count=2, clear_time=overlap_clear_time_min)
+        with allure.step(
+            f"Concurrent: tech-support on primary SSH, fatal trigger after "
+            f"{TECH_SUPPORT_FATAL_INJECT_DELAY_SEC}s on second SSH — {overlap_description}"
+        ):
+            t_tech = threading.Thread(target=tech_support_worker, name="techsupport-fatal-overlap", daemon=True)
+            t_inj = threading.Thread(target=inject_worker_thread, name="fatal-inject-overlap", daemon=True)
+            t_tech.start()
+            t_inj.start()
+            t_tech.join(timeout=TECH_SUPPORT_CONCURRENT_JOIN_TIMEOUT_SEC)
+            t_inj.join(timeout=TECH_SUPPORT_CONCURRENT_JOIN_TIMEOUT_SEC)
+
+        assert not t_tech.is_alive(), (
+            f"tech-support thread still running after {TECH_SUPPORT_CONCURRENT_JOIN_TIMEOUT_SEC}s join timeout"
+        )
+        assert not t_inj.is_alive(), (
+            f"fatal inject thread still running after {TECH_SUPPORT_CONCURRENT_JOIN_TIMEOUT_SEC}s join timeout"
+        )
+        assert exc_holder["inject"] is None, f"Fatal inject on secondary SSH failed: {exc_holder['inject']!r}"
+
+        if exc_holder["tech"] is not None:
+            pytest.fail(
+                f"Tech-support generation failed while overlapping fatal trigger ({overlap_description}): "
+                f"{exc_holder['tech']!r}"
+            )
+
+        tech_folder = results.get("folder")
+        assert isinstance(tech_folder, str) and tech_folder.endswith(".tar.gz"), (
+            f"Expected tech-support tarball path, got: {tech_folder!r} (duration={results.get('duration')})"
+        )
+        with allure.step("Verify tech-support tarball exists and is non-empty on DUT"):
+            sz = _send_command_timing(engines.dut, f'stat -c %s "{tech_folder}"').strip()
+            assert sz.isdigit() and int(sz) > 0, f"Tech-support tarball missing or empty: {tech_folder} stat={sz!r}"
+
+        if overlap_tarball_fatal_via_state_db:
+            _assert_overlap_tech_support_tarball_state_db_fatal(engines.dut, tech_folder)
+        else:
+            _assert_overlap_tech_support_tarball_lists_fatal_reason(engines.dut, tech_folder)
+
+        with allure.step(
+            "Verify live fatal mode (health, LED, ASIC health issue, prompt) — same as other fatal tests"
+        ):
+            retry_call(
+                _assert_system_fatal_mode, [True],
+                exceptions=AssertionError, tries=18, delay=10,
+            )
+            fatal_confirmed = True
+    finally:
+        if recover_asic_health_fatal_state:
+            with allure.step("Recover ASIC_HEALTH fatal_state=false (fire-and-forget)"):
+                _set_asic_health_fatal_state(engines.dut, "false", fire_and_forget=True)
+        if t_tech is not None and t_tech.is_alive():
+            logger.warning("tech-support thread still alive in finally; joining up to 300s")
+            t_tech.join(timeout=300)
+        if t_inj is not None and t_inj.is_alive():
+            logger.warning("fatal inject thread still alive in finally; joining up to 300s")
+            t_inj.join(timeout=300)
+        health_status = OutputParsingTool.parse_json_str_to_dictionary(
+            System().health.show()
+        ).get_returned_value()[HealthConsts.STATUS]
+        if recover_asic_health_fatal_state:
+            if fatal_confirmed:
+                with allure.step("Verify system left fatal after STATE_DB fatal_state=false"):
+                    retry_call(
+                        _assert_system_fatal_mode,
+                        fargs=[False],
+                        fkwargs={"state_just_changed": False},
+                        exceptions=AssertionError,
+                        tries=12,
+                        delay=10,
+                    )
+            logger.info("%s: skip _wait_to_exit_fatal (STATE_DB ASIC_HEALTH recovery)", test_name)
+        elif fatal_confirmed or health_status == HealthConsts.FATAL:
+            exit_fatal_wait_min = overlap_clear_time_min + 1
+            logger.info("%s: scheduling _wait_to_exit_fatal minutes=%s (fae clear-time=%s)",
+                        test_name, exit_fatal_wait_min, overlap_clear_time_min)
+            _wait_to_exit_fatal(exit_fatal_wait_min)
+        else:
+            logger.info("%s: skip _wait_to_exit_fatal (health=%s, fatal_confirmed=%s)",
+                        test_name, health_status, fatal_confirmed)
+        with allure.step("Cleanup tech-support tarball if recorded"):
+            ts = System().techsupport
+            if getattr(ts, "file_name", None):
+                ts.files.file_name[ts.file_name].action_delete()
+
+
+def _assert_overlap_tech_support_tarball_lists_fatal_reason(engine, tech_support_tar):
+    """Minimal overlap check for SAI simulate inject: ``tar -tf`` shows ``dump/fatal_reason``."""
+    with allure.step("Tech-support tarball lists dump/fatal_reason (overlap — SAI inject)"):
+        cmd = f'tar -tf "{tech_support_tar}" 2>/dev/null | grep -m1 dump/fatal_reason'
+        line = _send_command_timing(engine, cmd)
+        assert "fatal_reason" in line, (
+            f"Expected tarball member path containing dump/fatal_reason in {tech_support_tar!r}; got {line!r}"
+        )
+
+
+def _assert_overlap_tech_support_tarball_state_db_fatal(engine, tech_support_tar):
+    """
+    Overlap check for STATE_DB ``ASIC_HEALTH fatal_state``: tarball documents fatal capture.
+
+    On some platforms ``dump/fatal_reason`` is not created; ``etc/system_fatal`` and
+    ``log/fatal.log.gz`` still appear in tech-support.
+    """
+    markers = (
+        ("dump/fatal_reason", "dump/fatal_reason"),
+        ("etc/system_fatal", "etc/system_fatal"),
+        ("log/fatal.log", "log/fatal.log"),
+    )
+    with allure.step(
+        "Tech-support tarball documents fatal during overlap (STATE_DB — minimal)"
+    ):
+        found = []
+        for label, pattern in markers:
+            cmd = f'tar -tf "{tech_support_tar}" 2>/dev/null | grep -m1 {pattern}'
+            line = _send_command_timing(engine, cmd)
+            if line.strip():
+                found.append(label)
+                logger.info("Tech-support tarball marker %s: %s", label, line.strip())
+        assert found, (
+            f"Expected at least one fatal tarball marker in {tech_support_tar!r} "
+            f"(tried {[m[0] for m in markers]}); found none"
+        )
 
 
 def _wait(minutes, seconds=0):
@@ -592,7 +992,7 @@ def _wait_to_exit_fatal(minutes=None):
 def _manual_exit_fatal_mode(engine):
     """nv action resume fae system fatal monitor force. Verify the system reboots, exits fatal mode and opens ports."""
     with allure.step(f"{_manual_exit_fatal_mode.__name__}: Run FAE command to manually exit fatal mode and check that "
-                     f"the system reboots to normal"):
+                     f"the em reboots to normal"):
         Fae().system.fatal.monitor.action_deprecated(ActionConsts.RESUME, param_name="force", expect_reboot=True,
                                                      output_format=None, dut_engine=engine, expected_output="Performing reboot"
                                                      ).verify_result()
@@ -684,7 +1084,7 @@ def _assert_system_fatal_mode(fatal: bool, state_just_changed=False, recent_even
                 if not event_list:
                     raise AssertionError('Expected system-event not found: ' + event_text)
                 elif len(event_list) > 1:
-                    raise AssertionError(f'Expected 1 event for {"entering" if fatal else "exiting"} fatal mode but'
+                    raise AssertionError(f'Expected 1 event for {"entering" if fatal else "exiting"} fatal mode but '
                                          f'found multiple: {event_list}')
 
                 expected_severity = 'CRITICAL' if fatal else 'INFORMATIONAL'
@@ -770,7 +1170,7 @@ def _assert_system_fatal_file(count: int):
 
 
 def _check_tech_support(engine, test_name, num_reboots_done):
-    with allure.step(f"Generate tech-support and validate contents"):
+    with allure.step("Generate tech-support and validate contents"):
         tech_support_tar, _ = System().techsupport.action_generate(engine, test_name=test_name)
         with allure.independent_step("Verify " + FATAL_FILE):
             validate_file_in_tech_support(engine, tech_support_tar, FATAL_FILE, num_reboots_done)

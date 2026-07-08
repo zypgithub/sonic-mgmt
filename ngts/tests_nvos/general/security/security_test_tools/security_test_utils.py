@@ -6,8 +6,8 @@ import shlex
 import time
 import pytz
 
-from infra.tools.validations.traffic_validations.ping import send as send_ping
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.validations.traffic_validations.ping import send as send_ping
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 
 from ngts.nvos_constants.constants_nvos import AclConsts, ApiType, TestFlowType, SystemConsts
 from .tool_classes.AaaServerManager import AaaAccountingLogsFileContent, AaaServerManager

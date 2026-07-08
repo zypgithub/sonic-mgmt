@@ -1,9 +1,11 @@
 import logging
+import time
 
 import requests
 
 from ngts.nvos_constants.constants_nvos import OpenApiReqType, SystemConsts, ActionConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime, SubDuration
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from .openapi_command_builder import OpenApiCommandHelper
 from ..nvue.nvue_base_clis import BaseCli
@@ -136,9 +138,12 @@ class OpenApiBaseCli(BaseCli):
             # Temporary workaround before refactoring action()
             expected_output = SystemConsts.REBOOT_RESPONSE_MESSAGES
 
+        op_start = time.perf_counter()
         result = OpenApiCommandHelper.execute_action(OpenApiBaseCli._action_key(action_type), engine.engine.username,
                                                      engine.engine.password, engine.ip, engine.open_api_port, url, data,
                                                      expected_output)
+        op_duration = time.perf_counter() - op_start
+        OperationTime.record_sub_duration(SubDuration.OPERATION, op_duration)
 
         if deny_reboot:
             return result
@@ -146,10 +151,12 @@ class OpenApiBaseCli(BaseCli):
         elif ((expect_reboot or any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES)) and
                 "abort" not in result):
 
+            reboot_start = time.perf_counter()
             DutUtilsTool.wait_on_system_reboot(
                 engine,
                 reboot_params=RebootParams(recovery_engine=recovery_engine, topology_obj=topology_obj,
                                            system_is_ready_timeout=system_is_ready_timeout,
                                            track_boot_intervals=track_boot_intervals))
+            OperationTime.record_sub_duration(SubDuration.REBOOT, time.perf_counter() - reboot_start)
 
         return result

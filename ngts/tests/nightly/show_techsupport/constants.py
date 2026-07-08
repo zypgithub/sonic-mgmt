@@ -14,7 +14,7 @@ class HealthEventConst:
     MAX_EVENTS_NUM_ELIMINATE_THRESHOLD = 10
     MAX_EVENTS_NUM_POSITIVE = ['0', '10000']
     MAX_EVENTS_NUM_NEGATIVE = ['1.0', '-1', 'unlimited']
-    DEFAULT_FW_EVENT_ID = '1'
+    DEFAULT_FW_EVENT_ID = '3'
     BASE_DIR = os.path.dirname(os.path.realpath(__file__))
     FILES_DIR = os.path.join(BASE_DIR, 'files')
     GENERATE_EVENTS_SCRIPT = 'generate-events.py'

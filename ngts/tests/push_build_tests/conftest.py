@@ -32,12 +32,13 @@ from ngts.helpers.rocev2_acl_counter_helper import copy_apply_rocev2_acl_config,
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.constants.constants import AppExtensionInstallationConstants
 from ngts.common.checkers import is_feature_ready
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 PRE_UPGRADE_CONFIG = '/tmp/config_db_{}_base.json'
 POST_UPGRADE_CONFIG = '/tmp/config_db_{}_target.json'
 FRR_CONFIG_FOLDER = os.path.dirname(os.path.abspath(__file__))
+TRACE_DROPMON_SCRIPT_PATH = os.path.join(FRR_CONFIG_FOLDER, 'trace_dropmon.sh')
 logger = logging.getLogger()
 ROCEV2_ACL_COUNTER_PATH = os.path.join(FRR_CONFIG_FOLDER, "L3/rocev2_acl_counter")
 
@@ -77,6 +78,26 @@ def apply_dns_servers_resolve_conf(dut_engine):
     dut_engine.run_cmd(f'sudo echo "nameserver {SonicConst.NVIDIA_LAB_DNS_THIRD}" >> {tmp_resolv_conf_path}')
     dut_engine.run_cmd(f'sudo echo "search {SonicConst.NVIDIA_LAB_DNS_SEARCH}" >> {tmp_resolv_conf_path}')
     dut_engine.run_cmd(f'sudo mv {tmp_resolv_conf_path} {SonicConst.RESOLV_CONF_PATH}')
+
+
+@pytest.fixture(scope="module", autouse=True)
+def trace_dropmon(request, engines):
+    if not request.module.__name__.endswith("test_wjh"):
+        yield
+        return
+
+    engines.dut.copy_file(source_file=TRACE_DROPMON_SCRIPT_PATH,
+                          dest_file='trace_dropmon.sh', file_system='/tmp',
+                          overwrite_file=True, verify_file=False)
+    engines.dut.run_cmd(f"chmod +x /tmp/trace_dropmon.sh")
+    engines.dut.run_cmd("modprobe drop_monitor")
+    engines.dut.run_cmd("sudo nohup bash /tmp/trace_dropmon.sh > /tmp/trace_dropmon.out 2>&1 & disown")
+    time.sleep(3)
+
+    yield
+
+    engines.dut.run_cmd("pkill -f 'bpftrace.*dropmon' || true")
+    engines.dut.run_cmd("pkill -f trace_dropmon.sh || true")
 
 
 @pytest.fixture(scope='package', autouse=True)
@@ -187,6 +208,10 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         'ha': [{'type': 'lacp', 'name': 'bond0', 'members': [interfaces.ha_dut_1]}],
         'hb': [{'type': 'lacp', 'name': 'bond0', 'members': [interfaces.hb_dut_2]}]
     }
+    dut_portchannel_status_list = [
+        ('PortChannel0001', [(interfaces.dut_ha_1, 'S')]),
+        ('PortChannel0002', [(interfaces.dut_hb_2, 'S')])
+    ]
 
     # VLAN config which will be used in test
     vlan_config_dict = {
@@ -336,6 +361,12 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                 reload_force=True
             )
 
+        with allure.step('Check that PortChannels are ready'):
+            for portchannel_name, expected_members_status_list in dut_portchannel_status_list:
+                retry_call(cli_objects.dut.lag.verify_port_channel_status,
+                           fargs=[portchannel_name, 'Up', expected_members_status_list],
+                           tries=10, delay=10, logger=logger)
+
         logger.info('PushGate Common configuration completed')
 
         if upgrade_params.is_upgrade_required:
@@ -356,7 +387,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                 # then confirm L3 reachability from HA to DUT via ping with retries
                 # (up to 10 attempts, 10s apart) to tolerate post-upgrade settling time.
                 with allure.step('Verify DUT is ready after sonic-to-sonic upgrade'):
-                    from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+                    from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
                     cli_objects.dut.general.port_reload_reboot_checks(ports_list)
                     ping_validation = {'sender': 'ha', 'args': {'count': 3,
                                                                 'dst': ip_config_dict['dut'][1]['ips'][0][0]}}

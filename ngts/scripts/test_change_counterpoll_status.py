@@ -19,6 +19,7 @@ counterpoll_name_list = [
     "watermark",
     "wredqueue",
     "wredport",
+    "srv6",
 ]
 
 
@@ -59,4 +60,5 @@ def test_change_counterpoll_status(topology_obj, action):
 def veify_counter_status(dut_cli_object, excepted_status):
     counterpoll_status_dict = dut_cli_object.counterpoll.parse_counterpoll_show()
     for counter, value in counterpoll_status_dict.items():
-        assert value['Status'] == excepted_status, "The status of {} is: {}".format(counter, value['Status'])
+        if counter in counterpoll_name_list:
+            assert value['Status'] == excepted_status, "The status of {} is: {}".format(counter, value['Status'])

@@ -43,6 +43,7 @@ def get_conf_args(is_ipv6):
                  "left_num_packets": SPCXRAConsts.PACKET_NUM_800G_x1,
                  "right_num_packets": SPCXRAConsts.PACKET_NUM_800G_x1,
                  "speed": "800000000",
+                 "link_auto_negotiate": True,
                  "params": None
                  }
     return conf_args

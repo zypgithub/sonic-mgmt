@@ -1,0 +1,186 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_14:
+    eos:
+      children:
+        vms_14:
+
+    servers:
+      vars:
+        topologies:
+          - t0-16
+          - t0-isolated-d32u32s2-mix
+
+      children:
+        server_14:
+
+vm_host_14:
+  hosts:
+    FIT-SONIC-VRT-MEC-185:
+      ansible_host: fit-sonic-vrt-mec-185
+
+vms_14:
+  hosts:
+    VM1401:
+      ansible_host: 10.220.185.8
+    VM1402:
+      ansible_host: 10.220.185.9
+    VM1403:
+      ansible_host: 10.220.185.10
+    VM1404:
+      ansible_host: 10.220.185.11
+    VM1405:
+      ansible_host: 10.220.185.12
+    VM1406:
+      ansible_host: 10.220.185.13
+    VM1407:
+      ansible_host: 10.220.185.14
+    VM1408:
+      ansible_host: 10.220.185.15
+    VM1409:
+      ansible_host: 10.220.185.16
+    VM1410:
+      ansible_host: 10.220.185.17
+    VM1411:
+      ansible_host: 10.220.185.18
+    VM1412:
+      ansible_host: 10.220.185.19
+    VM1413:
+      ansible_host: 10.220.185.20
+    VM1414:
+      ansible_host: 10.220.185.21
+    VM1415:
+      ansible_host: 10.220.185.22
+    VM1416:
+      ansible_host: 10.220.185.23
+    VM1417:
+      ansible_host: 10.220.185.24
+    VM1418:
+      ansible_host: 10.220.185.25
+    VM1419:
+      ansible_host: 10.220.185.26
+    VM1420:
+      ansible_host: 10.220.185.27
+    VM1421:
+      ansible_host: 10.220.185.28
+    VM1422:
+      ansible_host: 10.220.185.29
+    VM1423:
+      ansible_host: 10.220.185.30
+    VM1424:
+      ansible_host: 10.220.185.31
+    VM1425:
+      ansible_host: 10.220.185.32
+    VM1426:
+      ansible_host: 10.220.185.33
+    VM1427:
+      ansible_host: 10.220.185.34
+    VM1428:
+      ansible_host: 10.220.185.35
+    VM1429:
+      ansible_host: 10.220.185.36
+    VM1430:
+      ansible_host: 10.220.185.37
+    VM1431:
+      ansible_host: 10.220.185.38
+    VM1432:
+      ansible_host: 10.220.185.39
+    VM1433:
+      ansible_host: 10.220.185.40
+    VM1434:
+      ansible_host: 10.220.185.41
+    VM1435:
+      ansible_host: 10.220.185.42
+    VM1436:
+      ansible_host: 10.220.185.43
+    VM1437:
+      ansible_host: 10.220.185.44
+    VM1438:
+      ansible_host: 10.220.185.45
+    VM1439:
+      ansible_host: 10.220.185.46
+    VM1440:
+      ansible_host: 10.220.185.47
+    VM1441:
+      ansible_host: 10.220.185.48
+    VM1442:
+      ansible_host: 10.220.185.49
+    VM1443:
+      ansible_host: 10.220.185.50
+    VM1444:
+      ansible_host: 10.220.185.51
+    VM1445:
+      ansible_host: 10.220.185.52
+    VM1446:
+      ansible_host: 10.220.185.53
+    VM1447:
+      ansible_host: 10.220.185.54
+    VM1448:
+      ansible_host: 10.220.185.55
+    VM1449:
+      ansible_host: 10.220.185.56
+    VM1450:
+      ansible_host: 10.220.185.57
+    VM1451:
+      ansible_host: 10.220.185.58
+    VM1452:
+      ansible_host: 10.220.185.59
+    VM1453:
+      ansible_host: 10.220.185.60
+    VM1454:
+      ansible_host: 10.220.185.61
+    VM1455:
+      ansible_host: 10.220.185.62
+    VM1456:
+      ansible_host: 10.220.185.63
+    VM1457:
+      ansible_host: 10.220.185.64
+    VM1458:
+      ansible_host: 10.220.185.65
+    VM1459:
+      ansible_host: 10.220.185.66
+    VM1460:
+      ansible_host: 10.220.185.67
+    VM1461:
+      ansible_host: 10.220.185.68
+    VM1462:
+      ansible_host: 10.220.185.69
+    VM1463:
+      ansible_host: 10.220.185.70
+    VM1464:
+      ansible_host: 10.220.185.71
+    VM1465:
+      ansible_host: 10.220.185.72
+    VM1466:
+      ansible_host: 10.220.185.73
+    VM1467:
+      ansible_host: 10.220.185.74
+    VM1468:
+      ansible_host: 10.220.185.75
+    VM1469:
+      ansible_host: 10.220.185.76
+    VM1470:
+      ansible_host: 10.220.185.77
+    VM1471:
+      ansible_host: 10.220.185.78
+    VM1472:
+      ansible_host: 10.220.185.79
+    VM1473:
+      ansible_host: 10.220.185.80
+    VM1474:
+      ansible_host: 10.220.185.81
+    VM1475:
+      ansible_host: 10.220.185.82
+    VM1476:
+      ansible_host: 10.220.185.83
+    VM1477:
+      ansible_host: 10.220.185.84
+
+server_14:
+  children:
+    vm_host_14:
+    vms_14:
+  vars:
+    host_var_file: host_vars/FIT-SONIC-VRT-MEC-185.yml

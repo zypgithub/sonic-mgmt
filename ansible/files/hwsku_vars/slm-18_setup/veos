@@ -1,0 +1,148 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_21:
+    eos:
+      children:
+        vms_21:
+
+    servers:
+      vars:
+        topologies:
+          - t1-isolated-d28u1
+          - t1-isolated-d28u4
+          - ptp-130
+
+      children:
+        server_21:
+
+vm_host_21:
+  hosts:
+    FIT-SONIC-VRT-MEC-10:
+      ansible_host: fit-sonic-vrt-mec-10
+
+vms_21:
+  hosts:
+    VM2601:
+      ansible_host: 10.220.184.13
+    VM2602:
+      ansible_host: 10.220.184.14
+    VM2603:
+      ansible_host: 10.220.184.15
+    VM2604:
+      ansible_host: 10.220.184.16
+    VM2605:
+      ansible_host: 10.220.184.17
+    VM2606:
+      ansible_host: 10.220.184.18
+    VM2607:
+      ansible_host: 10.220.184.19
+    VM2608:
+      ansible_host: 10.220.184.20
+    VM2609:
+      ansible_host: 10.220.184.21
+    VM2610:
+      ansible_host: 10.220.184.22
+    VM2611:
+      ansible_host: 10.220.184.23
+    VM2612:
+      ansible_host: 10.220.184.24
+    VM2613:
+      ansible_host: 10.220.184.25
+    VM2614:
+      ansible_host: 10.220.184.26
+    VM2615:
+      ansible_host: 10.220.184.27
+    VM2616:
+      ansible_host: 10.220.184.28
+    VM2617:
+      ansible_host: 10.220.184.29
+    VM2618:
+      ansible_host: 10.220.184.30
+    VM2619:
+      ansible_host: 10.220.184.31
+    VM2620:
+      ansible_host: 10.220.184.32
+    VM2621:
+      ansible_host: 10.220.184.33
+    VM2622:
+      ansible_host: 10.220.184.34
+    VM2623:
+      ansible_host: 10.220.184.35
+    VM2624:
+      ansible_host: 10.220.184.36
+    VM2625:
+      ansible_host: 10.220.184.37
+    VM2626:
+      ansible_host: 10.220.184.38
+    VM2627:
+      ansible_host: 10.220.184.39
+    VM2628:
+      ansible_host: 10.220.184.40
+    VM2629:
+      ansible_host: 10.220.184.41
+    VM2630:
+      ansible_host: 10.220.184.42
+    VM2631:
+      ansible_host: 10.220.184.43
+    VM2632:
+      ansible_host: 10.220.184.44
+    VM2633:
+      ansible_host: 10.220.184.45
+    VM2634:
+      ansible_host: 10.220.184.46
+    VM2635:
+      ansible_host: 10.220.184.47
+    VM2636:
+      ansible_host: 10.220.184.48
+    VM2637:
+      ansible_host: 10.220.184.49
+    VM2638:
+      ansible_host: 10.220.184.50
+    VM2639:
+      ansible_host: 10.220.184.51
+    VM2640:
+      ansible_host: 10.220.184.52
+    VM2641:
+      ansible_host: 10.220.184.53
+    VM2642:
+      ansible_host: 10.220.184.54
+    VM2643:
+      ansible_host: 10.220.184.55
+    VM2644:
+      ansible_host: 10.220.184.56
+    VM2645:
+      ansible_host: 10.220.184.57
+    VM2646:
+      ansible_host: 10.220.184.58
+    VM2647:
+      ansible_host: 10.220.184.59
+    VM2648:
+      ansible_host: 10.220.184.60
+    VM2649:
+      ansible_host: 10.220.184.61
+    VM2650:
+      ansible_host: 10.220.184.62
+    VM2651:
+      ansible_host: 10.220.184.63
+    VM2652:
+      ansible_host: 10.220.184.64
+    VM2653:
+      ansible_host: 10.220.184.65
+    VM2654:
+      ansible_host: 10.220.184.66
+    VM2655:
+      ansible_host: 10.220.184.67
+    VM2656:
+      ansible_host: 10.220.184.68
+    VM2657:
+      ansible_host: 10.220.184.69
+
+server_21:
+  children:
+    vm_host_21:
+    vms_21:
+  vars:
+    host_var_file: host_vars/FIT-SONIC-VRT-MEC-10.yml
+

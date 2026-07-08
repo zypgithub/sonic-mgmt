@@ -10,7 +10,7 @@ import re
 
 from ngts.scripts.code_coverage.code_coverage_consts import SharedConsts, NvosConsts, SonicConsts
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
-from infra.tools.connection_tools.linux_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -114,7 +114,7 @@ def extract_c_coverage_for_nvos(
             engines.dut.run_cmd('sudo docker ps')
 
     with allure.step(f'Run {NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}'):
-        engines.dut.run_cmd(f'{NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}')
+        engines.dut.run_cmd(f'sudo {NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}')
         time.sleep(2)
 
     with allure.step(f"Copy coverage files from {NvosConsts.COVERAGE_OUTPUT_ON_SWITCH} to {c_dest}"):

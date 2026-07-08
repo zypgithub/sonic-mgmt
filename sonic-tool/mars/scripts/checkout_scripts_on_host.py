@@ -76,7 +76,7 @@ def main():
     if args.tarball and args.clone_repo != "True":
         tarball_path = os.path.join(args.tarball_path, args.tarball)
         logger.info("Extract tarball %s into workspace folder %s", tarball_path, workspace_path)
-        host.run("tar -xvf {} -C {}".format(tarball_path, workspace_path))
+        host.run("tar -xf {} -C {}".format(tarball_path, workspace_path))
         logger.info("Tarball extraction completed successfully.")
     else:
         logger.info("Clone sonic-mgmt repo (branch=%s) into workspace folder %s", args.branch, workspace_path)

@@ -2,7 +2,7 @@ import random
 import string
 from typing import List
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import ApiType, OpenApiReqType
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool

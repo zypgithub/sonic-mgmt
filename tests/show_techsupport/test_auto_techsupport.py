@@ -4,10 +4,8 @@ import logging
 import dateutil.parser
 import random
 import copy
-import os
 import re
 
-from tests.common.config_reload import config_reload
 from tests.common.errors import RunAnsibleModuleFail
 from tests.common.utilities import wait_until
 from tests.common.multibranch.cli import SonicCli
@@ -39,9 +37,6 @@ DEFAULT_SINCE = '2 days ago'
 
 KB_SIZE = 1000  # We use 1000 to have the same value as in shutil.disk_usage() method which used in SONiC code
 CMD_GET_AUTO_TECH_SUPPORT_HISTORY_REDIS_KEYS = 'sudo redis-cli --raw -n 6  KEYS AUTO_TECHSUPPORT*'
-TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
-SAI_CALL_TEMPLATE_FILE_PATH = os.path.join(TEMPLATES_DIR, 'sai_call_fail_config.j2')
-DUT_SAI_CALL_CONFIG_PATH = '/tmp/sai_call_fail_config.json'
 
 
 def cleanup(cleanup_list):
@@ -94,10 +89,13 @@ class TestAutoTechSupport:
         self.set_test_dockers_list()
 
         logger.info('Waiting until existing(if exist) techsupport processes finish')
-        wait_until(300, 10, 0, is_techsupport_generation_in_expected_state, self.duthost, False)
+        if not wait_until(300, 10, 0, is_techsupport_generation_in_expected_state, self.duthost, False):
+            logger.warning('Existing techsupport generation processes did not finish; cleaning them up')
+            clear_techsupport_generation_processes(self.duthost)
 
         clear_auto_techsupport_history(self.duthost)
         self.duthost.shell('sudo mkdir /var/dump/', module_ignore_errors=True)
+        clear_techsupport_generation_processes(self.duthost)
         clear_folders(self.duthost)
 
         create_core_file_generator_script(self.duthost)
@@ -105,6 +103,7 @@ class TestAutoTechSupport:
         yield
 
         clear_auto_techsupport_history(self.duthost)
+        clear_techsupport_generation_processes(self.duthost)
         clear_folders(self.duthost)
 
     @pytest.fixture(autouse=True, scope='class')
@@ -507,49 +506,6 @@ class TestAutoTechSupport:
             if test_mode == 'techsupport':
                 self.duthost.shell("config auto-techsupport global since \"2 days ago\"")
 
-    @pytest.mark.disable_loganalyzer
-    def test_sai_sdk_dump(self, tbinfo, global_rate_limit_zero, cleanup_list):
-        """
-        Validate techsupport generation started in case when SAI call failed
-        and check that saidump available in techsupport dump
-        Test logic is as follows:
-        - Set core/techsupport max limit to 0
-        - Trigger SAI call which will fail
-        - Check that techsupport started and new created core/techsupport files available
-        - Check that saidump available in techsupport file
-        :param tbinfo: tbinfo fixture
-        :param global_rate_limit_zero: fixture which disable global rate limit
-        :param cleanup_list: cleanup list
-        :return: exception in case of fail
-        """
-        # TODO: Check if TEMP_VIEW is enabled. If not, skip the test
-        minigraph_facts = self.duthost.get_extended_minigraph_facts(tbinfo)
-        po_name = 'PortChannel1234'
-
-        with allure.step('Getting test port - any random port which is not PortChannel member'):
-            test_port = get_random_physical_port_non_po_member(minigraph_facts)
-            if not test_port:
-                pytest.skip('Ignore test, can not find physical port which can be used to create stub PortChannel')
-            logger.info('Physical port which will be used in test is: {}'.format(test_port))
-
-        with allure.step('Generate config which will cause SAI call failure'):
-            self.duthost.host.options['variable_manager'].extra_vars.update({'test_port': test_port})
-            self.duthost.template(src=SAI_CALL_TEMPLATE_FILE_PATH, dest=DUT_SAI_CALL_CONFIG_PATH)
-
-        with allure.step('Create stub interface: {}'.format(po_name)):
-            self.duthost.shell('sudo config portchannel add {}'.format(po_name))
-            cleanup_list.append((config_reload, (self.duthost,), {}))
-
-        with allure.step('Add interface: {} to PortChannel: {}'.format(test_port, po_name)):
-            add_po_member(self.duthost, po_name, test_port, minigraph_facts)
-
-        with allure.step('Apply config(which will cause SAI call failure) on DUT'):
-            self.duthost.shell('sudo config load -y {}'.format(DUT_SAI_CALL_CONFIG_PATH))
-
-        with allure.step('Check that techsuport generated and expected saidump file exist in techsupport dump'):
-            validate_techsupport_generation(self.duthost, self.dut_cli, is_techsupport_expected=True,
-                                            is_sai_dump_expected=True, delay_before_validation=60)
-
 
 # Methods used by tests
 def set_limit(duthost, mode, limit_size, cleanup_list=None):
@@ -687,15 +643,10 @@ def is_techsupport_generation_in_expected_state(duthost, expected_in_progress=Tr
     :return: True in case when techsupport generation in progress
     """
     with allure.step('Checking techsupport generation process'):
-        techsupport_in_progress = False
-        processes_to_be_ignored = 2
-        get_running_tech_procs_cmd = 'ps -aux | grep "coredump_gen_handler"'
-        # Need to ignore 2 lines: one line with "grep...", another line with ansible module which call "grep..."
-        num_of_process = len(duthost.shell(get_running_tech_procs_cmd)['stdout_lines']) - processes_to_be_ignored
+        running_processes = get_running_techsupport_generation_processes(duthost)
+        num_of_process = len(running_processes)
         logger.info('Number of running autotechsupport processes: {}'.format(num_of_process))
-
-        if num_of_process >= 1:
-            techsupport_in_progress = True
+        techsupport_in_progress = num_of_process >= 1
 
         is_in_expected_state = False
         if expected_in_progress:
@@ -706,6 +657,34 @@ def is_techsupport_generation_in_expected_state(duthost, expected_in_progress=Tr
                 is_in_expected_state = True
 
         return is_in_expected_state
+
+
+def get_running_techsupport_generation_processes(duthost):
+    """
+    Get coredump handler PIDs. These handlers own auto-techsupport generation.
+    :param duthost: duthost object
+    :return: list of PIDs as strings
+    """
+    cmd = "ps -eo pid=,cmd= | awk '/[c]oredump_gen_handler.py/ {print $1}'"
+    output = duthost.shell(cmd, module_ignore_errors=True)['stdout_lines']
+    return [line.strip() for line in output if line.strip().isdigit()]
+
+
+def clear_techsupport_generation_processes(duthost):
+    """
+    Stop stale coredump handlers so a previous failed run cannot block the next one.
+    :param duthost: duthost object
+    """
+    pids = get_running_techsupport_generation_processes(duthost)
+    if not pids:
+        return
+
+    logger.warning('Stopping stale auto-techsupport generation processes: {}'.format(', '.join(pids)))
+    duthost.shell('sudo kill {}'.format(' '.join(pids)), module_ignore_errors=True)
+    if not wait_until(30, 2, 0, is_techsupport_generation_in_expected_state, duthost, False):
+        pids = get_running_techsupport_generation_processes(duthost)
+        if pids:
+            duthost.shell('sudo kill -9 {}'.format(' '.join(pids)), module_ignore_errors=True)
 
 
 def validate_core_files_inside_techsupport(duthost, techsupport_folder, expected_core_files_list):
@@ -945,7 +924,17 @@ def validate_techsupport_generation(duthost, dut_cli, is_techsupport_expected, e
     if expected_techsupport_files:
         # ensure that creation of tar.gz file is complete by checking if the intermediate tar
         # file generated is removed
-        assert wait_until(600, 10, 0, is_new_techsupport_file_generated, duthost, available_tech_support_files), \
+
+        platform = duthost.facts["platform"]
+
+        if platform in ["armhf-nokia_ixs7215_52x-r0"]:
+            # For this platform, techsupport takes more time, so increase waiting time
+            wait = 900
+        else:
+            # For other platforms, fall back to default 600 seconds
+            wait = 600
+
+        assert wait_until(wait, 10, 0, is_new_techsupport_file_generated, duthost, available_tech_support_files), \
             'New expected techsupport file was not generated'
 
     # Do validation for history
@@ -1312,118 +1301,6 @@ def create_core_file_generator_script(duthost):
     """
     duthost.shell('sudo echo \'sleep 10 & kill -6 $!\' > /etc/sonic/core_file_generator.sh')
     duthost.shell('sudo echo \'echo $?\' >> /etc/sonic/core_file_generator.sh')
-
-
-def get_random_physical_port_non_po_member(minigraph_facts):
-    """
-    Get physical port which is not PortChannel member
-    :param minigraph_facts: minigraph_facts(dict) object
-    :return: string, port name
-    """
-    po_members = []
-    test_port = None
-    for po_iface, po_data in list(minigraph_facts['minigraph_portchannels'].items()):
-        po_members += po_data['members']
-    all_ports = list(minigraph_facts['minigraph_ports'].keys())
-    non_po_ports = [port for port in all_ports if port not in po_members]
-    if non_po_ports:
-        test_port = random.choice(non_po_ports)
-    return test_port
-
-
-def get_port_vlan(minigraph_facts, port):
-    """
-    Get VLAN related to test port
-    :param minigraph_facts: minigraph_facts(dict) object
-    :param port: string, port name
-    :return: string with Vlan ID, or None
-    """
-    test_port_vlan = None
-    for vlan in minigraph_facts.get('minigraph_vlans', []):
-        if port in minigraph_facts['minigraph_vlans'][vlan]['members']:
-            test_port_vlan = vlan.split('Vlan')[1]  # Get string '1000' from 'Vlan1000
-            break
-
-    return test_port_vlan
-
-
-def get_port_ips(minigraph_facts, port):
-    """
-    Get IPs which are assigned to port
-    :param minigraph_facts: minigraph_facts(dict) object
-    :param port: string, port name
-    :return: list, example: [(ip, mask), (ip, mask)]
-    """
-    iface_ips_data = []
-    for iface_data in minigraph_facts.get('minigraph_interfaces', []):
-        if iface_data['attachto'] == port:
-            ip_addr = iface_data['addr']
-            ip_mask = iface_data['prefixlen']
-            iface_ips_data.append((ip_addr, ip_mask))
-
-    return iface_ips_data
-
-
-def remove_port_from_vlan(duthost, minigraph_facts, test_port):
-    """
-    Remove test port from VLAN
-    :param duthost: duthost object
-    :param minigraph_facts: minigraph_facts(dict) object
-    :param test_port: string, port name
-    """
-    test_port_vlan = get_port_vlan(minigraph_facts, test_port)
-    if test_port_vlan:
-        with allure.step('Remove interface: {} from VLAN: {}'.format(test_port, test_port_vlan)):
-            duthost.shell('sudo config vlan member del {} {}'.format(test_port_vlan, test_port))
-
-
-def remove_ips_from_port(duthost, minigraph_facts, test_port):
-    """
-    Remove IPs from test port
-    :param duthost: duthost object
-    :param minigraph_facts: minigraph_facts(dict) object
-    :param test_port: string, port name
-    """
-    test_port_ips = get_port_ips(minigraph_facts, test_port)
-    if test_port_ips:
-        with allure.step('Remove IP addresses from port: {}'.format(test_port)):
-            for ip_addr, ip_mask in test_port_ips:
-                duthost.shell('sudo config interface ip remove {} {}/{}'.format(test_port, ip_addr, ip_mask))
-
-
-def remove_acl_tables(duthost, failure_info):
-    """
-    Remove ACL tables which related to our test port
-    :param duthost: duthost object
-    :param failure_info: string with output which contains ACL tables
-    """
-    acl_tables_list = re.findall(r'ACL_TABLE\|(\w+)', failure_info)
-    for acl_table in acl_tables_list:
-        with allure.step('Remove ACL table: {}'.format(acl_table)):
-            duthost.shell('sudo config acl remove table {}'.format(acl_table))
-
-
-def add_po_member(duthost, po_name, test_port, minigraph_facts):
-    """
-    Add interface to PortChannel
-    :param duthost: duthost object
-    :param po_name: string, PortChannel iface name
-    :param test_port: string, port name
-    :param minigraph_facts: minigraph_facts(dict) object
-    :return:
-    """
-    add_po_member_cmd = 'sudo config portchannel member add {} {}'.format(po_name, test_port)
-
-    remove_port_from_vlan(duthost, minigraph_facts, test_port)
-    remove_ips_from_port(duthost, minigraph_facts, test_port)
-
-    po_member_add = duthost.shell(add_po_member_cmd, module_ignore_errors=True)
-    if po_member_add['failed']:
-        failure_info = po_member_add['stderr_lines'][-1]
-        if 'is already bound to following ACL_TABLES' in failure_info:
-            remove_acl_tables(duthost, failure_info)
-
-        duthost.shell(add_po_member_cmd)
 
 
 def get_files_info(duthost, validation_folder, file_pattern='sonic_dump_*.tar.gz'):

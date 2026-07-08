@@ -3,9 +3,9 @@ import os
 import random
 import time
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 

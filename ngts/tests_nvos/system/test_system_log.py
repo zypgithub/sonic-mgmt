@@ -501,8 +501,9 @@ def test_log_components(engines):
             show_output = system.log.component.component_id[component_name].show()
             output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
             default_log_level = LogComponentsConsts.NOTICE
-            if component_name == LogComponentsConsts.NVUE:
+            if component_name in (LogComponentsConsts.NVUE, LogComponentsConsts.SYMMETRY_MANAGER):
                 default_log_level = default_log_level_nvue
+
             with allure.step("Validate component {component} with default log level {level}"
                              .format(component=component_name, level=default_log_level)):
                 ValidationTool.verify_field_value_in_output(output_dictionary, LogComponentsConsts.LEVEL,
@@ -531,7 +532,8 @@ def test_log_components(engines):
                 output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
                 ValidationTool.verify_field_value_in_output(
                     output_dictionary[component_name], LogComponentsConsts.LEVEL,
-                    default_log_level if component_name != LogComponentsConsts.NVUE else default_log_level_nvue).verify_result()
+                    default_log_level_nvue if component_name in (LogComponentsConsts.NVUE, LogComponentsConsts.SYMMETRY_MANAGER)
+                    else LogComponentsConsts.NOTICE).verify_result()
 
     with allure.step("Unset log components"):
         logging.info("Unset log components")

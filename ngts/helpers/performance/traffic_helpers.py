@@ -3,12 +3,15 @@ import allure
 import json
 import ipaddress
 import random
+import time
+import logging
 import pandas as pd
 from netaddr import EUI
 from ngts.helpers.performance.packet_json_generator import PacketGenerator
 from ngts.constants.performance_constants import PerfConsts, ValidationConsts
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ast import literal_eval
+from typing import Dict, List, Any
 
 
 def generate_ip_address_list(address_start_v4="172.168.1.1", address_start_v6="172::1:1", step_v4=256, step_v6=0x10000,
@@ -385,6 +388,78 @@ def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_lis
                     if port_tx < bw_threshold:
                         violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
                                                f"please check {sample_id} in port group: {port_group_name}")
+
+
+def validate_bw_utilization_fairness(traffic_json: Dict[str, Any], max_bw_utilization_variance: float, violations_list: List[str]) -> None:
+    """
+    Validate that per-port TX and RX utilization is fair across a port group.
+
+    For each port group and direction, the minimum port utilization must be at
+    least (1 - max_bw_utilization_variance) of the maximum port utilization.
+    e.g. with threshold=0.05: min >= max * 0.95.
+
+    Args:
+        traffic_json: Traffic data containing bandwidth samples.
+        max_bw_utilization_variance: Relative tolerance (0.0–1.0), e.g. 0.05 means
+            min port must reach at least 95% of the max port utilization.
+        violations_list: List to append violations to.
+    """
+    logger = logging.getLogger()
+    if not isinstance(max_bw_utilization_variance, (int, float)) or not (0 <= max_bw_utilization_variance <= 1):
+        violations_list.append(f"max_bw_utilization_variance must be a number between 0 and 1, got {max_bw_utilization_variance!r}")
+        return
+    t_start = time.monotonic()
+    logger.info(f"validate_bw_utilization_fairness: started (max_bw_utilization_variance={max_bw_utilization_variance})")
+    with allure.step(f"Validate per-port BW utilization fairness: min >= max * (1 - {max_bw_utilization_variance})"):
+        bw_samples = traffic_json.get(ValidationConsts.BW_SAMPLES)
+        if not bw_samples:
+            violations_list.append(f"BW fairness validation skipped: '{ValidationConsts.BW_SAMPLES}' key is missing or empty in traffic_json")
+            return
+        if not isinstance(bw_samples, dict):
+            violations_list.append(f"BW fairness validation skipped: '{ValidationConsts.BW_SAMPLES}' is not a dict (got {type(bw_samples).__name__})")
+            return
+        # remove metadata entry so only per-port sample dicts remain
+        bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+
+        required_cols = {ValidationConsts.PORT, ValidationConsts.TX_RATE, ValidationConsts.RX_RATE}
+        for sample_id, sample_data in bw_samples.items():
+            if ValidationConsts.BW_DATAFRAME in sample_data:
+                port_groups_iter = [("default", sample_data)]
+            else:
+                port_groups_iter = sample_data.items()
+
+            for port_group_name, port_group_data in port_groups_iter:
+                try:
+                    bw_df = pd.DataFrame(port_group_data[ValidationConsts.BW_DATAFRAME])
+                    if bw_df.empty:
+                        violations_list.append(
+                            f"BW fairness: sample '{sample_id}' group '{port_group_name}' has empty dataframe"
+                        )
+                        continue
+                    missing = required_cols - set(bw_df.columns)
+                    if missing:
+                        violations_list.append(
+                            f"BW fairness: sample '{sample_id}' group '{port_group_name}' missing columns {missing}"
+                        )
+                        continue
+                    for direction, rate_col in [("TX", ValidationConsts.TX_RATE), ("RX", ValidationConsts.RX_RATE)]:
+                        min_val = bw_df[rate_col].min()
+                        max_val = bw_df[rate_col].max()
+                        min_tolerated_value = max_val * (1 - max_bw_utilization_variance)
+                        if min_val < min_tolerated_value:
+                            min_port = bw_df.loc[bw_df[rate_col].idxmin(), ValidationConsts.PORT]
+                            max_port = bw_df.loc[bw_df[rate_col].idxmax(), ValidationConsts.PORT]
+                            violations_list.append(
+                                f"{sample_id} (group: {port_group_name}) {direction} min utilization "
+                                f"{min_val:.3f} < min_tolerated_value {min_tolerated_value:.3f} (= max {max_val:.3f} * {1 - max_bw_utilization_variance}) "
+                                f"(min port: {min_port}, max port: {max_port})"
+                            )
+                except (KeyError, TypeError, ValueError) as exc:
+                    violations_list.append(
+                        f"BW fairness: malformed payload for sample '{sample_id}' group '{port_group_name}': {exc}"
+                    )
+    elapsed = time.monotonic() - t_start
+    logger.info(f"validate_bw_utilization_fairness: finished in {elapsed:.3f}s, violations found: {len(violations_list)}")
 
 
 def validate_tc(traffic_json, tc_occ_threshold, violations_list):

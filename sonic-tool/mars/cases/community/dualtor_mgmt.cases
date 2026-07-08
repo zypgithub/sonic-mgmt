@@ -114,6 +114,24 @@
                 <value> no </value>
             </condition>
         </ignore>
+        <info> Linkmgrd Restart Mux Port Status </info>
+        <name> dualtor_linkmgrd_restart_mux_port_status </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts dualtor_mgmt/test_dualtor_linkmgrd_restart_mux_port_status.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> Egress Drop Nvidia </info>
         <name> egress_drop_nvidia </name>
         <cmd>

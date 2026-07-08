@@ -2,7 +2,8 @@ import logging
 import time
 import re
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli

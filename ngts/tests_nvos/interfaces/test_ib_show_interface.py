@@ -7,7 +7,7 @@ import os
 
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -19,10 +19,10 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, PlatformConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PhotonicsTool import PhotonicsTool
 from ngts.nvos_tools.system.System import System

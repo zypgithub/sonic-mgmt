@@ -371,7 +371,7 @@ def _verify_user_change_marker_preserved(post_acls, mangle_state: Optional[AclPe
                 mangle_state.marker_rule_remark)
 
 
-def extract_control_plane_acl_bindings(*, dut_engine=None):
+def extract_control_plane_acl_bindings(*, dut_engine=None, mangle_state=None):
     """
     Capture ACL names bound to system control-plane (``nv show system control-plane acl``). Returns set.
 
@@ -382,6 +382,10 @@ def extract_control_plane_acl_bindings(*, dut_engine=None):
     exist — NVUE responds with ``'control-plane' is not one of [...]``. This is treated as "no baseline
     available" and an **empty set** is returned, so post-ISSU verification skips the subset check
     while still running the loopback-on-``lo`` check against the new image.
+
+    If *mangle_state* is provided and its ``removed_control_plane_acl_id`` is set, that ACL is excluded
+    from the returned baseline so post-upgrade verification does not expect an ACL that was deliberately
+    unset before the upgrade.
     """
     system = System()
     try:
@@ -405,6 +409,11 @@ def extract_control_plane_acl_bindings(*, dut_engine=None):
             % type(control_plane_acl_show).__name__
         )
     bound_acl_names = set(control_plane_acl_show.keys())
+    if mangle_state and mangle_state.removed_control_plane_acl_id:
+        removed = mangle_state.removed_control_plane_acl_id
+        if removed in bound_acl_names:
+            logger.info("Excluding deliberately-unset ACL %r from baseline", removed)
+            bound_acl_names.discard(removed)
     if not bound_acl_names:
         logger.warning(
             "nv show system control-plane acl returned no top-level ACL keys (empty object); "

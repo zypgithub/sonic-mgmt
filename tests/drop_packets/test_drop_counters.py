@@ -22,7 +22,6 @@ from .drop_packets import L2_COL_KEY, L3_COL_KEY, RX_ERR, RX_DRP, ACL_COUNTERS_U
     test_acl_egress_drop, drop_counter_config  # noqa: F401
 from tests.common.helpers.constants import DEFAULT_NAMESPACE
 from tests.common.fixtures.conn_graph_facts import enum_fanout_graph_facts  # noqa: F401
-from tests.common.mellanox_data import is_weak_server_testbed
 from ..common.helpers.multi_thread_utils import SafeThreadPoolExecutor
 
 pytestmark = [
@@ -64,12 +63,19 @@ def ignore_expected_loganalyzer_exceptions(duthosts, rand_one_dut_hostname, loga
     CopperCableIgnoreRegex = [
         ".* ERR pmon#xcvrd.*no suitable app for the port appl.*host_lane_count.*host_speed.*"
     ]
+    # Ignore transient syncd error during config_reload when FlexCounter polls a port VID that was
+    # briefly removed/re-created (e.g. after port split). syncd self-heals by removing the stale entry.
+    FlexCounterPortNotFoundRegex = [
+        r".* ERR syncd\d*#syncd: :- processFlexCounterEvent: port VID .* was not found "
+        r"\(probably port was removed/splitted\) and will remove from counters now"
+    ]
     duthost = duthosts[rand_one_dut_hostname]
     if loganalyzer:  # Skip if loganalyzer is disabled
         if duthost.facts["asic_type"] == "vs":
             loganalyzer[duthost.hostname].ignore_regex.extend(KVMIgnoreRegex)
         loganalyzer[duthost.hostname].ignore_regex.extend(SAISwitchIgnoreRegex)
         loganalyzer[duthost.hostname].ignore_regex.extend(CopperCableIgnoreRegex)
+        loganalyzer[duthost.hostname].ignore_regex.extend(FlexCounterPortNotFoundRegex)
         if duthost.sonichost.facts['platform_asic'] == 'broadcom':
             ignore_regex = r".* ERR swss#orchagent:\s*.*\s*queryAattributeEnumValuesCapability:\s*returned value " \
                 r"\d+ is not allowed on SAI_SWITCH_ATTR_(?:ECMP|LAG)_DEFAULT_HASH_ALGORITHM.*"
@@ -160,14 +166,14 @@ def handle_backend_acl(duthost, tbinfo):
 
 
 def base_verification(discard_group, pkt, ptfadapter, duthosts, asic_index, ports_info,     # noqa: F811
-                      tx_dut_ports=None, skip_counter_check=False, drop_information=None):  # noqa: F811
+                      tx_dut_ports=None, skip_counter_check=False, drop_information=None,  # noqa: F811
+                      weak_server=False):  # noqa: F811
     """
     Base test function for verification of L2 or L3 packet drops. Verification type depends on 'discard_group' value.
     Supported 'discard_group' values: 'L2', 'L3', 'ACL', 'NO_DROPS'
     """
     def get_pkt_number():
-        dut = duthosts.frontend_nodes[0]
-        return WEAK_SERVER_PKT_NUMBER if is_weak_server_testbed(dut) else PKT_NUMBER
+        return WEAK_SERVER_PKT_NUMBER if weak_server else PKT_NUMBER
 
     def clear_sonic_counters(dut):
         dut.command("sonic-clear counters")
@@ -324,7 +330,7 @@ def check_if_skip():
 
 
 @pytest.fixture(scope='module')
-def do_test(duthosts):
+def do_test(duthosts, weak_server):
     def do_counters_test(discard_group, pkt, ptfadapter, ports_info, sniff_ports, tx_dut_ports=None,    # noqa: F811
                          comparable_pkt=None, skip_counter_check=False, drop_information=None, ip_ver='ipv4'):
         """
@@ -344,7 +350,8 @@ def do_test(duthosts):
 
         asic_index = ports_info["asic_index"]
         base_verification(discard_group, pkt, ptfadapter, duthosts, asic_index, ports_info, tx_dut_ports,
-                          skip_counter_check=skip_counter_check, drop_information=drop_information)
+                          skip_counter_check=skip_counter_check, drop_information=drop_information,
+                          weak_server=weak_server)
 
         # Verify packets were not egresed the DUT
         if discard_group != "NO_DROPS":

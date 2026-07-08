@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Console_menu_type,Proxy
+rcon,7022,mtvr-panther-05,ssh,,root
+rcon,7038,mtvr-panther-06,ssh,,root

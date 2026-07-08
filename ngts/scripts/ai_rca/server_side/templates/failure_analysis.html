@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"/><title>__TITLE__</title>
+<style>
+  html { height:auto; min-height:0; box-sizing:border-box; overflow-y:auto; }
+  body { box-sizing:border-box; margin:0; min-height:0; overflow-y:auto; padding:10px 12px 12px;
+          font-family:system-ui,-apple-system,sans-serif; font-size:15px; }
+  *, *::before, *::after { box-sizing:inherit; }
+  #out { background:#f6f8fa; padding:16px 18px; border-radius:8px; border:1px solid #e1e4e8; margin:0; width:100%;
+          font-size:15px; line-height:1.5; white-space:normal; word-break:break-word; overflow:visible; }
+  #out pre.raw-json { white-space:pre-wrap; margin:0; font-family:ui-monospace,monospace; font-size:15px; }
+  .analysis-sec { margin:0 0 18px 0; padding:0; border-bottom:1px solid #e1e4e8; }
+  .analysis-sec:last-of-type { border-bottom:none; margin-bottom:0; }
+  .analysis-sec h4 { margin:0 0 8px 0; font-size:16px; font-weight:600; color:#1a1a2e; letter-spacing:0.02em; }
+  .analysis-body { color:#24292f; font-size:15px; line-height:1.55; }
+  .analysis-body p { margin:0 0 8px 0; }
+  .analysis-body strong { font-weight:700; color:#111; }
+  .analysis-path { text-decoration:underline; text-underline-offset:2px; text-decoration-thickness:1px; }
+  .analysis-ts { font-style:italic; color:#444; }
+  .chain-rows { margin:0; padding:10px 12px; background:#fff; border:1px solid #d0d7de; border-radius:6px;
+                 font-family:ui-monospace,monospace; font-size:15px; line-height:1.55; }
+  .chain-row { margin:0 0 8px 0; white-space:pre-wrap; word-break:break-word; }
+  .chain-row:last-child { margin-bottom:0; }
+  .chain-sep { color:#888; margin:0 5px; font-style:normal; text-decoration:none; }
+  .analysis-ts-col { font-style:italic; color:#333; font-weight:500; text-decoration:none; }
+  .analysis-collapsible { margin:0 0 14px 0; padding:10px 12px; border:1px solid #d0d7de; border-radius:8px; background:#fafbfc; }
+  .analysis-collapsible-sum { cursor:pointer; font-weight:600; color:#1a1a2e; font-size:16px; }
+  .analysis-collapsible-body { margin-top:12px; font-size:15px; line-height:1.55; color:#24292f; }
+  /* Exception analysis is first: extra gap before Failure summary */
+  .analysis-collapsible.analysis-collapsible-exception { margin-bottom: 24px; }
+  .analysis-subsec { margin:0 0 14px 0; }
+  .analysis-subsec:last-child { margin-bottom:0; }
+  .analysis-ul { margin:6px 0 0 18px; padding:0; }
+  .chain-step { color:#555; font-weight:600; margin-right:6px; }
+  .evidence-item { margin:0 0 12px 0; padding:10px 12px; background:#fff; border:1px solid #e1e4e8; border-radius:6px; }
+  .evidence-item:last-child { margin-bottom:0; }
+  #fb-wrap.locked button, #fb-wrap.locked textarea { cursor:not-allowed; }
+  /* Match ``BugReportUI.addButton`` (AllurClick2RM): circular bug + RM label */
+  #fa-overlay-trigger-fab {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 10002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  #fa-overlay-open-btn {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #000;
+    border-radius: 50%;
+    background: #fff;
+    color: #000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #fa-overlay-open-btn:hover { background: #f0f0f0; }
+  #fa-overlay-open-btn:focus-visible {
+    outline: 2px solid #0969da;
+    outline-offset: 2px;
+  }
+</style></head>
+<body>
+  <div id="fa-overlay-trigger-fab">
+    <button type="button" id="fa-overlay-open-btn" title="Create Redmine bug (AllurClick2RM)" aria-label="Create Redmine bug">
+      <div style="display:flex;flex-direction:column;align-items:center;line-height:1;">
+        <span style="font-size:25px;">🐞</span>
+        <span style="font-size:12px;margin-top:0.3px;">RM</span>
+      </div>
+    </button>
+  </div>
+  <div id="out"></div>
+  <div id="fb-wrap" style="display:none;margin:14px 0 0 0;padding:12px 12px 8px 12px;background:#fafafa;border:1px solid #ddd;border-radius:8px;font-size:15px">
+    <div style="margin-bottom:8px;color:#333;font-weight:600">Was this analysis helpful?</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:stretch">
+      <textarea id="fb-comment" rows="2" maxlength="8000" placeholder="Optional comment"
+        style="flex:1 1 220px;min-width:180px;min-height:48px;padding:10px 12px;font-size:15px;border:1px solid #bbb;border-radius:8px;font-family:inherit;resize:vertical"></textarea>
+      <button type="button" id="fb-like" title="Like" aria-label="Like"
+        style="flex:0 0 36px;width:36px;height:36px;min-height:36px;padding:0;box-sizing:border-box;cursor:pointer;border:1px solid #bbb;border-radius:6px;background:#fff;font-size:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center">👍</button>
+      <button type="button" id="fb-dislike" title="Dislike" aria-label="Dislike"
+        style="flex:0 0 36px;width:36px;height:36px;min-height:36px;padding:0;box-sizing:border-box;cursor:pointer;border:1px solid #bbb;border-radius:6px;background:#fff;font-size:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center">👎</button>
+    </div>
+    <p id="fb-status" style="margin:10px 0 0 0;color:#666;font-size:14px"></p>
+  </div>
+  <script>
+  (function() {
+    (function hydrateBugUsernameFromCookie() {
+      try {
+        var parts = String(document.cookie || "").split(";");
+        var prefix = "bug_plugin_username=";
+        var v = "";
+        for (var hi = 0; hi < parts.length; hi++) {
+          var p = parts[hi].trim();
+          if (p.indexOf(prefix) === 0) {
+            v = decodeURIComponent(p.substring(prefix.length));
+            break;
+          }
+        }
+        if (v && String(v).trim()) {
+          v = String(v).trim();
+          try {
+            if (!localStorage.getItem("bug_plugin_username")) {
+              localStorage.setItem("bug_plugin_username", v);
+            }
+          } catch (h1) {}
+          try {
+            if (!sessionStorage.getItem("bug_plugin_username")) {
+              sessionStorage.setItem("bug_plugin_username", v);
+            }
+          } catch (h2) {}
+        }
+      } catch (h0) {}
+    })();
+    function shrinkWrapAttachmentViewport() {
+      try {
+        if (window.__sonicMgmtShrinkWrap) window.__sonicMgmtShrinkWrap();
+        if (window.scheduleShrinkWrap) window.scheduleShrinkWrap();
+      } catch (e0) {}
+    }
+    window.__sonicMgmtPreferredHeight = function(contentH) {
+      contentH = contentH || 0;
+      var vh = window.innerHeight || document.documentElement.clientHeight || 640;
+      var floor = Math.min(Math.max(Math.floor(vh * 0.72), 500), 780);
+      var out = document.getElementById("out");
+      var outBottom = out ? out.getBoundingClientRect().bottom + window.pageYOffset + 8 : 0;
+      var readBottom = 0;
+      var secs = document.querySelectorAll("#out .analysis-sec");
+      for (var i = 0; i < secs.length; i++) {
+        var h4 = secs[i].querySelector("h4");
+        if (h4 && String(h4.textContent || "").trim() === "Cause chain") {
+          readBottom = secs[i].getBoundingClientRect().bottom + window.pageYOffset + 16;
+          break;
+        }
+      }
+      if (readBottom <= 0 && outBottom > 0) readBottom = outBottom;
+      var target = Math.max(readBottom, floor);
+      if (outBottom > 0) target = Math.min(target, outBottom);
+      if (contentH > 0) return Math.max(contentH, Math.min(target, outBottom || target));
+      return target;
+    };
+    shrinkWrapAttachmentViewport();
+    window.addEventListener("resize", shrinkWrapAttachmentViewport);
+
+    var BASE = __JS_BASE__;
+    var DEMO_MODE = __JS_DEMO_MODE__;
+    var RESOLVE = __JS_RESOLVE_PATH__;
+    function normalizeResolverBase(base) {
+      var b = String(base || "").trim().replace(/\/+$/, "");
+      if (!b) return "";
+      var pageProto = "";
+      try { pageProto = String(window.location.protocol || ""); } catch (e0) {}
+      if (pageProto === "https:" && b.indexOf("http://") === 0) {
+        var host = "";
+        try { host = new URL(b).hostname || ""; } catch (e1) {}
+        if (host !== "127.0.0.1" && host !== "localhost") {
+          b = "https://" + b.substring("http://".length);
+        }
+      }
+      return b;
+    }
+    var ROOT = normalizeResolverBase(BASE);
+    window.__sonicMgmtBugReportPostUrl = __JS_BUG_POST_URL__;
+    var FEEDBACK_ROOT = ROOT;
+    var FEEDBACK_PATH = __JS_FEEDBACK_PATH__;
+    var SETUP_NAME = __JS_SETUP__;
+    var SESSION_ID = __JS_SESSION__;
+    var TEST_NODEID = __JS_NODEID__;
+    var out = document.getElementById("out");
+    var faOverlayKeyWnd = null;
+    function getFailureOverlayTargetDocument() {
+      try {
+        var tw = window.top;
+        if (tw && tw !== window && tw.document && tw.document.body) return tw.document;
+      } catch (e0) {}
+      return document;
+    }
+    function allurClick2RmResolveTestDisplayName() {
+      if (!TEST_NODEID) return "Unknown Test";
+      var segs = String(TEST_NODEID).split("::");
+      return segs.length > 1 ? segs[segs.length - 1] : String(TEST_NODEID);
+    }
+    function closeFailureAnalysisOverlay() {
+      function rmFrom(d) {
+        if (!d) return;
+        try {
+          var w = d.defaultView || window;
+          if (w && w.__sonicMgmtFailureAnalysisRmModal && w.__sonicMgmtFailureAnalysisRmModal.closeModalIfOpen)
+            w.__sonicMgmtFailureAnalysisRmModal.closeModalIfOpen();
+        } catch (eRm) {}
+        var el = d.getElementById("fa-overlay-backdrop");
+        if (el) el.remove();
+        var st = d.getElementById("fa-overlay-dynamic-styles");
+        if (st) st.remove();
+      }
+      rmFrom(document);
+      try { rmFrom(window.top.document); } catch (e1) {}
+      try {
+        if (faOverlayKeyWnd) {
+          faOverlayKeyWnd.removeEventListener("keydown", faOverlayKeydown, true);
+          faOverlayKeyWnd = null;
+        }
+      } catch (e2) {}
+    }
+    function faOverlayKeydown(ev) {
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeFailureAnalysisOverlay();
+      }
+    }
+    /** Minimal fields merged with ``BugDataCollector.fetchAllureBugContext`` (same as extension). */
+    function buildFailureAnalysisBugData() {
+      var reportUrl = "";
+      try {
+        reportUrl = String(window.top.location.href || "");
+      } catch (eTop) {
+        reportUrl = String(window.location.href || "");
+      }
+      if (!reportUrl) reportUrl = String(window.location.href || "");
+      var setup = String(SETUP_NAME || "").trim();
+      var node = String(TEST_NODEID || "").trim();
+      var lines = [];
+      lines.push("Test: " + allurClick2RmResolveTestDisplayName());
+      if (node) lines.push("Pytest node id: " + node);
+      var desc = lines.join("\n");
+      var agentAnalysis = null;
+      try {
+        var bundle = readResolverBundle();
+        if (bundle && bundle.ok === true && bundle.text != null && String(bundle.text).trim() !== "") {
+          var raw = String(bundle.text).trim();
+          try {
+            agentAnalysis = JSON.parse(raw);
+          } catch (eParse) {
+            agentAnalysis = raw;
+          }
+        }
+        if (bundle.path) {
+          var rp = String(bundle.path).trim();
+          if (rp) lines.push("Agent output path: " + rp);
+        }
+      } catch (eB) {}
+      desc = lines.join("\n");
+      return {
+        report_url: reportUrl,
+        setup_name: setup || "???",
+        description: desc,
+        agentAnalysis: agentAnalysis
+      };
+    }
+    function openFailureAnalysisOverlay() {
+      closeFailureAnalysisOverlay();
+      var hostDoc = getFailureOverlayTargetDocument();
+      var hostWin = hostDoc.defaultView || window;
+      try {
+        if (!hostWin.__sonicMgmtRmBundleLoaded) {
+          var s = hostDoc.createElement("script");
+          ___SONIC_MGMT_RM_INJECT_STMT___
+          (hostDoc.head || hostDoc.documentElement).appendChild(s);
+          s.remove();
+          hostWin.__sonicMgmtRmBundleLoaded = true;
+        }
+      } catch (e0) {
+        try { alert("Failed to load bug dialog: " + e0); } catch (e1) {}
+        return;
+      }
+      var testName = allurClick2RmResolveTestDisplayName();
+      try {
+        hostWin.__sonicMgmtFailureAnalysisRmModal.openFromAllureAttachment({
+          testName: testName,
+          setupName: String(SETUP_NAME || "").trim(),
+          testNodeid: String(TEST_NODEID || "").trim(),
+          hasVersion: false,
+          bugData: buildFailureAnalysisBugData()
+        });
+      } catch (e2) {
+        try { alert("Bug dialog failed: " + e2); } catch (e3) {}
+        return;
+      }
+      faOverlayKeyWnd = hostWin;
+      hostWin.addEventListener("keydown", faOverlayKeydown, true);
+    }
+    var btnOverlay = document.getElementById("fa-overlay-open-btn");
+    if (btnOverlay) btnOverlay.addEventListener("click", openFailureAnalysisOverlay);
+    var feedbackRevealed = false;
+    var feedbackLocked = false;
+
+    var BUNDLE_KEY = __JS_BUNDLE_KEY__;
+    function readResolverBundle() {
+      try {
+        var raw = sessionStorage.getItem(BUNDLE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (eRb) {
+        return null;
+      }
+    }
+    function writeResolverBundle(data) {
+      try {
+        if (data && data.ok === true) sessionStorage.setItem(BUNDLE_KEY, JSON.stringify(data));
+      } catch (eWb) {}
+    }
+    function pickExecutionId(root) {
+      if (!root || typeof root !== "object" || Array.isArray(root)) return "";
+      var eid = root.execution_id != null ? String(root.execution_id).trim() : "";
+      if (eid) return eid;
+      eid = root.executionId != null ? String(root.executionId).trim() : "";
+      return eid;
+    }
+    function enrichResolverBundleExecutionId(eid) {
+      if (!eid) return;
+      try {
+        var fbBundle = readResolverBundle();
+        if (!fbBundle || fbBundle.ok !== true) return;
+        fbBundle.execution_id = eid;
+        sessionStorage.setItem(BUNDLE_KEY, JSON.stringify(fbBundle));
+      } catch (eEid) {}
+    }
+    try { sessionStorage.removeItem(BUNDLE_KEY); } catch (eClrBundle) {}
+
+    function revealFeedback() {
+      if (feedbackRevealed || !FEEDBACK_ROOT) return;
+      var wrap = document.getElementById("fb-wrap");
+      if (!wrap) return;
+      feedbackRevealed = true;
+      wrap.style.display = "block";
+      shrinkWrapAttachmentViewport();
+    }
+
+    function lockFeedbackAfterSend() {
+      feedbackLocked = true;
+      var wrap = document.getElementById("fb-wrap");
+      var ta = document.getElementById("fb-comment");
+      var btnLike = document.getElementById("fb-like");
+      var btnDis = document.getElementById("fb-dislike");
+      if (wrap) wrap.classList.add("locked");
+      if (ta) { ta.readOnly = true; ta.disabled = true; }
+      if (btnLike) btnLike.disabled = true;
+      if (btnDis) btnDis.disabled = true;
+    }
+
+    function initFeedbackHandlers() {
+      if (!FEEDBACK_ROOT) return;
+      var wrap = document.getElementById("fb-wrap");
+      var btnLike = document.getElementById("fb-like");
+      var btnDis = document.getElementById("fb-dislike");
+      var st = document.getElementById("fb-status");
+      if (!wrap || !btnLike || !btnDis || !st) return;
+      function sendVote(vote) {
+        if (feedbackLocked || !feedbackRevealed) return;
+        st.textContent = "Sending…";
+        btnLike.disabled = true;
+        btnDis.disabled = true;
+        var ta = document.getElementById("fb-comment");
+        if (ta) ta.disabled = true;
+        var cmt = ta ? String(ta.value || "").trim() : "";
+        var params = new URLSearchParams();
+        params.set("vote", vote);
+        params.set("allure_url", u);
+        params.set("comment", cmt);
+        params.set("setup_name", SETUP_NAME);
+        params.set("session_id", SESSION_ID);
+        params.set("test_nodeid", TEST_NODEID);
+        try {
+          var fbBundle = readResolverBundle();
+          if (fbBundle && fbBundle.ok === true && fbBundle.path)
+            params.set("agent_output_path", String(fbBundle.path));
+          if (fbBundle && fbBundle.execution_id && String(fbBundle.execution_id).trim())
+            params.set("execution_id", String(fbBundle.execution_id).trim());
+        } catch (eFbPath) {}
+        params.set("client_ts", new Date().toISOString());
+        fetch(FEEDBACK_ROOT + FEEDBACK_PATH, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          credentials: "omit",
+          body: params.toString()
+        }).then(function(r) {
+          if (r.ok) {
+            st.textContent = "Thanks — feedback recorded.";
+            lockFeedbackAfterSend();
+            return;
+          }
+          return r.text().then(function(t) {
+            st.textContent = "Feedback failed (" + r.status + "): " + (t || r.statusText);
+            btnLike.disabled = false;
+            btnDis.disabled = false;
+            if (ta) ta.disabled = false;
+          });
+        }).catch(function(err) {
+          st.textContent = "Feedback error: " + err +
+            " (often: POST " + FEEDBACK_PATH + " not deployed, blocked by proxy, TLS/DNS, " +
+            "or CORS for this Allure origin).";
+          btnLike.disabled = false;
+          btnDis.disabled = false;
+          if (ta) ta.disabled = false;
+        });
+      }
+      btnLike.addEventListener("click", function() { sendVote("like"); });
+      btnDis.addEventListener("click", function() { sendVote("dislike"); });
+    }
+
+    var u = "";
+    if (DEMO_MODE) u = "http://demo/allure/local";
+    try { if (!u && window.top && window.top !== window) u = String(window.top.location.href); } catch (e) {}
+    if (!u) { try { u = document.referrer || ""; } catch (e2) {} }
+    if (!u) {
+      out.textContent = "Open this attachment from inside the Allure report so the resolver receives the Allure page URL.";
+      return;
+    }
+    initFeedbackHandlers();
+
+    if (!ROOT) {
+      out.textContent = "Resolver base URL is empty.";
+      showNotExist();
+      return;
+    }
+
+    function escHtml(s) {
+      if (s == null) return "";
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+    /** Underline path-like tokens (Ctrl+U); italicize timestamps (Ctrl+I). Non-overlapping; path wins ties. */
+    function annotatePathsAndTimestampsEsc(raw) {
+      if (raw == null || raw === "") return "";
+      var s = String(raw);
+      var spans = [];
+      var frx = /\b((?:[\w.+-]+\/)*[\w.-]+\.(?:py|sh|json|yaml|yml|xml|toml|ini|cfg|conf|log|txt|md|go|rs|c|h|cpp|hpp|cc|cxx|java|js|ts|tsx|jsx|service|socket|timer|deb|rpm|mk))\b/gi;
+      var trx = /\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})?\b|\b\d{2}:\d{2}:\d{2}\b|\b\d{4}-\d{2}-\d{2}\b/g;
+      var m;
+      frx.lastIndex = 0;
+      while ((m = frx.exec(s)) !== null) {
+        spans.push({ start: m.index, end: m.index + m[0].length, cls: "analysis-path", text: m[0] });
+      }
+      trx.lastIndex = 0;
+      while ((m = trx.exec(s)) !== null) {
+        spans.push({ start: m.index, end: m.index + m[0].length, cls: "analysis-ts", text: m[0] });
+      }
+      spans.sort(function(a, b) {
+        if (a.start !== b.start) return a.start - b.start;
+        var ap = a.cls === "analysis-path" ? 1 : 0;
+        var bp = b.cls === "analysis-path" ? 1 : 0;
+        if (ap !== bp) return bp - ap;
+        return (b.end - b.start) - (a.end - a.start);
+      });
+      var lastEnd = -1;
+      var picked = [];
+      for (var i = 0; i < spans.length; i++) {
+        var sp = spans[i];
+        if (sp.start < lastEnd) continue;
+        picked.push(sp);
+        lastEnd = sp.end;
+      }
+      var out = "";
+      var pos = 0;
+      for (var j = 0; j < picked.length; j++) {
+        var p = picked[j];
+        if (p.start > pos) out += escHtml(s.slice(pos, p.start));
+        out += '<span class="' + p.cls + '">' + escHtml(p.text) + "</span>";
+        pos = p.end;
+      }
+      out += escHtml(s.slice(pos));
+      return out;
+    }
+    function looksLikeRcaDict(o) {
+      if (!o || typeof o !== "object" || Array.isArray(o)) return false;
+      var rca = o.root_cause_analysis || o.rootCauseAnalysis;
+      if (rca && typeof rca === "object" && !Array.isArray(rca)) return true;
+      return Object.prototype.hasOwnProperty.call(o, "test_name") &&
+        Object.prototype.hasOwnProperty.call(o, "verdict");
+    }
+    /** Recognizes full regression-analysis JSON (snake_case or nested envelopes). */
+    function looksLikeAnalysisShape(o) {
+      if (!o || typeof o !== "object" || Array.isArray(o)) return false;
+      if (looksLikeRcaDict(o)) return true;
+      var tla = o.test_log_analysis || o.testLogAnalysis;
+      if (tla && typeof tla === "object") return true;
+      var ev = o.evidence_log || o.evidenceLog;
+      if (Array.isArray(ev)) return true;
+      var bl = o.baseline_comparison || o.baselineComparison;
+      if (bl && typeof bl === "object") return true;
+      var ex = o.exception_analysis || o.exceptionAnalysis;
+      if (ex && typeof ex === "object") return true;
+      var sl = o.system_level_findings || o.systemLevelFindings;
+      if (sl && typeof sl === "object") return true;
+      return false;
+    }
+    function scoreRca(o) {
+      var n = 0;
+      var tla = o.test_log_analysis || o.testLogAnalysis;
+      if (tla && typeof tla === "object") n += 40;
+      var rca = o.root_cause_analysis || o.rootCauseAnalysis;
+      if (rca && typeof rca === "object") {
+        n += 20;
+        var ch = rca.causal_chain || rca.causalChain || rca.steps;
+        if (Array.isArray(ch)) n += Math.min(ch.length, 50);
+      }
+      var ev = o.evidence_log || o.evidenceLog;
+      if (Array.isArray(ev)) n += Math.min(ev.length, 30);
+      var bl = o.baseline_comparison || o.baselineComparison;
+      if (bl && typeof bl === "object") n += 15;
+      var sl = o.system_level_findings || o.systemLevelFindings;
+      if (sl && typeof sl === "object") n += 10;
+      return n;
+    }
+    function findJsonObjectEnd(s, start) {
+      if (!s || start < 0 || start >= s.length || s.charAt(start) !== "{") return -1;
+      var depth = 0;
+      var inStr = false;
+      var esc = false;
+      for (var j = start; j < s.length; j++) {
+        var c = s.charAt(j);
+        if (inStr) {
+          if (esc) { esc = false; continue; }
+          if (c === "\\\\") { esc = true; continue; }
+          if (c === '"') { inStr = false; continue; }
+          continue;
+        }
+        if (c === '"') { inStr = true; continue; }
+        if (c === "{") depth++;
+        else if (c === "}") {
+          depth--;
+          if (depth === 0) return j + 1;
+        }
+      }
+      return -1;
+    }
+    function tryDecodeJsonObjectLoose(s, start) {
+      var i = typeof start === "number" ? start : 0;
+      while (i < s.length) {
+        i = s.indexOf("{", i);
+        if (i === -1) return null;
+        var end = findJsonObjectEnd(s, i);
+        if (end > i) {
+          try {
+            var obj = JSON.parse(s.slice(i, end));
+            if (looksLikeAnalysisShape(obj)) return obj;
+          } catch (e0) {}
+        }
+        i += 1;
+      }
+      return null;
+    }
+    function extractRcaFromAgentBlob(text) {
+      if (!text || typeof text !== "string") return null;
+      var s = text.trim();
+      var fullM = s.match(/^\s*```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/i);
+      if (fullM) {
+        var inner0 = fullM[1].trim();
+        if (inner0.charAt(0) === "{") {
+          try {
+            var o0 = JSON.parse(inner0);
+            if (looksLikeAnalysisShape(o0)) return o0;
+          } catch (e1) {}
+        }
+      }
+      var candidates = [];
+      var openRe = /```(?:json)?\s*\n?/gi;
+      var m;
+      while ((m = openRe.exec(s)) !== null) {
+        var chunkStart = m.index + m[0].length;
+        var close = s.indexOf("```", chunkStart);
+        if (close === -1) break;
+        var chunk = s.slice(chunkStart, close).trim();
+        if (chunk.charAt(0) === "{") {
+          try {
+            var obj = JSON.parse(chunk);
+            if (looksLikeAnalysisShape(obj)) candidates.push(obj);
+          } catch (e2) {
+            var loose = tryDecodeJsonObjectLoose(chunk, 0);
+            if (loose) candidates.push(loose);
+          }
+        }
+        openRe.lastIndex = close + 3;
+      }
+      if (candidates.length) {
+        return candidates.reduce(function(best, cur) {
+          return scoreRca(cur) >= scoreRca(best) ? cur : best;
+        });
+      }
+      if (s.charAt(0) === "{") {
+        try {
+          var top = JSON.parse(s);
+          if (looksLikeAnalysisShape(top)) return top;
+        } catch (e3) {}
+        return tryDecodeJsonObjectLoose(s, 0);
+      }
+      return tryDecodeJsonObjectLoose(s, 0);
+    }
+    function findNestedAnalysis(obj, depth) {
+      if (!obj || typeof obj !== "object" || depth > 6) return null;
+      if (Array.isArray(obj)) {
+        for (var i = 0; i < obj.length; i++) {
+          var r = findNestedAnalysis(obj[i], depth + 1);
+          if (r) return r;
+        }
+        return null;
+      }
+      if (looksLikeAnalysisShape(obj)) return obj;
+      var keys = Object.keys(obj);
+      for (var k = 0; k < keys.length; k++) {
+        var v = obj[keys[k]];
+        if (v && typeof v === "object") {
+          var r2 = findNestedAnalysis(v, depth + 1);
+          if (r2) return r2;
+        }
+      }
+      return null;
+    }
+    function tryParseJsonStringField(val) {
+      if (typeof val !== "string") return null;
+      var t = val.trim();
+      if (!t || (t.charAt(0) !== "{" && t.charAt(0) !== "[")) return null;
+      try {
+        return JSON.parse(t);
+      } catch (e) { return null; }
+    }
+    function unwrapAnalysisPayload(root) {
+      if (!root || typeof root !== "object") return { inner: root, envelope: null };
+      if (looksLikeAnalysisShape(root)) return { inner: root, envelope: null };
+      // MARS / resolver envelope: { "execution_id", "data": { ...analysis }, "created_at", "mars_respond_id" }
+      if (root.data !== undefined && root.data !== null) {
+        if (typeof root.data === "object" && !Array.isArray(root.data)) {
+          if (looksLikeAnalysisShape(root.data)) return { inner: root.data, envelope: root };
+        }
+        if (typeof root.data === "string") {
+          var parsedData = tryParseJsonStringField(root.data);
+          if (parsedData && looksLikeAnalysisShape(parsedData)) return { inner: parsedData, envelope: root };
+        }
+      }
+      if (root.result && typeof root.result === "object" && !Array.isArray(root.result)) {
+        if (looksLikeAnalysisShape(root.result)) return { inner: root.result, envelope: root };
+      }
+      if (root.data && typeof root.data === "object" && root.data !== null && typeof root.data.output === "string") {
+        var fromOut = extractRcaFromAgentBlob(root.data.output);
+        if (fromOut) return { inner: fromOut, envelope: root };
+      }
+      if (typeof root.result === "string") {
+        var parsedRes = tryParseJsonStringField(root.result);
+        if (parsedRes && looksLikeAnalysisShape(parsedRes)) return { inner: parsedRes, envelope: root };
+        var fromRes = extractRcaFromAgentBlob(root.result);
+        if (fromRes) return { inner: fromRes, envelope: root };
+      }
+      var strKeys = ["text", "analysis", "payload", "body", "content", "output", "message"];
+      for (var si = 0; si < strKeys.length; si++) {
+        var sk = strKeys[si];
+        if (Object.prototype.hasOwnProperty.call(root, sk)) {
+          var parsed = tryParseJsonStringField(root[sk]);
+          if (parsed && looksLikeAnalysisShape(parsed)) return { inner: parsed, envelope: root };
+          if (parsed && typeof parsed === "object") {
+            var nest = findNestedAnalysis(parsed, 0);
+            if (nest) return { inner: nest, envelope: root };
+          }
+        }
+      }
+      if (root.data && typeof root.data === "object" && !Array.isArray(root.data)) {
+        var nestD = findNestedAnalysis(root.data, 0);
+        if (nestD) return { inner: nestD, envelope: root };
+      }
+      var nestR = findNestedAnalysis(root, 0);
+      if (nestR) return { inner: nestR, envelope: root };
+      return { inner: root, envelope: null };
+    }
+    /** After . / ? / ! + optional quotes + spaces, insert newline if that sentence is at least minLen chars (readability). */
+    function addNewlinesAfterLongSentences(s, minLen) {
+      minLen = typeof minLen === "number" ? minLen : 90;
+      if (!s || s.length < minLen) return s;
+      var sentStart = 0;
+      var out = [];
+      for (var i = 0; i < s.length; i++) {
+        var ch = s.charAt(i);
+        if (ch !== "." && ch !== "?" && ch !== "!") continue;
+        var j = i + 1;
+        while (j < s.length && (s.charAt(j) === '"' || s.charAt(j) === "'")) j++;
+        if (j >= s.length || s.charAt(j) !== " ") continue;
+        if (i + 1 - sentStart < minLen) continue;
+        while (j < s.length && s.charAt(j) === " ") j++;
+        out.push(s.slice(sentStart, i + 1));
+        out.push("\n");
+        sentStart = j;
+        i = j - 1;
+      }
+      out.push(s.slice(sentStart));
+      return out.join("");
+    }
+    /** Plain segment: space/start-delimited '...' literals (monit phrases, log snippets) → bold. */
+    function formatPlainWithSingleQuotedBold(s) {
+      if (!s) return "";
+      s = addNewlinesAfterLongSentences(s, 90);
+      var re = /(?:^|\s)'([^'\n]{3,200})'(?=\s|$|[.,;:!?()\[\]{}])/g;
+      var out = "";
+      var last = 0;
+      var m;
+      while ((m = re.exec(s)) !== null) {
+        out += annotatePathsAndTimestampsEsc(s.slice(last, m.index));
+        var pre = m[0].charAt(0) === "'" ? "" : m[0].slice(0, m[0].indexOf("'"));
+        if (pre) out += annotatePathsAndTimestampsEsc(pre);
+        out += "<strong>" + annotatePathsAndTimestampsEsc(m[1]) + "</strong>";
+        last = m.index + m[0].length;
+      }
+      out += annotatePathsAndTimestampsEsc(s.slice(last));
+      return out.replace(/\r?\n/g, "<br/>");
+    }
+    /** Backtick-wrapped spans render bold; plain text also bolds '...' literals (see formatPlain...). */
+    function formatAnalysisInline(s) {
+      if (s == null) return "";
+      var str = String(s);
+      var out = "";
+      var i = 0;
+      while (i < str.length) {
+        var bt = str.indexOf("`", i);
+        if (bt === -1) {
+          out += formatPlainWithSingleQuotedBold(str.slice(i));
+          break;
+        }
+        if (bt > i) {
+          out += formatPlainWithSingleQuotedBold(str.slice(i, bt));
+        }
+        var bt2 = str.indexOf("`", bt + 1);
+        if (bt2 === -1) {
+          out += annotatePathsAndTimestampsEsc(str.slice(bt)).replace(/\r?\n/g, "<br/>");
+          break;
+        }
+        out += "<strong>" + annotatePathsAndTimestampsEsc(str.slice(bt + 1, bt2)).replace(/\r?\n/g, "<br/>") + "</strong>";
+        i = bt2 + 1;
+      }
+      return out;
+    }
+    function analysisSection(title, innerHtml) {
+      return '<div class="analysis-sec"><h4>' + escHtml(title) + '</h4><div class="analysis-body">' + innerHtml + '</div></div>';
+    }
+    function analysisCollapsible(title, innerHtml, extraClass) {
+      var cls = "analysis-collapsible" + (extraClass ? " " + extraClass : "");
+      return '<details class="' + cls + '"><summary class="analysis-collapsible-sum">' +
+        escHtml(title) + '</summary><div class="analysis-collapsible-body">' + innerHtml + "</div></details>";
+    }
+    function formatKvTable(o) {
+      if (!o || typeof o !== "object") return "";
+      var keys = Object.keys(o);
+      if (!keys.length) return "";
+      var rows = [];
+      for (var k = 0; k < keys.length; k++) {
+        var key = keys[k];
+        var val = o[key];
+        var vs = val === null || val === undefined ? "" : String(val);
+        rows.push(
+          '<tr><td style="padding:4px 12px 4px 0;vertical-align:top;color:#555;white-space:nowrap">' +
+          escHtml(key) + '</td><td style="padding:4px 0">' + formatAnalysisInline(vs) + "</td></tr>"
+        );
+      }
+      return '<table style="border-collapse:collapse;width:100%;margin-top:8px;font-size:15px">' + rows.join("") + "</table>";
+    }
+    function pickRca(j) {
+      var r = j.root_cause_analysis || j.rootCauseAnalysis;
+      if (r && typeof r === "object") return r;
+      r = j.oot_cause_analysys;
+      if (r && typeof r === "object") return r;
+      return null;
+    }
+    function chainSteps(rca, j) {
+      var ch = null;
+      if (rca && typeof rca === "object") {
+        ch = rca.causal_chain || rca.causalChain || rca.steps;
+      }
+      if (!ch && j && typeof j === "object") ch = j.causal_chain || j.causalChain || j.steps;
+      return Array.isArray(ch) ? ch : null;
+    }
+    function sortChain(chain) {
+      if (!chain || !chain.length) return chain;
+      var copy = chain.slice();
+      copy.sort(function(a, b) {
+        var na = Number(a && a.step);
+        var nb = Number(b && b.step);
+        if (!isNaN(na) && !isNaN(nb)) return na - nb;
+        return 0;
+      });
+      return copy;
+    }
+    function formatAnalysisJson(j) {
+      var parts = [];
+      var exa = j.exception_analysis || j.exceptionAnalysis;
+      if (exa && typeof exa === "object") {
+        var exLines = [];
+        if (exa.exception_type != null && String(exa.exception_type).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Exception type:</strong> ' +
+            formatAnalysisInline(String(exa.exception_type)) + "</div>");
+        if (exa.message != null && String(exa.message).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Message:</strong> ' +
+            formatAnalysisInline(String(exa.message)) + "</div>");
+        if (exa.assertion != null && String(exa.assertion).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Assertion:</strong> ' +
+            formatAnalysisInline(String(exa.assertion)) + "</div>");
+        if (exa.failing_function != null && String(exa.failing_function).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Failing function:</strong> ' +
+            formatAnalysisInline(String(exa.failing_function)) + "</div>");
+        if (exa.embedded_data != null && String(exa.embedded_data).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Embedded data:</strong> ' +
+            formatAnalysisInline(String(exa.embedded_data)) + "</div>");
+        if (exa.initial_hypothesis != null && String(exa.initial_hypothesis).trim())
+          exLines.push('<div style="margin-bottom:8px"><strong>Initial hypothesis:</strong> ' +
+            formatAnalysisInline(String(exa.initial_hypothesis)) + "</div>");
+        if (exLines.length)
+          parts.push(analysisCollapsible("Exception analysis", exLines.join(""), "analysis-collapsible-exception"));
+      }
+      var tla = j.test_log_analysis || j.testLogAnalysis;
+      if (!tla || typeof tla !== "object" || Array.isArray(tla)) tla = null;
+      var summaryInner = "";
+      if (tla && typeof tla === "object" && tla.summary != null && String(tla.summary).trim())
+        summaryInner = formatAnalysisInline(String(tla.summary).trim());
+      else if (tla && typeof tla === "object") {
+        var when = tla.when != null ? String(tla.when).trim() : "";
+        var wf = tla.what_failed != null ? String(tla.what_failed).trim() : "";
+        wf = wf.replace(/^Failed:\\s*/i, "").trim();
+        var nameFromJson = (j.test_name != null && String(j.test_name).trim())
+          ? String(j.test_name).trim() : "";
+        if (!nameFromJson && tla.test_name != null) nameFromJson = String(tla.test_name).trim();
+        if (!nameFromJson && TEST_NODEID) {
+          var segsTn = String(TEST_NODEID).split("::");
+          nameFromJson = segsTn.length > 1 ? segsTn[segsTn.length - 1] : String(TEST_NODEID);
+        }
+        if (when) summaryInner += formatAnalysisInline(" on  " + when);
+        if (nameFromJson) {
+          summaryInner += (summaryInner ? " " : "") +
+            '<span class="analysis-path analysis-test-name" title="Test name">' +
+            escHtml(nameFromJson) + "</span>";
+        }
+        if (wf) summaryInner += (summaryInner ? " " : "") + formatAnalysisInline(wf);
+      }
+      if (summaryInner)
+        parts.push(analysisSection("Failure summary", "<p>" + summaryInner + "</p>"));
+      var rca = pickRca(j);
+      if (rca && typeof rca === "object") {
+        var root = rca.root_cause != null ? rca.root_cause : rca["root cause"];
+        if (root == null) root = rca.rootCause != null ? rca.rootCause : null;
+        if (root == null && rca.hypothesis != null) root = rca.hypothesis;
+        if (root == null && j && typeof j === "object" && j.root_cause != null) root = j.root_cause;
+        var mech = rca.mechanism;
+        if (mech == null) mech = rca.mechanics != null ? rca.mechanics : rca.mechaniese;
+        if (root != null && String(root).trim()) {
+          parts.push(analysisSection("Failure root cause", "<p>" + formatAnalysisInline(String(root)) + "</p>"));
+        }
+        if (mech != null && String(mech).trim()) {
+          parts.push(analysisSection("Detailed explanation", "<p>" + formatAnalysisInline(String(mech)) + "</p>"));
+        }
+      }
+      var chainRaw = chainSteps(rca, j);
+      var chain = chainRaw ? sortChain(chainRaw) : null;
+      if (chain && chain.length) {
+        var rows = [];
+        for (var ci = 0; ci < chain.length; ci++) {
+          var st = chain[ci] || {};
+          var src = st.source != null ? String(st.source) : "";
+          var ts = st.timestamp != null ? String(st.timestamp) : "";
+          var ev = st.event != null ? String(st.event) : "";
+          var stepPre = "";
+          if (st.step != null && String(st.step).trim())
+            stepPre = '<span class="chain-step">' + escHtml(String(st.step)) + ".</span> ";
+          rows.push(
+            '<div class="chain-row">' + stepPre +
+            annotatePathsAndTimestampsEsc(src) +
+            '<span class="chain-sep">:</span>' +
+            '<span class="analysis-ts-col">' + escHtml(ts) + "</span>" +
+            '<span class="chain-sep">:</span>' +
+            formatAnalysisInline(ev) +
+            "</div>"
+          );
+        }
+        parts.push(analysisSection("Cause chain", '<div class="chain-rows">' + rows.join("") + "</div>"));
+      }
+      var evlog = j.evidence_log || j.evidenceLog;
+      if (Array.isArray(evlog) && evlog.length) {
+        var evParts = [];
+        for (var ei = 0; ei < evlog.length; ei++) {
+          var ev = evlog[ei] || {};
+          var claim = ev.claim != null ? String(ev.claim) : "";
+          var sf = ev.source_file != null ? String(ev.source_file) : "";
+          var ln = ev.line_number;
+          var evid = ev.evidence != null ? String(ev.evidence) : "";
+          var ets = ev.timestamp != null ? String(ev.timestamp) : "";
+          var lnStr = ln !== null && ln !== undefined && String(ln).trim() !== "" ? escHtml(String(ln)) : "—";
+          evParts.push(
+            '<div class="evidence-item">' +
+            (claim ? '<div style="margin-bottom:6px"><strong>Claim:</strong> ' + formatAnalysisInline(claim) + "</div>" : "") +
+            '<div style="margin-bottom:4px"><strong>Source:</strong> ' + annotatePathsAndTimestampsEsc(sf) +
+            ' &nbsp;|&nbsp; <strong>Line:</strong> ' + lnStr +
+            (ets ? ' &nbsp;|&nbsp; <strong>Time:</strong> <span class="analysis-ts-col">' + escHtml(ets) + "</span>" : "") +
+            "</div>" +
+            (evid ? '<div style="margin-top:8px"><strong>Evidence:</strong> ' + formatAnalysisInline(evid) + "</div>" : "") +
+            "</div>"
+          );
+        }
+        parts.push(analysisCollapsible("Evidence log", evParts.join("")));
+      }
+      if (!parts.length && j && typeof j === "object") {
+        var metaRows = "";
+        if (j.verdict != null && String(j.verdict).trim())
+          metaRows += '<tr><td style="padding:4px 12px 4px 0;vertical-align:top;color:#555;white-space:nowrap">' +
+            'verdict</td><td style="padding:4px 0">' + formatAnalysisInline(String(j.verdict)) + "</td></tr>";
+        if (j.test_name != null && String(j.test_name).trim())
+          metaRows += '<tr><td style="padding:4px 12px 4px 0;vertical-align:top;color:#555;white-space:nowrap">' +
+            'test_name</td><td style="padding:4px 0"><span class="analysis-path analysis-test-name" title="Test name">' +
+            escHtml(String(j.test_name).trim()) + "</span></td></tr>";
+        var rcaM = pickRca(j);
+        if (rcaM && typeof rcaM === "object") {
+          if (rcaM.classification != null && String(rcaM.classification).trim())
+            metaRows += '<tr><td style="padding:4px 12px 4px 0;vertical-align:top;color:#555">classification</td><td style="padding:4px 0">' +
+              formatAnalysisInline(String(rcaM.classification)) + "</td></tr>";
+          if (rcaM.hypothesis_validated != null && String(rcaM.hypothesis_validated).trim())
+            metaRows += '<tr><td style="padding:4px 12px 4px 0;vertical-align:top;color:#555">hypothesis_validated</td><td style="padding:4px 0">' +
+              formatAnalysisInline(String(rcaM.hypothesis_validated)) + "</td></tr>";
+        }
+        if (metaRows)
+          parts.push(analysisSection("Analysis metadata",
+            '<table style="border-collapse:collapse;width:100%;font-size:15px">' + metaRows + "</table>"));
+      }
+      if (!parts.length) return null;
+      return '<div id="analysis-formatted">' + parts.join("") + "</div>";
+    }
+    function showJsonText(txt) {
+      if (!txt) return;
+      try {
+        var root = JSON.parse(txt);
+        if (typeof root === "string") {
+          var ts = root.trim();
+          if (ts.charAt(0) === "{" || ts.charAt(0) === "[") {
+            try { root = JSON.parse(ts); } catch (e1) {}
+          }
+        }
+        var un = unwrapAnalysisPayload(root);
+        var j = un.inner;
+        var eid = pickExecutionId(un.envelope || root);
+        if (eid) enrichResolverBundleExecutionId(eid);
+        var formatted = formatAnalysisJson(j);
+        if (formatted)
+          out.innerHTML = formatted;
+        else
+          out.innerHTML = '<p style="color:#666;margin:0">No structured analysis sections found in this payload.</p>';
+        shrinkWrapAttachmentViewport();
+      } catch (e) {
+        out.textContent = txt;
+        shrinkWrapAttachmentViewport();
+      }
+    }
+    function showNotExist() {
+      out.textContent = "not exist";
+    }
+    function applyResolveData(data) {
+      if (!data || data.ok === false) {
+        if (data && (data.reason === "agent_not_analyzed" || data.reason === "no_match")) {
+          out.textContent = (data && data.message) ? String(data.message) :
+            "Sorry, the agent still didn't analyze this failure.";
+          revealFeedback();
+          shrinkWrapAttachmentViewport();
+          return;
+        }
+        showNotExist();
+        return;
+      }
+      if (data.text !== undefined && data.text !== null && String(data.text) !== "") {
+        showJsonText(String(data.text));
+        revealFeedback();
+        return;
+      }
+      if (data.path === undefined || data.path === null || data.path === "") {
+        out.textContent = "Resolve returned no JSON text (path not provided by server).";
+      } else {
+        out.innerHTML =
+          "<p style=margin:0;color:#444>Analysis JSON is not available for this Allure URL yet. " +
+          "Use the <strong>Cursor analysis prompt</strong> attachment for resolver paths and the draft prompt.</p>";
+        shrinkWrapAttachmentViewport();
+      }
+    }
+    function resolveViaServer() {
+      var rq = "allure_url=" + encodeURIComponent(u);
+      out.textContent = "Loading analysis from resolver…";
+      var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      var timer = setTimeout(function() { if (ctrl) ctrl.abort(); }, 20000);
+      return fetch(ROOT + RESOLVE + "?" + rq, { credentials: "omit", signal: ctrl ? ctrl.signal : undefined })
+        .then(function(r) { clearTimeout(timer); return r.json(); })
+        .then(function(data) {
+          if (data && data.ok === true) writeResolverBundle(data);
+          applyResolveData(data);
+          shrinkWrapAttachmentViewport();
+        })
+        .catch(function(e3) {
+          clearTimeout(timer);
+          var hint = (e3 && e3.name === "AbortError")
+            ? "Timed out after 20s. "
+            : "";
+          out.textContent =
+            hint + "Could not call the resolver (" + e3 + "). " +
+            "Open " + ROOT + RESOLVE + " in a new browser tab first (accept TLS cert if prompted). " +
+            "Typical causes: untrusted TLS cert, firewall/VPN, DNS, or CORS.";
+        });
+    }
+    function run() {
+      return resolveViaServer();
+    }
+    run();
+  })();
+  </script>
+</body>
+</html>

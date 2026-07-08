@@ -5,7 +5,7 @@ from typing import List
 
 import pytest
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
 from ngts.nvos_tools.infra.CertificateGenerator import CertificateGeneratorOnRemoteHost
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit

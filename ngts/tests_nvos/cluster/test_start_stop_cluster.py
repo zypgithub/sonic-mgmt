@@ -51,6 +51,7 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
         pytest.skip("Skipping test for Juliet systems (non-Rosalind) while bug SW #4859121 is active: "
                     "nmx-controller has 'nvbridge' capability which is not supported on Juliet")
 
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     def verify_apps_attributes(output):
@@ -68,9 +69,9 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
                                                        cluster_app_nmx_controller).verify_result()
             else:
                 ClusterTools.wait_for_app_healthy(cluster, NMX_CONTROLLER,
-                                                  devices.dut.cluster_app[NMX_CONTROLLER])
+                                                  devices.dut.cluster_app[NMX_CONTROLLER], engine=engines.dut)
                 ClusterTools.wait_for_app_healthy(cluster, NMX_TELEMETRY,
-                                                  devices.dut.cluster_app[NMX_TELEMETRY])
+                                                  devices.dut.cluster_app[NMX_TELEMETRY], engine=engines.dut)
 
     with allure.step("Create Cluster object"):
         interface_wa_called = False
@@ -78,7 +79,7 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
         cluster = Cluster()
     try:
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
+        ClusterTools.start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
 
         with allure.step("Running 'nv show cluster apps' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
@@ -99,7 +100,7 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
                     ValidationTool.validate_output_of_show(output, cluster_app_nmx_controller).verify_result()
                 else:
                     ClusterTools.wait_for_app_healthy(cluster, app,
-                                                      devices.dut.cluster_app[app])
+                                                      devices.dut.cluster_app[app], engine=engines.dut)
 
         TestToolkit.tested_api = 'NVUE'
         with allure.step("Running 'nv show cluster apps installed' command and verifying output"):
@@ -123,7 +124,7 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
 
         # TestToolkit.tested_api = random_api
 
-        ClusterTools.stop_start_app(cluster, engines, devices, has_loopbox, setup_name, standalone_system)
+        ClusterTools.stop_start_app(cluster, engines.dut, devices, has_loopbox, setup_name, standalone_system)
 
     finally:
         pass
@@ -145,10 +146,10 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, ha
             operation = 'start stop cluster app'
             if has_loopbox:
                 operation = 'start stop cluster app with loopbox'
-            ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
+            ClusterTools.start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
             for i in range(4):
                 logger.info(f"Starting iteration {i}")
-                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
+                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines.dut, devices, has_loopbox, setup_name, standalone_system)
                 OperationTime.verify_operation_time(duration, operation, devices).verify_result()
 
     finally:
@@ -181,8 +182,8 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
             while time.time() - start_time < timeout:
                 if has_loopbox:
                     operation = 'start stop cluster app stressed resources with loopbox'
-                ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
-                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
+                ClusterTools.start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
+                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines.dut, devices, has_loopbox, setup_name, standalone_system)
                 OperationTime.verify_operation_time(duration, operation, devices).verify_result()
 
     finally:

@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.topology('ptp-256')
+@pytest.mark.topology('ptp-130')
 @pytest.mark.usefixtures("setup")
 class TransceiverTestBase:
     @pytest.fixture(scope="class", autouse=True)

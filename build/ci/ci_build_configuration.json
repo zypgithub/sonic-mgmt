@@ -12,8 +12,10 @@
     "TARBALL_NAME=SONIC_MGMT_TAR.db.1.tgz",
     "OFFICIAL_TESTS=SONIC_MGMT",
     "SIMX_ON_FAILURE=stop",
+    "AIR_ON_FAILURE=continue",
     "CI_SONIC_SPC_SETUP_CHIP_TYPE=SPC",
-    "CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE=SPC"
+    "CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE=SPC",
+    "CI_SONIC_AIR_SPC_SETUP_CHIP_TYPE=SPC"
   ],
   "agentConfig": [
     {
@@ -24,6 +26,19 @@
         {
           "binding": {"variables": {
               "mini_mars_image": "harbor.mellanox.com/sonic/sonic_mars_docker:latest"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "pod",
+      "libraryResource": "devops/k8s/podTemplates/il/products/tools/mars/mini-mars-pod-template.yaml",
+      "label": "POD_MARS_AIR",
+      "parameters": [
+        {
+          "binding": {"variables": {
+              "mini_mars_image": "harbor.mellanox.com/sonic/sonic_mars_docker:rocky_keepalive"
             }
           }
         }
@@ -139,7 +154,7 @@
           "out_of_mail": false
         },
         {
-          "name": "Check SIMX compatibility",
+          "name": "Check BAT compatibility",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/common/bat_compatibility.groovy",
           "category": "Pre BAT",
           "node": "SONIC_LITE",
@@ -231,16 +246,16 @@
           "out_of_mail": true
         },
         {
-          "name": "Allocate setup QTM3",
+          "name": "Allocate setup QTM4",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "container": "mini-mars:POD_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM4",
           "parameters": {
-            "queue_id": "devops_nvos_ci_qtm3",
+            "queue_id": "devops_nvos_ci_qtm4",
             "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "NVOS_CHIPSIM_SONIC_MGMT_QTM3",
-            "setup_var": "NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP",
-            "device_var": "SWITCH_SUNBIRD",
+            "setup_type": "NVOS_CHIPSIM_SONIC_MGMT_QTM4",
+            "setup_var": "NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP",
+            "device_var": "SWITCH_ROSALIND",
             "setup_requirements": "group_name:Sagi,sub_group:CI,setup_status:enable"
           },
           "skip": "${SKIP_NVOS_BAT}",
@@ -386,6 +401,68 @@
           "out_of_mail": false
         },
         {
+          "name": "Allocate setup AIR SPC",
+          "module": "${nfs_dir}/general/build/smart_allocate_setup/smart_allocate_setup.groovy",
+          "category": "Allocate setups",
+          "container": "mini-mars:POD_MARS_AIR@AIR_SPC",
+          "parameters": {
+            "priority": "${PRIORITY_NUMBER}",
+            "setup_var": "CI_SONIC_AIR_SPC_SETUP",
+            "yaml_path": "${nfs_dir}/build/common/queue_air_info.yaml",
+            "setup_requirements": "group_name:Sagi,sub_group:SONIC_AIR_CI,setup_status:enable"
+          },
+          "skip": "${SKIP_AIR}",
+          "on_failure": "${AIR_ON_FAILURE}",
+          "out_of_mail": true
+        },
+        {
+          "name": "Deploy AIR SPC",
+          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
+          "category": "BAT",
+          "container": "mini-mars:POD_MARS_AIR@AIR_SPC",
+          "parameters": {
+            "row": "AIR",
+            "column": "${CI_SONIC_AIR_SPC_SETUP_CHIP_TYPE}",
+            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
+            "local_conf": "${MARS_AIR_LOCAL_CONF}",
+            "setup_id": "${CI_SONIC_AIR_SPC_SETUP}",
+            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC_SETUP}/",
+            "base_version": "${SONIC_BIN}",
+            "test_type" : "CI",
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
+            "test_name": "deploy",
+            "run_in_container": true
+          },
+          "skip": "${SKIP_AIR}",
+          "on_failure": "${AIR_ON_FAILURE}",
+          "out_of_mail": false
+        },
+        {
+          "name": "Test AIR SPC",
+          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
+          "category": "BAT",
+          "container": "mini-mars:POD_MARS_AIR@AIR_SPC",
+          "parameters": {
+            "row": "AIR",
+            "column": "${CI_SONIC_AIR_SPC_SETUP_CHIP_TYPE}",
+            "global_conf": "${MARS_AIR_GLOBAL_CONF}",
+            "local_conf": "${MARS_AIR_LOCAL_CONF}",
+            "setup_id": "${CI_SONIC_AIR_SPC_SETUP}",
+            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_AIR_SPC_SETUP}/",
+            "base_version": "${SONIC_BIN}",
+            "test_type" : "CI",
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
+            "repeat_mars": "${STABILITY}",
+            "test_name": "test",
+            "run_in_container": true
+          },
+          "skip": "${FAILED_DEPLOY_AIR_SPC} || ${SKIP_AIR}",
+          "on_failure": "${AIR_ON_FAILURE}",
+          "out_of_mail": false
+        },
+        {
           "name": "Deploy SmartSwitch",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
@@ -434,18 +511,18 @@
           "out_of_mail": false
         },
         {
-          "name": "Deploy QTM3",
+          "name": "Deploy QTM4",
           "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
           "category": "BAT",
-          "container": "mini-mars:POD_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM4",
           "parameters": {
             "row": "CHIPSIM",
-            "column": "QTM3",
-            "test_name": "QTM3",
+            "column": "QTM4",
+            "test_name": "QTM4",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}",
-            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}/",
+            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}",
+            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}/",
             "target_version": "${NVOS_BIN}",
             "base_version": "${NVOS_BIN}",
             "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
@@ -458,18 +535,18 @@
           "out_of_mail": false
         },
         {
-          "name": "Test QTM3",
+          "name": "Test QTM4",
           "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
           "category": "BAT",
-          "container": "mini-mars:POD_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM4",
           "parameters": {
             "row": "CHIPSIM",
-            "column": "QTM3",
-            "test_name": "QTM3",
+            "column": "QTM4",
+            "test_name": "QTM4",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}",
-            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}/",
+            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}",
+            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}/",
             "target_version": "${NVOS_BIN}",
             "base_version": "${NVOS_BIN}",
             "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
@@ -521,14 +598,27 @@
           "out_of_mail": true
         },
         {
-          "name": "Free QTM3 setup",
+          "name": "Free QTM4 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "container": "mini-mars:POD_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM4",
           "parameters": {
-            "setup_name": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}"
+            "setup_name": "${NVOS_CHIPSIM_SONIC_MGMT_QTM4_SETUP}"
           },
           "skip": false,
+          "finally": true,
+          "on_failure": "ignore",
+          "out_of_mail": true
+        },
+        {
+          "name": "Free AIR SPC setup",
+          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
+          "category": "Clean",
+          "container": "mini-mars:POD_MARS_AIR@AIR_SPC",
+          "parameters": {
+            "setup_name": "${CI_SONIC_AIR_SPC_SETUP}"
+          },
+          "skip": "${SKIP_AIR}",
           "finally": true,
           "on_failure": "ignore",
           "out_of_mail": true
@@ -556,7 +646,7 @@
           "category": "Create Tests Matrix",
           "node": "SONIC_LITE",
           "parameters": {
-            "COL_ORDER": "SPC,SPC3,SPC4,SPC5,SPC3/BF3,QTM3",
+            "COL_ORDER": "SPC,SPC3,SPC4,SPC5,SPC6,SPC6S,SPC3/BF3,QTM4",
             "EXPECTED_RESULTS": [
               {
                 "ETH": [
@@ -599,9 +689,19 @@
                 ]
               },
               {
+                "AIR": [
+                  {
+                    "${CI_SONIC_AIR_SPC_SETUP_CHIP_TYPE}": [
+                      "deploy",
+                      "test"
+                    ]
+                  }
+                ]
+              },
+              {
                 "CHIPSIM": [
                   {
-                    "QTM3": [
+                    "QTM4": [
                       "deploy",
                       "test"
                     ]

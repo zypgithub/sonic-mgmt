@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Tuple
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.post_upgrade_switch.constants import UPGRADE_STATUS_FILE_PATH, UPGRADE_STATUS_FAIL_PREFIX, \
     InstallSteps

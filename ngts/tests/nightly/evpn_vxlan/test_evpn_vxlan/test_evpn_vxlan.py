@@ -11,7 +11,7 @@ from ngts.helpers.vxlan_helper import apply_fdb_config, send_and_validate_traffi
     verify_mac_entry_learned, verify_mac_entry_not_learned, vni_to_hex_vni, verify_bgp_container_up, \
     config_evpn_route_map, remove_evpn_route_map
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 
 """
 

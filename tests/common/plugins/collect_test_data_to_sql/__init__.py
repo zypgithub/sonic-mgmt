@@ -5,8 +5,8 @@ import json
 
 from ngts.constants.constants import DbConstants, CliType, RebootTestConstants
 from ngts.tools.infra import get_infra_type, CANONICAL_INFRA_TYPE
-from infra.tools.sql.connect_to_mssql import ConnectMSSQL
-from infra.tools.sql.skynet_collector import SkynetGenericCollector
+from devts.infra.tools.sql.connect_to_mssql import ConnectMSSQL
+from devts.infra.tools.sql.skynet_collector import SkynetGenericCollector
 
 logger = logging.getLogger()
 
@@ -460,11 +460,7 @@ class PfcwdTimerCollector(SonicDataCollector):
         """
         # Extract the test function name from the full test node id
         test_func_name = self.test_name.split('::')[-1].split('[')[0]
-
-        # Get topology name and build the report file path
-        tbinfo = self.request.getfixturevalue('tbinfo')
-        topo_name = tbinfo['topo']['name']
-        test_report_filename = os.path.join('/tmp/', f'test_pfcwd_timer_accuracy_{test_func_name}_{topo_name}.json')
+        test_report_filename = os.path.join('/tmp/', f'test_pfcwd_timer_accuracy_{test_func_name}.json')
 
         # Read and parse the test report file
         with open(test_report_filename, 'r') as f:

@@ -51,14 +51,14 @@ def check_device_type_for_partition(devices, standalone_system):
 @pytest.fixture(scope="session", autouse=True)
 def start_sdn_maintenance_state_simulation(engines, setup_name):
     try:
-        ClusterSimulation.start_sdn_cluster_simulation(engines, setup_name)
+        ClusterSimulation.start_sdn_cluster_simulation(engines.dut, setup_name)
         yield
     finally:
-        ClusterSimulation.end_of_sdn_cluster_simulation(engines, setup_name)
+        ClusterSimulation.end_of_sdn_cluster_simulation(engines.dut, setup_name)
 
 
 @pytest.fixture(scope="function", autouse=True)
-def enable_cluster_and_wait_nmx_controller_status(setup_name, devices):
+def enable_cluster_and_wait_nmx_controller_status(setup_name, devices, engines):
     cluster = Cluster()
-    ClusterTools.start_cluster(cluster, setup_name, devices=devices)
-    ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, 'ok')
+    ClusterTools.start_cluster(cluster, setup_name, engine=engines.dut, devices=devices)
+    ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, 'ok', engine=engines.dut)

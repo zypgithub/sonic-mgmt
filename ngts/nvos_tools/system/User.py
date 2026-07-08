@@ -2,7 +2,7 @@ import random
 
 import allure
 
-from infra.tools.connection_tools.utils import generate_strong_password
+from devts.infra.tools.connection_tools.utils import generate_strong_password
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit

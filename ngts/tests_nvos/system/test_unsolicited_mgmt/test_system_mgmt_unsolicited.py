@@ -2,7 +2,8 @@ import logging
 import pytest
 import ast
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts

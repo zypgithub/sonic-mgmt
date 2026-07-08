@@ -6,7 +6,7 @@ from ngts.cli_wrappers.common.trimming_clis_common import TrimmingCommon
 import allure
 import json
 import logging
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.performance_constants import Cl_Consts, ValidationConsts
 import time
 import os
@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts
 import pandas as pd
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class NvueTrimmingCli(TrimmingCommon):

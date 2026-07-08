@@ -24,7 +24,7 @@ ansible/*_tmp
 **/.venv/
 .claude/worktrees/
 
-# Creadentials for custom_skipif plugin
+# Credentials for custom_skipif plugin
 tests/common/plugins/custom_skipif/credentials.yaml
 tests/common/plugins/custom_skipif/Redmine.py
 .python-version
@@ -36,3 +36,4 @@ sonic-dump/
 tests/pfc_headroom_test_params/*.json
 tests/priority/*.json
 ansible/group_vars/vm_host/creds.yml
+/venv/

@@ -1,0 +1,8 @@
+[Unit]
+Description=BMC ftgmac100 DHCP recovery workaround (Redmine #5091238)
+Documentation=https://redmine.mellanox.com/issues/5091238
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/bmc_net_recover.sh
+# Triggered by bmc-net-recover.timer; intentionally has no [Install] section.

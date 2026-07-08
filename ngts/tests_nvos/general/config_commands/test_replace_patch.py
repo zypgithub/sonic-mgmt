@@ -83,8 +83,9 @@ def test_replace_positive(engines, devices):
     with allure.step('set hostname to be {hostname} - without apply'.format(hostname=new_hostname_value)):
         system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=False)
 
+    requested_ports_type = getattr(devices.dut, 'nvl_port_type', None) or devices.dut.port_type
     port = RandomizationTool.select_random_port(requested_ports_state=None,
-                                                requested_ports_type=devices.dut.nvl_port_type).get_returned_value()
+                                                requested_ports_type=requested_ports_type).get_returned_value()
     OutputParsingTool.parse_show_interface_output_to_dictionary(port.interface.show()).get_returned_value()
 
     new_ib0_description = '"ib0description"'
@@ -299,9 +300,14 @@ def create_empty_file(engine, file_name, file_type):
 
 def create_file_with_content(engine, file_name, file_type, content):
     with allure.step('creating yaml file with content'):
-        engine.run_cmd('echo "{content}" | tee -a {file_name}.{file_type}'.format(content=content, file_type=file_type,
-                                                                                  file_name=file_name))
-        return '{file_name}.{file_type}'.format(file_type=file_type, file_name=file_name)
+        file = '{file_name}.{file_type}'.format(file_type=file_type, file_name=file_name)
+        # Use a quoted here-doc so the shell performs no substitution/quote-stripping on the
+        # content. Wrapping JSON/YAML in `echo "..."` would strip the embedded double quotes
+        # and corrupt the file (e.g. turning flow mappings into entries with null values).
+        # Overwrite (no `-a`) so a leftover file from a previous run can't produce a second
+        # YAML document concatenated onto the new content.
+        engine.run_cmd("tee {file} <<'NVOS_EOF'\n{content}\nNVOS_EOF".format(file=file, content=content))
+        return file
 
 
 def create_list_of_bad_files(engine, file_name, file_type, content):

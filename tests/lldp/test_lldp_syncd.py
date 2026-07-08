@@ -2,6 +2,7 @@
 # Test plan in docs/testplan/LLDP-syncd-test-plan.md
 import pytest
 import json
+import time
 from tests.common.helpers.sonic_db import SonicDbCli
 import logging
 from tests.common.reboot import reboot, REBOOT_TYPE_COLD
@@ -11,7 +12,6 @@ from tests.common.utilities import (
     group_interfaces_by_asic
 )
 from tests.common.helpers.assertions import pytest_assert
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,63 @@ def ignore_expected_loganalyzer_exceptions(duthosts, loganalyzer):
                     r".*ERR.* 'routeCheck' status failed.*",
                 ]
             )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def wait_for_lldp_appl_db(duthosts, enum_rand_one_per_hwsku_frontend_hostname):
+    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+    appl_db = []
+    for asic in duthost.asics:
+        appl_db.append(SonicDbCli(asic, APPL_DB))
+    is_chassis = duthost.get_facts().get("modular_chassis")
+    if duthost.facts['switch_type'] == "voq" and (not is_chassis and len(duthost.asics) > 1):
+        appl_db.append(SonicDbCli(duthost, APPL_DB))
+
+    def lldpctl_ifaces():
+        try:
+            ifaces = get_lldpctl_output(duthost)["lldp"]["interface"]
+            names = list(ifaces.keys()) if isinstance(ifaces, dict) else [list(i.keys())[0] for i in ifaces]
+            return set(n for n in names if "Ethernet-BP" not in n and "Ethernet-IB" not in n)
+        except Exception:
+            return set()
+
+    # Wait for lldpctl output to stabilize (same set across 2 consecutive polls = all active neighbors learned)
+    # Using deterministic polling: max 25 retries with 10s interval
+    max_lldpctl_retries = 25
+    poll_interval = 10
+    prev, stable_count = set(), 0
+    for retry in range(max_lldpctl_retries):
+        current = lldpctl_ifaces()
+        if current and current == prev:
+            stable_count += 1
+            logger.info("lldpctl stable ({}/2): {} interfaces (retry {}/{})".format(
+                stable_count, len(current), retry + 1, max_lldpctl_retries))
+            if stable_count > 2:
+                break
+        else:
+            logger.info("lldpctl: {} interfaces (changed or empty), retry {}/{}".format(
+                len(current), retry + 1, max_lldpctl_retries))
+            stable_count = 0
+        prev = current
+        time.sleep(poll_interval)
+    else:
+        pytest.fail("lldpctl did not stabilize after {} retries. Last seen: {}".format(
+            max_lldpctl_retries, sorted(prev)))
+
+    expected = prev
+    logger.info("lldpd stable with {} active neighbors: {}".format(len(expected), sorted(expected)))
+
+    # Wait for APPL_DB convergence: max 10 retries with 3s interval
+    max_appl_db_retries = 10
+    appl_db_poll_interval = 3
+    for retry in range(max_appl_db_retries):
+        if expected <= set(get_lldp_entry_keys(appl_db)):
+            logger.info("All {} interfaces converged in APPL_DB (retry {}/{})".format(
+                len(expected), retry + 1, max_appl_db_retries))
+            return
+        time.sleep(appl_db_poll_interval)
+    pytest.fail("APPL_DB did not converge after {} retries. Missing: {}".format(
+        max_appl_db_retries, sorted(expected - set(get_lldp_entry_keys(appl_db)))))
 
 
 @pytest.fixture(autouse="True")
@@ -114,11 +171,17 @@ def get_show_lldp_table_output(duthost):
 
 
 def get_lldp_data(duthost, db_instance):
-    # Fetch interfaces from LLDP_ENTRY_TABLE
-    lldp_entry_keys = get_lldp_entry_keys(db_instance)
-    show_lldp_table_int_list = get_show_lldp_table_output(duthost)
-    lldpctl_output = get_lldpctl_output(duthost)
-    return lldp_entry_keys, show_lldp_table_int_list, lldpctl_output
+    """Fetch LLDP data, retrying until DB keys and CLI output converge."""
+    lldp_data = {}
+
+    def _fetch_and_check():
+        lldp_data['entry_keys'] = get_lldp_entry_keys(db_instance)
+        lldp_data['cli_list'] = get_show_lldp_table_output(duthost)
+        lldp_data['lldpctl'] = get_lldpctl_output(duthost)
+        return set(lldp_data['entry_keys']) == set(lldp_data['cli_list'])
+
+    wait_until(10, 1, 0, _fetch_and_check)
+    return lldp_data['entry_keys'], lldp_data['cli_list'], lldp_data['lldpctl']
 
 
 def check_lldp_table_keys(duthost, db_instance):
@@ -128,10 +191,49 @@ def check_lldp_table_keys(duthost, db_instance):
     return set(lldp_entry_keys) == set(show_lldp_table_int_list)
 
 
+require_config_reload = False
+
+
+def _fail_test_if_error_found(duthost):
+    error_pattern = r"ERR kernel:.*sxd_kernel:.*error.*dev_id=.*Fails to access.*module eeprom, status:.*"
+    result = duthost.shell(f"sudo grep -E '{error_pattern}' /var/log/syslog | grep -v 'ansible'", module_ignore_errors=True)
+    if result["rc"] == 0:
+        logger.info(f"Error in RM#5070231 is found in syslog during the test: {result['stdout']}")
+        logger.info("Stopping thermalctld, disable tranceiver dom and fail the test to collect sysdump.")
+        global require_config_reload
+        require_config_reload = True
+        duthost.shell("docker exec -t pmon supervisorctl stop thermalctld")
+        duthost.shell("sudo systemctl stop hw-management-sync")
+        duthost.shell("sudo systemctl stop hw-management-thermal-updater")
+        output = duthost.shell("show interface status")["stdout"]
+        import re
+        first_interfaces = re.findall(r'(Ethernet\d+).*etp\d+a?\s', output)
+        for interface in first_interfaces:
+            duthost.shell(f"config interface transceiver dom {interface} disable")
+        pytest.fail(f"Error in RM#5070231 is found in syslog: {result['stdout']}, please contact Cong Hou.")
+
+
+@pytest.fixture(autouse=True)
+def reload_config(duthosts, enum_rand_one_per_hwsku_frontend_hostname):
+    global require_config_reload
+
+    yield
+
+    from tests.common.config_reload import config_reload
+    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+    if require_config_reload:
+        duthost.shell("sudo systemctl start hw-management-sync")
+        duthost.shell("sudo systemctl start hw-management-thermal-updater")
+        config_reload(duthost, safe_reload=True, check_intf_up_ports=True, wait_for_bgp=True)
+        require_config_reload = False
+
+
 def _shutdown_startup_interface(duthost, interface, asic_str=""):
     """Shutdown and startup a single interface."""
     duthost.shell("sudo config interface {} shutdown {}".format(asic_str, interface))
+    _fail_test_if_error_found(duthost)
     duthost.shell("sudo config interface {} startup {}".format(asic_str, interface))
+    _fail_test_if_error_found(duthost)
 
 
 def _build_lldpctl_lookup_map(lldpctl_interfaces):
@@ -148,7 +250,7 @@ def _build_lldpctl_lookup_map(lldpctl_interfaces):
     return lldpctl_map
 
 
-def _verify_interface_lldp_recovery(db_instance, interfaces, lldpctl_lookup_map, timeout=60, interval=2, delay=0):
+def _verify_interface_lldp_recovery(db_instance, interfaces, lldpctl_lookup_map, timeout=300, interval=2, delay=0):
     """
     Verify LLDP entry recovers for interface(s) after flap.
     Supports both single interface (str) and multiple interfaces (list).
@@ -368,7 +470,12 @@ def test_lldp_entry_table_content(
 
 
 # Test case 2: Verify LLDP_ENTRY_TABLE after restart syncd and orchagent
+# This test deliberately restarts swss/syncd, which cascades to a bgp container
+# restart. The memory_utilization fixture's before/after snapshots become
+# meaningless across such a restart (bgpd RSS drops to ~0 then warms back up),
+# so disable memory monitoring for this test.
 @pytest.mark.disable_loganalyzer
+@pytest.mark.disable_memory_utilization
 def test_lldp_entry_table_after_syncd_orchagent(
     duthosts, enum_rand_one_per_hwsku_frontend_hostname, db_instance
 ):
@@ -394,7 +501,14 @@ def test_lldp_entry_table_after_syncd_orchagent(
         duthost.shell("sudo systemctl restart swss")
     assert wait_until(600, 5, 120, duthost.critical_services_fully_started), \
         "Not all critical services are fully started"
-    time.sleep(60)
+    # Wait for BGP sessions to reach Established state instead of a fixed sleep,
+    # to avoid a downstream memory-alarm false positive caused by bgpd warming up
+    # in the next test case.
+    bgp_neighbors = list(duthost.get_bgp_neighbors().keys())
+    pytest_assert(
+        wait_until(300, 10, 30, duthost.check_bgp_session_state, bgp_neighbors),
+        "BGP sessions did not reach Established state after swss restart",
+    )
     # Wait until all interfaces are up and lldp entries are populated
     for interface in lldp_entry_keys:
         result = wait_until(300, 2, 0, verify_lldp_entry, db_instance, [interface])
@@ -438,6 +552,7 @@ def test_lldp_entry_table_after_cont_flap(
         for interface in asic_interfaces:
             _shutdown_startup_interface(duthost, interface, asic_str)
             _verify_interface_lldp_recovery(db_instance, interface, lldpctl_lookup_map, delay=10)
+    _fail_test_if_error_found(duthost)
 
 
 # Test case 4: Verify LLDP_ENTRY_TABLE after all batched interface flap
@@ -468,7 +583,7 @@ def test_lldp_entry_table_after_all_batched_flap(
 
 # Test case 5: Verify LLDP_ENTRY_TABLE after system reboot
 def test_lldp_entry_table_after_lldp_restart(
-    duthosts, enum_rand_one_per_hwsku_frontend_hostname, db_instance
+    duthosts, enum_rand_one_per_hwsku_frontend_hostname, db_instance, ignore_expected_loganalyzer_exceptions,
 ):
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
     lldp_entry_keys, show_lldp_table_int_list, lldpctl_output = get_lldp_data(duthost, db_instance)

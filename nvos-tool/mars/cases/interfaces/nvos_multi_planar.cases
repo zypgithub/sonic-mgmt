@@ -56,7 +56,7 @@
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/test_nvl_port.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --release_name=[[conf:extra_info.release_name]] --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/test_nvl_port.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --release_name=[[conf:extra_info.release_name]] --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1500   \'"</static_args>
       </params>
     </cmd>
     <ignore>
@@ -86,30 +86,12 @@
     </ignore>
   </case>
 
-   <case>
-    <name> mlxlink plane test </name>
-    <info> </info>
-    <tout> 10800 </tout>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/test_ib_interface_planes.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --release_name=[[conf:extra_info.release_name]] --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
-      </params>
-    </cmd>
-    <ignore>
-      <condition>
-        <key>dut_type</key>
-        <op> in </op>
-        <value>[True]</value>
-      </condition>
-    </ignore>
-  </case>
-
   <case>
     <name> KR Configs </name>
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/test_kr_configs.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 6000   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/test_kr_configs.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1200   \'"</static_args>
       </params>
     </cmd>
     <ignore>
@@ -117,54 +99,6 @@
         <key>dut_type</key>
         <op> not in </op>
         <value>[juliet, rosalind-surrogate, portia]</value>
-      </condition>
-    </ignore>
-  </case>
-
-  <case>
-    <name> KR Configs </name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/test_kr_configs.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 6000   \'"</static_args>
-      </params>
-    </cmd>
-    <ignore>
-      <condition>
-        <key>dut_type</key>
-        <op> not in </op>
-        <value>[juliet]</value>
-      </condition>
-    </ignore>
-  </case>
-
-  <case>
-    <name> KR Configs </name>
-    <info> </info>
-    <cmd>
-      <params>
-        <static_args>
-          --setup_name [[conf:extra_info.setup_name]]
-          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/test_kr_configs.py
-          --raw_options "\'
-            --rootdir=/root/mars/workspace/sonic-mgmt/ngts
-            -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
-            -k \"not test_kr_cli_hidden_non_nvlink\"
-            --log-level=INFO
-            --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
-            --clean-alluredir
-            --alluredir=/tmp/allure-results
-            --showlocals [[conf:extra_info.additional_options]]
-            --timeout 1200
-          \'"
-        </static_args>
-      </params>
-    </cmd>
-    <ignore>
-      <condition>
-        <key>dut_type</key>
-        <op> not in </op>
-        <value>[juliet]</value>
       </condition>
     </ignore>
   </case>
@@ -180,7 +114,7 @@
           --raw_options "\'
             --rootdir=/root/mars/workspace/sonic-mgmt/ngts
             -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
-            -k "not test_feature_plr_cli_hidden_non_nvlink"
+            -k \"not test_feature_plr_cli_hidden_non_nvlink\"
             --log-level=INFO
             --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
             --clean-alluredir

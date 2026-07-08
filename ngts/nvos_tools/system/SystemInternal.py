@@ -5,11 +5,9 @@ Handles internal encryption settings for system-wide communications.
 
 import logging
 
-import ngts.tools.test_utils.allure_utils as allure
+from ngts.nvos_constants.constants_nvos import ActionConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +21,12 @@ class SystemInternal(BaseComponent):
         self.ca_certificate = SystemInternalCertificate(self, "/ca-certificate")
         self.alternate_certificate = SystemInternalCertificate(self, "/alternate-certificate")
         self.encryption = SystemInternalEncryption(self)
+        self.crl = SystemInternalCrl(self)
         self.connections = SystemInternalConnections(self)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         """Restore system internal to defaults."""
-        with allure.step(f"Execute action restore for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_restore_system_internal_property, engine, self.get_resource_path()
-            )
+        return self.action(ActionConsts.RESTORE, engine=dut_engine)
 
 
 class SystemInternalCertificate(BaseComponent):
@@ -43,30 +38,16 @@ class SystemInternalCertificate(BaseComponent):
 
     def action_update(self, cert_id="", dut_engine=None) -> ResultObj:
         """Update system internal certificate."""
-        with allure.step(f"Execute action update for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            param_name = f'{"ca" if self.is_ca else ""}cert-id'
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_update_system_internal_property, engine, self.get_resource_path(), param_name, cert_id
-            )
+        param_name = f"{'ca' if self.is_ca else ''}cert-id"
+        return self.action(ActionConsts.UPDATE, main_param=(param_name, cert_id), engine=dut_engine)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         """Restore system internal certificate to default."""
-        with allure.step(f"Execute action restore for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_restore_system_internal_property, engine, self.get_resource_path()
-            )
+        return self.action(ActionConsts.RESTORE, engine=dut_engine)
 
     def action_rotate(self, dut_engine=None) -> ResultObj:
         """Rotate system internal certificate."""
-        with allure.step(f"Execute action rotate for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_rotate_system_internal_property,
-                engine,
-                self.get_resource_path(),
-            )
+        return self.action(ActionConsts.ROTATE, engine=dut_engine)
 
 
 class SystemInternalEncryption(BaseComponent):
@@ -77,19 +58,26 @@ class SystemInternalEncryption(BaseComponent):
 
     def action_update(self, mode="", dut_engine=None) -> ResultObj:
         """Update system internal encryption mode."""
-        with allure.step(f"Execute action update for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_update_system_internal_property, engine, self.get_resource_path(), "mode", mode
-            )
+        return self.action(ActionConsts.UPDATE, main_param=('mode', mode), engine=dut_engine)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         """Restore system internal encryption to default."""
-        with allure.step(f"Execute action restore for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action_restore_system_internal_property, engine, self.get_resource_path()
-            )
+        return self.action(ActionConsts.RESTORE, engine=dut_engine)
+
+
+class SystemInternalCrl(BaseComponent):
+    """System internal CRL component."""
+
+    def __init__(self, parent):
+        super().__init__(parent=parent, path="/crl")
+
+    def action_update(self, crl_id="", dut_engine=None) -> ResultObj:
+        """Update system internal CRL."""
+        return self.action(ActionConsts.UPDATE, main_param=('crl-id', crl_id), engine=dut_engine)
+
+    def action_restore(self, dut_engine=None) -> ResultObj:
+        """Restore system internal CRL."""
+        return self.action(ActionConsts.RESTORE, engine=dut_engine)
 
 
 class SystemInternalConnections(BaseComponent):
@@ -100,8 +88,4 @@ class SystemInternalConnections(BaseComponent):
 
     def action_reset(self, dut_engine=None) -> ResultObj:
         """Reset system internal connections."""
-        with allure.step(f"Execute action reset for {self.get_resource_path()}"):
-            engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(
-                self._cli_wrapper.action, engine, action_str="reset", resource_path=self.get_resource_path()
-            )
+        return self.action(ActionConsts.RESET, engine=dut_engine)

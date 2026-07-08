@@ -98,8 +98,17 @@ if os.environ.get("REGRESSION_TYPE") == "regression":
             logger.info("NVOS infra type, skipping CLI coverage plugin.")
             yield None
             return
-        
+
         if is_test_deploy_and_upgrade():
+            # BMC-only deploy: switch image is not installed, DUT has no SONiC and is unreachable.
+            # Skip CLI coverage to avoid SSH retry timeouts on the dead DUT.
+            base_version = request.config.getoption('--base-version', default='') or ''
+            target_version = request.config.getoption('--target-version', default='') or ''
+            base_version_bmc = request.config.getoption('--base-version-bmc', default='') or ''
+            if not base_version and not target_version and base_version_bmc:
+                logger.info("BMC-only deploy detected, skipping CLI coverage plugin.")
+                yield None
+                return
             if is_dut_in_onie(request):
                 logger.info("DUT is in ONIE mode, skipping CLI coverage plugin.")
                 yield None

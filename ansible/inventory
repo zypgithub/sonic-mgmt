@@ -157,14 +157,16 @@ r-bison-simx-71 ansible_host=r-bison-simx-71  sonic_version=v2  sonic_hwsku=ACS-
 r-panther-simx-23-ptf-any ansible_host=r-panther-simx-23  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 14000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
 r-panther-simx-23 ansible_host=r-panther-simx-23  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 14000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
 
-# MTR canonical testbed r-salamandra-1 topologies
-r-salamandra-01-ptf-any ansible_host=r-salamandra-01  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD             serial_console="" ptf_host=ptf-salamandra-1 ptf_portmap="" pdu_host=pdu- base_mac="E8:9E:49:53:9E:3E" serial=MT2543XZ0777 model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200-dev', '0x22': u'920-9N62F-00LI-SKT', '0x23': u'MT2543XZ0777', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'E8:9E:49:53:9E:3E', '0x25': u'25/12/2025 05:40:37', '0x2b': u'Nvidia', '0x2a': u'548'}"
-r-salamandra-01 ansible_host=r-salamandra-01  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD           serial_console="" ptf_host=ptf-salamandra-1 ptf_portmap="" pdu_host=pdu- base_mac="E8:9E:49:53:9E:3E" serial=MT2543XZ0777 model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200-dev', '0x22': u'920-9N62F-00LI-SKT', '0x23': u'MT2543XZ0777', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'E8:9E:49:53:9E:3E', '0x25': u'25/12/2025 05:40:37', '0x2b': u'Nvidia', '0x2a': u'548'}"
+# MTR canonical testbed r-salamandra-01 topologies
+r-salamandra-01-ptf-any ansible_host=r-salamandra-01  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD             serial_console="" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu- base_mac="E8:9E:49:53:9E:3E" serial=MT2551XZ0ANJ model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200-dev', '0x22': u'920-9N62F-00LI-SKT', '0x23': u'MT2551XZ0ANJ', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'E8:9E:49:53:9E:3E', '0x25': u'25/12/2025 05:40:37', '0x2b': u'Nvidia', '0x2a': u'548'}"
+r-salamandra-01 ansible_host=r-salamandra-01  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD           serial_console="ssh -l rcon:7022 10.209.48.99" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu- base_mac="E8:9E:49:53:9E:3E" serial=MT2551XZ0ANJ model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200-dev', '0x22': u'920-9N62F-00LI-SKT', '0x23': u'MT2551XZ0ANJ', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'E8:9E:49:53:9E:3E', '0x25': u'25/12/2025 05:40:37', '0x2b': u'Nvidia', '0x2a': u'548'}"
+r-salamandra-01-bmc ansible_host=10.209.48.34 sonic_version=v2 sonic_hwsku=NVIDIA-AST2700-BMC sonic_hw_platform=arm64-aspeed_nvidia_ast2700_bmc-r0 asic_type=aspeed serial_console="ssh -l rcon:7022 10.209.48.99" ptf_host=ptf-r-salamandra-01 ptf_portmap="" pdu_host=pdu- model="699-24102-1650-EB2" serial="1331826040003" base_mac=74:25:54:DC:4F:85 syseeprom_info="{'0x21': u'P4102-A01', '0x22': u'699-24102-1650-EB2', '0x23': u'1331826040003', '0x24': u'74:25:54:DC:4F:85', '0x27': u'A02', '0xfe': u'0x7D0F056F'}"
 
 # MTL canonical testbed salamandra-chipless-109 topologies
 salamandra-chipless-109-ptf-any ansible_host=salamandra-chipless-109  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD             serial_console="" ptf_host=ptf-salamandra-chipless-109 ptf_portmap="" pdu_host=pdu- base_mac="2C:9D:90:34:C6:78" serial=MT2603603QVH model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200-dev', '0x22': u'920-9N62F-00LI-KLF', '0x23': u'MT2603603QVH', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'2C:9D:90:34:C6:78', '0x25': u'01/24/2026 13:49:14', '0x2b': u'Nvidia', '0x2a': u'546'}"
 salamandra-chipless-109 ansible_host=salamandra-chipless-109  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD           serial_console="" ptf_host=ptf-salamandra-chipless-109 ptf_portmap="" pdu_host=pdu- base_mac="2C:9D:90:34:C6:78" serial=MT2603603QVH model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200-dev', '0x22': u'920-9N62F-00LI-KLF', '0x23': u'MT2603603QVH', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'2C:9D:90:34:C6:78', '0x25': u'01/24/2026 13:49:14', '0x2b': u'Nvidia', '0x2a': u'546'}"
-
+slm-chipless-2700a1-146 ansible_host=slm-chipless-2700a1-146  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD           serial_console="ssh -l rcon:7033 10.7.150.239" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu- base_mac="E4:6D:AB:17:D8:D2" serial=MT260560000K model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-9600-dev', '0x22': u'920-9N62F-00LI-KLF', '0x23': u'MT260560000K', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'E4:6D:AB:17:D8:D2', '0x25': u'01/29/2026 10:54:47', '0x2b': u'Nvidia', '0x2a': u'546'}"
+slm-chipless-2700a1-146-bmc ansible_host=10.7.111.146 sonic_version=v2 sonic_hwsku=NVIDIA-AST2700-BMC sonic_hw_platform=arm64-aspeed_nvidia_ast2700_bmc-r0 asic_type=aspeed serial_console="ssh -l rcon:7033 10.7.150.239" ptf_host=ptf-slm-chipless-2700a1-146 ptf_portmap="" pdu_host=pdu- model="699-24102-0100-EB1" serial="MT260560000K" base_mac=e4:6d:ab:17:da:f2 syseeprom_info="{'0x21': u'P4102-A01', '0x22': u'699-24102-0100-EB1', '0x23': u'MT260560000K', '0x24': u'E4:6D:AB:17:DA:F2', '0x27': u'A01', '0xfe': u'0x0DC94A0A'}"
 
 # MTR canonical testbed r-panther-simx-18 topologies
 r-panther-simx-18-ptf-any ansible_host=r-panther-simx-18  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 13000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
@@ -370,10 +372,6 @@ mtvr-moose-08 ansible_host=mtvr-moose-08  sonic_version=v2  sonic_hwsku=ACS-SN56
 # MTVR canonical testbed sonic_moose_mtvr-moose-09 topologies
 mtvr-moose-09-ptf-any ansible_host=mtvr-moose-09  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7020 10.245.2.4" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-40,pdu-10-245-2-50 base_mac=B0:CF:0E:A7:4C:00 serial=MT2437XZ08UJ model=SN5600 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'MSN-9N402-00RI-7N0', '0x23': u'MT2437XZ08UJ', '0x21': u'SN5600', '0x26': u'0', '0x24': u'B0:CF:0E:A7:4C:00', '0x25': u'09/12/2024 03:24:01', '0xfe': u'0x34F6B1A0', '0x2b': u'Nvidia', '0x2a': u'512'}"
 mtvr-moose-09 ansible_host=mtvr-moose-09  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7020 10.245.2.4" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-40,pdu-10-245-2-50 base_mac=B0:CF:0E:A7:4C:00 serial=MT2437XZ08UJ model=SN5600 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'MSN-9N402-00RI-7N0', '0x23': u'MT2437XZ08UJ', '0x21': u'SN5600', '0x26': u'0', '0x24': u'B0:CF:0E:A7:4C:00', '0x25': u'09/12/2024 03:24:01', '0xfe': u'0x34F6B1A0', '0x2b': u'Nvidia', '0x2a': u'512'}"
-
-# MTVR canonical testbed sonic_moose_mtvr-moose-10 topologies
-mtvr-moose-10-ptf-any ansible_host=mtvr-moose-10  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7019 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-24 base_mac=2C:5E:AB:73:C6:00 serial=MT2506J00AZ3 model=SN5600 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'MSN-9N402-00RI-7N0', '0x23': u'MT2506J00AZ3', '0x21': u'SN5600', '0x26': u'0', '0x24': u'2C:5E:AB:73:C6:00', '0x25': u'02/05/2025 15:56:07', '0xfe': u'0x7A31334E', '0x2b': u'Nvidia', '0x2a': u'512'}"
-mtvr-moose-10 ansible_host=mtvr-moose-10  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7019 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-24 base_mac=2C:5E:AB:73:C6:00 serial=MT2506J00AZ3 model=SN5600 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'MSN-9N402-00RI-7N0', '0x23': u'MT2506J00AZ3', '0x21': u'SN5600', '0x26': u'0', '0x24': u'2C:5E:AB:73:C6:00', '0x25': u'02/05/2025 15:56:07', '0xfe': u'0x7A31334E', '0x2b': u'Nvidia', '0x2a': u'512'}"
 
 # MTVR skynet testbed sonic_moose_mtvr-moose-11 topologies
 mtvr-moose-11-ptf-any ansible_host=mtvr-moose-11  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="sssh -l rcon:7024 10.245.2.4" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-15 base_mac=9C:05:91:A6:10:00 serial=MT2415XZ04LZ model=SN5600 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2024.08-5.3.0015-115200', '0x22': u'920-9N42F-00RI-7C0', '0x23': u'MT2415XZ04LZ', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:A6:10:00', '0x25': u'04/18/2024 22:37:03', '0xfe': u'0x4DF18D46', '0x2b': u'Nvidia', '0x2a': u'512'}"
@@ -660,17 +658,29 @@ rosalind-skt-1 ansible_host=rosalind-skt-1  sonic_version=v2  sonic_hwsku=ACS-N6
 rosalind-eb1-10-ptf-any ansible_host=rosalind-eb1-10  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7035 10.7.150.239" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=60:5e:65:85:61:fc serial=MT2543XZ07HW model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6150_LD', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 rosalind-eb1-10 ansible_host=rosalind-eb1-10  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7035 10.7.150.239" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=60:5e:65:85:61:fc serial=MT2543XZ07HW model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6150_ld', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
-# NVOS testbed rosalind-eb2-2102 topologies
-rosalind-eb2-2102-ptf-any ansible_host=rosalind-eb2-2102  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7048 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=60:5e:65:ad:1b:38 serial=MT2545XZ05NY model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6150_LD', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
-rosalind-eb2-2102 ansible_host=rosalind-eb2-2102  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7048 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=60:5e:65:ad:1b:38 serial=MT2545XZ05NY model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6150_ld', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+# NVOS testbed rosalind-mec-2102 topologies
+rosalind-mec-2102-ptf-any ansible_host=rosalind-mec-2102  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7048 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=cc:30:89:00:af:f6 serial=MT2545XZ05NY model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6100_LD', '0x23': u'MT2619601XQR', '0x21': u'N6100_LD', '0x26': u'17', '0x24': u'cc:30:89:00:af:f6', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+rosalind-mec-2102 ansible_host=rosalind-mec-2102  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7048 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=cc:30:89:00:af:f6 serial=MT2545XZ05NY model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6100_LD', '0x23': u'MT2619601XQR', '0x21': u'N6100_LD', '0x26': u'17', '0x24': u'cc:30:89:00:af:f6', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
 # NVOS testbed rosalind-eb2-2124 topologies
 rosalind-eb2-2124-ptf-any ansible_host=rosalind-eb2-2124  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7032 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=b4:5c:b5:2e:54:2e serial=MT2546602HA8 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6150_LD', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 rosalind-eb2-2124 ansible_host=rosalind-eb2-2124  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7032 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=b4:5c:b5:2e:54:2e serial=MT2546602HA8 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6150_ld', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
+# NVOS testbed fit-nos-vrt-mec-80-089
+fit-nos-vrt-mec-80-089-ptf-any ansible_host=fit-nos-vrt-mec-80-089  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7032 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=b4:5c:b5:2e:54:2e serial=MT2546602HA8 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6150_LD', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+fit-nos-vrt-mec-80-089 ansible_host=fit-nos-vrt-mec-80-089  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7032 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=b4:5c:b5:2e:54:2e serial=MT2546602HA8 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6150_ld', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# NVOS testbed fit-nos-vrt-mec-80-088
+fit-nos-vrt-mec-80-088-ptf-any ansible_host=fit-nos-vrt-mec-80-088  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7032 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=b4:5c:b5:2e:54:2e serial=MT2546602HA8 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6150_LD', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+fit-nos-vrt-mec-80-088 ansible_host=fit-nos-vrt-mec-80-088  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7032 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=b4:5c:b5:2e:54:2e serial=MT2546602HA8 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6150_ld', '0x23': u'MT2508602UCP', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
 # NVOS testbed rosalind-eb1-2152 topologies
 rosalind-eb1-2152-ptf-any ansible_host=rosalind-eb1-2152  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7016 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=f0:fb:7f:33:3b:ee serial=MT2549600UTW model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6150_LD', '0x23': u'MT2549600UTW', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'f0:fb:7f:33:3b:ee', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 rosalind-eb1-2152 ansible_host=rosalind-eb1-2152  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7016 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=f0:fb:7f:33:3b:ee serial=MT2549600UTW model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6150_ld', '0x23': u'MT2549600UTW', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'f0:fb:7f:33:3b:ee', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# NVOS testbed rosalind-mec-2152 topologies
+rosalind-mec-2152-ptf-any ansible_host=rosalind-mec-2152  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7016 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=cc:30:89:00:b0:86 serial=MT2549600UTW model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6150_LD', '0x23': u'MT2169601XR2', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'cc:30:89:00:b0:86', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+rosalind-mec-2152 ansible_host=rosalind-mec-2152  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7016 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=cc:30:89:00:b0:86 serial=MT2549600UTW model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6150_ld', '0x23': u'MT2169601XR2', '0x21': u'n6150_ld', '0x26': u'17', '0x24': u'cc:30:89:00:b0:86', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
 # NVOS testbed rosalind-chipless-117 topologies
 rosalind-chipless-117-ptf-any ansible_host=rosalind-chipless-117  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7040 10.7.150.239" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=e8:9e:49:49:bd:28 serial=MT2508602UCP model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N6100_LD', '0x23': u'MT2508602UCP', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
@@ -684,9 +694,9 @@ rosalind-eb2-164 ansible_host=rosalind-eb2-164  sonic_version=v2  sonic_hwsku=AC
 rosalind-nvos-2166-ptf-any ansible_host=rosalind-nvos-2166  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7006 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=08:20:e7:b5:46:42 serial=MT2552606L8Y model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2552606L8Y', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'08:20:e7:b5:46:42', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 rosalind-nvos-2166 ansible_host=rosalind-nvos-2166  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7006 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=08:20:e7:b5:46:42 serial=MT2552606L8Y model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2552606L8Y', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'08:20:e7:b5:46:42', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
-# NVOS testbed rosalind-nvos-2164 topologies
-rosalind-nvos-2164-ptf-any ansible_host=rosalind-nvos-2164  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7001 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=08:20:e7:b5:45:fa serial=MT2552606L8W model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2552606L8W', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'08:20:e7:b5:45:fa', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
-rosalind-nvos-2164 ansible_host=rosalind-nvos-2164  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7001 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=08:20:e7:b5:45:fa serial=MT2552606L8W model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2552606L8W', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'08:20:e7:b5:45:fa', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+# NVOS testbed rosalind-mec-2164 topologies
+rosalind-mec-2164-ptf-any ansible_host=rosalind-mec-2164  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7001 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=CC:30:89:00:B0:3E serial=MT2619601XQX model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2619601XQX', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'CC:30:89:00:B0:3E', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+rosalind-mec-2164 ansible_host=rosalind-mec-2164  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7001 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=CC:30:89:00:B0:3E serial=MT2619601XQX model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2619601XQX, '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'CC:30:89:00:B0:3E', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
 # NVOS testbed rosalind-nvos-2182 topologies
 rosalind-nvos-2182-ptf-any ansible_host=rosalind-nvos-2182  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7002 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=08:20:e7:b5:45:e2 serial=MT2552606L8X model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2552606L8X', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'08:20:e7:b5:45:e2', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
@@ -696,9 +706,17 @@ rosalind-nvos-2182 ansible_host=rosalind-nvos-2182  sonic_version=v2  sonic_hwsk
 rosalind-nvos-2184-ptf-any ansible_host=rosalind-nvos-2184  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7003 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=08:20:e7:b5:46:92 serial=MT2552606L91 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2552606L91', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'08:20:e7:b5:46:92', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 rosalind-nvos-2184 ansible_host=rosalind-nvos-2184  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7003 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=08:20:e7:b5:46:92 serial=MT2552606L91 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2552606L91', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'08:20:e7:b5:46:92', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
+# NVOS testbed rosalind-c03-2243 topologies
+rosalind-c03-2243-ptf-any ansible_host=rosalind-c03-2243  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7025 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=dc:73:fc:88:53:68 serial=MT2614601YH0 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2614601YH0', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'dc:73:fc:88:53:68', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+rosalind-c03-2243 ansible_host=rosalind-c03-2243  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7025 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=dc:73:fc:88:53:68 serial=MT2614601YH0 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2614601YH0', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'dc:73:fc:88:53:68', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# NVOS testbed rosalind-c03-2156 topologies
+rosalind-c03-2156-ptf-any ansible_host=rosalind-c03-2156  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7010 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=DC:73:FC:88:53:80 serial=MT2614601YH1 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2614601YH1', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'DC:73:FC:88:53:80', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+rosalind-c03-2156 ansible_host=rosalind-c03-2156  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7010 10.220.15.232" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=DC:73:FC:88:53:80 serial=MT2614601YH1 model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2614601YH1', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'DC:73:FC:88:53:80', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
 # NVOS testbed sws-rtf2-rosalind-198 topologies
-sws-rtf2-rosalind-198-ptf-any ansible_host=sws-rtf2-rosalind-198  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7004 10.220.9.36" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=F0:FB:7F:C7:58:C4 serial=`MT2551601LTZ` model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2551601LTZ', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'F0:FB:7F:C7:58:C4', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
-sws-rtf2-rosalind-198 ansible_host=sws-rtf2-rosalind-198  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7004 10.220.9.36" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=F0:FB:7F:C7:58:C4 serial=MT2551601LTZ model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2551601LTZ', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'F0:FB:7F:C7:58:C4', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+sws-rtf2-rosalind-198-ptf-any ansible_host=sws-rtf2-rosalind-198  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="ssh -l rcon:7004 10.220.9.36" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=64:31:36:62:2c:54 serial=`MT2551601LTZ` model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2551601LTZ', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'F0:FB:7F:C7:58:C4', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+sws-rtf2-rosalind-198 ansible_host=sws-rtf2-rosalind-198  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="ssh -l rcon:7004 10.220.9.36" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=64:31:36:62:2c:54 serial=MT2551601LTZ model=N6100_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n6100_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n6100_ld', '0x23': u'MT2551601LTZ', '0x21': u'n6100_ld', '0x26': u'17', '0x24': u'F0:FB:7F:C7:58:C4', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
 # NVOS testbed juliet-191 topologies
 juliet-191-ptf-any ansible_host=juliet-191  sonic_version=v2  sonic_hwsku=ACS-N5500_LD            serial_console="ssh -l rcon:7024 10.7.218.105" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=50:00:e6:1f:25:b8 serial=MT2513XZ00BK model=N5500_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n5500_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N5500_LD', '0x23': u'MT2508602UCP', '0x21': u'n5500_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
@@ -1145,6 +1163,17 @@ ci-sonic-mgmt-chipsim-62 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_
 # NVOS testbed portia-chipsim-63 topologies
 portia-chipsim-63-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700            serial_console="telnet fit-vrt-60 63" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1f:4b:3f serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MQM9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 portia-chipsim-63 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700             serial_console="telnet fit-vrt-60 63" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1f:4b:3f serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'mqm9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# NVOS testbed portia-chipsim-81 topologies
+portia-chipsim-81-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=Mellanox-N7100_LD            serial_console="telnet fit-nos-vrt-mec-80 10081" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1F:A3:51 model=N7100_LD_NSO_simx-Portia syseeprom_info="{'0x28': u'x86_64-nvidia_n7100_ld_simx-r0', '0x22': u'Mellanox-N7100_LD', '0x21': u'N7100_LD_NSO_simx', '0x24': u'00:50:56:1F:A3:51', '0x2b': u'NVIDIA', '0x2a': u'254'}"
+portia-chipsim-81 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=Mellanox-N7100_LD             serial_console="telnet fit-nos-vrt-mec-80 10081" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1F:A3:51 model=N7100_LD_NSO_simx-Portia syseeprom_info="{'0x28': u'x86_64-nvidia_n7100_ld_simx-r0', '0x22': u'Mellanox-N7100_LD', '0x21': u'N7100_LD_NSO_simx', '0x24': u'00:50:56:1F:A3:51', '0x2b': u'NVIDIA', '0x2a': u'254'}"
+
+# NVOS testbed portia-chipsim-86 topologies
+portia-chipsim-86-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=Mellanox-N7170_LD            serial_console="telnet fit-nos-vrt-mec-80 10086" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1f:a3:56 model=N7170_LD_simx-Portia syseeprom_info="{'0x28': u'x86_64-nvidia_n7170_ld_simx-r0', '0x22': u'Mellanox-N7170_LD', '0x21': u'N7170_LD_simx', '0x24': u'00:50:56:1f:a3:56', '0x2b': u'NVIDIA', '0x2a': u'254'}"
+portia-chipsim-86 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=Mellanox-N7170_LD             serial_console="telnet fit-nos-vrt-mec-80 10086" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1f:a3:56 model=N7170_LD_simx-Portia syseeprom_info="{'0x28': u'x86_64-nvidia_n7170_ld_simx-r0', '0x22': u'Mellanox-N7170_LD', '0x21': u'N7170_LD_simx', '0x24': u'00:50:56:1f:a3:56', '0x2b': u'NVIDIA', '0x2a': u'254'}"
+# NVOS testbed portia-chipsim-87 topologies
+portia-chipsim-87-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=Mellanox-N7170_LD            serial_console="telnet fit-nos-vrt-mec-80 10087" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1f:a3:57 model=N7170_LD_simx-Portia syseeprom_info="{'0x28': u'x86_64-nvidia_n7170_ld_simx-r0', '0x22': u'Mellanox-N7170_LD', '0x21': u'N7170_LD_simx', '0x24': u'00:50:56:1f:a3:57', '0x2b': u'NVIDIA', '0x2a': u'254'}"
+portia-chipsim-87 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=Mellanox-N7170_LD             serial_console="telnet fit-nos-vrt-mec-80 10087" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1f:a3:57 model=N7170_LD_simx-Portia syseeprom_info="{'0x28': u'x86_64-nvidia_n7170_ld_simx-r0', '0x22': u'Mellanox-N7170_LD', '0x21': u'N7170_LD_simx', '0x24': u'00:50:56:1f:a3:57', '0x2b': u'NVIDIA', '0x2a': u'254'}"
 
 # NVOS testbed nvos-chipsim-64 topologies
 nvos-chipsim-64-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700            serial_console="telnet fit-vrt-60 64" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:1f:4b:40 serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MQM9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
@@ -1841,6 +1870,45 @@ switch5  ansible_host=10.0.0.104  sonic_version=v2  sonic_hwsku=ACS-MSN2700 # LA
 leopard-dgx-208-ptf-any ansible_host=10.220.12.208  sonic_version=v2  sonic_hwsku=ACS-SN4700D             serial_console="ssh -l rcon:7001 10.220.12.151" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-230-109 base_mac="28:01:CD:15:96:00" serial="MT2603XZ02GW" model="MSN4700-WSAROS-NS" syseeprom_info="{'0x21': u'SN4700D', '0x22': u'MSN4700-WSAROS-NS', '0x23': u'MT2603XZ02GW', '0x24': u'28:01:CD:15:96:00', '0x25': u'01/26/2026 14:37:10', '0x26': u'18', '0x28': u'x86_64-nvidia_sn4700d-r0', '0x29': u'5.3.0015', '0x2a': u'254', '0x2b': u'Nvidia', '0xfe': u'0x1E9993DD'}"
 leopard-dgx-208 ansible_host=10.220.12.208  sonic_version=v2  sonic_hwsku=ACS-SN4700D             serial_console="ssh -l rcon:7001 10.220.12.151" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-230-109 base_mac="28:01:CD:15:96:00" serial="MT2603XZ02GW" model="MSN4700-WSAROS-NS" syseeprom_info="{'0x21': u'SN4700D', '0x22': u'MSN4700-WSAROS-NS', '0x23': u'MT2603XZ02GW', '0x24': u'28:01:CD:15:96:00', '0x25': u'01/26/2026 14:37:10', '0x26': u'18', '0x28': u'x86_64-nvidia_sn4700d-r0', '0x29': u'5.3.0015', '0x2a': u'254', '0x2b': u'Nvidia', '0xfe': u'0x1E9993DD'}"
 
+# SN6600 soldered
+slm-60-ptf-any ansible_host=10.220.12.60  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7047 10.220.12.161" ptf_host=ptf-slm-60 ptf_portmap="" pdu_host= base_mac=DC:73:FC:61:89:08 serial=MT2614600W00 model=SN6600_LD syseeprom_info="{'0x21': 'SN6600_LD', '0x22': '920-9N62F-00LI-QPK', '0x23': 'MT2614600W00', '0x24': 'DC:73:FC:61:89:08', '0x25': '04/04/2026 01:23:02', '0x26': '16', '0x28': 'x86_64-nvidia_sn6600_ld-r0', '0x29': '2025.05-5.3.0021-115200-dev', '0x2a': '546', '0x2b': 'Nvidia', '0xfe': '0x26101EAC'}"
+slm-60 ansible_host=10.220.12.60  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7047 10.220.12.161" ptf_host=ptf-slm-60 ptf_portmap="" pdu_host= base_mac=DC:73:FC:61:89:08 serial=MT2614600W00 model=SN6600_LD syseeprom_info="{'0x21': 'SN6600_LD', '0x22': '920-9N62F-00LI-QPK', '0x23': 'MT2614600W00', '0x24': 'DC:73:FC:61:89:08', '0x25': '04/04/2026 01:23:02', '0x26': '16', '0x28': 'x86_64-nvidia_sn6600_ld-r0', '0x29': '2025.05-5.3.0021-115200-dev', '0x2a': '546', '0x2b': 'Nvidia', '0xfe': '0x26101EAC'}"
+slm-30-ptf-any ansible_host=slm-30  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7014 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A8:9F:02" serial="MT2617606EYA" model="920-9N62F-00LI-GC0" syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606EYA', '0x24': u'F4:20:4D:A8:9F:02', '0x25': u'04/28/2026 14:05:59', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x34336659'}"
+slm-30 ansible_host=slm-30  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7014 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A8:9F:02" serial="MT2617606EYA" model="920-9N62F-00LI-GC0" syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606EYA', '0x24': u'F4:20:4D:A8:9F:02', '0x25': u'04/28/2026 14:05:59', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0020-rc2-115200', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x34336659'}"
+slm-30      ansible_host=10.220.13.30 ansible_hostv6="" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+
+slm-32-ptf-any ansible_host=slm-32  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7017 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A9:1C:D8" serial="MT2617606F03" model="920-9N62F-00LI-GC0" syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606F03', '0x24': u'F4:20:4D:A9:1C:D8', '0x25': u'04/28/2026 12:59:23', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0xAEDAA6B0'}"
+slm-32 ansible_host=slm-32  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7017 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A9:1C:D8" serial="MT2617606F03" model="920-9N62F-00LI-GC0" syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606F03', '0x24': u'F4:20:4D:A9:1C:D8', '0x25': u'04/28/2026 12:59:23', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0xAEDAA6B0'}"
+slm-32      ansible_host=10.220.13.32 ansible_hostv6="" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+
+slm-110-ptf-any ansible_host=slm-110  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7003 10.220.12.175" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:EE:7E" serial="MT2616603H4T" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4T', '0x24': u'84:EB:0C:DC:EE:7E', '0x25': u'04/28/2026 12:53:25', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x5E7A9C50'}"
+slm-110 ansible_host=slm-110  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7003 10.220.12.175" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:EE:7E" serial="MT2616603H4T" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4T', '0x24': u'84:EB:0C:DC:EE:7E', '0x25': u'04/28/2026 12:53:25', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x5E7A9C50'}"
+slm-110      ansible_host=10.220.13.110 ansible_hostv6="" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+
+slm-109-ptf-any ansible_host=slm-109  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7002 10.220.12.175" ptf_host=ptf-slm-109 ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:F7:06" serial="MT2616603H4X" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4X', '0x24': u'84:EB:0C:DC:F7:06', '0x25': u'04/28/2026 22:07:12', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0xA12765B5'}"
+slm-109 ansible_host=slm-109  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7002 10.220.12.175" ptf_host=ptf-slm-109 ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:F7:06" serial="MT2616603H4X" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4X', '0x24': u'84:EB:0C:DC:F7:06', '0x25': u'04/28/2026 22:07:12', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0xA12765B5'}"
+slm-109      ansible_host=10.220.13.109 ansible_hostv6="" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+
+slm-111-ptf-any ansible_host=slm-111  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7004 10.220.12.175" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:F0:A0" serial="MT2616603H4U" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4U', '0x24': u'84:EB:0C:DC:F0:A0', '0x25': u'04/28/2026 04:16:42', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0xFCF59F39'}"
+slm-111 ansible_host=slm-111  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7004 10.220.12.175" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:F0:A0" serial="MT2616603H4U" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4U', '0x24': u'84:EB:0C:DC:F0:A0', '0x25': u'04/28/2026 04:16:42', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0xFCF59F39'}"
+slm-111      ansible_host=10.220.13.111 ansible_hostv6="" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+
+slm-112-ptf-any ansible_host=slm-112  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7005 10.220.12.175" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:FF:8E" serial="MT2616603H51" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H51', '0x24': u'84:EB:0C:DC:FF:8E', '0x25': u'04/28/2026 11:10:18', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x0A728ACB'}"
+slm-112 ansible_host=slm-112  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7005 10.220.12.175" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:FF:8E" serial="MT2616603H51" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H51', '0x24': u'84:EB:0C:DC:FF:8E', '0x25': u'04/28/2026 11:10:18', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x0A728ACB'}"
+slm-112      ansible_host=10.220.13.112 ansible_hostv6="" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+
+slm-31-ptf-any ansible_host=slm-31  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7018 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A8:9C:E0" serial="MT2617606EY9" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606EY9', '0x24': u'F4:20:4D:A8:9C:E0', '0x25': u'04/29/2026 01:39:13', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x48E9D51D'}"
+slm-31 ansible_host=slm-31  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7018 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="F4:20:4D:A8:9C:E0" serial="MT2617606EY9" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2617606EY9', '0x24': u'F4:20:4D:A8:9C:E0', '0x25': u'04/29/2026 01:39:13', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x48E9D51D'}"
+slm-31      ansible_host=10.220.13.31 ansible_hostv6="fe80::dc73:fcff:feb2:477e" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000 base_mac=dc:73:fc:b2:47:7e
+
+slm-233-ptf-any ansible_host=slm-233  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7009 10.193.67.29" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="DC:73:FC:6A:29:9E" serial="MT26146014R0" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-09LI-ES1', '0x23': u'MT26146014R0', '0x24': u'DC:73:FC:6A:29:9E', '0x25': u'05/06/2026 13:01:07', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x1163AC5F'}"
+slm-233 ansible_host=slm-233  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7009 10.193.67.29" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="DC:73:FC:6A:29:9E" serial="MT26146014R0" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-09LI-ES1', '0x23': u'MT26146014R0', '0x24': u'DC:73:FC:6A:29:9E', '0x25': u'05/06/2026 13:01:07', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x1163AC5F'}"
+slm-233      ansible_host=10.220.13.233 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000 base_mac=dc:73:fc:6a:29:9e
+
+slm-113-ptf-any ansible_host=slm-113  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7015 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:F4:E4" serial="MT2616603H4W" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4W', '0x24': u'84:EB:0C:DC:F4:E4', '0x25': u'04/28/2026 02:54:14', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x9325013A'}"
+slm-113 ansible_host=slm-113  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7015 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:F4:E4" serial="MT2616603H4W" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4W', '0x24': u'84:EB:0C:DC:F4:E4', '0x25': u'04/28/2026 02:54:14', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x9325013A'}"
+slm-113      ansible_host=10.220.13.113 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000 base_mac=84:eb:0c:dc:f4:e4
+
 [sonic:children]
 sonic_latest
 
@@ -1902,9 +1970,12 @@ r-r740-09-bf2-sonic-01-ptf-any
 [lab]
 r-salamandra-01-ptf-any
 r-salamandra-01
+r-salamandra-01-bmc
 
 salamandra-chipless-109-ptf-any
 salamandra-chipless-109
+slm-chipless-2700a1-146-bmc
+slm-chipless-2700a1-146
 
 c-anaconda-01-ptf-any
 c-anaconda-01
@@ -1915,7 +1986,8 @@ r-buffalo-04
 r-alligator-04-ptf-any
 r-alligator-04
 
-# MTR canonical setups topologies
+slm-60
+slm-60-ptf-any
 
 r-tigon-17-ptf-any
 r-tigon-17
@@ -2171,9 +2243,6 @@ mtvr-moose-08
 
 mtvr-moose-09-ptf-any
 mtvr-moose-09
-
-mtvr-moose-10-ptf-any
-mtvr-moose-10
 
 mtvr-moose-11-ptf-any
 mtvr-moose-11
@@ -2445,11 +2514,17 @@ rosalind-skt-1
 rosalind-eb1-10-ptf-any
 rosalind-eb1-10
 
-rosalind-eb2-2102-ptf-any
-rosalind-eb2-2102
+rosalind-mec-2102-ptf-any
+rosalind-mec-2102
 
 rosalind-eb2-2124-ptf-any
 rosalind-eb2-2124
+
+fit-nos-vrt-mec-80-088-ptf-any
+fit-nos-vrt-mec-80-088
+
+fit-nos-vrt-mec-80-089-ptf-any
+fit-nos-vrt-mec-80-089
 
 rosalind-eb1-2152-ptf-any
 rosalind-eb1-2152
@@ -2471,6 +2546,12 @@ rosalind-nvos-2182
 
 rosalind-nvos-2184-ptf-any
 rosalind-nvos-2184
+
+rosalind-c03-2243-ptf-any
+rosalind-c03-2243
+
+rosalind-c03-2156-ptf-any
+rosalind-c03-2156
 
 sws-rtf2-rosalind-198-ptf-any
 sws-rtf2-rosalind-198
@@ -2753,6 +2834,14 @@ ci-sonic-mgmt-chipsim-62
 
 portia-chipsim-63-ptf-any
 portia-chipsim-63
+
+portia-chipsim-81-ptf-any
+portia-chipsim-81
+
+portia-chipsim-86-ptf-any
+portia-chipsim-86
+portia-chipsim-87-ptf-any
+portia-chipsim-87
 
 nvos-chipsim-64-ptf-any
 nvos-chipsim-64
@@ -3240,12 +3329,42 @@ mlx-2201m-01
 leopard-dgx-208-ptf-any
 leopard-dgx-208
 
+slm-30-ptf-any
+slm-30
+
+slm-32-ptf-any
+slm-32
+
+slm-110-ptf-any
+slm-110
+
+slm-109-ptf-any
+slm-109
+
+slm-111-ptf-any
+slm-111
+
+slm-112-ptf-any
+slm-112
+
+slm-31-ptf-any
+slm-31
+
+slm-233-ptf-any
+slm-233
+
+slm-113-ptf-any
+slm-113
+
 [leaf_topo_1:vars]
 podset_number=200
 
 [ptf]
-# MTVR canonical testbed ch5s-164 topologies
-ptf-salamandra-1 ansible_host=10.215.13.189 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+# MTR slm-60 PTF host
+ptf-slm-60 ansible_host=10.215.13.190 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.13.190 ansible_host=10.215.13.190 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+ptf-slm-109 ansible_host=10.215.13.189 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 10.215.13.189 ansible_host=10.215.13.189 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 # MTR arc-switch1038 PTF host
@@ -3314,6 +3433,14 @@ ptf-mtvr-bobcat-08 ansible_host=10.245.44.188 ansible_ssh_user="{{ lookup('env',
 # OPN canonical setup
 ptf-bobcat-10 ansible_host=10.220.73.41 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 10.220.73.41 ansible_host=10.220.73.41 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+# canonical testbed sonic_slm-chipless-2700a1-146 topologies
+ptf-slm-chipless-2700a1-146 ansible_host=10.213.86.104 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.213.86.104 ansible_host=10.213.86.104 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+# canonical testbed sonic_salamandra_r-salamandra-01 topologies
+ptf-r-salamandra-01 ansible_host=10.213.86.105 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.213.86.105 ansible_host=10.213.86.105 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-245-2-40 ansible_host=10.245.2.40 protocol=snmp

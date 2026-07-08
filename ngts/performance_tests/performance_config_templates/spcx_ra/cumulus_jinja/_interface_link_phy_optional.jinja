@@ -1,0 +1,14 @@
+{% set lp_an = parameter_dict.get('link_phy_autoneg') %}
+{% set lp_sp = parameter_dict.get('link_phy_speed') %}
+{% set la = parameter_dict.get('link_auto_negotiate') %}
+{% if lp_an is not none or lp_sp or la %}
+        link:
+{% if lp_an is not none %}
+          auto-negotiate: {{ 'enabled' if lp_an else 'disabled' }}
+{% elif la %}
+          auto-negotiate: enabled
+{% endif %}
+{% if lp_sp %}
+          speed: {{ lp_sp }}
+{% endif %}
+{% endif %}

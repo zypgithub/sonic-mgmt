@@ -8,6 +8,7 @@ from tests.common.helpers.assertions import pytest_assert
 from tests.common.helpers.assertions import pytest_require
 from tests.common.helpers.dut_utils import is_virtual_platform
 from tests.common.reboot import reboot
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger(__name__)
 vrfname = 'default'
@@ -335,11 +336,19 @@ def test_bgp_session_interface_down(duthosts, rand_one_dut_hostname, fanouthosts
     elif test_type == "reboot":
         # Use warm reboot for t0, cold reboot for others
         topo_name = tbinfo["topo"]["name"]
-        logger.info("Rebooting DUT {} with type {}".format(duthost.hostname, topo_name))
         if topo_name.startswith("t0"):
             reboot_type = "warm"
         else:
             reboot_type = "cold"
+        # TODO: remove this override once warm reboot is supported on sn6600_ld
+        # (https://redmine.mellanox.com/issues/5008193).
+        if reboot_type == "warm" \
+                and "sn6600_ld" in duthost.facts.get("platform", "") \
+                and is_redmine_issue_active([5008193])[0]:
+            logger.info("Overriding warm reboot with cold reboot on sn6600_ld due to "
+                        "RM 5008193 (warm-reboot unsupported on this platform).")
+            reboot_type = "cold"
+        logger.info("Rebooting DUT {} with type {}".format(duthost.hostname, reboot_type))
         reboot(duthost, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
                warmboot_finalizer_timeout=360)
 

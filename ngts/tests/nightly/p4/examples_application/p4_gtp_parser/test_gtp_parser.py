@@ -3,7 +3,7 @@ import logging
 import allure
 from .conftest import update_gtp_entries, ORI_PARAMS, UPDATE_PARAMS
 from ngts.constants.constants import P4ExamplesConsts
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 import ngts.helpers.p4nspect_utils as p4nspect_utils
 from scapy.contrib.gtp import GTPHeader
 

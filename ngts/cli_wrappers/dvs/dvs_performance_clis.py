@@ -6,9 +6,9 @@ from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tools.infra import get_chip_type
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, UndefinedError, meta
 
 
@@ -327,8 +327,14 @@ class DvsPerformance(PerformanceCommon):
             self.clear_syslog()
 
         switch_attributes = self.topology_obj.players['dut']['attributes'].noga_query_data['attributes']
-        if get_chip_type(switch_attributes) == "SPC5":
+        chip_type = get_chip_type(switch_attributes)
+        # TODO: Remove this once unsplit in SPC6 is supported
+        unsplit_list = ["SPC5"] if is_redmine_issue_active([4985641])[0] else ["SPC5", "SPC6"]
+        if chip_type in unsplit_list:
             self.unsplit_all_ports()
+        self.connected_ports = self.original_connected_ports
+        self.unconnected_ports = self.original_unconnected_ports
+        self.ports_lanes = self.original_port_lanes
 
     def clear_syslog(self):
         """
@@ -447,7 +453,7 @@ class DvsPerformance(PerformanceCommon):
         that should not be used for testing.
 
         Returns:
-            int: Number of ports to remove (0 for SPC1/2/3, 1 for SPC4, 2 for SPC5)
+            int: Number of ports to remove (0 for SPC1/2/3, 1 for SPC4, 2 for SPC5/6)
 
         Raises:
             TestIssue: If chip type is not recognized
@@ -460,7 +466,8 @@ class DvsPerformance(PerformanceCommon):
             "SPC2": 0,
             "SPC3": 0,
             "SPC4": 1,
-            "SPC5": 2
+            "SPC5": 2,
+            "SPC6": 2
         }
 
         if chip_type not in bonus_ports_map:
@@ -600,7 +607,9 @@ class DvsPerformance(PerformanceCommon):
 
     def set_ibm(self, scenario, conf_args, chip_type):
         self.restore_basic_configuration()
-        if chip_type == "SPC5":
+        # TODO: Remove this once unsplit in SPC6 is supported
+        unsplit_list = ["SPC5"] if is_redmine_issue_active([4985641])[0] else ["SPC5", "SPC6"]
+        if chip_type in unsplit_list:
             self.unsplit_all_ports()
         self.apply_configuration_file(scenario, conf_args)
 

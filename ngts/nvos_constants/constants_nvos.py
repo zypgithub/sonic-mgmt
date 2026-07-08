@@ -1,13 +1,12 @@
-import os
 import json
+import os
+import re
 from enum import Enum
 from pathlib import Path
-from tokenize import Double
-from typing import List, Literal, TypedDict
+from typing import List, TypedDict
 import re
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 
 class DatabaseConst:
@@ -187,6 +186,8 @@ class NvosConst:
     OLD_PASS = os.getenv("NVU_SWITCH_PASSWORD")
 
     REBOOT_CMD_TO_RUN = "ipmitool -I lanplus -H {ip} -U {username} -P {password} chassis power cycle"
+
+    SYS_RST_N_BIT_COMMAND = "sudo iorw -b 0x2519 -w -l1 -v 0xfe"
 
     # [0] syslog e.g. "Jan  1 12:34:56"; [1] space-separated e.g. "2026-02-18 12:34:56"; [2] ISO with T (optional .microseconds, optional Z or +HH:MM)
     DATE_TIME_REGEX = [
@@ -522,6 +523,7 @@ class ActionConsts:
     START = 'start'
     CLEANUP = "cleanup"
     RUN = "run"
+    STOP = "stop"
     CHANGE = 'change'
     INSTALL = "install"
     UNINSTALL = "uninstall"
@@ -540,6 +542,8 @@ class ActionConsts:
     POWER_CYCLE = 'power-cycle'
     REBOOT = 'reboot'
     RENEW = 'renew'
+    RESTORE = 'restore'
+    ROTATE = 'rotate'
     ACTIVATE = 'activate'
     ERASE = 'erase'
 
@@ -594,20 +598,6 @@ class SystemConsts:
     FILE_TRANSFER_PROTOCOLS = ['scp', 'sftp']
     TECHSUPPORT_SIZE_LIMIT = 75  # in MBs
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "is not a"
-    TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
-                                              'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
-                                              'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
-                                              'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
-                                              'verification_test.gz']
-    TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
-                                             'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
-                                             'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
-                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
-                                             'empty.sh', 'nv-bridge_reconcile', 'gpu_telemetry_enable']
-    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed',
-                                                 'nvlink_domain_telemetry.csv']
-    TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
-    TECHSUPPORT_SKYNET_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
 
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
@@ -863,6 +853,9 @@ class SystemConsts:
     PASS_ASIC_DEBUG_CONFIG = 'pass-asic-debug.yaml'
     PASS_ASIC_DEBUG_CONFIG_ZTP = 'passing-asic-debug-config.yaml'
     NOT_YAML_ASIC_DEBUG_CONFIG = 'incorrect.txt'
+    ASIC_DEBUG_CONFIG_20_PRMS = '20.yaml'
+    ASIC_DEBUG_CONFIG_32_PRMS = '32_prms.yaml'
+    ASIC_DEBUG_CONFIG_2K_BUFFER = '2k_buff.yaml'
     FAIL_ASIC_DEBUG_CONFIG_WRONG_REGISTER = 'failing-asic-debug-config-wrong-register.yaml'
     FAIL_ASIC_DEBUG_CONFIG_WRONG_VERSION = 'failing-asic-debug-config-wrong-version.yaml'
     YAML_WITHOUT_FIELDS = 'trash.yaml'
@@ -942,10 +935,6 @@ class SystemConsts:
         "is successfully installed",
     )
 
-    ACTION_INSTALL_SUCCESS_MESSAGES = (
-        "is successfully installed",
-    )
-
     LOCALHOST = "127.0.0.1"
     DUMMY_IMAGE = "dummy.bin"
     DUMMY_IMAGE_PATH = "/tmp/"
@@ -968,7 +957,7 @@ class SystemConsts:
 
     NV_BRIDGE = 'nv-bridge'
     NV_BRIDGE_STATE = 'state'
-    NV_BRIDGE_HEART_BEAT = 'heart-beat'
+    NV_BRIDGE_HEARTBEAT = 'heartbeat'
     NV_BRIDGE_HEALTH = 'health'
     NV_BRIDGE_HEALTH_REASON = 'health-reason'
     NV_BRIDGE_CONNECTION = 'connections'
@@ -978,7 +967,6 @@ class SystemConsts:
     NV_BRIDGE_SERVER_ADDRESS = 'server-address'
     NV_BRIDGE_CLIENT_ID = 'client-id'
     NV_BRIDGE_CLIENT_ACTIVE = 'active'
-    NV_BRIDGE_DISABLED = 'disabled'
     NV_BRIDGE_HEALTH_OK = 'ok'
     NV_BRIDGE_HEALTH_NOT_OK = 'not ok'
     NV_BRIDGE_GREP = '| grep nv-bridge'
@@ -1104,12 +1092,14 @@ class ConfigConsts:
 class PlatformConsts:
     PLATFORM_FW = "firmware"
     SYSTEM_TYPE = "system-type"
+    ASIC_REVISION = "asic-revision"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
     XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/{asic}/"
     PLATFORM_ENVIRONMENT = "environment"
     PLATFORM_HW = "hardware"
     PLATFORM_SW = "software"
     FW_ASIC = "ASIC"
+    FW_ASIC_REVISION_VALUE = "0x00A0"
     FW_BIOS = "BIOS"
     FW_CPLD = "CPLD"
     FW_SSD = "SSD"
@@ -1135,6 +1125,7 @@ class PlatformConsts:
     FW_SPECTRUM3 = "Spectrum-3"
     FW_SPECTRUM4 = "Spectrum-4"
     FW_SPECTRUM5 = "Spectrum-5"
+    FW_SPECTRUM6 = "Spectrum-6"
     FW_SLOT_STATUS_ACTIVE = 'active'
     FW_SLOT_STATUS_INACTIVE = 'inactive'
     # Basic fields present in all firmware components
@@ -1185,6 +1176,7 @@ class PlatformConsts:
     ENV_TEMP_MIN = 15  # [Celsius]
     ENV_TEMP_MAX = 90  # [Celsius]
     VOLTAGE_FILES_PATH = '/var/run/hw-management/ui/voltage'
+    TEMPERATURE_FILES_PATH = '/var/run/hw-management/ui/temperature'
     HEALTH_STATUS_NOT_OK_EVENT = 'Health status is not ok'
     LEAKAGE_STATUS_OK = 'ok'
     LEAKAGE_STATUS_LEAK = 'leak'
@@ -1255,6 +1247,7 @@ class PlatformConsts:
     EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
     INV_STATE = 'state'
     INV_OK = 'ok'
+    HARDWARE_VERSION = "hardware-version"
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/x86_64-nvidia_{}-r0/asic.conf"
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_BIOS_INSTALL = 720
@@ -1262,6 +1255,16 @@ class PlatformConsts:
     DISK_SIZE = 'disk-size'
     MEMORY = 'memory'
     DPC = "dpc"
+    ROSALIND_ASIC_REVISION_4 = "0x00A4"
+    ROSALIND_ASIC_REVISION_BY_PART_NUMBER = {
+        "699-23809-0600-EB1": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-GS0": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-TS0": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-TS1": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-00L6-TS2": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-1313-TS3": FW_ASIC_REVISION_VALUE,
+        "920-9K42W-1313-TS4": FW_ASIC_REVISION_VALUE,
+    }
 
 
 class ChassisLocationConsts:
@@ -1301,6 +1304,7 @@ class CableCartridgeConsts:
         "HS-32836-003",
         "HS-33868-002",
         "HS-33869-002",
+        "HS-33886-002",
         "755-XXXXX-XXXX-XXX"
     ]
     # Error messages
@@ -1315,6 +1319,7 @@ class CableCartridgeConsts:
 
 class PowerCappingConsts:
     DEFAULT_PROFILE_ID = 'compute'
+    POWER = 'power'
     ACTIVE = 'active'
     STATE = 'state'
 
@@ -1329,20 +1334,6 @@ class PowerCappingConsts:
     PROFILES = ["networking", "reduced-bandwidth", DEFAULT_PROFILE_ID]
     ENUM_PROFILES = [profile.value for profile in ProfileName]
 
-    PROFILES_DEFAULT_DICT = {
-        'compute': {
-            'long-term-power-allocation': '475',
-            'short-term-power-allocation': '575'
-        },
-        'networking': {
-            'long-term-power-allocation': '575',
-            'short-term-power-allocation': '575'
-        },
-        'reduced-bandwidth': {
-            'long-term-power-allocation': '380',
-            'short-term-power-allocation': '475'
-        }
-    }
     TEST_PROFILES = ["test_profile1", "test_profile2", "test_profile3", "test_profile4", "test_profile5", "test_profile6"]  # Define 1 extra profile
     ATTRIBUTES = [
         'power-allocation-1', 'power-allocation-2', 'max-integral-1', 'max-integral-2',
@@ -1525,7 +1516,7 @@ class LowPowerConsts:
     PEC_DURATION: str = 'peq-duration'
     PEC_RECAL_PERIOD: str = 'peq-recal-period'
     PEC_RECAL_FORCE_PERIOD: str = 'peq-recal-force-period'
-    FAE_ALL_PARAMS: List[str] = [PEC_DURATION, PEC_RECAL_PERIOD, PEC_RECAL_FORCE_PERIOD]
+    FAE_ALL_PARAMS: list[str] = [PEC_DURATION, PEC_RECAL_PERIOD, PEC_RECAL_FORCE_PERIOD]
 
     class PecRecalPeriodForce(Enum):
         USE_AGREED_FUNCTION = 'use-agreed-function'
@@ -1543,7 +1534,66 @@ class LowPowerConsts:
 
     L1_TOTAL_ENTRIES: str = 'l1-total-entries'
     AVERAGE_LOCAL_FULL_BW_EXIT: str = 'average-local-full-bw-exit'
-    ALL_COUNTERS: List[str] = [L1_TOTAL_ENTRIES, AVERAGE_LOCAL_FULL_BW_EXIT]
+    ALL_COUNTERS: list[str] = [L1_TOTAL_ENTRIES, AVERAGE_LOCAL_FULL_BW_EXIT]
+
+
+class LinkTrainingConsts:
+    FEC_MEASURE_MODE: str = 'fec-measure-mode'
+
+    class FecMeasureMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+        @classmethod
+        def operational(cls):
+            return [cls.ENABLED.value, cls.DISABLED.value]
+
+    FEC_MEASURE_MODE_OPERATIONAL_DEFAULT = FecMeasureMode.ENABLED
+    FEC_MEASURE_MODE_APPLIED_DEFAULT = FecMeasureMode.FW_DEFAULT
+
+    FEC_MEASURE_FAIL_ACTION: str = 'fec-measure-fail-action'
+
+    class FecMeasureFailAction(Enum):
+        FW_DEFAULT = 'fw-default'
+        FORCE_LINKUP = 'force-linkup'
+        GOTO_POLLING = 'goto-polling'
+        GOTO_DISABLE = 'goto-disable'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+        @classmethod
+        def operational(cls):
+            return [cls.FORCE_LINKUP.value, cls.GOTO_POLLING.value, cls.GOTO_DISABLE.value]
+
+    FEC_MEASURE_FAIL_ACTION_OPERATIONAL_DEFAULT = FecMeasureFailAction.FORCE_LINKUP
+    FEC_MEASURE_FAIL_ACTION_APPLIED_DEFAULT = FecMeasureFailAction.FW_DEFAULT
+
+    FAIL_ACTION_PRIORITY: dict[str, int] = {
+        FecMeasureFailAction.FW_DEFAULT.value: 0,
+        FecMeasureFailAction.FORCE_LINKUP.value: 1,
+        FecMeasureFailAction.GOTO_POLLING.value: 2,
+        FecMeasureFailAction.GOTO_DISABLE.value: 3,
+    }
+
+    FORCE_MAX_ITERATIONS: str = 'force-max-iterations'
+
+    class ForceMaxIterations(Enum):
+        DISABLED = 'disabled'
+        ENABLED = 'enabled'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    FORCE_MAX_ITERATIONS_OPERATIONAL_DEFAULT = ForceMaxIterations.DISABLED
+    FORCE_MAX_ITERATIONS_APPLIED_DEFAULT = ForceMaxIterations.DISABLED
 
 
 class ImageConsts:
@@ -1859,6 +1909,112 @@ class NtpConsts:
     }
 
 
+class TelemetryConsts:
+    """Constants for `nv … system telemetry …` commands.
+
+    Field names (constants ending without _* suffix) are exactly the kebab-case
+    keys used both in the CLI command words and the `--output json` payloads.
+    """
+
+    # --- Field names (used as op_param_name in BaseComponent.set/unset, and as JSON keys) ---
+    STATE = 'state'
+    SAMPLE_INTERVAL = 'sample-interval'
+    VRF = 'vrf'
+    INSECURE = 'insecure'
+    CERTIFICATE = 'certificate'
+    CLIENT_CERTIFICATE = 'client-certificate'
+    PORT = 'port'
+    ENCODING = 'encoding'
+    STATS_GROUP = 'stats-group'
+    DESCRIPTION = 'description'
+
+    # --- Top-level telemetry subtree node names (JSON keys when calling
+    # `nv show system telemetry --output json`) ---
+    EXPORT = 'export'
+    OTLP = 'otlp'
+    GRPC = 'grpc'
+    HTTP = 'http'
+    DESTINATION = 'destination'
+    LABEL = 'label'
+    INTERFACE_STATS = 'interface-stats'
+    PEER_PORT_STATS = 'peer-port-stats'
+    IB_ROUTER_STATS = 'ib-router-stats'
+    PLATFORM_STATS = 'platform-stats'
+    CLASS = 'class'
+    PHY = 'phy'
+
+    # Tuple of all stats subtree names. Useful for iterating over every family
+    # (interface / peer-port / ib-router / platform) in tests or helpers.
+    ALL_STATS_SUBTREES = (
+        INTERFACE_STATS,
+        PEER_PORT_STATS,
+        IB_ROUTER_STATS,
+        PLATFORM_STATS,
+    )
+
+    # --- Enums ---
+    class State(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    class Encoding(Enum):
+        PROTO = 'proto'
+        JSON = 'json'
+
+    # --- Platform-stats class names (each is a child of `platform-stats class`) ---
+    PLATFORM_CLASS_CPU = 'cpu'
+    PLATFORM_CLASS_DISK = 'disk'
+    PLATFORM_CLASS_MEMORY = 'memory'
+    PLATFORM_CLASS_HEALTH_INFO = 'health-info'
+    PLATFORM_CLASS_ASIC_POWER = 'asic-power'
+    PLATFORM_CLASS_PLATFORM_INFO = 'platform-info'
+    PLATFORM_CLASS_ENVIRONMENT_SENSOR = 'environment-sensor'
+    PLATFORM_CLASS_TRANSCEIVER_INFO = 'transceiver-info'
+
+    PLATFORM_CLASSES = [
+        PLATFORM_CLASS_CPU,
+        PLATFORM_CLASS_DISK,
+        PLATFORM_CLASS_MEMORY,
+        PLATFORM_CLASS_HEALTH_INFO,
+        PLATFORM_CLASS_ASIC_POWER,
+        PLATFORM_CLASS_PLATFORM_INFO,
+        PLATFORM_CLASS_ENVIRONMENT_SENSOR,
+        PLATFORM_CLASS_TRANSCEIVER_INFO,
+    ]
+
+    # --- Numeric ranges (per the CLI grammar) ---
+    SAMPLE_INTERVAL_MIN = 1
+    SAMPLE_INTERVAL_MAX = 86400
+    PLATFORM_SAMPLE_INTERVAL_MIN = 60
+    PLATFORM_SAMPLE_INTERVAL_MAX = 86400
+    PORT_MIN = 1
+    PORT_MAX = 65535
+
+    # --- Factory defaults (observed via `nv show system telemetry` on a fresh system) ---
+    class Defaults:
+        EXPORT_VRF = 'default'
+        OTLP_STATE = 'disabled'
+        GRPC_INSECURE = 'disabled'
+        GRPC_PORT = 4317
+        HTTP_INSECURE = 'disabled'
+        HTTP_PORT = 4318
+        HTTP_ENCODING = 'proto'
+
+        # Default `state` for export and class.phy nodes of interface-stats / peer-port-stats /
+        # ib-router-stats / platform-stats.export
+        STATS_STATE = 'disabled'
+
+        # Top-level sample-interval default for interface-stats / peer-port-stats / ib-router-stats
+        STATS_SAMPLE_INTERVAL = 1
+
+        # platform-stats has no top-level sample-interval; it lives under export
+        PLATFORM_EXPORT_SAMPLE_INTERVAL = 60
+
+        # platform-stats class categories (cpu, disk, memory, ...) default to enabled — this is the
+        # one exception to the "everything starts disabled" rule
+        PLATFORM_CLASS_STATE = 'enabled'
+
+
 class RebootConsts:
     WAIT_TIME_BEFORE_REBOOT = 120
     HALT = "halt"
@@ -1872,8 +2028,10 @@ class RebootConsts:
     KERNEL_PANIC = 'Kernel Panic'
     PSU_OFF = "psu-off"
     REBOOT_REASON_POWER_CYCLE = 'Power Cycle'
+    REBOOT_REASON_RESET_BIT = "System reset"
     REMOTE_REBOOT = "remote-reboot"
     INSTALL_FW = "install-fw"
+    RESET_BIT = "reset_bit"
 
     DEFAULT_MODES = [POWER_CYCLE, HALT, COLD, IMMEDIATE]
     REBOOT_USER_NA = "N/A"
@@ -1956,8 +2114,6 @@ class SyslogConsts:
     VRF = 'vrf'
     TCP = 'tcp'
     UDP = 'udp'
-    INCLUDE = 'include'
-    EXCLUDE = 'exclude'
     DEFAULT_VRF = 'default'
     DEFAULT_PORT = 514
     DEFAULT_PROGRAM = 'switchd'
@@ -1967,7 +2123,6 @@ class SyslogConsts:
     PROTOCOL = 'protocol'
     STANDARD = 'standard'
     WELF = 'welf'
-    DEFAULT_PORT = 514
     MODULE_LINE = "module(load=\"im{protocol}\")"
     PORT_LINE = "input(type=\"im{protocol}\" port=\"{port}\")"
     RSYSLOG_CONF_FILE = '/etc/rsyslog.conf'
@@ -2054,6 +2209,28 @@ class SyslogSeverityLevels:
                            CRITICAL: CRIT}
 
 
+class SdnCmdConsts:
+    HELP = 'help'
+    DOMAIN_STATE_INFO = 'DomainStateInfo'
+    TOPOLOGY_INFO = 'TopologyInfo'
+    SWITCH_NODE_INFO_LIST = 'SwitchNodeInfoList'
+    COMPUTE_NODE_INFO_LIST = 'ComputeNodeInfoList'
+    GPU_INFO_LIST = 'GpuInfoList'
+    SET_STATIC_CONFIG = 'SetStaticConfig'
+    STATIC_CONFIG = 'StaticConfig'
+    FACTORY_RESET = 'FactoryReset'
+    CREATE_PARTITION = 'CreatePartition'
+    DELETE_PARTITION = 'DeletePartition'
+    REMOVE_GPUS_FROM_PARTITION = 'RemoveGpusFromPartition'
+    ADD_GPUS_TO_PARTITION = 'AddGpusToPartition'
+    GET_COMMAND_LIST = [
+        HELP, DOMAIN_STATE_INFO, TOPOLOGY_INFO, SWITCH_NODE_INFO_LIST,
+        COMPUTE_NODE_INFO_LIST, GPU_INFO_LIST,
+    ]
+    SET_COMMAND_BASE_LIST = [SET_STATIC_CONFIG, FACTORY_RESET]
+    SET_COMMAND_NON_STANDALONE_LIST = [SET_STATIC_CONFIG, FACTORY_RESET, CREATE_PARTITION, REMOVE_GPUS_FROM_PARTITION]
+
+
 class HealthConsts:
     OK = "OK"
     NOT_OK = "Not OK"
@@ -2069,8 +2246,8 @@ class HealthConsts:
     ISSUE = "issue"
     ISSUES = "issues"
     ASIC_HEALTH_ISSUE = "ASIC-HEALTH"
-    SUMMARY_REGEX_OK = "INFO {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX[0], OK)
-    SUMMARY_REGEX_NOT_OK = "ERROR {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX[0], NOT_OK)
+    SUMMARY_REGEX_OK = f"INFO {NvosConst.DATE_TIME_REGEX[0]} : Summary: {OK}"
+    SUMMARY_REGEX_NOT_OK = f"ERROR {NvosConst.DATE_TIME_REGEX[0]} : Summary: {NOT_OK}"
     ADD_STATUS_TO_SUMMARY_REGEX = NvosConst.DATE_TIME_REGEX[0] + " : Summary:.*"
     HEALTH_ISSUE_REGEX = "ERROR {time_regex} : {component}: (?:is )?{issue}"
     HEALTH_FIX_REGEX = "INFO {time_regex} : Cleared: {component}: (?:is )?{issue}"
@@ -2116,6 +2293,124 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
+
+    # Operation labels used by save_duration / row-name lookups in expected_operation_durations.
+    IMAGE_INSTALL = 'image install'
+    IMAGE_UPGRADE = 'image upgrade'
+    IMAGE_DOWNGRADE = 'image downgrade'
+    IMAGE_INSTALL_OPERATION_ROW = 'image install (operation)'
+
+
+class StatsConsts:
+    class State(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    SLEEP_15_SECONDS = 15  # [sec]
+    SLEEP_20_SECONDS = 20  # [sec]
+    SLEEP_40_SECONDS = 40  # [sec]
+    SLEEP_1_MINUTE = 60  # [sec]
+    SLEEP_3_MINUTES = 180  # [sec]
+    SLEEP_5_MINUTES = 300  # [sec]
+    STATE = 'state'
+    STATE_DEFAULT = State.ENABLED.value
+    INTERVAL = 'interval'
+    INTERVAL_DEFAULT = '5'  # [min]
+    INTERVAL_MIN = '1'  # [min]
+    HISTORY_DURATION = 'history-duration'
+    HISTORY_DURATION_DEFAULT = '365'  # [days]
+    HISTORY_DURATION_MIN = '1'  # [days]
+    GENERATE_ALL_TIME_MAX = 2  # [sec]
+    CATEGORY_STATE_DISABLED = {STATE: State.DISABLED.value}
+    CATEGORY_MIN_DICT = {
+        STATE: STATE_DEFAULT,
+        INTERVAL: INTERVAL_MIN,
+        HISTORY_DURATION: HISTORY_DURATION_MIN
+    }
+    CATEGORY_MIN_DISABLED_DICT = {
+        STATE: State.DISABLED.value,
+        INTERVAL: INTERVAL_MIN,
+        HISTORY_DURATION: HISTORY_DURATION_MIN
+    }
+
+    LOG_MSG_UNSET_STATS = "PATCH /nvue_v1/system/stats"
+    LOG_MSG_SET_CATEGORY1 = "INFO stats-reportd: got config change "
+    LOG_MSG_SET_CATEGORY2 = ": {'enabled': 'true', 'history_duration': '365', 'interval': '1'}"
+    LOG_MSG_PATCH_CATEGORY = "PATCH /nvue_v1/system/stats/category/"
+
+    LOG_MSG_ERROR_DB = "..."  # TODO: Update message (parameter not found in redis DB)...
+
+    INVALID_CATEGORY_NAME = 'invalid_category_name'
+    ALL_CATEGORIES = 'all'
+    INVALID_STATE = 'invalid_state'
+    INVALID_INTERVAL_LOW = 0
+    INVALID_INTERVAL_HIGH = 1441
+    INVALID_HISTORY_DURATION_LOW = 0
+    INVALID_HISTORY_DURATION_HIGH = 366
+    INVALID_FILE_NAME = 'file_not_exists.csv'
+    INVALID_SHOW_CATEGORY = 'The requested item does not exist.'
+
+    TEMP_PATH = '/auto/rdmzsysgwork/shared/test_utilities/tmp/5b5931e6aac04bd39499372ef73fbf31'
+    INTERNAL_PATH = "/tmp"
+    OLD_SAMPLES_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/old_samples/"
+    BIG_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/big_file/"
+    HUGE_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/huge_file/"
+    NO_HEADER_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/no_header_file/"
+    MAX_SIZE_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/max_size/"
+    GENERATED_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/generated/"
+    RESULTS_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/stats/results/"
+    INTERNAL_CAT_PATH = "/var/stats"
+    TEMP_FOLDER = "/auto/sw_regression/system/NVOS/MARS/results/"
+    HEADER_HOSTNAME = "# Hostname:         "
+    HEADER_GROUP = "# Statistic group:  "
+    HEADER_TIME = "# Started sampling: "
+    TIMESTAMP_FORMAT = "%b-%d %Y %H:%M:%S"
+    SYSTEM_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+    MAX_ROWS_TO_SCAN = 300
+    CONST_HEADER_ROWS = 8
+    BIG_FILE_NUM_OF_LINES = 600026
+
+    TEMP_MIN = 15  # [Celsius]
+    TEMP_MAX = 90  # [Celsius]
+    MGMT_INT_MIN = 0  # [Bytes/sec]
+    MGMT_INT_MAX = 10000  # [Bytes/sec]
+    FAN_MIN = 0  # [%]
+    FAN_MAX = 100  # [%]
+    PWR_PSU_VOLT_MIN = 0  # [V] TODO: Update
+    PWR_PSU_VOLT_MAX = 300  # [V] TODO: Update
+    PWR_PSU_CUR_MIN = 0  # [A] TODO: Update
+    PWR_PSU_CUR_MAX = 100  # [A] TODO: Update
+    ASIC_PWR_WATT_MIN = 400  # [Watt]
+    ASIC_PWR_WATT_MAX = 600  # [Watt]
+    CPU_FREE_RAM_MIN = 30  # [%]
+    CPU_FREE_RAM_MAX = 100  # [%]
+    CPU_UTIL_MIN = 0  # [%]
+    CPU_UTIL_MAX = 60  # [%]
+    CPU_REBOOT_CNT_MIN = 0
+    CPU_REBOOT_CNT_MAX = 100
+    DISK_FREE_SPACE_MIN = 30  # [%]
+    DISK_FREE_SPACE_MAX = 99  # [%]
+    DISK_RMN_LIFE_MIN = 70  # [%]
+    DISK_RMN_LIFE_MAX = 100  # [%]
+    DISK_FAIL_CNT_MIN = 0
+    DISK_FAIL_CNT_MAX = 0
+    DISK_TOTAL_LBA_RW_MIN = 10000
+    DISK_TOTAL_LBA_RW_MAX = 4294967295
+    VOLTAGE_GENERAL_MIN = 0
+    VOLTAGE_GENERAL_MAX = 100
+    VOLTAGE_PSU_MIN = 0
+    VOLTAGE_PSU_MAX = 300
+
+    GENERATE = 'generate'
+    DELETE = 'delete'
+    UPLOAD = 'upload'
+    CLEAR = 'clear'
+
+    # Operation labels used by save_duration / row-name lookups in expected_operation_durations.
+    IMAGE_INSTALL = 'image install'
+    IMAGE_UPGRADE = 'image upgrade'
+    IMAGE_DOWNGRADE = 'image downgrade'
+    IMAGE_INSTALL_OPERATION_ROW = 'image install (operation)'
 
 
 class LinkDetectionConsts:
@@ -2214,7 +2509,21 @@ class FastRecoveryConsts:
 
 
 class LogComponentsConsts:
-    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "symmetry-manager", "syncd"]
+    NVUE = 'nvue'
+    SYMMETRY_MANAGER = 'symmetry-manager'
+    GPU_TELEMETRY = 'gpu_telemetry'
+    PEER_TELEMETRY = 'peer_telemetry'
+    COMPONENTS_LIST = [
+        NVUE,
+        "orchagent",
+        "portsyncd",
+        "sai_api_port",
+        "sai_api_switch",
+        SYMMETRY_MANAGER,
+        "syncd",
+        GPU_TELEMETRY,
+        PEER_TELEMETRY,
+    ]
     CRITICAL = "critical"
     DEBUG = "debug"
     ERROR = "error"
@@ -2226,7 +2535,6 @@ class LogComponentsConsts:
     LOG_LEVEL_LIST = [CRITICAL, DEBUG, ERROR, INFO, NOTICE, WARN]
     LOG_LEVEL_DEFAULT = NOTICE
     LEVEL = 'level'
-    NVUE = 'nvue'
     GPU_TELEMETRY = 'gpu_telemetry'
     NVUE_LOG = 'nvued.log'
     NVUE_CLI_LOG = 'nv-cli.log'
@@ -2585,7 +2893,7 @@ class SecureConfig:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(SecureConfig, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._load_config()
         return cls._instance
 
@@ -2596,7 +2904,7 @@ class SecureConfig:
         # This is a placeholder - implement your preferred secure storage method
         config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
         if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
+            with open(config_path) as f:
                 cls._config = json.load(f)
 
     @classmethod
@@ -2702,3 +3010,13 @@ class PeerPortConsts:
                                      ApiType.OPENAPI: {"under_limit": LOWER_INTERVAL_ERR_MSG,
                                                        "over_limit": HIGHER_INTERVAL_ERR_MSG}}
     ASSOCIATED_SWITCH_PORT = "associated-switch-port"
+
+
+class StoDebug:
+    ENABLED = 'enabled'
+    DISABLED = 'disabled'
+    STATE = 'state'
+    STO_EVENT_LOG = 'NVLink STO event'
+    CONTAIN_DRAIN_EVENT = 'Contain_and_drain'
+    DEBUG_STO_DUMP_FOLDER = '/var/log/mellanox/'
+    STO_DEBUG_DUMPS = 'sdk-wrn-dumps'

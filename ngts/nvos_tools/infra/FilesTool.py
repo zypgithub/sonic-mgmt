@@ -3,9 +3,9 @@ import logging
 import os
 from datetime import datetime
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 

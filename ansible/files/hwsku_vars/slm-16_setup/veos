@@ -1,0 +1,148 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_20:
+    eos:
+      children:
+        vms_20:
+
+    servers:
+      vars:
+        topologies:
+          - t1-isolated-d28u1
+          - t1-isolated-d28u4
+          - ptp-130
+
+      children:
+        server_20:
+
+vm_host_20:
+  hosts:
+    FIT-SONIC-VRT-MEC-184:
+      ansible_host: fit-sonic-vrt-mec-184
+
+vms_20:
+  hosts:
+    VM2001:
+      ansible_host: 10.220.184.169
+    VM2002:
+      ansible_host: 10.220.184.170
+    VM2003:
+      ansible_host: 10.220.184.171
+    VM2004:
+      ansible_host: 10.220.184.172
+    VM2005:
+      ansible_host: 10.220.184.173
+    VM2006:
+      ansible_host: 10.220.184.174
+    VM2007:
+      ansible_host: 10.220.184.175
+    VM2008:
+      ansible_host: 10.220.184.176
+    VM2009:
+      ansible_host: 10.220.184.177
+    VM2010:
+      ansible_host: 10.220.184.178
+    VM2011:
+      ansible_host: 10.220.184.179
+    VM2012:
+      ansible_host: 10.220.184.180
+    VM2013:
+      ansible_host: 10.220.184.181
+    VM2014:
+      ansible_host: 10.220.184.182
+    VM2015:
+      ansible_host: 10.220.184.183
+    VM2016:
+      ansible_host: 10.220.184.184
+    VM2017:
+      ansible_host: 10.220.184.185
+    VM2018:
+      ansible_host: 10.220.184.186
+    VM2019:
+      ansible_host: 10.220.184.187
+    VM2020:
+      ansible_host: 10.220.184.188
+    VM2021:
+      ansible_host: 10.220.184.189
+    VM2022:
+      ansible_host: 10.220.184.190
+    VM2023:
+      ansible_host: 10.220.184.191
+    VM2024:
+      ansible_host: 10.220.184.192
+    VM2025:
+      ansible_host: 10.220.184.193
+    VM2026:
+      ansible_host: 10.220.184.194
+    VM2027:
+      ansible_host: 10.220.184.195
+    VM2028:
+      ansible_host: 10.220.184.196
+    VM2029:
+      ansible_host: 10.220.184.197
+    VM2030:
+      ansible_host: 10.220.184.198
+    VM2031:
+      ansible_host: 10.220.184.199
+    VM2032:
+      ansible_host: 10.220.184.200
+    VM2033:
+      ansible_host: 10.220.184.201
+    VM2034:
+      ansible_host: 10.220.184.202
+    VM2035:
+      ansible_host: 10.220.184.203
+    VM2036:
+      ansible_host: 10.220.184.204
+    VM2037:
+      ansible_host: 10.220.184.205
+    VM2038:
+      ansible_host: 10.220.184.206
+    VM2039:
+      ansible_host: 10.220.184.207
+    VM2040:
+      ansible_host: 10.220.184.208
+    VM2041:
+      ansible_host: 10.220.184.209
+    VM2042:
+      ansible_host: 10.220.184.210
+    VM2043:
+      ansible_host: 10.220.184.211
+    VM2044:
+      ansible_host: 10.220.184.212
+    VM2045:
+      ansible_host: 10.220.184.213
+    VM2046:
+      ansible_host: 10.220.184.214
+    VM2047:
+      ansible_host: 10.220.184.215
+    VM2048:
+      ansible_host: 10.220.184.216
+    VM2049:
+      ansible_host: 10.220.184.217
+    VM2050:
+      ansible_host: 10.220.184.218
+    VM2051:
+      ansible_host: 10.220.184.219
+    VM2052:
+      ansible_host: 10.220.184.220
+    VM2053:
+      ansible_host: 10.220.184.221
+    VM2054:
+      ansible_host: 10.220.184.222
+    VM2055:
+      ansible_host: 10.220.184.223
+    VM2056:
+      ansible_host: 10.220.184.224
+    VM2057:
+      ansible_host: 10.220.184.225
+
+server_20:
+  children:
+    vm_host_20:
+    vms_20:
+  vars:
+    host_var_file: host_vars/FIT-SONIC-VRT-MEC-184.yml
+

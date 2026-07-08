@@ -10,7 +10,7 @@ from ngts.constants.constants import PlayersAliases
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.BiosTools.BiosFactory import BiosFactory
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()
@@ -126,6 +126,11 @@ class OnieTool:
         version = ProvisionConsts.VERSIONS_DICT[dev_type]['version']
         logger.info(f"Selected provisioning version: {version}")
         return ProvisionConsts.VERSIONS_DICT[dev_type]['provisioning_url']
+        if OnieTool.is_opn(topology_obj):
+            dev_type = OnieTool.get_device_type(topology_obj)
+            version = ProvisionConsts.VERSIONS_DICT[dev_type]['version']
+            logger.info(f"Selected provisioning version: {version}")
+            return ProvisionConsts.VERSIONS_DICT[dev_type]['provisioning_url']
 
     @staticmethod
     def run_provisioning(serial_engine, filename):

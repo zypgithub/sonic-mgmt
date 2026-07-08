@@ -3,7 +3,7 @@ import pytest
 import random
 
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.adaptive_routing_helper import ArHelper, ArPerfHelper
 from retry.api import retry_call

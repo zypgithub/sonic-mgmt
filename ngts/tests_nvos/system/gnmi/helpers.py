@@ -11,8 +11,8 @@ from typing import Optional, Tuple, List
 
 from retry import retry
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.linux_tools.linux_tools import scp_file
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, DatabaseConst, SystemConsts, TestFlowType
@@ -30,12 +30,12 @@ from ngts.tests_nvos.general.security.mtls.generic_testing.constants import CA_C
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.helpers.general_helpers import run_cmd
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient, GnmicCmdBuilder
-from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmicErr, GnmiServerStatus
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmiServerStatus, GnmicErr
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
 from ngts.tests_nvos.system.gnmi.constants import (
-    CAPABILITIES_FLOOD_THREAD_JOIN_TIMEOUT_SEC,
-    PER_REQUEST_TIMEOUT_SEC, RECONNECT_CAPABILITIES_MAX_ATTEMPTS,
+    FLOOD_COLLECT_GRACE_SEC, FLOOD_PROCESS_INIT_DELAY_SEC,
+    PER_REQUEST_TIMEOUT_SEC, RECONNECT_CAPABILITIES_MAX_WAIT_SEC,
     RECONNECT_CAPABILITIES_RETRY_INTERVAL_SEC, SAMPLE_ERROR_MAX_LEN)
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -159,11 +159,27 @@ def validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines
 
 @retry(Exception, tries=6, delay=2)
 def validate_gnmi_server_docker_state(engines, should_run=True):
+    """Assert the nv-gnmi container is running or stopped (docker ps only)."""
     cmd_output = engines.dut.run_cmd('docker ps |grep {}'.format(GnmiConsts.GNMI_DOCKER))
     should_run_str = '' if should_run else 'not'
     is_running_str = '' if cmd_output else 'not'
     assert bool(cmd_output) == should_run, f"The gnmi-server docker is {is_running_str} running, " \
         f"but we expect it {should_run_str} to run"
+
+
+@retry(AssertionError, tries=5, delay=2)
+def wait_for_gnmi_ready(engines, socket_path=GnmiConsts.GNMI_SOCKET_PATH):
+    """
+    Wait until the gNMI agent is ready after container start or node restart.
+
+    Envoy may be up while the gNMI agent is still initializing; require the container
+    (validate_gnmi_server_docker_state), the agent socket, then a short stabilization period.
+    """
+    validate_gnmi_server_docker_state(engines, should_run=True)
+    socket_check = engines.dut.run_cmd(f"test -S {socket_path} && echo ok")
+    assert "ok" in socket_check, f"gNMI socket {socket_path} does not exist"
+    logger.info(f"gNMI container and socket ready; waiting {GnmiConsts.GNMI_READY_STABILIZATION_SEC}s to be sure gnmi is up fully")
+    time.sleep(GnmiConsts.GNMI_READY_STABILIZATION_SEC)
 
 
 def validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_ENABLED):
@@ -605,6 +621,25 @@ def parse_gnmi_status(output):
     return d
 
 
+def get_gnmi_status_clients(status_dict):
+    """
+    Return a list of per-client status dicts from parsed gnmi-server status output.
+
+    The ``client`` field may be absent, a list, or a dict keyed by client id (as returned
+    by ``nv show system gnmi-server status`` when multiple clients are connected).
+    """
+    clients = status_dict.get(GnmiServerStatus.CLIENT)
+    if clients is None:
+        return []
+    if isinstance(clients, dict):
+        if not clients:
+            return []
+        return list(clients.values())
+    if isinstance(clients, list):
+        return clients
+    return [clients]
+
+
 def verify_gnmi_client(test_flow, server_host, server_port, username, password, skip_cert_verify: bool,
                        err_msg_to_check: str, port_to_change=None, cacert='', new_port_description_to_check=None,
                        client_cmd_time=None, debug_mode: bool = True):
@@ -875,14 +910,53 @@ def parse_gnmi_output(gnmi_out):
         raise e
 
 
+def get_gnmic_engine(engines):
+    """
+    Engine on which gnmic should run for the rate-limit / load tests.
+
+    Returns the sonic-mgmt engine when the topology defines it, so gnmic requests are generated
+    from the sonic-mgmt host instead of the local test player. Falls back to None (local player)
+    when no sonic-mgmt engine is available, so tests still run in topologies without one.
+    """
+    return getattr(engines, 'sonic_mgmt', None)
+
+
 def is_gnmi_failure(err):
-    """True if stderr indicates a failed gNMI request (e.g. rate limit, rpc error)."""
-    return err and any(m in err for m in GnmicErr.ALL_ERRS)
+    """True if the given text indicates a failed gNMI request (e.g. rate limit, rpc error)."""
+    return bool(err) and any(m in err for m in GnmicErr.ALL_ERRS)
 
 
 def is_gnmi_rate_limit_error(err):
-    """True if stderr indicates a rate-limit (local_rate_limited) error."""
-    return err and GnmicErr.LOCAL_RATE_LIMITED in err
+    """True if the given text indicates a rate-limit (local_rate_limited) error."""
+    return bool(err) and GnmicErr.LOCAL_RATE_LIMITED in err
+
+
+def is_gnmi_overload_error(err):
+    """
+    True if the given text indicates an expected overload/back-pressure error (rate limit, deadline
+    exceeded, ...). These are transient while the server is under load and should be retried,
+    not treated as hard failures. Backed by GnmicErr.OVERLOAD_ERRS, so newly recognized overload
+    symptoms are picked up automatically without touching this function.
+    """
+    return bool(err) and any(marker in err for marker in GnmicErr.OVERLOAD_ERRS)
+
+
+# gnmic normally writes failures to stderr, but some builds/paths surface the failure line on
+# stdout. The pair-aware helpers below scan both streams so single-call classification matches the
+# flood loop (which inspects merged 2>&1 output) and never miscounts a failed response as success.
+def gnmi_response_failed(out, err):
+    """True if either stdout or stderr shows a failed gNMI request."""
+    return is_gnmi_failure(err) or is_gnmi_failure(out)
+
+
+def gnmi_response_rate_limited(out, err):
+    """True if either stdout or stderr shows a local_rate_limited error."""
+    return is_gnmi_rate_limit_error(err) or is_gnmi_rate_limit_error(out)
+
+
+def gnmi_response_overloaded(out, err):
+    """True if either stdout or stderr shows an expected overload error (rate limit / deadline)."""
+    return is_gnmi_overload_error(err) or is_gnmi_overload_error(out)
 
 
 def attach_rate_limit_result(
@@ -913,67 +987,101 @@ def attach_plain_summary(body: str, title: str):
     allure.attach(title, body, allure.orig_allure.attachment_type.TEXT)
 
 
-def output_shows_rate_limit_or_grpc_failure(out: str, err: str) -> bool:
-    for chunk in (err or "", out or ""):
-        if is_gnmi_failure(chunk):
-            return True
-    return False
-
-
 def capabilities_until_success_after_restart(client, step_label: str):
     """
-    After gNMI comes back, attackers may have saturated Envoy; retry capabilities when the only
-    failure is local_rate_limited so the check validates reachability, not global fairness.
+    After gNMI comes back, attackers may have saturated it; retry capabilities while the only
+    failure is an expected overload error (rate limit, deadline exceeded, ...) so the check
+    validates reachability, not transient back-pressure. Any other failure is treated as real and
+    fails immediately.
+
+    Keeps retrying for up to RECONNECT_CAPABILITIES_MAX_WAIT_SEC (the per-minute rate-limit window),
+    since the limiter can take up to a full minute for the overload errors to disappear once load
+    drops.
     """
-    with allure.step(f"{step_label}: Capabilities until success (gnmic retries)"):
+    with allure.step(
+        f"{step_label}: Capabilities until success "
+        f"(gnmic retries up to {RECONNECT_CAPABILITIES_MAX_WAIT_SEC}s)"
+    ):
         last_err = ""
-        for attempt in range(1, RECONNECT_CAPABILITIES_MAX_ATTEMPTS + 1):
-            _, err = client.gnmic_capabilities(skip_cert_verify=True, cmd_time=PER_REQUEST_TIMEOUT_SEC)
-            if not is_gnmi_failure(err):
+        attempt = 0
+        deadline = time.time() + RECONNECT_CAPABILITIES_MAX_WAIT_SEC
+        while True:
+            attempt += 1
+            out, err = client.gnmic_capabilities(skip_cert_verify=True, cmd_time=PER_REQUEST_TIMEOUT_SEC)
+            if not gnmi_response_failed(out, err):
                 if attempt > 1:
                     attach_plain_summary(
                         f"{step_label}: succeeded on attempt {attempt} after prior errors.",
                         "Reconnect capabilities retries",
                     )
                 return
-            last_err = err or ""
-            if is_gnmi_rate_limit_error(err):
+            last_err = err if is_gnmi_failure(err) else (out or err or "")
+            # Keep waiting only for expected overload errors to clear, and only until the deadline;
+            # any other failure (or a timeout of the wait window) is treated as a real failure.
+            if gnmi_response_overloaded(out, err) and time.time() < deadline:
                 time.sleep(RECONNECT_CAPABILITIES_RETRY_INTERVAL_SEC)
                 continue
             break
         assert not is_gnmi_failure(last_err), f"Reconnect capabilities failed: {last_err}"
 
 
-def stream_subscribe_for_duration(
-    client, prefix, path, duration_sec, flat=True, extra_subscribe_flags=""
-):
+def build_capabilities_flood_loop_cmd(gnmic_cmd, duration_sec, per_request_timeout_sec):
     """
-    STREAM subscribe for a fixed duration. Optional ``extra_subscribe_flags`` (e.g.
-    ``--stream-mode on-change``) are appended after ``--target nvos``, matching gnmic
-    subscribe layout without extending ``GnmiClient.gnmic_subscribe``.
+    Build a POSIX-sh one-liner that runs ``gnmic_cmd`` in a tight loop until ``duration_sec``
+    elapses, classifies each response, and prints aggregate counts. This pushes the request loop
+    onto the engine (run as a single background process), matching how devts background validations
+    generate load remotely instead of driving each request synchronously from the player.
+
+    Output (on stdout) ends with two parseable lines::
+
+        FLOOD_RESULT s=<success> f=<fail> rl=<rate_limit_fail> ov=<overload_fail>
+        FLOOD_SAMPLE <first error sample, newlines flattened>
+
+    A trap emits the counts even if the process is stopped (SIGINT/SIGTERM) before the deadline,
+    so collection via either wait_process or stop_and_wait_process recovers the totals.
     """
-    flat_option = " --format flat" if flat else ""
-    extras = (
-        f" {extra_subscribe_flags.strip()}"
-        if extra_subscribe_flags and extra_subscribe_flags.strip()
-        else ""
+    # All error markers come from the shared GnmicErr constants, so the remote classification stays
+    # in sync with is_gnmi_failure / is_gnmi_rate_limit_error / is_gnmi_overload_error. The markers
+    # are passed to grep -E, so they must remain ERE-safe (no special regex characters); they
+    # currently are - add new markers with that constraint in mind.
+    err_re = "|".join(GnmicErr.ALL_ERRS)
+    overload_re = "|".join(GnmicErr.OVERLOAD_ERRS)
+    rate_limit_marker = GnmicErr.LOCAL_RATE_LIMITED
+    return (
+        "s=0; f=0; rl=0; ov=0; sample=''; "
+        "emit() { echo \"FLOOD_RESULT s=$s f=$f rl=$rl ov=$ov\"; echo \"FLOOD_SAMPLE $sample\"; }; "
+        "trap 'emit; exit 0' INT TERM; "
+        f"end=$(( $(date +%s) + {int(duration_sec)} )); "
+        "while [ \"$(date +%s)\" -lt \"$end\" ]; do "
+        f"o=$(timeout {int(per_request_timeout_sec)} {gnmic_cmd} 2>&1); "
+        f"if printf '%s' \"$o\" | grep -qE '{err_re}'; then "
+        "f=$((f+1)); "
+        f"if printf '%s' \"$o\" | grep -q '{rate_limit_marker}'; then rl=$((rl+1)); fi; "
+        f"if printf '%s' \"$o\" | grep -qE '{overload_re}'; then ov=$((ov+1)); fi; "
+        "if [ -z \"$sample\" ]; then sample=$(printf '%s' \"$o\" | head -c 2000 | tr '\\n' ' '); fi; "
+        "else s=$((s+1)); fi; "
+        "done; emit"
     )
-    subscribe_op = (
-        f"subscribe --prefix '{prefix}' --path '{path}' --target nvos{extras}" + flat_option
-    )
-    _, _, _, proc = client._run_gnmic_op(
-        subscribe_op,
-        skip_cert_verify=True,
-        cacert="",
-        debug_mode=True,
-        cmd_time=None,
-        username="",
-        password="",
-        keep_session_alive=True,
-        wait_till_done=False,
-    )
-    time.sleep(duration_sec)
-    return client.close_session_and_get_out_and_err(proc, delay=0)
+
+
+def parse_capabilities_flood_output(out):
+    """Parse the FLOOD_RESULT / FLOOD_SAMPLE lines emitted by build_capabilities_flood_loop_cmd.
+
+    Returns ``(success, fail, rate_limit_fail, overload_fail, sample_error)``. The last FLOOD_RESULT
+    line wins.
+    """
+    success, fail, rate_limit_fail, overload_fail, sample = 0, 0, 0, 0, ""
+    for line in (out or "").splitlines():
+        line = line.strip()
+        if line.startswith("FLOOD_RESULT"):
+            m = re.search(r"s=(\d+)\s+f=(\d+)\s+rl=(\d+)\s+ov=(\d+)", line)
+            if m:
+                success, fail, rate_limit_fail, overload_fail = (
+                    int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+                )
+        elif line.startswith("FLOOD_SAMPLE"):
+            sample = line[len("FLOOD_SAMPLE"):].strip()
+    return success, fail, rate_limit_fail, overload_fail, sample
 
 
 def run_parallel_capabilities_flood(
@@ -984,57 +1092,60 @@ def run_parallel_capabilities_flood(
     duration_sec,
     num_clients,
     cmd_timeout_sec,
+    engine=None,
 ):
     """
-    ``num_clients`` threads each run Capabilities in a tight loop for ``duration_sec``.
+    Run ``num_clients`` Capabilities-flood loops concurrently for ``duration_sec``.
+
+    Follows the devts background-validation model: each client is a single background process that
+    loops gnmic on the target host (the sonic-mgmt ``engine`` when given, else the local player).
+    Processes are started non-blocking (staggered), left to run for ``duration_sec``, then collected
+    and parsed for per-client counts. Running the loop on the engine itself gives true concurrency
+    on a single engine without per-request round-trips from the player.
 
     Returns ``(results, elapsed_sec, first_error)`` where ``results[i]`` is
-    ``(success, fail, rate_limit_fail)`` and ``first_error`` may contain key ``"err"``.
+    ``(success, fail, rate_limit_fail, overload_fail)`` and ``first_error`` may contain key ``"err"``.
     """
-    results = [None] * num_clients
-    lock = threading.Lock()
-    first_error = {}
-
-    def _run_loop(thread_id):
-        client = GnmiClient(
-            dut.ip,
-            GnmiConsts.GNMI_DEFAULT_PORT,
-            username,
-            password,
-            cmd_time=cmd_timeout_sec,
-        )
-        success, fail, rate_limit_fail = 0, 0, 0
-        end_time = time.time() + duration_sec
-        while time.time() < end_time:
-            _, err = client.gnmic_capabilities(skip_cert_verify=True, cmd_time=cmd_timeout_sec)
-            if is_gnmi_failure(err):
-                fail += 1
-                if is_gnmi_rate_limit_error(err):
-                    rate_limit_fail += 1
-                with lock:
-                    if "err" not in first_error:
-                        first_error["err"] = (err or "").strip()[:SAMPLE_ERROR_MAX_LEN]
-            else:
-                success += 1
-        results[thread_id] = (success, fail, rate_limit_fail)
+    # A separate GnmiClient per process gives each its own runner/connection. The gnmic command is
+    # composed once from the first client (same composition a single GnmiClient call uses) and then
+    # wrapped in the remote loop, so no throwaway client/connection is created just to build it.
+    target_desc = f"engine {engine.ip}" if engine is not None else "local player"
+    clients, procs = [], []
+    loop_cmd = None
+    with allure.step(f"Start {num_clients} background capabilities-flood loops on {target_desc}"):
+        for _ in range(num_clients):
+            client = GnmiClient(
+                dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, username, password,
+                cmd_time=cmd_timeout_sec, engine=engine,
+            )
+            if loop_cmd is None:
+                gnmic_cmd = client.compose_gnmic_cmd("capabilities", skip_cert_verify=True)
+                loop_cmd = build_capabilities_flood_loop_cmd(gnmic_cmd, duration_sec, cmd_timeout_sec)
+            _, _, proc = client.cmd_runner.run_cmd_in_process(loop_cmd, keep_process_alive=True)
+            clients.append(client)
+            procs.append(proc)
+            time.sleep(FLOOD_PROCESS_INIT_DELAY_SEC)
 
     start_time = time.time()
-    # daemon=True so a stuck gnmic subprocess cannot keep the suite alive after this
-    # function returns; the bounded join + alive-check assert below is the primary path.
-    threads = [
-        threading.Thread(target=_run_loop, args=(i,), daemon=True, name=f"cap-flood-{i}")
-        for i in range(num_clients)
-    ]
-    for t in threads:
-        t.start()
-    still_alive = shutdown_threads(threads, CAPABILITIES_FLOOD_THREAD_JOIN_TIMEOUT_SEC)
-    assert not still_alive, (
-        f"run_parallel_capabilities_flood: {len(still_alive)} worker(s) still alive "
-        f"after {CAPABILITIES_FLOOD_THREAD_JOIN_TIMEOUT_SEC}s join (deadline was "
-        f"{duration_sec}s, per-request cap {cmd_timeout_sec}s). Stuck thread name(s): "
-        f"{[t.name for t in still_alive]}"
-    )
-    return results, time.time() - start_time, first_error
+    with allure.step(f"Let flood run for {duration_sec}s"):
+        time.sleep(duration_sec)
+    # NOTE: elapsed_sec is the player-side wait window, not the exact remote loop runtime; staggered
+    # starts mean loops run marginally longer, so any RPM derived from it is biased slightly high.
+    elapsed_sec = time.time() - start_time
+
+    results = [None] * num_clients
+    first_error = {}
+    # Loops self-terminate at their own deadline; allow one extra per-request timeout (plus grace)
+    # for the final in-flight gnmic call to finish and the counts to be printed before forcing stop.
+    collect_timeout = cmd_timeout_sec + FLOOD_COLLECT_GRACE_SEC
+    with allure.step("Collect and parse flood results"):
+        for i, (client, proc) in enumerate(zip(clients, procs)):
+            out, _ = client.cmd_runner.wait_cmd_process(proc, collect_timeout)
+            success, fail, rate_limit_fail, overload_fail, sample = parse_capabilities_flood_output(out)
+            results[i] = (success, fail, rate_limit_fail, overload_fail)
+            if sample and "err" not in first_error:
+                first_error["err"] = sample[:SAMPLE_ERROR_MAX_LEN]
+    return results, elapsed_sec, first_error
 
 
 def shutdown_threads(thread_list, first_timeout_sec, second_timeout_sec=5):

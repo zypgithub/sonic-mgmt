@@ -8,9 +8,10 @@ from paramiko.ssh_exception import SSHException
 import allure as raw_allure
 import pytest
 from abc import ABC, abstractmethod
+from datetime import timedelta
 
 from tests.common.helpers.parallel import parallel_run
-from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
+from devts.infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes, REGRESSION_TYPE_ENV_VAR, RegressionType
 from ngts.nvos_constants.constants_nvos import SystemConsts
@@ -26,7 +27,16 @@ PI_LINK = "https://app.powerbi.com/groups/9b79a1d8-7408-4848-90c5-9dd5dab8493d/r
 # inject dut hostname into log file name to avoid collision
 LOG_ANALYZER_LOG_FILE = '/tmp/loganalyzer-[{0}].log'
 KEY_IS_TEST_FUNCTION_FAILED = "is_test_function_failed"
-PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST = ["smart-switch-master", "master_rc", "master_rc_chamelleon", "master_spc6", "master_spc6_es", "master_rc_integration", "master_rc_trixie", "multi-asic"]
+PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST = ["smart-switch-master",
+                                               "master_rc",
+                                               "master_rc_chamelleon",
+                                               "master_spc6",
+                                               "master_spc6_es",
+                                               "master_rc_integration",
+                                               "master_rc_trixie",
+                                               "multi-asic",
+                                               "master_rc_chameleon6",
+                                               "master_ha_nv"]
 
 class BugHandler(ABC):
     @abstractmethod
@@ -113,6 +123,7 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                                   "session_id": session_id,
                                   "test_name": test_name}
 
+            list_of_bugs_ids = []
             for log_errors_file_path in log_errors_dir_path.iterdir():
                 with log_errors_file_path.open("r") as log_errors_file:
                     data = json.load(log_errors_file)
@@ -129,33 +140,38 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                     logger.info(f"[AFTER] Number of errors in each group: {[len(group) for group in error_groups]}")
                 log_errors_file_path.unlink()
 
-                for error_group in error_groups:
-                    yaml_file_path = create_log_analyzer_yaml_file(error_group, session_tmp_folder, redmine_project,
-                                                                   test_name, hostname,
-                                                                   log_analyzer_bug_metadata, bug_handler_params,
-                                                                   bug_handler_dumps_results, is_serial_log)
-                    logger.info(f"yaml_file_path: {yaml_file_path}")
-                    logger.info(f"{yaml_file_path} exists?: {os.path.exists(yaml_file_path)}")
-                    if yaml_file_path:
-                        with allure.step("Run Bug Handler on Log Analyzer error"):
-                            logger.info(f"Run Bug Handler on Log Analyzer error: {error_group}")
-                            error_dict = {BugHandlerConst.LA_ERROR: error_group}
-                            error_dict.update(
-                                bug_handler_wrapper_err_msg(
-                                    conf_path,
-                                    redmine_project,
-                                    branch,
-                                    yaml_file_path,
-                                    BugHandlerConst.BUG_HANDLER_LOG_ANALYZER_USER,
-                                    BugHandlerConst.BUG_HANDLER_SCRIPT.get(redmine_project, BugHandlerConst.BUG_HANDLER_SCRIPT["default"]),
-                                    bug_handler_action,
-                                    bug_handler_params
+                for trace_number, error_group in enumerate(error_groups, 1):
+                    with allure.step(f"Handling trace number {trace_number} of {len(error_groups)}"):
+                        yaml_file_path = create_log_analyzer_yaml_file(error_group, session_tmp_folder, redmine_project,
+                                                                    test_name, hostname,
+                                                                    log_analyzer_bug_metadata, bug_handler_params,
+                                                                    bug_handler_dumps_results, is_serial_log)
+                        logger.info(f"yaml_file_path: {yaml_file_path}")
+                        logger.info(f"{yaml_file_path} exists?: {os.path.exists(yaml_file_path)}")
+                        if yaml_file_path:
+                            with allure.step("Run Bug Handler on Log Analyzer error"):
+                                start_time = time.perf_counter()
+                                # logger.info(f"Run Bug Handler on Log Analyzer error: {error_group}")
+                                error_dict = {BugHandlerConst.LA_ERROR: error_group}
+                                error_dict.update(
+                                    bug_handler_wrapper_err_msg(
+                                        conf_path,
+                                        redmine_project,
+                                        branch,
+                                        yaml_file_path,
+                                        BugHandlerConst.BUG_HANDLER_LOG_ANALYZER_USER,
+                                        BugHandlerConst.BUG_HANDLER_SCRIPT.get(redmine_project, BugHandlerConst.BUG_HANDLER_SCRIPT["default"]),
+                                        bug_handler_action,
+                                        bug_handler_params
+                                    )
                                 )
-                            )
-                            bug_handler_dumps_results.append(error_dict)
+                                bug_handler_dumps_results.append(error_dict)
+                                list_of_bugs_ids.append(error_dict.get(BugHandlerConst.BUG_HANDLER_BUG_ID, ''))
+                                logger.info(f"Bug handler took {timedelta(seconds=time.perf_counter() - start_time)} seconds for trace number {trace_number}")
         except Exception as err:
             logger.error("Bug handler failed")
             raise err
+        logger.info(f"List of bugs ids: {list_of_bugs_ids}")
         return summarize_la_bug_handler(bug_handler_dumps_results, bug_handler_action), la_errors
 
 
@@ -205,7 +221,7 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None,
     # Use passed logger or fall back to module logger
     if logger is None:
         logger = logging.getLogger()
-    
+
     test_name = re.sub(r'[\\/\'"<>|]', '_', request.node.name)
     la_rm_issues = request.session.config.cache.get(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
     test_id = request.node.nodeid
@@ -512,29 +528,29 @@ def get_nvue_additional_info(duthost, request):
         # Populate nvue_info
         nvue_info['show_system'] = command_results.get("nv show system reboot history", {}).get('stdout', '')
         nvue_info['show_platform_firmware'] = command_results.get("nv show platform firmware", {}).get('stdout', '')
-        
+
         # Read executed commands from local file that was copied by list_of_executed_commands fixture
         try:
             from pathlib import Path
-            
+
             # Use predictable local path
             local_commands_dir = Path("/tmp/executed_commands")
-            
+
             # Try the fixed filename first
             local_file_path = local_commands_dir / "executed_commands.txt"
-            
+
             # If fixed filename doesn't exist, try hostname-based filename
             if not local_file_path.exists() and hasattr(duthost, 'hostname'):
                 hostname_based_path = local_commands_dir / f"executed_commands_{duthost.hostname}.txt"
                 if hostname_based_path.exists():
                     local_file_path = hostname_based_path
-            
+
             if local_file_path.exists():
                 commands_content = local_file_path.read_text().strip()
                 nvue_info['executed_commands'] = commands_content
             else:
                 nvue_info['executed_commands'] = f"Error: Local commands file not found at {local_file_path}"
-            
+
         except Exception as file_error:
             nvue_info['executed_commands'] = f"Error: Unable to read executed commands from local file - {str(file_error)}"
 
@@ -590,7 +606,7 @@ def bug_handler_wrapper(analyzers, duthosts, la_results):
         original_handlers = logging.getLogger().handlers[:]
         original_level = logging.getLogger().level
         logging.getLogger().handlers = []
-        bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=720)
+        bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=1080)
         # restore original logging handlers and level
         logging.getLogger().handlers = original_handlers
         logging.getLogger().setLevel(original_level)

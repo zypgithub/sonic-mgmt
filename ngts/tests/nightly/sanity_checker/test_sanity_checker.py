@@ -21,7 +21,7 @@ from tests.common.helpers.firmware_helper import (
 
 pytestmark = [
     pytest.mark.disable_loganalyzer,
-    pytest.mark.skip_config_check
+    pytest.mark.not_fail_config_check
 ]
 
 logger = logging.getLogger()
@@ -84,6 +84,12 @@ def platform_json_data(topology_obj):
 
 
 @pytest.fixture(scope='function')
+def skip_for_liquid_cooling_platform(platform_params):
+    if '_ld' in platform_params.platform:
+        pytest.skip("Skip the testcases on liquid cooling platforms")
+
+
+@pytest.fixture(scope='function')
 def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
     """
     Pytest fixture which is enabling lldp on fanout and disable it when teardown
@@ -120,6 +126,12 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
         logger.info(f"disable lldp on {engine.ip}")
         cmd_disable_lldp = "sudo config feature state lldp disabled" if engine.device_type == "linux" else "no lldp"
         engine.run_cmd(cmd_disable_lldp)
+        if engine.device_type == "linux":
+            # When disable lldp, we need to stop and remove the lldp container
+            # because if lldp container is not removed, run 'docker container stop lldp' still return success
+            # so it might affect the later case such as qos sai case
+            engine.run_cmd("docker container stop lldp")
+            engine.run_cmd("docker container rm lldp")
 
     fanout_skipped = should_skip_fanout(topology_obj, engines.fanout)
     fanout_b_skipped = False
@@ -285,13 +297,17 @@ def test_bgp_session_status_check(topology_obj):
 
 @pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_canonical
-def test_cable_connection_for_canonical_check(topology_obj, sonic_topo):
+def test_cable_connection_for_canonical_check(topology_obj, sonic_topo, platform_params):
     """
     This test is verify that the cable connection for canonical setup is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
     if sonic_topo != "ptf-any":
         pytest.skip(f"The topo {sonic_topo} does not support the case ")
+    # TODO workaround due to service port issue on sn6600 platform
+    from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+    if 'sn6600' in platform_params.platform and is_redmine_issue_active([5093036])[0]:
+        pytest.skip("Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5093036 on sn6600 platform")
     dut_cli_object = topology_obj.players['dut']['cli']
     lldp_table_info = dut_cli_object.lldp.parse_lldp_table_info()
 
@@ -320,7 +336,7 @@ def test_cable_connection_for_canonical_check(topology_obj, sonic_topo):
 @pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_fan_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow):
+def test_fan_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow, skip_for_liquid_cooling_platform):
     """
     This test is verify that the fan status is ok.
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
@@ -352,7 +368,7 @@ def test_fan_status_check(platform_params, topology_obj, platform_json_data, req
 @pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_more_then_2_fan_status_wrong_check(topology_obj):
+def test_more_then_2_fan_status_wrong_check(topology_obj, skip_for_liquid_cooling_platform):
     """
     This test is verify more than 2 fan status are not ok
     If case fail, the consequent regression steps will be stopped by mars
@@ -371,7 +387,7 @@ def test_more_then_2_fan_status_wrong_check(topology_obj):
 @pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_psu_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow):
+def test_psu_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow, skip_for_liquid_cooling_platform):
     """
     This test is verify the psu status is ok or not
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
@@ -787,7 +803,7 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
     :param fw_pkg: firmware package data fixture
     """
     # TODO: WA for RM#4895801 when the test is running in BAT with darkmode
-    from infra.tools.redmine.redmine_api import is_redmine_issue_active
+    from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
     if is_in_deploy_image_flow and is_redmine_issue_active([4895801])[0]:
         if not request.config.getoption("--base-version-dpu"):
             pytest.skip("Skipping test for RM#4895801 while there is no DPU image available.")
@@ -863,6 +879,9 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
                     assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
                     is_test_failed = True
 
+        if component == 'FW' and is_simx:
+            logger.info(f"Skip actual version check for FW on simx platform")
+            continue
         # Check actual version matches fetched version
         with allure.step(f"Validate {component} actual version matches fetched"):
             if actual_version != actual_versions[component]:
@@ -876,9 +895,6 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
         # Check that actual version matches compilation version (for components in README)
         # This ensures deployed components match what was compiled into the image
         with allure.step(f"Validate {component} actual matches compilation"):
-            if component == 'FW' and is_simx:
-                logger.info(f"Skip FW version check for simx platform")
-                continue
             if component in readme_versions and actual_version.replace('-', '.') != compilation_version.replace('-', '.'):
                 err_msg = (f"{component}: Actual version doesn't match compilation version. "
                            f"COMPILATION: {compilation_version}, "

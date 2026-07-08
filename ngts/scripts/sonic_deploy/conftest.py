@@ -114,6 +114,15 @@ def pytest_addoption(parser):
     parser.addoption("--deploy_sequential", action="store", default='no', choices=["yes", "no"], required=False,
                      help="Run deploy steps serially and avoid thread pools")
 
+    logger.info('Parsing base-version-bmc')
+    parser.addoption("--base-version-bmc", action="store", default="",
+                     help="URL or path to the SONiC BMC image tarball "
+                          "(containing sonic_tftp_install.fit and sonic-aspeed-arm64-emmc.img.gz). "
+                          "Empty value skips BMC installation.")
+    logger.info('Parsing neighbor_mode')
+    parser.addoption("--neighbor_mode", action="store", default="",
+                     help="Neighbor mode to use for the dual-tor deployment")
+
 
 @pytest.fixture(scope="module")
 def workspace_path(request):
@@ -427,3 +436,23 @@ def deploy_chipless(request):
     """
     deploy_chipless_arg = request.config.getoption('--deploy_chipless')
     return deploy_chipless_arg == "yes"
+
+
+@pytest.fixture(scope="module")
+def base_version_bmc(request):
+    """
+    Method for getting BMC base version from pytest arguments
+    :param request: pytest builtin
+    :return: BMC base version (URL or path); empty string when not provided
+    """
+    return request.config.getoption('--base-version-bmc')
+
+
+@pytest.fixture(scope="module")
+def neighbor_mode(request):
+    """
+    Method for getting neighbor mode from pytest arguments for dual-tor deployment
+    :param request: pytest builtin
+    :return: neighbor mode; empty string when not provided
+    """
+    return request.config.getoption('--neighbor_mode')

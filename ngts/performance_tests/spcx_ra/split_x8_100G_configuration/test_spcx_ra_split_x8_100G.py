@@ -3,7 +3,7 @@ import allure
 import logging
 import pytest
 import random
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, apply_test_configuration, configure_mloops, restore_basic_configuration, run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
@@ -11,7 +11,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 skip_test_on_unsupported_os, get_obj_method)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, ValidationConsts
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.constants import CliType, InfraConst
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic

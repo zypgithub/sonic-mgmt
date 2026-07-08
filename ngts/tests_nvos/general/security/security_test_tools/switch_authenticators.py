@@ -3,7 +3,7 @@ import time
 
 import pexpect
 
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder
 
 MAX_TIMEOUT = 360

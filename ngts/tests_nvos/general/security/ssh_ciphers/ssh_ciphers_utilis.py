@@ -4,8 +4,8 @@ import crypt
 import pexpect
 
 from io import StringIO
-from infra.tools.connection_tools.utils import generate_strong_password
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.utils import generate_strong_password
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.User import User
 from ngts.nvos_tools.system.System import System

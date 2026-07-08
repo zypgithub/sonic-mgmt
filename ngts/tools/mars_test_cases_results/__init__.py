@@ -7,7 +7,7 @@ import re
 import subprocess
 
 from datetime import datetime
-from ngts.constants.constants import CliType, DbConstants, BugHandlerConst
+from ngts.constants.constants import CliType, DbConstants, BugHandlerConst, RegressionType
 from ngts.constants.constants import MarsConstants, SonicConst
 from ngts.helpers.performance.performance_db_helpers import add_allure_url_into_perf_test
 
@@ -192,13 +192,19 @@ def dump_json_to_file(json_obj, session_id, mars_key_id, cli_type):
 
 
 def export_data(session_id, mars_key_id, cli_type):
-    job_name = os.environ.get("REGRESSION_TYPE")
-    if job_name != "regression":
-        logger.info("Skipping export data to mars db for non-regression jobs")
+    regression_type = os.environ.get("REGRESSION_TYPE")
+    if regression_type == RegressionType.REGRESSION:
+        table_name = DbConstants.MARS_RESPOND_TABLE
+    elif regression_type in RegressionType.ci_types():
+        table_name = DbConstants.MARS_RESPOND_CI_TABLE
+    else:
+        logger.info("Skipping export data to mars db for regression type: {}".format(regression_type))
         return
+    logger.info("Exporting test results to MARS table: {}".format(table_name))
     export_data_cmd = "/ngts_venv/bin/python /root/mars/workspace/sonic-mgmt/ngts/scripts/export_test_json_to_mars_db.py" \
-                      " --session_id={SESSION_ID} --mars_key_id={MARS_KEY_ID} --cli_type={CLI_TYPE} --log-level=INFO " \
-        .format(SESSION_ID=session_id, MARS_KEY_ID=mars_key_id, CLI_TYPE=cli_type)
+                      " --session_id={SESSION_ID} --mars_key_id={MARS_KEY_ID} --cli_type={CLI_TYPE} " \
+                      "--table_name={TABLE_NAME} --log-level=INFO " \
+        .format(SESSION_ID=session_id, MARS_KEY_ID=mars_key_id, CLI_TYPE=cli_type, TABLE_NAME=table_name)
     try:
         logger.info("Exporting json tests data with command:\n{}".format(export_data_cmd))
         subprocess.run(export_data_cmd, shell=True, stderr=subprocess.STDOUT)

@@ -6,7 +6,7 @@ from retry.api import retry_call
 from ngts.tests.conftest import get_dut_loopbacks
 from ngts.constants.constants import AutonegCommandConstants, SonicConst, FecConstants
 from ngts.helpers.interface_helpers import get_lb_mutual_speed
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tests.nightly.auto_negotition.conftest import is_auto_neg_supported_port, ports_spec_compliance
 
 logger = logging.getLogger()

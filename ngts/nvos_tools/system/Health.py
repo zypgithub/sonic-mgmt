@@ -23,9 +23,17 @@ class Health(BaseComponent):
         self.component = Component(self)
 
     @retry(Exception, tries=12, delay=30)
-    def wait_until_health_status_change_after_reboot(self, expected_status):
+    def wait_until_health_status_change_after_reboot(self, expected_status, expected_led=None):
         output = OutputParsingTool.parse_json_str_to_dictionary(self.show()).get_returned_value()
-        assert output[HealthConsts.STATUS] == expected_status, f"health should be {expected_status} within 5 minutes after reboot"
+        assert output.get(HealthConsts.STATUS) == expected_status, (
+            f"nv show system health status should be {expected_status!r} within ~6 minutes after reboot "
+            f"(last: {output.get(HealthConsts.STATUS)!r})"
+        )
+        if expected_led is not None:
+            assert output.get(HealthConsts.STATUS_LED) == expected_led, (
+                f"nv show system health status-led should be {expected_led!r} within ~6 minutes after reboot "
+                f"(last: {output.get(HealthConsts.STATUS_LED)!r})"
+            )
 
 
 class History(BaseComponent):

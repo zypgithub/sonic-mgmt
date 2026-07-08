@@ -10,7 +10,7 @@ from ngts.config_templates.interfaces_config_template import InterfaceConfigTemp
 from ngts.config_templates.route_config_template import RouteConfigTemplate
 from ngts.config_templates.sub_interface_config_template import SubIntConfigTemplate
 from ngts.config_templates.vrf_config_template import VrfConfigTemplate
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.tests.nightly.ecmp_calculator.constants import V4_CONFIG, V6_CONFIG, DEST_ROUTE_V4, DEST_ROUTE_V6
 from retry.api import retry_call
 from ngts.tests.nightly.ecmp_calculator.ecmp_calculator_helper import copy_packet_json_to_syncd, ECMP_CALCULATOR_PATH

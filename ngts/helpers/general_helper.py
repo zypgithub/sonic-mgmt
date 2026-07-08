@@ -3,11 +3,10 @@ import re
 
 from perscache import Cache
 
-from infra.tools.topology_tools.topology_setup_utils import get_all_setups_per_group
+from devts.infra.tools.topology_tools.topology_setup_utils import get_all_setups_per_group
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
-from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.constants.constants import SonicConst
 from ngts.constants.performance_constants import PerfConsts
@@ -94,3 +93,12 @@ def get_pytest_test_name(request):
 def is_smartswitch_platform(topology_obj):
     dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
     return 'bobcat' in dut_name
+
+
+def is_bmc_testbed(testbed):
+    """Detect BMC test flow by the testbed name.
+
+    BMC testbeds are named `<dut>-bmc-dual-mgmt` in ansible/testbed.yaml
+    """
+    testbed = testbed or ''
+    return testbed.endswith('-bmc-dual-mgmt')

@@ -22,7 +22,7 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.ngts_types import EnginesT
 # TODO: remove this once KR feature is supported on all systems
 from ngts.nvos_tools.Devices.IbDevice import RosalindSurrogateSwitch
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.ngts_types import DevicesT
 
 from . import helpers
@@ -105,13 +105,13 @@ KR_MODES_MAPPER: Dict[str, KrAttribute] = {
 @pytest.fixture(scope='module', autouse=True)
 def cleanup_kr_config(access_ports: Port):
     yield
-    Fae(port_name=access_ports.name).interface.link.kr.unset(apply=True, ask_for_confirmation=True)
+    Fae(port_name=access_ports.name).interface.link.link_training.unset(apply=True, ask_for_confirmation=True)
     helpers.reboot_gpus()
 
 
 def _cleanup(port: Port):
     with allure.step(f"Unset KR config on port {port.name}"):
-        Fae(port_name=port.name).interface.link.kr.unset(apply=True, ask_for_confirmation=True)
+        Fae(port_name=port.name).interface.link.link_training.unset(apply=True, ask_for_confirmation=True)
 
     helpers.reboot_gpus()
 
@@ -121,16 +121,16 @@ def _configure_port_randomly(port: Port) -> dict[str, str]:
     with allure.step(f"Set random KR config on port {port.name}"):
         expected_kr_config['kr-algo'] = (rand_kr_mode := KR_MODES_MAPPER['kr-algo'].random_value)
         logger.info(f"Setting kr-algo to {rand_kr_mode}")
-        Fae(port_name=port.name).interface.link.kr.set('kr-algo', rand_kr_mode).verify_result()
+        Fae(port_name=port.name).interface.link.link_training.set('kr-algo', rand_kr_mode).verify_result()
         logger.info("Setting xdr-c2c-algo to enable-lt")
 
         for kr_attr in (i for i in KR_MODES_MAPPER if i not in ('kr-algo', 'xdr-c2c-algo')):
             expected_kr_config[kr_attr] = (kr_attr_value := KR_MODES_MAPPER[kr_attr].random_value)
             logger.info(f"Setting {kr_attr} to {kr_attr_value}")
-            Fae(port_name=port.name).interface.link.kr.set(kr_attr, kr_attr_value).verify_result()
+            Fae(port_name=port.name).interface.link.link_training.set(kr_attr, kr_attr_value).verify_result()
 
         with allure.step('Apply KR config changes'):
-            Fae(port_name=port.name).interface.link.kr.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).verify_result()
+            Fae(port_name=port.name).interface.link.link_training.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).verify_result()
 
         helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
 
@@ -142,7 +142,7 @@ def test_kr_cli_flow(engines: EnginesT, register_cleanup: CleanUpT, access_ports
     port = helpers.get_random_port(engines.dut)
 
     with allure.step(f'show kr config on port: {port.name}'):
-        str_result: str = Fae(port_name=port.name).interface.link.kr.show(output_format=None)
+        str_result: str = Fae(port_name=port.name).interface.link.link_training.show(output_format=None)
         logger.debug(f"nv show interface {port.name} link kr result:\n{str_result}")
 
     with allure.step('Verify KR config is as expected'):
@@ -166,7 +166,7 @@ def test_kr_cli_flow(engines: EnginesT, register_cleanup: CleanUpT, access_ports
             Port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP, tries=tries)
 
     with allure.step('Get KR config'):
-        kr_config: KrConfigT = Fae(port_name=port.name).interface.link.kr.parse_show()
+        kr_config: KrConfigT = Fae(port_name=port.name).interface.link.link_training.parse_show()
         logger.info(f"KR config: {kr_config}")
 
         with allure.step('Verify KR config is as expected'):
@@ -193,16 +193,16 @@ def test_config_removal(engines: EnginesT, register_cleanup: CleanUpT):
     port = helpers.get_random_port(engines.dut)
     logger.info(f"Selected NVLink port: {port.name}")
 
-    kr_config: KrConfigT = Fae(port_name=port.name).interface.link.kr.parse_show()
+    kr_config: KrConfigT = Fae(port_name=port.name).interface.link.link_training.parse_show()
 
     with allure.step('Unset KR mode'):
-        Fae(port_name=port.name).interface.link.kr.unset(apply=True, ask_for_confirmation=True).get_returned_value()
+        Fae(port_name=port.name).interface.link.link_training.unset(apply=True, ask_for_confirmation=True).get_returned_value()
         helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
         with allure.step('Wait for port to be up'):
             Port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP)
 
         with allure.step('Verify KR config is as expected'):
-            kr_config: KrConfigT = Fae(port_name=port.name).interface.link.kr.parse_show()
+            kr_config: KrConfigT = Fae(port_name=port.name).interface.link.link_training.parse_show()
             assert KR_DEFAULT_CONFIG.items() <= kr_config.items(), f"KR config is not as expected. Expected: {KR_DEFAULT_CONFIG}, Actual: {kr_config}"
 
 
@@ -225,7 +225,7 @@ def test_invalid_kr_mode_rejected(engines: EnginesT):
 
     with allure.step('Attempt to set invalid KR mode'):
         for kr_attr, kr_attr_value in KR_MODES_MAPPER.items():
-            Fae(port_name=port.name).interface.link.kr.set(
+            Fae(port_name=port.name).interface.link.link_training.set(
                 kr_attr,
                 kr_attr_value.bad_value,
                 apply=True,
@@ -255,7 +255,7 @@ def test_interface_range_sequential_actions(engines: EnginesT, register_cleanup:
 
     ports_kr_configs: List[KrConfigT] = []
     for port in ports:
-        kr_config = Fae(port_name=port.name).interface.link.kr.parse_show()
+        kr_config = Fae(port_name=port.name).interface.link.link_training.parse_show()
         ports_kr_configs.append(kr_config)
         logger.info(f"Initial KR config for port {port.name}: {kr_config}")
 
@@ -274,7 +274,7 @@ def test_interface_range_sequential_actions(engines: EnginesT, register_cleanup:
                                                        condition=helpers.ctx.has_gpus):
                     port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP, tries=tries)
                 # check that the expected_kr_config is NOT a subset of the current_kr_cfg
-                if not expected_kr_config.items() <= (current_kr_cfg := Fae(port_name=port.name).interface.link.kr.parse_show()).items():
+                if not expected_kr_config.items() <= (current_kr_cfg := Fae(port_name=port.name).interface.link.link_training.parse_show()).items():
                     errors.append(f"Port {port.name} did not get the expected KR mode. Expected: {expected_kr_config}, Actual: {current_kr_cfg}")
 
     assert not errors, "Errors:\n\t%s" % "\n\t".join(errors)
@@ -319,12 +319,12 @@ def test_link_transition_timing(engines: EnginesT, register_cleanup: CleanUpT, a
             timeout *= 5
 
         with allure.step('Set KR config on port'):
-            Fae(port_name=access_ports.name).interface.link.kr.set('kr-algo', 'advanced-lt').get_returned_value()
-            # Fae(port_name=access_ports.name).interface.link.kr.set('ber-target-coef', KR_MODES_MAPPER['ber-target-coef'].min_value).get_returned_value()  # XXX not supported yet, but they won't be applied
-            # Fae(port_name=access_ports.name).interface.link.kr.set('ber-target-mag', KR_MODES_MAPPER['ber-target-mag'].max_value).get_returned_value()  # XXX not supported yet, but they won't be applied
-            Fae(port_name=access_ports.name).interface.link.kr.set('num-iterations', num_iterations).get_returned_value()
-            Fae(port_name=access_ports.name).interface.link.kr.set('ber-window', ber_window).get_returned_value()
-            Fae(port_name=access_ports.name).interface.link.kr.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).get_returned_value()
+            Fae(port_name=access_ports.name).interface.link.link_training.set('kr-algo', 'advanced-lt').get_returned_value()
+            # Fae(port_name=access_ports.name).interface.link.link_training.set('ber-target-coef', KR_MODES_MAPPER['ber-target-coef'].min_value).get_returned_value()  # XXX not supported yet, but they won't be applied
+            # Fae(port_name=access_ports.name).interface.link.link_training.set('ber-target-mag', KR_MODES_MAPPER['ber-target-mag'].max_value).get_returned_value()  # XXX not supported yet, but they won't be applied
+            Fae(port_name=access_ports.name).interface.link.link_training.set('num-iterations', num_iterations).get_returned_value()
+            Fae(port_name=access_ports.name).interface.link.link_training.set('ber-window', ber_window).get_returned_value()
+            Fae(port_name=access_ports.name).interface.link.link_training.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).get_returned_value()
 
         helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
         time.sleep(5)
@@ -345,7 +345,7 @@ def test_link_transition_timing(engines: EnginesT, register_cleanup: CleanUpT, a
             assert elapsed_time < timeout, f"Port {port.name} did not go down within {timeout:.02f} seconds"
 
         with allure.step('Verify KR config is as expected'):
-            assert expected_kr_config.items() <= (current_kr_cfg := Fae(port_name=port.name).interface.link.kr.parse_show()).items(), \
+            assert expected_kr_config.items() <= (current_kr_cfg := Fae(port_name=port.name).interface.link.link_training.parse_show()).items(), \
                 f"KR config is not as expected. Expected: {expected_kr_config}, Actual: {current_kr_cfg}"
 
 
@@ -368,12 +368,12 @@ def test_error_ber_target_not_reached(engines: EnginesT, register_cleanup: Clean
     register_cleanup(partial(_cleanup, access_ports))
 
     with allure.step('Set KR mode with a specific BER target'):
-        Fae(port_name=access_ports.name).interface.link.kr.set('kr-algo', 'advanced-lt').get_returned_value()
-        # Fae(port_name=access_ports.name).interface.link.kr.set('ber-target-coef', KR_MODES_MAPPER['ber-target-coef'].min_value).get_returned_value()  # XXX not supported yet, but they won't be applied
-        # Fae(port_name=access_ports.name).interface.link.kr.set('ber-target-mag', KR_MODES_MAPPER['ber-target-mag'].max_value).get_returned_value()  # XXX not supported yet, but they won't be applied
-        Fae(port_name=access_ports.name).interface.link.kr.set('num-iterations', KR_MODES_MAPPER['num-iterations'].max_value).get_returned_value()
-        Fae(port_name=access_ports.name).interface.link.kr.set('ber-window', KR_MODES_MAPPER['ber-window'].max_value).get_returned_value()
-        Fae(port_name=access_ports.name).interface.link.kr.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).get_returned_value()
+        Fae(port_name=access_ports.name).interface.link.link_training.set('kr-algo', 'advanced-lt').get_returned_value()
+        # Fae(port_name=access_ports.name).interface.link.link_training.set('ber-target-coef', KR_MODES_MAPPER['ber-target-coef'].min_value).get_returned_value()  # XXX not supported yet, but they won't be applied
+        # Fae(port_name=access_ports.name).interface.link.link_training.set('ber-target-mag', KR_MODES_MAPPER['ber-target-mag'].max_value).get_returned_value()  # XXX not supported yet, but they won't be applied
+        Fae(port_name=access_ports.name).interface.link.link_training.set('num-iterations', KR_MODES_MAPPER['num-iterations'].max_value).get_returned_value()
+        Fae(port_name=access_ports.name).interface.link.link_training.set('ber-window', KR_MODES_MAPPER['ber-window'].max_value).get_returned_value()
+        Fae(port_name=access_ports.name).interface.link.link_training.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).get_returned_value()
         helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
         time.sleep(5)
 

@@ -4,7 +4,7 @@ import os
 from retry.api import retry_call
 
 import pytest
-from infra.tools.yaml_tools.yaml_loops import ip_range
+from devts.infra.tools.yaml_tools.yaml_loops import ip_range
 
 from ngts.cli_wrappers.sonic.sonic_route_clis import SonicRouteCli
 from ngts.config_templates.ip_config_template import IpConfigTemplate
@@ -25,7 +25,8 @@ ROUTES_MAX_SCALE = {
     'SPC2': {IPV4: 100000, IPV6: 16000},
     'SPC3': {IPV4: 100000, IPV6: 16000},
     'SPC4': {IPV4: 100000, IPV6: 16000},
-    'SPC5': {IPV4: 100000, IPV6: 16000}
+    'SPC5': {IPV4: 100000, IPV6: 16000},
+    'SPC6': {IPV4: 100000, IPV6: 16000}
 }
 
 IP_CONFIG_DICT = {

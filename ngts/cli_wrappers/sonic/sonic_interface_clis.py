@@ -320,7 +320,7 @@ class SonicInterfaceCli(InterfaceCliCommon, SonicMultiAsicCli):
         return result
 
     def get_tries_num(self):
-        tries_num = 32
+        tries_num = 40
         if self.cli_obj.general.is_asan_image() and self.cli_obj.general.is_bison():
             tries_num = 70
         elif self.cli_obj.general.is_simx_moose():

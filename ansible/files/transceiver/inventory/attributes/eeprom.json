@@ -1,0 +1,10 @@
+{
+  "mandatory": ["sff8024_identifier"],
+  "transceivers": {
+    "deployment_configurations": {
+      "OSFP_8X_100G": {
+        "sff8024_identifier": "OSFP 8X Pluggable Transceiver"
+      }
+    }
+  }
+}

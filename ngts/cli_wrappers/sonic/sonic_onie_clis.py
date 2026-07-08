@@ -5,10 +5,10 @@ import pexpect
 import re
 from retry.api import retry_call
 
-from infra.tools.connection_tools.onie_engine import OnieEngine
-from infra.tools.general_constants.air_constants import NvidiaAirConstants
+from devts.infra.tools.connection_tools.onie_engine import OnieEngine
+from devts.infra.tools.general_constants.air_constants import NvidiaAirConstants
 from ngts.constants.constants import InfraConst, PlatformTypesConstants, SonicDeployConstants
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.helpers.json_file_helper import extract_fw_data
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.constants.constants import MarsConstants

@@ -21,11 +21,14 @@ class DebugFwPaths:
     # Output directory for generated debug firmware
     DEBUG_FW_OUTPUT_DIR = "/auto/sw_system_project/NVOS_INFRA/verification_files/debug_token"
 
-    # MFT internal package path (required for mlxburn)
+    # Fallback mft-int package path used when no mft is installed on the switch
     MFT_INTERNAL_PATH = (
         "/auto/mswg_release_mft/mft-4.34.0/mft-4.34.0-5015/Deliverables/"
         "linux-x86_64/mft-4.34.0-5015-int/DEBS/mft-int_4.34.0-5015_amd64.deb"
     )
+
+    # Base directory for mft releases used to locate a matching mft-int deb
+    MFT_RELEASE_BASE = "/auto/mswg_release_mft"
 
     # Temporary directory on switch for generation
     SWITCH_TMP_DIR = "/tmp/debug_fw_gen"
@@ -78,6 +81,13 @@ class DebugFwCommands:
 
     # Create temp directory
     CREATE_TMP_DIR = "sudo mkdir -p {tmp_dir} && sudo chmod 777 {tmp_dir}"
+
+    # Check if mft-int is installed; prints match count (0 if missing, 1 if present)
+    # mft-int ships 'mic' (image generation tool); the public 'mft' package does not
+    CHECK_MFT_INT = "dpkg -l mft-int 2>/dev/null | grep -c '^ii' || true"
+
+    # Get the installed mft version string (e.g. "4.35.0.6007-1"), empty if not installed
+    GET_MFT_VERSION = "dpkg -l mft 2>/dev/null | awk '/^ii/{print $3}'"
 
     # Install MFT internal package
     INSTALL_MFT = "sudo dpkg -i /tmp/{mft_name}"
@@ -225,8 +235,27 @@ class TokenSigningCommands:
 class DebugFwPatterns:
     """Pre-compiled regex patterns for firmware version extraction."""
 
-    # Pattern to extract version from filename: debug_fw_41_2018_0220.bin -> groups (41, 2018, 0220)
-    VERSION_FROM_FILENAME = re.compile(r'debug_fw_(\d+)_(\d+)_(\d+)')
+    # Pattern to extract version from filename: debug_fw_41_2018_0220.bin or debug_fw_41_2018_0526_004.bin
+    VERSION_FROM_FILENAME = re.compile(r'debug_fw_(\d+)_(\d+)_(\d+)(?:_(\d+))?')
 
-    # Pattern to extract version with underscores: debug_fw_41_2018_0220.bin -> "41_2018_0220"
-    VERSION_WITH_UNDERSCORES = re.compile(r'debug_fw_(\d+_\d+_\d+)')
+    # Pattern to extract version with underscores: "41_2018_0220" or "41_2018_0526_004"
+    VERSION_WITH_UNDERSCORES = re.compile(r'debug_fw_(\d+_\d+_\d+(?:_\d+)?)')
+
+    @staticmethod
+    def version_name_from_filename(bin_filename):
+        """Reconstruct the CLI-reported debug FW version from the filename.
+
+        Debug FW reports two formats:
+          3 segments (no hotfix) -> dots, e.g. "debug_fw_41_2018_250.bin" -> "41.2018.250"
+          4 segments (hotfix)    -> underscores + dash before hotfix,
+                                    e.g. "debug_fw_41_2018_0526_004.bin" -> "41_2018_0526-004"
+
+        Returns None if the filename doesn't match the expected pattern.
+        """
+        match = DebugFwPatterns.VERSION_FROM_FILENAME.search(bin_filename)
+        if not match:
+            return None
+        groups = [g for g in match.groups() if g]
+        if len(groups) == 4:
+            return f"{groups[0]}_{groups[1]}_{groups[2]}-{groups[3]}"
+        return '.'.join(groups)

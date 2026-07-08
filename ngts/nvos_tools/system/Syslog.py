@@ -6,6 +6,7 @@ from ngts.nvos_constants.constants_nvos import ApiType, SyslogConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
+from ngts.nvos_tools.infra.ResultObj import ResultObj, IssueType
 # from collections import DefaultDict
 logger = logging.getLogger()
 

@@ -10,6 +10,7 @@ _REMOTE_COMMUNITY_NAME = "upstream"
 _REMOTE_COMMUNITY_URL = "https://github.com/sonic-net/sonic-mgmt.git"
 _REMOTE_COMMUNITY_URL_202412 = "https://github.com/Azure/sonic-mgmt.msft.git"
 _REMOTE_COMMUNITY_URL_202506 = "https://github.com/Azure/sonic-mgmt.msft.git"
+_REMOTE_COMMUNITY_URL_202608 = "https://github.com/Azure/sonic-mgmt.msft.git"
 
 def _update_last_success_file(file_path: str, last_success_commit: str):
     does_last_success_file_exist = os.path.isfile(file_path)
@@ -36,6 +37,8 @@ def main(args: Args, git_repo: Repo):
         git_repo.set_remote_url(_REMOTE_COMMUNITY_NAME, _REMOTE_COMMUNITY_URL_202412)
     elif args.branch == "202506":
         git_repo.set_remote_url(_REMOTE_COMMUNITY_NAME, _REMOTE_COMMUNITY_URL_202506)
+    elif args.branch == "202608":
+        git_repo.set_remote_url(_REMOTE_COMMUNITY_NAME, _REMOTE_COMMUNITY_URL_202608)
     else:
         git_repo.set_remote_url(_REMOTE_COMMUNITY_NAME, _REMOTE_COMMUNITY_URL)
     logger.debug(

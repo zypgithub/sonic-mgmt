@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytest
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli

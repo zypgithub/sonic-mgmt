@@ -3,7 +3,7 @@ import random
 import pexpect
 import pytest
 
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool

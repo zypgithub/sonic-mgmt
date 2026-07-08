@@ -12,11 +12,6 @@ logger = logging.getLogger()
 
 
 # -------------------------------- Fixture --------------------------------
-@pytest.fixture(scope='session')
-def duthost(engines):
-    return engines.dut
-
-
 @pytest.fixture(scope='session', autouse=True)
 def copy_event_trigger_script_to_dut(duthost):
     """
@@ -79,7 +74,7 @@ def cleanup_health_event(topology_obj, cli_objects):
 
 # -------------------------------- Test cases --------------------------------
 @pytest.mark.disable_loganalyzer
-def test_health_event_collect(duthost, cleanup_health_event, cli_objects):
+def test_health_event_collect(duthost, cleanup_health_event, cli_objects, set_health_event_debug_state_flags):
     with allure.step('STEP1: Config health event without suppression'):
         cli_objects.dut.general.config_health_event(duthost,
                                                     severity=HealthEventConst.SEVERITY,
@@ -97,7 +92,7 @@ def test_health_event_collect(duthost, cleanup_health_event, cli_objects):
 
 
 @pytest.mark.disable_loganalyzer
-def test_health_event_suppression(duthost, cleanup_health_event, cli_objects):
+def test_health_event_suppression(duthost, cleanup_health_event, cli_objects, set_health_event_debug_state_flags):
     with allure.step('STEP1: Config health event suppression'):
         cli_objects.dut.general.config_health_event(duthost,
                                                     severity=HealthEventConst.SEVERITY,

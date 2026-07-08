@@ -104,7 +104,7 @@ class NvosConsts:
     COVERAGE_SCRIPT_PATH = "/usr/local/bin/nvos_coverage.sh"
     COVERAGE_SCRIPT_STAGE1 = "stage1"
     COVERAGE_SCRIPT_STAGE2 = "stage2"
-    COVERAGE_OUTPUT_ON_SWITCH = "coverage"  # NOTE: coverage is a directory on the switch home directory
+    COVERAGE_OUTPUT_ON_SWITCH = "/sonic/coverage"
 
 
 class SonicConsts:

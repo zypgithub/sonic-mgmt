@@ -12,8 +12,8 @@ from scapy.layers.inet6 import IP
 from scapy.layers.vxlan import VXLAN
 from ngts.constants.constants import VxlanConstants
 from ngts.config_templates.parallel_config_runner import parallel_config_runner
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 
 logger = logging.getLogger()
 
