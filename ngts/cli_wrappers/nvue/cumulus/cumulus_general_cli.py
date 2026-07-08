@@ -64,6 +64,12 @@ class CumulusGeneralCli(NvueGeneralCli):
 
     def install_pip_dependencies(self):
         with allure.step('Install pip dependencies'):
+            self.engine.run_cmd(
+                'grep -qxF "deb [trusted=yes] https://urm.nvidia.com/artifactory/'
+                'sw-nbu-cl-devenv-staging-debian-local bookworm main" /etc/apt/sources.list || '
+                'echo "deb [trusted=yes] https://urm.nvidia.com/artifactory/'
+                'sw-nbu-cl-devenv-staging-debian-local bookworm main" | sudo tee -a /etc/apt/sources.list',
+                timeout=20, retry_run=True)
             self.engine.run_cmd('sudo apt-get update -y', timeout=60, retry_run=True)
             self.engine.run_cmd('sudo apt install python3.11 -y', timeout=60, retry_run=True)
             self.engine.run_cmd('sudo mkdir /home/cumulus/venv', timeout=20, retry_run=True)
