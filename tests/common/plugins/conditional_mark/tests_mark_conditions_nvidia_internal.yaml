@@ -1675,6 +1675,10 @@ system_health/test_system_status.py::test_system_is_running:
     reason: "Xfail on BMC due to https://redmine.mellanox.com/issues/5064616"
     conditions:
     - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5064616"
+  skip:
+    reason: "watchdog-control can not load on kvm testbed due to https://github.com/sonic-net/sonic-buildimage/issues/19879"
+    conditions:
+    - "https://github.com/sonic-net/sonic-buildimage/issues/19879 and 'simx' in platform"
 
 ########################## IGNORE WARM REBOOT ON SN6600_LD START ##########################
 arp/test_wr_arp.py:
