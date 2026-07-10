@@ -11,6 +11,8 @@ from bgp_helpers import apply_allow_list, remove_allow_list, check_routes_on_fro
 from bgp_helpers import check_routes_on_neighbors_empty_allow_list, checkout_bgp_mon_routes, check_routes_on_neighbors
 # Fixtures
 from bgp_helpers import bgp_allow_list_setup, prepare_eos_routes    # noqa:F401
+# bgpd instrumentation for #27787 (soft-in / announce-walk CPU starvation debug)
+from bgp_dbg_capture import start_capture, collect_and_restore
 
 pytestmark = [
     pytest.mark.topology('t1', 'm1', 'c0'),
@@ -44,10 +46,15 @@ def load_remove_allow_list(duthosts, bgp_allow_list_setup, rand_one_dut_hostname
 
     duthost = duthosts[rand_one_dut_hostname]
     namespace = bgp_allow_list_setup['downstream_namespace']
+    # --- #27787: start bgpd capture just before the soft-in trigger ---
+    _cap = start_capture(duthost)
     apply_allow_list(duthost, namespace, ALLOW_LIST, ALLOW_LIST_PREFIX_JSON_FILE)
 
     yield request.param
 
+    # --- #27787: collect + restore (runs on pass or fail); preserve on test failure OR a real flap ---
+    _failed = getattr(getattr(request.node, "rep_call", None), "failed", False)
+    collect_and_restore(duthost, _cap, "test_allow_list_%s" % request.param, force_preserve=_failed)
     remove_allow_list(duthost, namespace, ALLOW_LIST_PREFIX_JSON_FILE)
 
 
