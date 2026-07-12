@@ -1,13 +1,11 @@
 """High frequency telemetry counter configuration keyed by platform and object type.
 
-Counter sets are built from two pieces:
-  * ``_*_BASE``           counters supported on every Nvidia platform, including
-                          older SDKs such as SPC6 ES images.
-  * ``_*_<PLATFORM>_EXTRA``  the additional counters supported by ``<PLATFORM>``
-                          on top of the base set.
+The counters listed here are supported on Spectrum-4 (SN5600 / SPC4) and above.
+``_QUEUE_COUNTERS_SPC6_EXTRA`` are the queue counters that are additionally
+supported only on Spectrum-6 (SN6600 / SPC6) and above.
 
-Each entry in ``SUPPORTED_STATS`` concatenates the base and that platform's
-extras inline, so it is easy to see what a given platform actually supports.
+Each entry in ``SUPPORTED_STATS`` lists exactly the counters that platform
+supports for each object type.
 
 Tests should call ``get_support_counter_list(duthost, counter_type)``.
 """
@@ -27,61 +25,59 @@ class CounterObjectType(Enum):
 
 _DEFAULT_PLATFORM = "default"
 
-# Base counters
-_PORT_COUNTERS_BASE = (
+# Counters supported on Spectrum-4 (SN5600 / SPC4) and above
+_PORT_COUNTERS = (
     "IF_IN_OCTETS",
     "IF_IN_DISCARDS",
     "IF_OUT_OCTETS",
+    "IF_IN_UCAST_PKTS",
+    "IF_OUT_ERRORS",
+    "IF_OUT_UCAST_PKTS",
 )
 
-_QUEUE_COUNTERS_BASE = (
+_QUEUE_COUNTERS = (
     "BYTES",
     "CURR_OCCUPANCY_CELLS",
     "WATERMARK_CELLS",
     "WRED_ECN_MARKED_PACKETS",
-)
-
-_INGRESS_PRIORITY_GROUP_COUNTERS_BASE = (
-    "CURR_OCCUPANCY_CELLS",
-    "WATERMARK_CELLS",
-)
-
-_BUFFER_POOL_COUNTERS_BASE = ()
-
-# Extra counters supported by SN5640
-_PORT_COUNTERS_SN5640_EXTRA = (
-    "IF_IN_UCAST_PKTS",
-    "IF_OUT_ERRORS",
-    "IF_OUT_UCAST_PKTS"
-)
-
-_QUEUE_COUNTERS_SN5640_EXTRA = (
     "PACKETS",
 )
 
-_INGRESS_PRIORITY_GROUP_COUNTERS_SN5640_EXTRA = (
+_INGRESS_PRIORITY_GROUP_COUNTERS = (
+    "CURR_OCCUPANCY_CELLS",
+    "WATERMARK_CELLS",
     "PACKETS",
     "BYTES",
 )
 
-_BUFFER_POOL_COUNTERS_SN5640_EXTRA = (
+_BUFFER_POOL_COUNTERS = (
     "CURR_OCCUPANCY_CELLS",
     "WATERMARK_CELLS",
 )
 
+# Queue counters supported only on Spectrum-6 (SN6600 / SPC6) and above
+_QUEUE_COUNTERS_SPC6_EXTRA = (
+    "DROPPED_PACKETS",
+)
+
 SUPPORTED_STATS: Mapping[str, Mapping[CounterObjectType, Sequence[str]]] = {
+    "x86_64-nvidia_sn5600-r0": {
+        CounterObjectType.PORT: _PORT_COUNTERS,
+        CounterObjectType.QUEUE: _QUEUE_COUNTERS,
+        CounterObjectType.INGRESS_PRIORITY_GROUP: _INGRESS_PRIORITY_GROUP_COUNTERS,
+        CounterObjectType.BUFFER_POOL: _BUFFER_POOL_COUNTERS,
+    },
     "x86_64-nvidia_sn5640-r0": {
-        CounterObjectType.PORT: _PORT_COUNTERS_BASE + _PORT_COUNTERS_SN5640_EXTRA,
-        CounterObjectType.QUEUE: _QUEUE_COUNTERS_BASE + _QUEUE_COUNTERS_SN5640_EXTRA,
-        CounterObjectType.INGRESS_PRIORITY_GROUP:
-            _INGRESS_PRIORITY_GROUP_COUNTERS_BASE + _INGRESS_PRIORITY_GROUP_COUNTERS_SN5640_EXTRA,
-        CounterObjectType.BUFFER_POOL: _BUFFER_POOL_COUNTERS_BASE + _BUFFER_POOL_COUNTERS_SN5640_EXTRA,
+        CounterObjectType.PORT: _PORT_COUNTERS,
+        CounterObjectType.QUEUE: _QUEUE_COUNTERS,
+        CounterObjectType.INGRESS_PRIORITY_GROUP: _INGRESS_PRIORITY_GROUP_COUNTERS,
+        CounterObjectType.BUFFER_POOL: _BUFFER_POOL_COUNTERS,
     },
     "x86_64-nvidia_sn6600_ld-r0": {
-        CounterObjectType.PORT: _PORT_COUNTERS_BASE,
-        CounterObjectType.QUEUE: _QUEUE_COUNTERS_BASE,
-        CounterObjectType.INGRESS_PRIORITY_GROUP: _INGRESS_PRIORITY_GROUP_COUNTERS_BASE,
-        CounterObjectType.BUFFER_POOL: _BUFFER_POOL_COUNTERS_BASE,
+        CounterObjectType.PORT: _PORT_COUNTERS,
+        CounterObjectType.QUEUE: _QUEUE_COUNTERS + _QUEUE_COUNTERS_SPC6_EXTRA,
+        CounterObjectType.INGRESS_PRIORITY_GROUP: _INGRESS_PRIORITY_GROUP_COUNTERS,
+        CounterObjectType.BUFFER_POOL: _BUFFER_POOL_COUNTERS,
     },
     "x86_64-arista_7060x6_64pe_b": {
         CounterObjectType.PORT: (),
