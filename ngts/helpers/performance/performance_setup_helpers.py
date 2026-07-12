@@ -174,8 +174,8 @@ class ValidationConfig:
 def unsplit_all_ports(players, players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALIASES,
                       step="basic_test_configuration - unsplit_all_ports", parallel_run=True):
     """
-    Unsplit all ports on SPC5 before applying test configuration.
-    This is needed because SPC5 comes up with ports already split after dvs_start.sh
+    Unsplit all ports on SPC5/SPC6 before applying test configuration.
+    This is needed because SPC5/SPC6 comes up with ports already split after dvs_start.sh
 
     Args:
         players (dict): Dictionary containing player information and CLI interfaces
@@ -183,28 +183,28 @@ def unsplit_all_ports(players, players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALI
         step (str): Description of the current setup step
         parallel_run (bool): If True, unsplits in parallel. If False, unsplits sequentially. Defaults to True
     """
-    spc5_aliases = []
+    spc5_6_aliases = []
     try:
         for player_alias in players_aliases:
             switch_attributes = players[player_alias]['attributes'].noga_query_data['attributes']
             chip_type = get_chip_type(switch_attributes)
-            if chip_type == "SPC5":
-                spc5_aliases.append(player_alias)
+            if chip_type in ["SPC5", "SPC6"]:
+                spc5_6_aliases.append(player_alias)
     except (KeyError, AttributeError) as e:
         raise TestIssue(f"Could not determine chip_type from topology: {e}")
 
-    if not spc5_aliases:
+    if not spc5_6_aliases:
         return
 
-    logger.info(f"Detected SPC5 - unsplitting all ports on all players: {spc5_aliases}")
+    logger.info(f"Detected SPC5/SPC6 - unsplitting all ports on all players: {spc5_6_aliases}")
 
     if parallel_run:
-        call_performance_function_with_threads(players, players_aliases=spc5_aliases,
+        call_performance_function_with_threads(players, players_aliases=spc5_6_aliases,
                                                action="unsplit all ports",
                                                performance_clis_function_name="unsplit_all_ports",
                                                performance_clis_function_args=(), step=step)
     else:
-        for player_alias in spc5_aliases:
+        for player_alias in spc5_6_aliases:
             players[player_alias]['cli'].performance.unsplit_all_ports()
 
 
