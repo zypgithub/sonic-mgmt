@@ -144,6 +144,7 @@ class PerfConsts:
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
     LATEST_SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/lastrc_{SDK_BRANCH}/DEBS/"
+    SYNCD_PIP_INDEX_URL = 'https://urm.nvidia.com/artifactory/api/pypi/nv-shared-pypi/simple'
 
     # File Names
     REQUIRMENTS_FILE = 'requirements.txt'
@@ -155,12 +156,13 @@ class PerfConsts:
         'export APP_LIB_PATH=$SDK_ROOT/applibs; '
         'export SDK_INCLUDE=$SDK_ROOT/applibs; '
         'export SXD_INCLUDE=$SDK_ROOT/sxd_libs; '
+        'export PYVER=$(python3 -c "import sys; print(chr(46).join(map(str, sys.version_info[:2])))"); '
         'export INCLUDES="-I$SDK_ROOT/applibs/include '
         '-I$SDK_ROOT/sxd_libs/include '
         '-I$SDK_ROOT/sx_complib/include '
         '-I$SDK_ROOT/sx_gen_utils/include '
-        '-I/usr/include/python3.11 '
-        '-I/usr/lib/python3.11/config-3.11-x86_64-linux-gnu/"; '
+        '-I/usr/include/python$PYVER '
+        '-I/usr/lib/python${PYVER}/config-${PYVER}-x86_64-linux-gnu/"; '
         'export LD_LIBRARY_PATH=$SDK_ROOT/applibs/lib:$SDK_ROOT/sxd_libs/lib:$SDK_ROOT/sx_complib/lib:$LD_LIBRARY_PATH; '
         'export PYTHONPATH=/root/sys_sdk/sx_sdk_py_tests/:'
         '/root/sys_sdk/sx_sdk_py_tests/tests/:'
