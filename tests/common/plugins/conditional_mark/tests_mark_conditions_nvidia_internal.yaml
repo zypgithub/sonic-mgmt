@@ -1696,6 +1696,12 @@ system_health/test_system_health.py::test_service_checker_with_process_exit:
     conditions:
     - "https://redmine.mellanox.com/issues/4988548"
 
+system_health/test_system_health.py::test_system_health_config:
+  xfail:
+    reason: "PSU check is still performed after the system-health is configured to ignore psu device, skip due to https://redmine.mellanox.com/issues/5138574"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5138574"
+
 system_health/test_system_status.py::test_system_is_running:
   xfail:
     reason: "Xfail on BMC due to https://redmine.mellanox.com/issues/5064616"
