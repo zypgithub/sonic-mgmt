@@ -794,8 +794,10 @@ configlet/test_add_rack.py:
     conditions:
       - "is_multi_asic==True"
   xfail:
-    reason: "Testcase fails for smartswitch platform in the light mode due to https://github.com/sonic-net/sonic-mgmt/issues/20672 issue"
+    reason: "Testcase fails for smartswitch platform in the light mode due to https://github.com/sonic-net/sonic-mgmt/issues/20672 issue, and another failure due to https://github.com/sonic-net/sonic-mgmt/issues/26098"
+    conditions_logical_operator: or
     conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/26098"
       - "https://github.com/sonic-net/sonic-mgmt/issues/20672 and is_smartswitch==True and topo_name.startswith('t1-')"
 
 #######################################
