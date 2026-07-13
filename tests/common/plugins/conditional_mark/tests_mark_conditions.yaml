@@ -4243,9 +4243,29 @@ pfcwd/test_pfcwd_cli.py:
 
 pfcwd/test_pfcwd_function.py::TestPfcwdFunc::test_pfcwd_actions:
   xfail:
-    reason: "On Dualtor AA setup, test_pfcwd_actions is not stable due to github issue https://github.com/sonic-net/sonic-mgmt/issues/15387"
+    reason: "LAG isolation fixture can leave PortChannel oper-down: https://github.com/sonic-net/sonic-mgmt/issues/26060 / On Dualtor AA setup, test_pfcwd_actions is not stable due to github issue https://github.com/sonic-net/sonic-mgmt/issues/15387"
+    conditions_logical_operator: or
     conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/26060"
       - "'dualtor-aa' in topo_name and https://github.com/sonic-net/sonic-mgmt/issues/15387"
+
+pfcwd/test_pfcwd_function.py::TestPfcwdFunc::test_pfcwd_multi_port:
+  xfail:
+    reason: "LAG isolation fixture can leave PortChannel oper-down: https://github.com/sonic-net/sonic-mgmt/issues/26060"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/26060"
+
+pfcwd/test_pfcwd_function.py::TestPfcwdFunc::test_pfcwd_mmu_change:
+  xfail:
+    reason: "LAG isolation fixture can leave PortChannel oper-down: https://github.com/sonic-net/sonic-mgmt/issues/26060"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/26060"
+
+pfcwd/test_pfcwd_function.py::TestPfcwdFunc::test_pfcwd_port_toggle:
+  xfail:
+    reason: "LAG isolation fixture can leave PortChannel oper-down: https://github.com/sonic-net/sonic-mgmt/issues/26060"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/26060"
 
 pfcwd/test_pfcwd_function.py::TestPfcwdFunc::test_pfcwd_no_traffic:
    skip:
