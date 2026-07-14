@@ -40,6 +40,9 @@ def start_components_update(_args):
     devices_with_rel_prod_erot = {
         "juliet-160": {Defaults.EROT_NAME, Defaults.BIOS_NAME, Defaults.BMC_NAME},
         "juliet-195": {Defaults.EROT_NAME, Defaults.BIOS_NAME, Defaults.BMC_NAME},
+        # juliet-126 has mixed secure-state: only bmc is prod (bios/asic/nvos are dev),
+        # so only erot+bmc take the prod package. See `nv show fae platform secure-state`.
+        "juliet-126": {Defaults.EROT_NAME, Defaults.BMC_NAME},
     }
 
     components_mapping = {
@@ -159,7 +162,7 @@ def _get_components_for_update(_args, update_via_parameter):
 
 
 def _has_non_encrypted_fpga(bmc_ip):
-    non_encrypted_fpga_ips = {'10.7.113.142', '10.7.113.148'}
+    non_encrypted_fpga_ips = {'10.7.113.148', '10.193.65.142'}
     return bmc_ip in non_encrypted_fpga_ips
 
 
