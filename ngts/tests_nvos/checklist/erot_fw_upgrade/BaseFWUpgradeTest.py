@@ -3,6 +3,8 @@ import time
 import random
 from typing import Dict
 
+import pytest
+
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT
 from ngts.tools.test_utils import allure_utils as allure
@@ -92,6 +94,9 @@ class BaseFWUpgradeTest:
         self._firmware_component = firmware_component
 
     def test(self, engines, switch, topology_obj, test_api, test_name: str = ''):
+        if not switch.constants.erots:
+            pytest.skip("No ERoT components on this platform")
+
         TestToolkit.tested_api = test_api
         fw_component = self._firmware_component
         prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous(FW_COMPONENT_EROT)
@@ -125,6 +130,9 @@ class BaseFWUpgradeTest:
                 fw_component.files.delete_all_existing_files()
 
     def test_fae(self, engines, switch, topology_obj, test_api):
+        if not switch.constants.erots:
+            pytest.skip("No ERoT components on this platform")
+
         TestToolkit.tested_api = test_api
         prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous(FW_COMPONENT_EROT)
         curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest(FW_COMPONENT_EROT)

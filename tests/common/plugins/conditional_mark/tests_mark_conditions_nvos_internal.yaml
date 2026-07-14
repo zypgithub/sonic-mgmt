@@ -174,13 +174,11 @@ tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
 
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
-    reason: Testcase skipped on non Juliet systems, Juliet feature only (as a part of
-      Uberon). Also skipped on juliet-160, juliet-146 and juliet-195 due to hardware
-      issues
+    reason: Testcase skipped on platforms without ERoT components. Also skipped on
+      juliet-160, juliet-146 and juliet-195 due to hardware issues
     conditions_logical_operator: or
     conditions:
-    - '''juliet'' not in testbed and ''rosalind'' not in testbed and ''portia'' not
-      in testbed'
+    - '''juliet'' not in testbed and ''rosalind'' not in testbed'
     - '''juliet-146'' in testbed'
     - '''juliet-160'' in testbed'
     - '''juliet-195'' in testbed'
@@ -334,6 +332,12 @@ tests_nvos/checklist/test_firmware_install_same_version.py::test_fae_sma_firmwar
     conditions:
     - '''surrogate'' not in testbed and ''rosalind'' not in testbed and ''portia'' not
       in testbed'
+
+tests_nvos/checklist/test_firmware_install_same_version.py::test_fae_erot_firmware_install:
+  skip:
+    reason: Testcase skipped on platforms without ERoT components
+    conditions:
+    - '''juliet'' not in testbed and ''rosalind'' not in testbed'
 
 tests_nvos/checklist/test_sma_info.py:
   skip:

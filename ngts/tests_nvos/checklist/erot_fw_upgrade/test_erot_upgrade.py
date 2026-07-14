@@ -33,6 +33,9 @@ def test_erot_upgrade_all(engines, devices, topology_obj, test_api, test_name, s
     8. Finally, reset the firmware source to default and delete the firmware image files.
 
     """
+    if not devices.dut.constants.erots:
+        pytest.skip("No ERoT components on this platform")
+
     with allure.step('Create Test and system objects'):
         platform = Platform()
         test = BaseFWUpgradeTest(firmware_component=platform.firmware.erot_id[FW_COMPONENT_EROT.upper()])
@@ -64,6 +67,9 @@ def test_erot_upgrade_fae(engines, devices, topology_obj, test_api, test_name, c
     8. Finally, reset the firmware source to default and delete the firmware image files.
 
     """
+    if not devices.dut.constants.erots:
+        pytest.skip("No ERoT components on this platform")
+
     with allure.step('Create Test and system objects'):
         fae = Fae()
         erots_list = devices.dut.constants.erots

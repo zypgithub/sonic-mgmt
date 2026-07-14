@@ -171,9 +171,9 @@
      </cmd>
     <ignore>
       <condition>
-        <key>dut_name</key>
-        <op> in </op>
-        <value>[juliet-160]</value>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet, rosalind]</value>
       </condition>
     </ignore>
    </case>
@@ -189,9 +189,9 @@
      </cmd>
     <ignore>
       <condition>
-        <key>dut_name</key>
-        <op> in </op>
-        <value>[juliet-160]</value>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet, rosalind]</value>
       </condition>
     </ignore>
    </case>
@@ -207,9 +207,9 @@
      </cmd>
     <ignore>
       <condition>
-        <key>dut_name</key>
-        <op> in </op>
-        <value>[juliet-160]</value>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet, rosalind]</value>
       </condition>
     </ignore>
    </case>
@@ -225,9 +225,9 @@
      </cmd>
     <ignore>
       <condition>
-        <key>dut_name</key>
-        <op> in </op>
-        <value>[juliet-160]</value>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet, rosalind]</value>
       </condition>
     </ignore>
    </case>
@@ -243,9 +243,9 @@
      </cmd>
     <ignore>
       <condition>
-        <key>dut_name</key>
-        <op> in </op>
-        <value>[juliet-160]</value>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet, rosalind]</value>
       </condition>
     </ignore>
    </case>

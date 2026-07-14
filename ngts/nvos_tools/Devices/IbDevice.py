@@ -3736,6 +3736,9 @@ class PortiaSimx(RosalindSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        # Portia inherits the Rosalind device model, but it has no ERoT components.
+        self.constants.erots.clear()
+        self.components_list = [component for component in self.components_list if component != FW_COMPONENT_EROT]
         self.asic_type = NvosConst.NVL7
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n7170_ld-r0")
@@ -3756,6 +3759,10 @@ class PortiaSimx(RosalindSwitch):
         self._extend_firmware_by_cpld_amount()
         self.sma_amount = 2
         self._extend_firmware_by_sma_amount()
+
+    def _init_gnmi_consts(self):
+        super()._init_gnmi_consts()
+        self.components_gnmi_xpath = [xpath for xpath in self.components_gnmi_xpath if xpath != self.erot_xpath]
 
     def _init_temperature(self):
         super()._init_temperature()
