@@ -722,6 +722,10 @@ sws-rtf2-rosalind-198 ansible_host=sws-rtf2-rosalind-198  sonic_version=v2  soni
 rosalind-mec-1448-ptf-any ansible_host=rosalind-mec-1448  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="TBD" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=TBD serial=TBD model=N6100_LD syseeprom_info="TBD"
 rosalind-mec-1448 ansible_host=rosalind-mec-1448  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="TBD" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=TBD serial=TBD model=N6100_LD syseeprom_info="TBD"
 
+# NVOS testbed rosalind-mec-1446 topologies
+rosalind-mec-1446-ptf-any ansible_host=rosalind-mec-1446  sonic_version=v2  sonic_hwsku=ACS-N6100_LD            serial_console="TBD" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=TBD serial=TBD model=N6100_LD syseeprom_info="TBD"
+rosalind-mec-1446 ansible_host=rosalind-mec-1446  sonic_version=v2  sonic_hwsku=ACS-N6100_LD             serial_console="TBD" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=TBD serial=TBD model=N6100_LD syseeprom_info="TBD"
+
 # NVOS testbed juliet-191 topologies
 juliet-191-ptf-any ansible_host=juliet-191  sonic_version=v2  sonic_hwsku=ACS-N5500_LD            serial_console="ssh -l rcon:7024 10.7.218.105" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=50:00:e6:1f:25:b8 serial=MT2513XZ00BK model=N5500_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n5500_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N5500_LD', '0x23': u'MT2508602UCP', '0x21': u'n5500_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 juliet-191 ansible_host=juliet-191  sonic_version=v2  sonic_hwsku=ACS-N5500_LD             serial_console="ssh -l rcon:7024 10.7.218.105" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=50:00:e6:1f:25:b8 serial=MT2513XZ00BK model=N5500_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n5500_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n5500_ld', '0x23': u'MT2508602UCP', '0x21': u'n5500_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
@@ -2562,6 +2566,9 @@ sws-rtf2-rosalind-198
 
 rosalind-mec-1448-ptf-any
 rosalind-mec-1448
+
+rosalind-mec-1446-ptf-any
+rosalind-mec-1446
 
 juliet-144-ptf-any
 juliet-144
