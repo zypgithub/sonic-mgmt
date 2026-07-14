@@ -1266,11 +1266,12 @@ platform_tests/test_sensors.py::test_sensors:
     - "https://redmine.mellanox.com/issues/4261914 and 'sn5640_simx' in platform"
     - "https://redmine.mellanox.com/issues/5023968 and ('slm-111' in testbed or 'slm-110' in testbed)"
   xfail:
-    reason: "Testcase ignored due to RM 4776315 on canonical bobcat setup"
+    reason: "Testcase ignored due to RM 4776315 on canonical bobcat setup, and failure due to https://redmine.mellanox.com/issues/5125814 on r-bison-12"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4776315 and 'bobcat-10' in testbed"
     - "https://redmine.mellanox.com/issues/4441016 and psu_manufacture=='Murata-PS' and psu_capacity=='1500'"
+    - "https://redmine.mellanox.com/issues/5125814 and 'r-bison-12' in testbed"
 
 platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
   skip:
