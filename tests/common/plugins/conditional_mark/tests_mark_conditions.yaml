@@ -3082,9 +3082,11 @@ gnmi/test_gnmi_configdb.py::test_gnmi_configdb_incremental_01:
 
 gnmi/test_gnmi_configdb.py::test_gnmi_configdb_polling_01:
   skip:
-    reason: "Test relies on DEVICE_METADATA bgp_asn; not configured on BMC"
+    reason: "Test relies on DEVICE_METADATA bgp_asn; not configured on BMC / Fails on IPv6-only management DUTs due to invalid gnmi_cli -a address: https://github.com/sonic-net/sonic-mgmt/issues/25980"
+    conditions_logical_operator: or
     conditions:
       - "'bmc' in topo_type"
+      - "is_mgmt_ipv6_only==True and https://github.com/sonic-net/sonic-mgmt/issues/25980"
 
 gnmi/test_gnmi_configdb.py::test_gnmi_configdb_streaming_sample_01:
   skip:
