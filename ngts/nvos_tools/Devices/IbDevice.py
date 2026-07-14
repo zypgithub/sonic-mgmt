@@ -3740,6 +3740,13 @@ class PortiaSimx(RosalindSwitch):
         self.constants.erots.clear()
         self.components_list = [component for component in self.components_list if component != FW_COMPONENT_EROT]
         self.asic_type = NvosConst.NVL7
+        self.core_count = 4
+        self.supported_nvl_speeds = ['200G']
+        self.fae_supported_core_clocks = {
+            core_clock: self.supported_nvl_speeds
+            for core_clock in self.fae_supported_core_clocks
+        }
+        self.access_port_speed = '200G'
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n7170_ld-r0")
         self.show_platform_output.update({
