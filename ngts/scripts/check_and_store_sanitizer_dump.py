@@ -63,7 +63,11 @@ def test_sanitizer(topology_obj, cli_objects, dumps_folder, test_name, send_mail
 
     if is_sanitizer:
         with allure.step('Reboot DUT'):
-            switch_engine.reload(['sudo reboot'])
+            cli_objects.dut.general.safe_reboot_flow(
+                topology_obj=topology_obj,
+                reboot_type='reboot',
+                check_sanitizer_after_reboot=False,
+            )
 
     if dpu_asan:
         with ThreadPoolExecutor() as executor:

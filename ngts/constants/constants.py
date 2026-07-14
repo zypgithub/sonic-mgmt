@@ -1662,6 +1662,8 @@ class VxlanConstants:
 class SanitizerConst:
     SENDER_MAIL = 'noreply@sanitizer.com'
     ASAN_APPS = ["what-just-happened"]
+    # Extra wait (seconds) for ASAN/sanitizer reboot vs regular image (Redmine #5134692).
+    SANITIZER_REBOOT_EXTRA_WAIT_SEC = 60
 
     NVOS_MAIL = 'nbu-system-sw-mlnxos20-ext@exchange.nvidia.com'
     SONIC_MAIL = "nbu-system-sw-sonic-ver@exchange.nvidia.com"
