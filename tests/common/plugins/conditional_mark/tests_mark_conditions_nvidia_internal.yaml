@@ -842,6 +842,12 @@ platform_tests/cli/test_show_bmc.py::TestBmcCliCommands::test_config_chassis_mod
     conditions:
     - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5140682"
 
+platform_tests/cli/test_show_bmc.py::TestBmcCliCommands::test_show_platform_temperature:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5140682 on BMC platform"
+    conditions:
+      - "https://redmine.mellanox.com/issues/5152933"
+
 platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
   skip:
     reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4258556"
