@@ -43,6 +43,72 @@ class TestNewTc:
             time.sleep(1)
         logger.warning(f"TC loop did not resume within {retries} retries, PWM still at 100%")
 
+    def _backup_thermal_files(self):
+        """Backup asic/module thermal values before stopping thermal services.
+
+        Stopping thermalctld deletes these sysfs files; tests recreate them afterward
+        so the TC loop can keep reading sensors while the test mocks temperatures.
+        """
+        thermal_folder = TC_CONST.HW_THERMAL_FOLDER
+        thermal_file_list = self.dut_engine.run_cmd(
+            f"sudo ls {thermal_folder} 2>/dev/null | "
+            f"grep -E '^(asic|module[0-9]+_temp_(input|fault|emergency|crit))$' || true"
+        ).strip()
+        backups = {}
+        for fname in thermal_file_list.split('\n'):
+            fname = fname.strip()
+            if not fname:
+                continue
+            file_path = os.path.join(thermal_folder, fname)
+            value = self.dut_engine.run_cmd(f"sudo cat {file_path} 2>/dev/null || true").strip()
+            if value.isdigit():
+                backups[file_path] = value
+        assert backups, "No thermal files found to backup before stopping services"
+        logger.info(f"Backed up {len(backups)} thermal files before stopping services")
+        return backups
+
+    def _thermal_file_exists(self, file_path):
+        check = self.dut_engine.run_cmd(
+            f"test -e {file_path} && echo EXISTS || echo MISSING"
+        ).strip()
+        return "MISSING" not in check
+
+    def _ensure_thermal_files_exist(self, file_backups):
+        """Wait for stop cleanup to delete sysfs files, recreate them, and verify.
+
+        Stopping thermalctld can delete sysfs files asynchronously.  Recreating
+        before that cleanup finishes can be undone by a late delete, leaving the
+        TC loop without readable sensor files.  Wait until every backed-up file
+        is gone, then recreate them and verify they stay present.
+        """
+
+        def _restore_files():
+            present_files = [
+                file_path for file_path in file_backups
+                if self._thermal_file_exists(file_path)
+            ]
+            assert not present_files, (
+                "Temperature files still present after stopping thermal services, "
+                f"waiting for cleanup to finish: {present_files}")
+
+            for file_path, backup_value in file_backups.items():
+                logger.info(
+                    f"File {file_path} was deleted after stopping thermalctld, "
+                    f"re-creating with value {backup_value}"
+                )
+                self.dut_engine.run_cmd(f"sudo touch {file_path}")
+                self.dut_engine.run_cmd(f"sudo chown admin {file_path}")
+                self.dut_engine.run_cmd(f"sudo echo {backup_value} > {file_path}")
+
+            missing_files = [
+                file_path for file_path in file_backups
+                if not self._thermal_file_exists(file_path)
+            ]
+            assert not missing_files, \
+                f"Temperature files still missing after recreate: {missing_files}"
+
+        retry_call(_restore_files, exceptions=AssertionError, tries=10, delay=1)
+
     def _stop_thermal_services(self):
         """
         Stop services that write asic/module temperature sysfs files, so that
@@ -52,21 +118,19 @@ class TestNewTc:
         resume_thermal_control() and wait for the TC loop to stabilize so
         PWM is back to sensor-driven levels before the test begins.
 
-        After thermalctld is stopped, the asic sysfs file will be deleted.
+        After thermalctld is stopped, the asic/module sysfs files will be deleted.
         The hw-management TC loop (hw-management-tc.service)
         still runs independently and would fail to read the missing file,
         triggering sensor_read_error protection that locks PWM at 100%.
         To prevent this, we check immediately after stopping thermalctld
-        and re-create the file with a safe temperature value if it was
+        and re-create the files with backed-up temperature values if they were
         deleted.
 
         Must NOT be called when testing cpu_pack/ambient sensors: stopping
         thermalctld causes module temp files to go stale, triggering TC loop
         total_err_cnt >= 2 protection which locks PWM at 100%.
         """
-        asic_file = os.path.join(TC_CONST.HW_THERMAL_FOLDER, "asic")
-        asic_temp_backup = self.dut_engine.run_cmd(f"sudo cat {asic_file}").strip()
-        assert asic_temp_backup.isdigit(), f"asic temperature file {asic_file} is not a valid number"
+        file_backups = self._backup_thermal_files()
 
         # suspend thermal control to prevent sensor_read_error protection from locking PWM at 100%
         self.cli_objects.dut.hw_mgmt.suspend_thermal_control()
@@ -92,24 +156,7 @@ class TestNewTc:
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-sync")
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-thermal-updater")
 
-        def _ensure_asic_file_exists():
-            """Re-create the asic temperature file if it was deleted.
-
-            Args:
-                asic_file: Full path to the asic sysfs file.
-                backup_value: Temperature value to write.  Falls back to a safe
-                    default (40000 = 40 °C) if not provided.
-            """
-            check = self.dut_engine.run_cmd(f"test -e {asic_file} && echo EXISTS || echo MISSING").strip()
-            assert "MISSING" in check, \
-                f"Temperature file {asic_file} still exists after stopping thermalctld"
-
-            logger.info(f"asic file {asic_file} was deleted after stopping thermalctld, "
-                        f"re-creating with value {asic_temp_backup}")
-            self.dut_engine.run_cmd(f"sudo touch {asic_file}")
-            self.dut_engine.run_cmd(f"sudo chown admin {asic_file}")
-            self.dut_engine.run_cmd(f"sudo echo {asic_temp_backup} > {asic_file}")
-        retry_call(_ensure_asic_file_exists, exceptions=AssertionError, tries=5, delay=1)
+        self._ensure_thermal_files_exist(file_backups)
 
         self.cli_objects.dut.hw_mgmt.resume_thermal_control()
         self._wait_tc_loop_resume()
@@ -227,9 +274,9 @@ class TestNewTc:
             # cpu_pack/ambient are maintained by kernel drivers — no services
             # need stopping for them. See _stop_thermal_services() docstring.
             need_stop_services = sensor_type in ("asic", "module")
-            if need_stop_services:
-                self._stop_thermal_services()
             try:
+                if need_stop_services:
+                    self._stop_thermal_services()
                 with MockSensors(self.dut_engine, self.cli_objects) as mock_sensor:
                     file_path_list = get_sensor_temperature_file_name(sensor_type, platform_params)
 

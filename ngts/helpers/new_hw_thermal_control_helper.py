@@ -401,6 +401,9 @@ def collect_sensors_info(cli_objects, dut):
     # Find sodimm sensors num
     update_thermal_sensors_counter(sensors_counter, r'sodimm[0-9]+_temp_input', "sodimm", thermal_file_list)
 
+    # Find module sensors num
+    update_thermal_sensors_counter(sensors_counter, r'module[0-9]+_temp_input', "module", thermal_file_list)
+
     # Update the the value for total_number in SENSOR_DATA
     for sensor_type, counter in sensors_counter.items():
         if sensor_type in SENSOR_DATA:
@@ -414,7 +417,7 @@ def collect_sensors_info(cli_objects, dut):
 def update_thermal_sensors_counter(sensors_counter, reg_sensor_file_name, sensor_name, thermal_file_list):
     match_file_num = 0
     for fname in thermal_file_list:
-        sensor_file_res = re.search(f'.* {reg_sensor_file_name} .*', fname)
+        sensor_file_res = re.search(f'.* {reg_sensor_file_name}(?: .*|$)', fname)
         if sensor_file_res:
             match_file_num += 1
 
