@@ -61,7 +61,8 @@ class QosBase:
                           "t1-isolated-d56u1-lag", "t1-isolated-v6-d56u1-lag", "t1-isolated-d128", "t1-isolated-d32",
                           "t1-isolated-d448u16", "t1-isolated-v6-d448u16", "t1-isolated-d224u8",
                           "t1-isolated-d128", "t1-isolated-d32",
-                          "t1-isolated-d448u15-lag", "t1-isolated-v6-d448u15-lag"]
+                          "t1-isolated-d448u15-lag", "t1-isolated-v6-d448u15-lag",
+                          't1-d118u8s2', 't0-d96-u30s2']
     SUPPORTED_PTF_TOPOS = ['ptf32', 'ptf64']
     SUPPORTED_ASIC_LIST = ["pac", "gr", "gr2", "gr2x", "gb", "p200", "td2", "th", "th2", "spc1", "spc2", "spc3",
                            "spc4", "spc5", "spc6", "td3", "th3", "j2c+", "jr2", "th5", "th6", "q3d"]
