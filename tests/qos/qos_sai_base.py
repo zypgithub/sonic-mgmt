@@ -1629,7 +1629,8 @@ class QosSaiBase(QosBase):
                     get_src_dst_asic_and_duts['dst_asic']:
                 dutTopo = dutTopo + "any"
             else:
-                dutTopo = dutTopo + topo
+                # Any t2 variant for gb asic has to use the gb/t2 qos params only.
+                dutTopo = dutTopo + "t2"
         elif dutTopo + topo in qosConfigs['qos_params'].get(dutAsic, {}):
             dutTopo = dutTopo + topo
         else:
@@ -1734,6 +1735,9 @@ class QosSaiBase(QosBase):
             Returns:
                 None
         """
+        if get_src_dst_asic_and_duts['src_dut'].facts['asic_type'] == "cisco-8000":
+            yield
+            return
         all_asics = get_src_dst_asic_and_duts['all_asics']
 
         ipVersions = [{"ip_version": "ipv4"}, {"ip_version": "ipv6"}]
@@ -4009,6 +4013,9 @@ def clear_pg_watermark(interface):
         By default WRED_ECN_QUEUE and WRED_ECN_PORT are disabled for polling.
         Enable flexcounter groups WRED_ECN_QUEUE and WRED_ECN_PORT using counterpoll CLI
         """
+        if get_src_dst_asic_and_duts['all_duts'][0].facts["asic_type"] == 'cisco-8000':
+            yield
+            return
         for duthost in get_src_dst_asic_and_duts['all_duts']:
             for dut_asic in duthost.asics:
                 try:
