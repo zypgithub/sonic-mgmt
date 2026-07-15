@@ -28,7 +28,8 @@ from ngts.nvos_constants.constants_nvos import (
     TcpDumpConsts,
 )
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
-from ngts.nvos_tools.Devices.SwitchCapabilities import CpoCapability, NoPSUCapability, SwitchCapabilityHandler
+from ngts.nvos_tools.Devices.SwitchCapabilities import CpoCapability, NoPSUCapability, PortiaCpoCapability, \
+    SwitchCapabilityHandler
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, InternalNvosConsts, PhyRecoveryConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -3842,6 +3843,68 @@ class PortiaSimxNso(PortiaSimx):
 
 
 class PortiaSA(PortiaSimx):
+
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+
+# -------------------------- Portia CPO Switch ----------------------------
+
+
+class PortiaCpoSwitch(PortiaSimx):
+    """Portia (QM5 / NVL7) CPO switch tray (N7220_LD) with Gen2 CPO vModule support.
+
+    Applies PortiaCpoCapability, which attaches a first-class CpoTopology as
+    self.cpo (one CPO / vModule per ASIC, 4 OEs + 1 ELS each). Real HW trays
+    ship with 4 QM5 ASICs (default) or 2 - there is no 8-ASIC flavor.
+
+    Port model: per ASIC, 72 GPU-facing access ports (acp) over the backplane
+    and 56 CPO scale-out trunk interfaces exposed as 7 swX groups x 8
+    subports (p1s1-p1s8). The eighth 8-channel optical group is a spare and is
+    not exposed as an interface. swX numbering is global and compact across
+    ASICs (ASIC1: sw1-sw7, ASIC2: sw8-sw14, ...). acp ports are not
+    CPO-associated.
+    """
+
+    ACP_PORTS_PER_ASIC = 72
+    SW_GROUPS_PER_ASIC = 7
+    SW_SUBPORTS_PER_GROUP = 8
+    SPARE_CHANNELS_PER_ASIC = 8
+
+    def __init__(self, asic_amount=4):
+        super().__init__(asic_amount=asic_amount)
+        # real HW tray, not a simx flavor - no mloop setup needed (unlike PortiaSimx)
+        self.require_mloop_setup = False
+        SwitchCapabilityHandler.apply_capability(self, PortiaCpoCapability())
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n7220_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N7220_LD",
+        })
+        # sw scale-out ports are 1-lane NVL7 simplex (200G PAM-4 per lane), unlike
+        # the inherited 2-lane 400G trunk ports - confirm exact string on DUT
+        self.nvl_trunk_port_speed = '200G'
+
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.nvl_access_ports_list = [f'acp{num}' for num in range(1, self.ACP_PORTS_PER_ASIC * self.asic_amount + 1)]
+        self.nvl_trunk_ports_list = [f'sw{sw}p1s{subport}'
+                                     for sw in range(1, self.SW_GROUPS_PER_ASIC * self.asic_amount + 1)
+                                     for subport in range(1, self.SW_SUBPORTS_PER_GROUP + 1)]
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
+
+
+class PortiaCpo2Asic(PortiaCpoSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=2)
+
+
+class PortiaCpoSA(PortiaCpoSwitch):
 
     def __init__(self):
         super().__init__(asic_amount=1)

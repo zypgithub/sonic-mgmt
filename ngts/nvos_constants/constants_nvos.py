@@ -2231,6 +2231,116 @@ class SdnCmdConsts:
     SET_COMMAND_NON_STANDALONE_LIST = [SET_STATIC_CONFIG, FACTORY_RESET, CREATE_PARTITION, REMOVE_GPUS_FROM_PARTITION]
 
 
+class Cpov2Consts:
+    """Gen2 (Portia / QM5 / NVL7) CPO field names and constants.
+
+    Field-name strings for `nv show platform cpo [cpoN]`,
+    `nv show platform laser-source [elsN]` and `nv show interface swXpY cpo`.
+    The expected topology (counts) lives in CpoTopology, not here.
+    """
+    # cpo / interface-cpo top-level fields
+    STATUS = "status"
+    ERROR_STATUS = "error-status"
+    IDENTIFIER = "identifier"
+    FW_VERSION = "fw-version"
+    PARENT = "parent"
+    ASSOCIATED_PORTS = "associated-ports"
+    ASSOCIATED_LASER_SOURCES = "associated-laser-sources"
+    ASSOCIATED_OPTICAL_ENGINES = "associated-optical-engines"
+
+    # sub-trees
+    THRESHOLDS = "thresholds"
+    OE = "oe"
+    CHANNEL = "channel"
+    LASER = "laser"
+
+    # channel fields
+    CH_RX_POWER = "rx-power"
+    CH_TX_POWER = "tx-power"
+    CH_RX_LOS = "rx-los"
+    CH_TX_LOS = "tx-los"
+    CH_TX_FAULT = "tx-fault"
+    CH_LASER_SOURCE_INPUT_POWER = "laser-source-input-power"
+    CH_FAULT_OPCODE = "fault-opcode"
+    CH_DP_STATE = "dp-state"
+
+    # optical-engine fields
+    OE_SERIAL_NUMBER = "serial-number"
+    OE_TEMPERATURE = "temperature"
+
+    # laser-source (ELS) fields
+    ELS_VENDOR_NAME = "vendor-name"
+    ELS_VENDOR_PN = "vendor-pn"
+    ELS_VENDOR_SN = "vendor-sn"
+    ELS_VENDOR_REV = "vendor-rev"
+    ELS_VENDOR_DATE_CODE = "vendor-date-code"
+    ELS_POWER_CONSUMPTION = "power-consumption"
+    ELS_ICC_CURRENT = "icc-current"
+
+    # per-laser fields
+    LASER_ENABLED = "enabled"
+    LASER_OPER_STATUS = "oper-status"
+    LASER_ERROR_STATUS = "error-status"
+    LASER_RAMPING_STATUS = "ramping-status"
+    LASER_POWER_RESTRICTION = "power-restriction"
+    LASER_AGE = "laser-age"
+    LASER_TARGET_OUTPUT_POWER = "target-output-power"
+    LASER_MPD_CURRENT = "laser-mpd-current"
+    LASER_BIAS_CURRENT = "laser-bias-current"
+    LASER_TEC_CURRENT = "tec-current"
+    LASER_TEC_VOLTAGE = "tec-voltage"
+    LASER_TEMPERATURE = "laser-temperature"
+    LASER_TX_POWER = "tx-power"
+    LASER_HEALTH = "laser-health"
+    TEC_HEALTH = "tec-health"
+    FREQUENCY_ERROR = "frequency-error"
+
+    # common leaf fields of measured values (power / current), per HLD samples
+    DIAGNOSTICS_STATUS = "diagnostics-status"
+    TEMPERATURE = "temperature"
+    POWER = "power"
+    ALARM = "alarm"
+    ALARM_SEVERITY = "alarm-severity"
+
+    # thresholds: `nv show platform cpo <id>` uses THRESHOLDS (plural) with
+    # rx/tx-power-high/low; `... laser-source <id>` uses THRESHOLD (singular)
+    # with tx-power-upper/lower (per HLD samples)
+    WARNING = "warning"
+    RX_POWER_HIGH = "rx-power-high"
+    RX_POWER_LOW = "rx-power-low"
+    TX_POWER_HIGH = "tx-power-high"
+    TX_POWER_LOW = "tx-power-low"
+    TX_POWER_UPPER = "tx-power-upper"
+    TX_POWER_LOWER = "tx-power-lower"
+    THRESHOLD = "threshold"
+
+    # FAE: `nv action activate fae platform laser-source <els-id>` named params
+    # (NVUE syntax keeps the 'laser'/'step' keywords, e.g. 'laser laser-4 step laser-up')
+    STEP = "step"
+    STEP_FIBER_CHECK = "fiber-check"
+    STEP_LASER_TUNING = "laser-tuning"
+    STEP_LASER_UP = "laser-up"
+    STEP_LASER_FINE_TUNE = "laser-fine-tune"
+    STEP_POWER_SETPOINT = "power-setpoint"
+    # steps 1-3 run by default when no step is given; all 5 are valid step names
+    DEFAULT_ACTIVATE_STEPS = [STEP_FIBER_CHECK, STEP_LASER_TUNING, STEP_LASER_UP]
+    ALL_ACTIVATE_STEPS = DEFAULT_ACTIVATE_STEPS + [STEP_LASER_FINE_TUNE, STEP_POWER_SETPOINT]
+
+    # FAE: `nv show/set/unset fae system cpo` fields (CLI uses 'z' spelling
+    # els-initialization, unlike the HLD section headers)
+    CPO_DUMP_STATE = "cpo-dump-state"
+    ELS_INITIALIZATION = "els-initialization"
+    ELS_INITIALIZATION_PER_LASER = "els-initialization-per-laser"
+    INIT_FIBER_TUNING = "fiber-tuning"
+    INIT_ERROR = "error"
+
+    # system-health instance-name regexes (component types live in
+    # HealthConsts.Component.CPO / Laser_Source). \Z-anchored because they are
+    # consumed via re.match: 'cpo1-stale' must NOT pass as a valid instance name.
+    CPO_INSTANCE_REGEX = r'cpo\d+\Z'
+    ELS_INSTANCE_REGEX = r'els\d+\Z'
+
+
 class HealthConsts:
     OK = "OK"
     NOT_OK = "Not OK"
@@ -2267,7 +2377,13 @@ class HealthConsts:
         Switch = "switch"
         Leakage_Sensor = "leakage-sensor"
         Software = "software"
-        COMPONENTS = [FAN, ASIC, CPU, PSU, Transceiver, Switch, Leakage_Sensor, Software]
+        # Gen2 CPO health component types (Portia/QM5). COMPONENTS is the global
+        # "known component" allowlist (health output validation); per-device
+        # expectations come from device.health_components, so listing cpo /
+        # laser-source here does not affect non-CPO devices.
+        CPO = "cpo"
+        Laser_Source = "laser-source"
+        COMPONENTS = [FAN, ASIC, CPU, PSU, Transceiver, Switch, Leakage_Sensor, Software, CPO, Laser_Source]
         LAST_HEALTHY = 'last-unhealthy'
         UNHEALTHY_COUNT = 'unhealthy-count'
         STATE = 'state'

@@ -17,7 +17,7 @@ from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, C
                                               RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch,
                                               RosalindStackedSwitch, RosalindStackedSimx, RosalindChipless,
                                               TaipanSwitch, TaipanSingleAsicSwitch, PortiaSimx, PortiaSimxNso, PortiaSA,
-                                              RosalindSA, RosalindRTF)
+                                              PortiaCpoSwitch, PortiaCpo2Asic, PortiaCpoSA, RosalindSA, RosalindRTF)
 
 logger = logging.getLogger()
 
@@ -80,7 +80,12 @@ class DeviceFactory:
             "N6300_LD_simx - RosalindStacked": RosalindStackedSimx,
             "N7170_LD_simx - Portia": PortiaSimx,
             "N7100_LD_NSO_simx - Portia": PortiaSimxNso,
-            "N7170_LD_simx - Portia_SA": PortiaSA
+            "N7170_LD_simx - Portia_SA": PortiaSA,
+            # Gen2 CPO Portia tray - real HW device, N7220_LD (4- and 2-ASIC flavors, no 8-ASIC).
+            # Noga switch_type strings must match these keys.
+            "N7220_LD - Portia_CPO": PortiaCpoSwitch,
+            "N7220_LD - Portia_CPO_2ASIC": PortiaCpo2Asic,
+            "N7220_LD - Portia_CPO_SA": PortiaCpoSA
         }
 
     @staticmethod

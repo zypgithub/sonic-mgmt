@@ -26,6 +26,7 @@ from ngts.tests_nvos.interfaces.nvl_port.helpers import (
 from ngts.tests_nvos.helpers.interfaces import interface_helpers
 from ngts.tests_nvos.helpers.interfaces.nvl_port.nvl6 import link_training_helpers
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
+from ngts.nvos_tools.Devices.cpo.CpoTopology import is_cpo_capable
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -199,7 +200,9 @@ def test_show_nvl_interface_commands(engines, devices, random_api, has_loopbox, 
     with allure_step('Check if device is not a JulietNonScaleoutSwitch Device'):
         if not isinstance(dut_device, JulietNonScaleoutSwitch):
             with allure_step("Verify switch port speed"):
-                if devices.dut.nvl_trunk_ports_list != [] and present_transceivers != []:
+                # sw optics: pluggable transceivers on legacy scaleout platforms, CPO-backed
+                # (no transceiver objects) on Gen2 CPO devices
+                if devices.dut.nvl_trunk_ports_list != [] and (present_transceivers != [] or is_cpo_capable(dut_device)):
                     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP, interface_type='sw').get_returned_value()
                     output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                         selected_port.interface.link.show()).get_returned_value()
@@ -284,13 +287,19 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
         toggleable_interface.append('fnm')
         logger.info(f"FNM ports available: {len(devices.dut.nvl_fnm_ports)} ports")
 
-    # Check for SW ports (trunk ports with transceivers)
+    # Check for SW ports (trunk ports whose optics are pluggable transceivers on
+    # legacy scaleout platforms, or CPO-backed - no transceiver objects - on Gen2 CPO)
     platform = Platform()
     if devices.dut.nvl_trunk_ports_list:
-        present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
-        if present_transceivers:
+        trunk_port_count = len(devices.dut.nvl_trunk_ports_list)
+        if is_cpo_capable(devices.dut):
             toggleable_interface.append('sw')
-            logger.info(f"SW (trunk) ports available with transceivers: {len(present_transceivers)} transceivers")
+            logger.info(f"SW (trunk) ports available (CPO-backed): {trunk_port_count} ports")
+        else:
+            present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
+            if present_transceivers:
+                toggleable_interface.append('sw')
+                logger.info(f"SW (trunk) ports available with transceivers: {len(present_transceivers)} transceivers")
 
     # Check for ACP ports (access ports)
     if (has_loopbox or not standalone_system or is_mloop_simx) and devices.dut.nvl_access_ports_list:
