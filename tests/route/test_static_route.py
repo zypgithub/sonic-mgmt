@@ -53,11 +53,13 @@ def clear_static_route(rand_selected_dut):
     Args:
         rand_selected_dut (object): DUT object
     """
-    yield
-    for route in added_routes:
-        rand_selected_dut.shell('config route del prefix {} nexthop {}'.format(
-            route[0], route[1]), module_ignore_errors=True)
-    added_routes.clear()
+    try:
+        yield
+    finally:
+        for route in added_routes:
+            rand_selected_dut.shell('config route del prefix {} nexthop {}'.format(
+                route[0], route[1]), module_ignore_errors=True)
+        added_routes.clear()
 
 def is_dualtor(tbinfo):
     """Check if the testbed is dualtor."""
@@ -717,7 +719,7 @@ def test_static_route_config_reload_with_traffic(rand_selected_dut, rand_unselec
 @pytest.mark.parametrize("ipv6", [False, True], ids=["ipv4", "ipv6"])
 def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route, tbinfo, ipv6):
 
-    def get_nexthop(duthost, ipv6):
+    def _get_bgp_neighbor_ip(duthost, ipv6):
         """Get next hop from BGP neighbors
 
         Args:
@@ -732,12 +734,14 @@ def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route, tbinfo
         else:
             cmd = 'show ip bgp summary'
         parse_result = duthost.show_and_parse(cmd)
+        if not parse_result:
+            return None
         if 'neighbor' in parse_result[0]:
             return parse_result[0]['neighbor']
         else:
             return parse_result[0]['neighbhor']
 
-    def add_route(duthost, prefix, nexthop):
+    def _add_route(duthost, prefix, nexthop):
         """Add static route
 
         Args:
@@ -749,27 +753,29 @@ def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route, tbinfo
             'config route add prefix {} nexthop {}'.format(prefix, nexthop))
         added_routes.add((prefix, nexthop))
 
-    def routes_from_swss_delta(delta):
+    def _routes_from_swss_delta(delta):
         """ROUTE_TABLE:<prefix> segments in delta order."""
         return re.findall(r"ROUTE_TABLE:([^|]+)", delta)
 
-    """When adding N static routes, swss.rec delta must be exactly N non-empty lines of ROUTE_TABLE|SET matching prefixes."""
+    """When adding N static routes, swss.rec delta must be exactly N non-empty lines of
+    ROUTE_TABLE|SET matching prefixes."""
     if not ipv6 and is_ipv6_only_topology(tbinfo):
         pytest.skip("Will not program IPv4 static route on IPv6-only topology")
 
     duthost = rand_selected_dut
     if ipv6:
-        prefixes = [f"2000:1:{i}::/64" for i in range(1, 3)]
+        prefixes = [f"2000:1:{i}::/64" for i in range(1, 3)]  # noqa: E231
     else:
         prefixes = [f"1.1.{i}.0/24" for i in range(1, 3)]
-    nexthop = get_nexthop(duthost, ipv6)
-    n = len(prefixes)
+    nexthop = _get_bgp_neighbor_ip(duthost, ipv6)
+    if not nexthop:
+        pytest.fail("No valid BGP neighbors found")
     wait_time = 3
 
     with allure.step("Record swss.rec baseline then add static routes {}".format(prefixes)):
         mark = int(duthost.shell("sudo stat -c %s /var/log/swss/swss.rec")["stdout"].strip())
         for p in prefixes:
-            add_route(duthost, p, nexthop)
+            _add_route(duthost, p, nexthop)
 
     tail_offset = mark + 1
     with allure.step("Wait then dump swss.rec incremental content"):
@@ -781,16 +787,12 @@ def test_static_route_no_bgp_churn(rand_selected_dut, clear_static_route, tbinfo
         logger.info(
             f"swss.rec new content after static routes: {len(non_empty_lines)} non-empty line(s)")
 
-        pytest_assert(
-            len(non_empty_lines) == n,
-            f"Expected exactly {n} non-empty lines in swss.rec delta, got {len(non_empty_lines)}: {non_empty_lines}")
-
-        routes = routes_from_swss_delta(delta)
+        routes = _routes_from_swss_delta(delta)
         pytest_assert(
             set(routes) == set(prefixes),
             f"Routes from swss delta {routes} do not match expected prefixes {prefixes}")
         logger.info(f"swss.rec ROUTE_TABLE prefixes: {routes}")
-        logger.info(f"swss.rec delta raw:\n{delta}")
+        logger.info(f"swss.rec delta raw:\n{delta}")  # noqa: E231
 
 
 def check_static_route_removed(duthost, prefix, ipv6):

@@ -1,8 +1,11 @@
+import logging
 import os
-from typing import List
-from dataclasses import dataclass
+from typing import Dict, List, Optional
+from dataclasses import dataclass, field, fields
 from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+
+logger = logging.getLogger()
 
 
 class ValidationConsts:
@@ -20,6 +23,9 @@ class ValidationConsts:
     TC_DATAFRAME = "tc_dataframe"
     PG_HEADROOM_DATAFRAME = "pg_headroom_dataframe"
     PG_BUFFER_DATAFRAME = "pg_buffer_dataframe"
+    PER_PORT_TC_STATS = "per_port_tc_stats"
+    PER_PORT_PG_BUFFER_STATS = "per_port_pg_buffer_stats"
+    PER_PORT_PG_HEADROOM_STATS = "per_port_pg_headroom_stats"
     TC_PG_SAMPLES = "TC_PG_samples"
     TC_SAMPLES = "TC_samples"
     TC_NAME = "tc"
@@ -30,6 +36,10 @@ class ValidationConsts:
     OCC_99 = "occ99"
     OCC_MAX = "occMax"
     MAX_WATERMARK = "maxWatermark"
+    JSON_METRIC_AVG = "avg"
+    JSON_METRIC_P99 = "percentile_99"
+    JSON_METRIC_MAX = "max"
+    JSON_METRIC_WATERMARK = "max_watermark"
     TX_RATE = "txRate"
     RX_RATE = "rxRate"
     TC_LATENCY_SAMPLES = "TC_latency_samples"
@@ -122,6 +132,7 @@ class PerfConsts:
     SDK_GENERATION_SECONDS_THRESHOLD = 30
     PERF_COUNTERS_ALLOWED_DEVIATION = 2.5
     DEFAULT_FAIRNESS_THRESHOLD = 0.05
+    DEFAULT_TC_OCC_FAIRNESS_THRESHOLD = 0.05
 
     # CLI Types
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes
@@ -141,6 +152,7 @@ class PerfConsts:
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
     LATEST_SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/lastrc_{SDK_BRANCH}/DEBS/"
+    SYNCD_PIP_INDEX_URL = 'https://urm.nvidia.com/artifactory/api/pypi/nv-shared-pypi/simple'
 
     # File Names
     REQUIRMENTS_FILE = 'requirements.txt'
@@ -152,12 +164,13 @@ class PerfConsts:
         'export APP_LIB_PATH=$SDK_ROOT/applibs; '
         'export SDK_INCLUDE=$SDK_ROOT/applibs; '
         'export SXD_INCLUDE=$SDK_ROOT/sxd_libs; '
+        'export PYVER=$(python3 -c "import sys; print(chr(46).join(map(str, sys.version_info[:2])))"); '
         'export INCLUDES="-I$SDK_ROOT/applibs/include '
         '-I$SDK_ROOT/sxd_libs/include '
         '-I$SDK_ROOT/sx_complib/include '
         '-I$SDK_ROOT/sx_gen_utils/include '
-        '-I/usr/include/python3.11 '
-        '-I/usr/lib/python3.11/config-3.11-x86_64-linux-gnu/"; '
+        '-I/usr/include/python$PYVER '
+        '-I/usr/lib/python${PYVER}/config-${PYVER}-x86_64-linux-gnu/"; '
         'export LD_LIBRARY_PATH=$SDK_ROOT/applibs/lib:$SDK_ROOT/sxd_libs/lib:$SDK_ROOT/sx_complib/lib:$LD_LIBRARY_PATH; '
         'export PYTHONPATH=/root/sys_sdk/sx_sdk_py_tests/:'
         '/root/sys_sdk/sx_sdk_py_tests/tests/:'
@@ -351,10 +364,179 @@ class PerfConsts:
     MAX_CELLS_RANGE_FOR_BINARY_SEARCH = 100
 
 
+@dataclass
+class BwFairnessThreshold:
+    tx: Optional[float] = PerfConsts.DEFAULT_FAIRNESS_THRESHOLD
+    rx: Optional[float] = PerfConsts.DEFAULT_FAIRNESS_THRESHOLD
+
+    @classmethod
+    def _get_bw_fairness_threshold(cls, bw_threshold: Optional[dict]) -> 'BwFairnessThreshold':
+        """
+        Build a BwFairnessThreshold from a single-port-group bw_threshold dict.
+
+        A direction is set to None (disabled) only when its value in the dict is explicitly None.
+        Falls back to a default BwFairnessThreshold when bw_threshold is not a dict.
+        """
+        if not isinstance(bw_threshold, dict):
+            logger.info(f"_get_bw_fairness_threshold: bw_threshold is not a dict (got: {bw_threshold=} of type={type(bw_threshold).__name__!r}), returning default BwFairnessThreshold")
+            return cls()
+        result = cls()
+        for group_threshold in bw_threshold.values():
+            if not isinstance(group_threshold, dict):
+                continue
+            for direction in (ValidationConsts.TX, ValidationConsts.RX):
+                if direction in group_threshold and group_threshold[direction] is None:
+                    logger.info(f"bw_threshold has {direction}=None — setting bw_fairness_threshold.{direction} to None")
+                    setattr(result, direction, None)
+        return result
+
+    @classmethod
+    def get_bw_fairness_threshold_per_port_group(cls, bw_threshold: Optional[dict]) -> 'Optional[Dict[str, BwFairnessThreshold]]':
+        """
+        Build a per-port-group fairness threshold mapping from a bw_threshold dict.
+
+        Returns None when bw_threshold is None, signaling that fairness validation should be skipped.
+        When bw_threshold is a non-dict non-None value, returns {"default": <default BwFairnessThreshold>}.
+        When bw_threshold is a dict keyed by port group names, each group gets its own
+        BwFairnessThreshold where a direction is None (disabled) if that group's value
+        for that direction is explicitly None.
+        """
+        if bw_threshold is None:
+            logger.info("get_bw_fairness_threshold_per_port_group: bw_threshold is None, returning None")
+            return None
+        if not isinstance(bw_threshold, dict):
+            logger.info(
+                f"get_bw_fairness_threshold_per_port_group: bw_threshold is not a dict "
+                f"(got: {bw_threshold=} of type={type(bw_threshold).__name__!r}), returning default for 'default' group"
+            )
+            return {"default": cls._get_bw_fairness_threshold(bw_threshold)}
+        return {
+            port_group: cls._get_bw_fairness_threshold({port_group: group_threshold})
+            for port_group, group_threshold in bw_threshold.items()
+        }
+
+    def override_per_port_group(
+        self, bw_fairness_threshold: 'Optional[Dict[str, BwFairnessThreshold]]'
+    ) -> 'Optional[Dict[str, BwFairnessThreshold]]':
+        """Apply this instance as a threshold override across all port groups.
+
+        Directions that are already disabled (None) in a port group are preserved.
+        """
+        if bw_fairness_threshold is None:
+            return None
+        for threshold_by_direction in bw_fairness_threshold.values():
+            if threshold_by_direction.tx is not None:
+                threshold_by_direction.tx = self.tx
+            if threshold_by_direction.rx is not None:
+                threshold_by_direction.rx = self.rx
+        return bw_fairness_threshold
+
+
 class MultiNosSharedData:
     DEFAULT_SHARED_JSON = "shared_communication.json"
     ALIBABA_ACL_DUMP_PATH = 'alibaba_acl_path'
     ALIBABA_ACL_DUMP_NAME = 'alibaba_acl_name'
+
+
+@dataclass
+class OccupancyMetrics:
+    """Per-metric variance thresholds for a single buffer type."""
+    avg: float = PerfConsts.DEFAULT_TC_OCC_FAIRNESS_THRESHOLD
+    percentile_99: float = PerfConsts.DEFAULT_TC_OCC_FAIRNESS_THRESHOLD
+    max: float = PerfConsts.DEFAULT_TC_OCC_FAIRNESS_THRESHOLD
+    max_watermark: float = PerfConsts.DEFAULT_TC_OCC_FAIRNESS_THRESHOLD
+
+
+@dataclass
+class OccupancyVarianceConfig:
+    """
+    Per-buffer-type variance thresholds for TC occupancy fairness validation.
+
+    Each field holds an OccupancyMetrics instance with per-metric thresholds for that buffer type.
+    Setting a field to None disables variance validation entirely for that buffer type.
+
+    Attributes:
+        tc (OccupancyMetrics, optional): Variance thresholds for TC buffer occupancy.
+            None means TC occupancy variance will not be validated.
+        pg_headroom (OccupancyMetrics, optional): Variance thresholds for PG headroom occupancy.
+            None means PG headroom occupancy variance will not be validated.
+        pg_buffer (OccupancyMetrics, optional): Variance thresholds for PG buffer occupancy.
+            None means PG buffer occupancy variance will not be validated.
+    """
+    tc: Optional[OccupancyMetrics] = field(default_factory=OccupancyMetrics)
+    pg_headroom: Optional[OccupancyMetrics] = field(default_factory=OccupancyMetrics)
+    pg_buffer: Optional[OccupancyMetrics] = field(default_factory=OccupancyMetrics)
+
+    _occupancy_metrics_field_by_occ_key = {
+        ValidationConsts.OCC_AVG: ValidationConsts.JSON_METRIC_AVG,
+        ValidationConsts.OCC_99: ValidationConsts.JSON_METRIC_P99,
+        ValidationConsts.OCC_MAX: ValidationConsts.JSON_METRIC_MAX,
+        ValidationConsts.MAX_WATERMARK: ValidationConsts.JSON_METRIC_WATERMARK,
+    }
+
+    def get_variance(self, buffer_type: str, occ_key: str) -> Optional[float]:
+        """
+        Return the variance threshold for a given buffer type and occupancy metric key.
+
+        Args:
+            buffer_type: One of the dataclass fields ('tc', 'pg_headroom', 'pg_buffer').
+            occ_key: An occupancy metric key (e.g. ValidationConsts.OCC_AVG).
+
+        Returns:
+            The variance threshold as a float, or None if variance validation is disabled
+            for the given buffer type (i.e. the field is set to None).
+
+        Raises:
+            ValueError: If buffer_type is not a recognized field or occ_key is not a
+                known occupancy metric key. The exception message includes the allowed values.
+        """
+        try:
+            metrics: Optional[OccupancyMetrics] = getattr(self, buffer_type)
+        except AttributeError as attr_error:
+            allowed = [f.name for f in fields(self) if not f.name.startswith('_')]
+            raise AttributeError(
+                f"{attr_error}.\nUnknown buffer_type '{buffer_type}'. Allowed values: {allowed}"
+            )
+        if metrics is None:
+            logging.getLogger(__name__).debug(
+                f"get_variance: buffer_type='{buffer_type}' is None — variance validation disabled for this buffer type"
+            )
+            return None
+        field_name = self._occupancy_metrics_field_by_occ_key.get(occ_key)
+        if field_name is None:
+            allowed_keys = list(self._occupancy_metrics_field_by_occ_key.keys())
+            raise ValueError(
+                f"Unknown occ_key '{occ_key}'. Allowed values: {allowed_keys}"
+            )
+        return getattr(metrics, field_name)
+
+    @classmethod
+    def from_tc_occ_threshold(cls, tc_occ_threshold) -> Optional[Dict[str, 'OccupancyVarianceConfig']]:
+        """
+        Derive a per-port-group variance config dict from a tc_occ_threshold value.
+
+        - None               → None (disables tc_occ_fairness validation)
+        - {port_group: dict} → {port_group: OccupancyVarianceConfig()} per port group
+        - {occ_key: value}   → {"default": OccupancyVarianceConfig()} applied to all port groups
+        - non-dict           → raises ValueError
+        """
+        logger.debug(f"from_tc_occ_threshold: input tc_occ_threshold={tc_occ_threshold!r}")
+        if tc_occ_threshold is None:
+            logger.debug("from_tc_occ_threshold: tc_occ_threshold is None — disabling tc_occ_fairness validation, returning None")
+            return None
+        if not isinstance(tc_occ_threshold, dict):
+            raise ValueError(
+                f"tc_occ_threshold must be a dict or None, got {type(tc_occ_threshold).__name__!r}: {tc_occ_threshold!r}"
+            )
+        # Peek at the first value to detect the dict shape:
+        # - values are dicts  → per-port-group config: {port_group: {occ_key: value, ...}, ...}
+        # - values are scalars → flat/global config:    {occ_key: value, ...}
+        if isinstance(next(iter(tc_occ_threshold.values()), None), dict):
+            result = {pg: cls() for pg in tc_occ_threshold}
+            logger.debug(f"from_tc_occ_threshold: detected per-port-group shape — returning per-port-group config: {list(result.keys())}")
+            return result
+        logger.debug("from_tc_occ_threshold: detected flat/global shape — returning {'default': OccupancyVarianceConfig()} applied to all port groups")
+        return {"default": cls()}
 
 
 @dataclass
@@ -391,17 +573,17 @@ class Cl_Consts:
     SRV6_SPEED_BY_CHIP_TYPE = {
         "SPC4": "200000000",
         "SPC5": "100000000",
-        "SPC6": "200000000",  # TODO(#5088329): confirm correct SRv6 speed for SPC6 with arch
+        "SPC6": "200000000"
     }
     SRV6_SPLIT_LEFT_BY_CHIP_TYPE = {
         "SPC4": 4,
         "SPC5": 8,
-        "SPC6": 8,  # TODO(#5088329): confirm correct SRv6 split_left for SPC6 with arch
+        "SPC6": 8,
     }
     SRV6_SPLIT_RIGHT_BY_CHIP_TYPE = {
         "SPC4": 4,
         "SPC5": 8,
-        "SPC6": 8,  # TODO(#5088329): confirm correct SRv6 split_right for SPC6 with arch
+        "SPC6": 8,
     }
     SDK_DEB_DIR_TEMPLATE = os.path.join(PerfConsts.SDK_VERSION_PATH, "sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-29-2-amd64/")
 
@@ -573,35 +755,32 @@ class MRCConsts:
                  "spine": "Mellanox-SN5600-C224O8"},
         "SPC5": {"leaf": "Mellanox-SN5640-C512S2",
                  "spine": "Mellanox-SN5640-C448O16"},
-        # leaf: ACS-SN6600_LD-SPIL-8 = full 8×200G split = 512 ports (confirmed)
-        # spine: TODO(#5088329): confirm correct SPC6 spine SKU with arch
-        "SPC6": {"leaf": "ACS-SN6600_LD-SPIL-8",
-                 "spine": "Mellanox-SN6600_LD-P128C2"},
+        "SPC6": {"leaf": "Mellanox-SN6600_LD-V512C2",
+                 "spine": "Mellanox-SN6600_LD-V448P16S2"},
     }
     HWSKU_SWITCH_TYPE = {
         "Mellanox-SN5600-C256S1": 'ToRRouter',
         "Mellanox-SN5600-C224O8": 'LeafRouter',
         "Mellanox-SN5640-C512S2": 'ToRRouter',
         "Mellanox-SN5640-C448O16": 'LeafRouter',
-        "ACS-SN6600_LD-SPIL-8": 'ToRRouter',          # SPC6 leaf — confirmed HWSKU
-        # TODO(#5088329): confirm correct SPC6 spine switch type with arch
-        "Mellanox-SN6600_LD-P128C2": 'LeafRouter',
+        "Mellanox-SN6600_LD-V512C2": 'ToRRouter',
+        "Mellanox-SN6600_LD-V448P16S2": 'LeafRouter'
     }
     UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE = {
         "SPC4": 128,
         "SPC5": 180,
-        "SPC6": 180,  # SPIL-8: 512×200G — same port count as SPC5 512×100G
+        "SPC6": 180
     }
     VICTIM_PORTS_NUM = 90
     LEAF_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
         "SPC4": {'group_size': 16, 'group_num': 8},
         "SPC5": {'group_size': 10, 'group_num': 18},
-        "SPC6": {'group_size': 10, 'group_num': 18},  # same as SPC5 — identical port count
+        "SPC6": {'group_size': 10, 'group_num': 18}
     }
     SPINE_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
         "SPC4": {'group_size': 16, 'group_num': 7},
         "SPC5": {'group_size': 14, 'group_num': 16},
-        "SPC6": {'group_size': 14, 'group_num': 16},  # same as SPC5 — identical port count
+        "SPC6": {'group_size': 14, 'group_num': 16}
     }
     TRAFFIC_TYPE_IPV6 = "IPv6"
     TRAFFIC_TYPE_SRV6 = "SRv6"
@@ -617,14 +796,15 @@ class MRCConsts:
     TRIMMING_SRV6_DUT_TX_UTIL_TH = 0.73
     CL_TRIMMING_DUT_TX_UTIL_TH = 0.5
     BUFFER_CELL_SIZE = 192
+    BUFFER_CELL_SIZE_SPC6 = 256
     SPC5_POOL_SIZE_MB = 105
     SPC5_POOL_SIZE_BYTES = SPC5_POOL_SIZE_MB * 1000 * 1000
     SPC4_POOL_SIZE_BYTES = 158230080
     SPC5_POOL_SIZE_CELLS = SPC5_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
     SPC4_POOL_SIZE_CELLS = SPC4_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
-    SPC6_POOL_SIZE_MB = 105
+    SPC6_POOL_SIZE_MB = 187
     SPC6_POOL_SIZE_BYTES = SPC6_POOL_SIZE_MB * 1000 * 1000
-    SPC6_POOL_SIZE_CELLS = SPC6_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
+    SPC6_POOL_SIZE_CELLS = SPC6_POOL_SIZE_BYTES / BUFFER_CELL_SIZE_SPC6
     POOL_SIZE_CELLS_BY_CHIP_TYPE = {
         "SPC5": SPC5_POOL_SIZE_CELLS,
         "SPC4": SPC4_POOL_SIZE_CELLS,
@@ -704,7 +884,7 @@ class MRCConsts:
             "mrc_num_packets": 10,
             "num_dummy_acls": 25,
         },
-        # TODO(#5088329): confirm correct Drop Over Max params for SPC6 with arch (seeded from SPC5)
+        # TODO: confirm correct Drop Over Max params for SPC6 with arch (seeded from SPC5)
         "SPC6": {
             "packet_size": 3072,
             "mrc_num_packets": 10,
@@ -720,7 +900,7 @@ class PowerConsts:
             r"VCORE TILES \d & \d \(VDD_Tx\)": 17,
             r"DVDD TILES \d & \d \(DVDD_Tx\)": 18.13,
             r"HVDD TILES \(HVDD_T\d+\)": 124,
-            r"VDDSCC": 46,
+            r"VDDSCC": 47,
             r"VCORE MAIN \(VDD_M\)": 345,
             "TOTAL": 754,
             "HVDD_TILES_TH": 243

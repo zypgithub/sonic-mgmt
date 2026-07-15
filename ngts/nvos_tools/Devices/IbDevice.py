@@ -469,7 +469,9 @@ class IbSwitch(BaseSwitch):
                                                       'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
                                                       'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
                                                       'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
-                                                      'empty.sh', 'nv-bridge_reconcile', 'gpu_telemetry_enable']
+                                                      'empty.sh', 'nv-bridge_reconcile', 'gpu_telemetry_enable',
+                                                      'peer_telemetry_enable', '10-ztp-log-forwarding.conf',
+                                                      'event_db.json']
         self.techsupport_cluster_empty_files_to_ignore = ['redis.log', 'config_storage.json', 'user_config_changed',
                                                           'nvlink_domain_telemetry.csv']
         self.techsupport_hw_mgmt_empty_files_to_ignore = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
@@ -487,7 +489,7 @@ class IbSwitch(BaseSwitch):
         self.reboot_reason_dict = {
             RebootConsts.HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
-            RebootConsts.IMMEDIATE: ("Platform reset", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.IMMEDIATE: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
             RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
             RebootConsts.PSU_OFF: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA),
@@ -1939,7 +1941,7 @@ class JulietSwitch(NvLinkSwitch):
             RebootConsts.HALT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.POWER_CYCLE: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
-            RebootConsts.IMMEDIATE: ("Platform reset", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.IMMEDIATE: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
             RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
             RebootConsts.REMOTE_REBOOT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_NA),
@@ -3734,7 +3736,17 @@ class PortiaSimx(RosalindSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        # Portia inherits the Rosalind device model, but it has no ERoT components.
+        self.constants.erots.clear()
+        self.components_list = [component for component in self.components_list if component != FW_COMPONENT_EROT]
         self.asic_type = NvosConst.NVL7
+        self.core_count = 4
+        self.supported_nvl_speeds = ['200G']
+        self.fae_supported_core_clocks = {
+            core_clock: self.supported_nvl_speeds
+            for core_clock in self.fae_supported_core_clocks
+        }
+        self.access_port_speed = '200G'
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n7170_ld-r0")
         self.show_platform_output.update({
@@ -3754,6 +3766,10 @@ class PortiaSimx(RosalindSwitch):
         self._extend_firmware_by_cpld_amount()
         self.sma_amount = 2
         self._extend_firmware_by_sma_amount()
+
+    def _init_gnmi_consts(self):
+        super()._init_gnmi_consts()
+        self.components_gnmi_xpath = [xpath for xpath in self.components_gnmi_xpath if xpath != self.erot_xpath]
 
     def _init_temperature(self):
         super()._init_temperature()

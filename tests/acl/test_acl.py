@@ -379,14 +379,12 @@ def setup(duthosts, ptfhost, rand_selected_dut, rand_selected_front_end_dut, ran
         try:
             vlan_config = tbinfo['topo']['properties']['topology']['DUT']['vlan_configs']['default_vlan_config']
             if vlan_config in ('one_vlan_a', 'two_vlan_a'):
-                if vlan_config == 'two_vlan_a' and vlan_name == "Vlan2000":
-                    DOWNSTREAM_DST_IP = DOWNSTREAM_DST_IP_VLAN2000
-                    DOWNSTREAM_IP_TO_ALLOW = DOWNSTREAM_IP_TO_ALLOW_VLAN2000
-                    DOWNSTREAM_IP_TO_BLOCK = DOWNSTREAM_IP_TO_BLOCK_VLAN2000
-                else:
-                    DOWNSTREAM_DST_IP = DOWNSTREAM_DST_IP_VLAN     # 192.168.0.123
-                    DOWNSTREAM_IP_TO_ALLOW = DOWNSTREAM_IP_TO_ALLOW_VLAN  # 192.168.0.122
-                    DOWNSTREAM_IP_TO_BLOCK = DOWNSTREAM_IP_TO_BLOCK_VLAN   # 192.168.0.121
+                logging.info("topo {} vlan_config {}".format(tbinfo['topo']['name'], vlan_config))
+                DOWNSTREAM_DST_IP = DOWNSTREAM_DST_IP_VLAN2000 if vlan_name == "Vlan2000" else DOWNSTREAM_DST_IP_VLAN
+                DOWNSTREAM_IP_TO_ALLOW = DOWNSTREAM_IP_TO_ALLOW_VLAN2000 if vlan_name == "Vlan2000" \
+                    else DOWNSTREAM_IP_TO_ALLOW_VLAN
+                DOWNSTREAM_IP_TO_BLOCK = DOWNSTREAM_IP_TO_BLOCK_VLAN2000 if vlan_name == "Vlan2000" \
+                    else DOWNSTREAM_IP_TO_BLOCK_VLAN
         except KeyError:
             logger.error("topo {} keys are missing in the tbinfo:{}".format(tbinfo['topo']['name'], tbinfo))
     if topo in ["t0", "mx", "m0_vlan"]:
@@ -1848,8 +1846,9 @@ class TestMultiBindingAcl(TestBasicAcl):
                      dest=dut_conf_file_path)
         dut.command(
             f"config mirror_session add everflow_session {SRC_IP} {DST_IP} {DSCP} {TTL} {GRE_TYPE}")
-        dut.command(f"acl-loader update full {dut_conf_file_path} --table_name {table_name} \
-                    --session_name everflow_session")
+        dut.command(
+            f"acl-loader update full {dut_conf_file_path} --table_name {table_name} "
+            "--session_name everflow_session")
 
     def test_ingress_unmatched_blocked(self, setup, direction, ptfadapter, ip_version, stage):
         pytest.skip("Not applicable for multi binding ACL")

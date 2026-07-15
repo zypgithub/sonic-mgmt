@@ -8,7 +8,7 @@ from ngts.helpers.performance.performance_setup_helpers import (restore_basic_co
                                                                 skip_test_on_unsupported_os, ValidationConfig,
                                                                 validate_perf_dut_ingress_buffer_mode)
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts, BwFairnessThreshold
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic, get_spcx_ra_leaf_traffic
 from ngts.performance_tests.spcx_ra.split_x1_800G_configuration.conftest import get_conf_args
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
@@ -47,9 +47,11 @@ class TestSPCXRA_x1Split_800G:
                 self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=PerfConsts.TIMEOUT_FOR_NEXTHOP_RESOLUTION)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
+            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       packet_size=packet_size,
                                       run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=None,
@@ -109,9 +111,11 @@ class TestSPCXRA_x1Split_800G:
         with allure.step(f"Verifying the traffic for packet size {packet_size}. AR support status for 800G is {ar_support_status}"):
             # skip_first_counters_iteration is True due to 800G AR not supported (bug SW #4348288 won't fix)
             skip_first_counters_iteration = not is_redmine_issue_active([ar_support_800g_redmine_id])[0] or ar_support_status == "Won't fix"
+            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       packet_size=packet_size,
                                       run_validate_performance_counters=should_validate_performance_counters(self.cli_object),

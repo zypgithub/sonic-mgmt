@@ -4,7 +4,7 @@ import os
 import pytest
 
 from ngts.constants.constants import InfraConst
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts, BwFairnessThreshold
 from ngts.helpers.performance.performance_setup_helpers import (configure_mloops, run_traffic, run_validation,
                                                                 get_topology_obj, create_acl_dump, ValidationConfig,
                                                                 stop_traffic, configure_incremental_dips_on_tg,
@@ -168,6 +168,7 @@ class TestAlibabaLeafScenario:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=expected_bw,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(expected_bw),
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=True,
                                       tc_occ_threshold=None,
@@ -221,6 +222,7 @@ class TestAlibabaLeafScenario:
                     config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                               chip_type=self.chip_type,
                                               bw_threshold=expected_bw,
+                                              bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(expected_bw),
                                               power_threshold=self.power_thresholds_by_chip_type,
                                               skip_first_counters_iteration=True,
                                               ignore_counter_list=ignore_counter_list)

@@ -11,7 +11,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 set_ports_admin_state,
                                                                 skip_test_on_unsupported_os, get_obj_method)
 from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, BwFairnessThreshold
 from ngts.constants.constants import CliType
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_leaf_traffic
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
@@ -54,6 +54,7 @@ class TestSpcX400GTo200G:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       packet_size=packet_size,
                                       run_validate_performance_counters=should_validate_performance_counters(self.cli_object),

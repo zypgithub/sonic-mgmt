@@ -2187,7 +2187,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             for sub_key in sub_keys:
                 self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB HDEL "{key}" "{sub_key}"')
 
-    def install_traffic_generator(self, latest_version=True):
+    def install_traffic_generator(self, latest_version=True, cli_type=CliType.SONIC):
         """
         Function verifies the traffic generator is functional post deploy on SONiC OS
 
@@ -2199,36 +2199,34 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         """
         with allure.step('Get SDK_VER git'):
             sdk_version = self.get_sdk_version()
+            sdk_branch = self.get_sdk_branch(sdk_version)
             if latest_version:
-                sdk_branch = self.get_sdk_branch(sdk_version)
                 sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version, sdk_branch=sdk_branch)
-
             docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
-            sdk_deb_file = PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version.replace("-", "."))
-            copy_files_to_syncd(self.engine, [sdk_deb_file],
-                                PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version))
+            sdk_deb_path = self.resolve_sdk_git_deb_path(sdk_version, cli_type=cli_type)
+            sdk_deb_dir = os.path.dirname(sdk_deb_path)
+            sdk_deb_file = os.path.basename(sdk_deb_path)
+            sdk_dev_deb_file = sdk_deb_file.replace('sys-sdk-git', 'sys-sdk').replace('_amd64.deb', '_amd64-dev.deb')
+            copy_files_to_syncd(self.engine, [sdk_deb_file, sdk_dev_deb_file], sdk_deb_dir)
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'dpkg -i {sdk_deb_file}'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'dpkg -i {sdk_dev_deb_file}'")
+
+        with allure.step('apt get'):
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'chmod 1777 /tmp'", validate=True)
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get update'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get install -y build-essential python3-dev swig'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get install -y dmidecode kmod pciutils git rsync lm-sensors'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'touch /var/log/syslog'")
 
         with allure.step('pip dependencies'):
-            self.engine.run_cmd(
-                f"{docker_exec_syncd_cmd} 'python3 -m pip install --upgrade pip --root-user-action=ignore'")
             copy_files_to_syncd(self.engine, [PerfConsts.REQUIRMENTS_FILE],
                                 PerfConsts.REQUIRMENTS_DIR)
             self.engine.run_cmd(
-                f"{docker_exec_syncd_cmd} 'pip install -r {PerfConsts.REQUIRMENTS_FILE} --root-user-action=ignore'")
-
-        with allure.step('apt get'):
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get update'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install build-essential'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install python3-dev'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install swig'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get install dmidecode'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'touch /var/log/syslog'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install kmod'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install pciutils'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install git'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install rsync'")
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install lm-sensors'")
+                f"{docker_exec_syncd_cmd} 'python3 -m pip config set global.index-url "
+                f"{PerfConsts.SYNCD_PIP_INDEX_URL}'")
+            self.engine.run_cmd(
+                f"{docker_exec_syncd_cmd} 'pip install -r {PerfConsts.REQUIRMENTS_FILE} "
+                f"--break-system-packages --root-user-action=ignore'")
 
         with allure.step('Prepare SDK_VER git to run tests'):
             self.overlay_perf_sys_sdk_to_sys_sdk(sdk_branch, is_in_syncd=True)

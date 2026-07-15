@@ -5,7 +5,7 @@ import configs.privatelink_config as pl
 import ptf.testutils as testutils
 import pytest
 from constants import LOCAL_PTF_INTF, REMOTE_DUT_INTF, REMOTE_PTF_MAC, REMOTE_PTF_INTF, DUT_MAC, LOCAL_PTF_MAC, LOCAL_CA_IP, VXLAN_UDP_BASE_SRC_PORT
-from gnmi_utils import apply_messages
+from tests.common.dash_utils import apply_dash_configs
 from packets import outbound_pl_packets, inbound_pl_packets
 from tests.common import config_reload
 from tests.common.helpers.smartswitch_util import get_dpu_dataplane_port
@@ -146,46 +146,31 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
     if skip_config:
         return
     dpuhost = dpuhosts[dpu_index]
-    logger.info(pl.ROUTING_TYPE_PL_CONFIG)
-    base_config_messages = {
-        **pl.APPLIANCE_CONFIG,
-        **pl.ROUTING_TYPE_PL_CONFIG,
-        **pl.VNET_CONFIG,
-        **pl.ROUTE_GROUP1_CONFIG,
-        **pl.METER_POLICY_V4_CONFIG
-    }
-    logger.info(base_config_messages)
 
-    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index)
-
-    route_and_mapping_messages = {
-        **pl.PE_VNET_MAPPING_CONFIG,
-        **pl.PE_SUBNET_ROUTE_CONFIG,
-        **pl.VM_SUBNET_ROUTE_CONFIG,
-        **pl.INBOUND_VNI_ROUTE_RULE_CONFIG
-    }
-    logger.info(route_and_mapping_messages)
-    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index)
-
-    meter_rule_messages = {
-        **pl.METER_RULE1_V4_CONFIG,
-        **pl.METER_RULE2_V4_CONFIG,
-    }
-    logger.info(meter_rule_messages)
-    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index)
-
-    logger.info(pl.ENI_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index)
-
-    logger.info(pl.ENI_ROUTE_GROUP1_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
+    # apply_dash_configs buckets entries by DASH table name and applies
+    # them in dependency order (see DashPhase in tests/common/dash_utils.py):
+    # GROUP_1 (APPLIANCE) -> GROUP_2 (ROUTING_TYPE/METER_POLICY/OUTBOUND_PORT_MAP/VNET) ->
+    # GROUP_3 (METER_RULE) -> GROUP_4 (TUNNEL/OUTBOUND_PORT_MAP_RANGE/ENI/ROUTE_GROUP) ->
+    # GROUP_5 (ROUTE_RULE/ROUTE/VNET_MAPPING) -> GROUP_6 (ENI_ROUTE).
+    apply_dash_configs(
+        localhost, duthost, ptfhost, dpuhost.dpu_index,
+        pl.APPLIANCE_CONFIG,
+        pl.ROUTING_TYPE_PL_CONFIG,
+        pl.VNET_CONFIG,
+        pl.ROUTE_GROUP1_CONFIG,
+        pl.METER_POLICY_V4_CONFIG,
+        pl.PE_VNET_MAPPING_CONFIG,
+        pl.PE_SUBNET_ROUTE_CONFIG,
+        pl.VM_SUBNET_ROUTE_CONFIG,
+        pl.INBOUND_VNI_ROUTE_RULE_CONFIG,
+        pl.METER_RULE1_V4_CONFIG,
+        pl.METER_RULE2_V4_CONFIG,
+        pl.ENI_CONFIG,
+        pl.ENI_ROUTE_GROUP1_CONFIG,
+    )
 
     yield
-    #apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpu_index, False)
-    #apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index, False)
-    #apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index, False)
-    #apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index, False)
-    #apply_messages(localhost, duthost, ptfhost, base_config_messages, dpu_index, False)
+
     config_reload(dpuhost, safe_reload=True, yang_validate=False)
 
 

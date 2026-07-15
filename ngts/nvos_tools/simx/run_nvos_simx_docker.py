@@ -159,43 +159,22 @@ def _get_path_to_chipsim_script_for_regression(target_version, use_master_script
 
 
 def _get_path_to_disk_image(target_version, is_regression_run):
-    if is_regression_run:
-        logging.info("Regression run")
-        return _get_path_to_disk_image_for_regression(target_version)
-    else:
-        logging.info("CI run")
-        return _get_path_to_disk_image_for_ci(target_version)
-
-
-def _get_path_to_disk_image_for_regression(target_version):
     """
-    Convert a .bin file path to a .img file path for regression
-    examples:
-        from '/auto/sw_system_release/nos/nvos/25.02.5930-025/amd64/dev/nvos-amd64-25.02.5930-025.bin'
-        to '/auto/sw_system_release/nos/nvos/25.02.5930-025/amd64/dev/nvos-disk-amd64-25.02.5930-025.img'
-    """
-    if target_version.endswith('.bin'):
-        disk_image_path = target_version.replace('nvos-', 'nvos-disk-').replace('.bin', '.img')
-    else:
-        disk_image_path = target_version
+    Convert supported .bin image names to their disk-image equivalents for both CI and regression runs.
 
-    if os.path.exists(disk_image_path):
-        return disk_image_path
-
-    logging.warning(f"Disk image not found at: {disk_image_path}")
-    logging.info("Using .bin file instead")
-    return target_version
-
-
-def _get_path_to_disk_image_for_ci(target_version):
-    """
-    Convert a .bin file path to a .img file path for CI
     examples:
         from '/auto/sw_system_project/devops/sw-r2d2-bot/nos/nvos_ci/10398/nvos/nvos.bin'
         to '/auto/sw_system_project/devops/sw-r2d2-bot/nos/nvos_ci/10398/nvos/nvos-disk.img'
+
+        from '/auto/sw_system_release/nos/nvos/25.02.5930-025/amd64/dev/nvos-amd64-25.02.5930-025.bin'
+        to '/auto/sw_system_release/nos/nvos/25.02.5930-025/amd64/dev/nvos-disk-amd64-25.02.5930-025.img'
     """
+    logging.info("Regression run" if is_regression_run else "CI run")
+
     if target_version.endswith('.bin'):
-        disk_image_path = target_version.replace('nvos.bin', 'nvos-disk.img')
+        image_directory, image_name = os.path.split(target_version)
+        disk_image_name = image_name.replace('nvos', 'nvos-disk', 1).replace('.bin', '.img')
+        disk_image_path = os.path.join(image_directory, disk_image_name)
     else:
         disk_image_path = target_version
 

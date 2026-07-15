@@ -906,16 +906,26 @@ def test_environment_variable_expansion(engines, random_api):
 @pytest.mark.general
 @pytest.mark.simx
 @pytest.mark.nvue_core
-def test_interface_commands_eth_ports(engines):
+def test_interface_commands_eth_ports(engines, devices):
     """
-    Positive test: Interface commands for available ports (eth0, eth1)
+    Positive test: Interface commands for the device's available management ports.
 
     Example: nv set interface eth0 link state up
     """
-    interface_config = """nv set interface eth0 link state up
-nv set interface eth0 description "Test Port 0"
-nv set interface eth1 link state up
-nv set interface eth1 description "Test Port 1" """
+    management_ports = devices.dut.get_mgmt_ports()
+    assert management_ports, "Device model must define at least one management port"
+    descriptions = {
+        interface_name: f"Test Port {index}"
+        for index, interface_name in enumerate(management_ports)
+    }
+    interface_config = '\n'.join(
+        command
+        for interface_name in management_ports
+        for command in (
+            f"nv set interface {interface_name} link state up",
+            f'nv set interface {interface_name} description "{descriptions[interface_name]}"',
+        )
+    )
 
     try:
         with create_temp_file(engines.dut, 'interfaces.txt', interface_config) as filepath:
@@ -924,31 +934,25 @@ nv set interface eth1 description "Test Port 1" """
                 result_obj.verify_result()  # Verify success
                 time.sleep(2)
 
-            with allure.step('Verify eth0 configuration'):
-                eth0_port = Port('eth0')
-                data = OutputParsingTool.parse_show_interface_output_to_dictionary(
-                    eth0_port.interface.show()).get_returned_value()
+            for interface_name in management_ports:
+                with allure.step(f'Verify {interface_name} configuration'):
+                    port = Port(interface_name)
+                    data = OutputParsingTool.parse_show_interface_output_to_dictionary(
+                        port.interface.show()).get_returned_value()
 
-                # NVUE JSON format: state is an object with state value as key, e.g., {'up': {}}
-                state = data.get('link', {}).get('state', {})
-                assert 'up' in state, f"eth0 should be up, got state: {state}"
-                assert data.get('description') == "Test Port 0", "eth0 description should match"
+                    # NVUE JSON format: state is an object with state value as key, e.g., {'up': {}}
+                    state = data.get('link', {}).get('state', {})
+                    assert 'up' in state, f"{interface_name} should be up, got state: {state}"
+                    assert data.get('description') == descriptions[interface_name], \
+                        f"{interface_name} description should match"
 
-            with allure.step('Verify eth1 configuration'):
-                eth1_port = Port('eth1')
-                data = OutputParsingTool.parse_show_interface_output_to_dictionary(
-                    eth1_port.interface.show()).get_returned_value()
-
-                # NVUE JSON format: state is an object with state value as key, e.g., {'up': {}}
-                state = data.get('link', {}).get('state', {})
-                assert 'up' in state, f"eth1 should be up, got state: {state}"
-                assert data.get('description') == "Test Port 1", "eth1 description should match"
-
-                logger.info("✓ Interface commands work correctly")
+            logger.info("Interface commands work correctly for %s", management_ports)
 
     finally:
-        Port('eth0').interface.unset(op_param='description', apply=False)
-        Port('eth1').interface.unset(op_param='description', apply=True).verify_result()
+        for interface_name in management_ports[:-1]:
+            Port(interface_name).interface.unset(op_param='description', apply=False)
+
+        Port(management_ports[-1]).interface.unset(op_param='description', apply=True).verify_result()
         cleanup_pending_config(engines)
 
 

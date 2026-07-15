@@ -8,7 +8,7 @@ from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
-from ngts.constants.constants import SonicConst
+from ngts.constants.constants import SonicConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
@@ -38,6 +38,8 @@ def get_all_setups_platform():
 def filter_canonical_setups(canonical_setups_platforms):
     keys_to_remove = []
     for setup_name, platform in canonical_setups_platforms.items():
+        if setup_name in ResultUploaderConst.NON_STANDARD_NAMED_SETUPS:
+            continue
         match = re.search(r"sonic_(\w+)_", setup_name)
         if setup_name.startswith("CI") or not match:
             keys_to_remove.append(setup_name)

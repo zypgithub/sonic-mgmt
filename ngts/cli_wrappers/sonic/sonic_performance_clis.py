@@ -347,7 +347,7 @@ class SonicPerformanceCli(PerformanceCommon):
         if chip_type == "SPC4":
             service_port = ports_list.pop(self.service_port_idx)
             self.service_ports.append(service_port)
-        elif chip_type == "SPC5":
+        elif chip_type in ("SPC5", "SPC6"):
             service_port1 = ports_list.pop(self.service_port_idx)
             service_port2 = ports_list.pop(self.service_port_idx)
             self.service_ports += [service_port1, service_port2]
@@ -426,12 +426,7 @@ class SonicPerformanceCli(PerformanceCommon):
         if self.dut_alias in PerfConsts.TG_ALIAS_LIST:
             with allure.step(f'Restore IM on {self.dut_alias}'):
                 logging.info(f"Re-enabling IM on {self.dut_alias}")
-                platform_summary = self.cli_obj.chassis.parse_platform_summary()
-                sku_dir = os.path.dirname(SonicConst.SAI_PROFILE_FILE_PATH.format(
-                    PLATFORM=platform_summary["Platform"], HWSKU=platform_summary["HwSKU"]))
-                media_settings = os.path.join(sku_dir, IndependentModuleConst.MEDIA_SETTINGS_FILE_NAME)
-                optics_si_settings = os.path.join(sku_dir, IndependentModuleConst.OPTICS_SI_SETTINGS_FILE_NAME)
-                self.execute_cmd(f"sudo cmis_host_mgmt.py --enable {media_settings} {optics_si_settings}")
+                self.cli_obj.im.enable_im_in_sai()
                 self.cli_obj.general.reload_configuration(force=True)
                 self.cli_obj.general.verify_dockers_are_up()
 

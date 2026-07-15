@@ -21,7 +21,7 @@ from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration)
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, BwFairnessThreshold
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
 
 logger = logging.getLogger()
@@ -45,6 +45,7 @@ class TestConfig:
     adjust_buffer_config: bool
     test_id: str
     num_downlink_ports: Optional[int] = None
+    bw_fairness_threshold: Optional[BwFairnessThreshold] = None
 
 
 @pytest.fixture(scope='class')

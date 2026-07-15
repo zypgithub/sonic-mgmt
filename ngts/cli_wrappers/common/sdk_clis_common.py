@@ -3,7 +3,7 @@ import logging
 import os
 import glob
 import re
-from ngts.constants.constants import InfraConst, Sonic_Cache
+from ngts.constants.constants import InfraConst, Sonic_Cache, CliType
 from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from devts.infra.tools.exceptions.test_issue import TestIssue
@@ -67,7 +67,7 @@ class SdkCliCommon():
         match = re.match(r'(\d+)\.(\d+)\.(\d+)', kernel_dir)
         return tuple(int(part) for part in match.groups()) if match else (0, 0, 0)
 
-    def resolve_sdk_git_deb_path(self, sdk_version):
+    def resolve_sdk_git_deb_path(self, sdk_version, cli_type=None):
         """Resolve the absolute path to the sys-sdk-git .deb, discovering the
         kernel-specific DEBS subdirectory at runtime.
 
@@ -79,7 +79,9 @@ class SdkCliCommon():
         kernel and otherwise fall back to the newest folder that actually contains
         the deb.
         """
-        deb_file_name = PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)
+        deb_sdk_version = (sdk_version.replace('-', '.')
+                           if cli_type == CliType.SONIC else sdk_version)
+        deb_file_name = PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=deb_sdk_version)
         debs_root = os.path.join(PerfConsts.SDK_VERSION_PATH, f"sx_sdk_eth-{sdk_version}", "DEBS")
         if not os.path.isdir(debs_root):
             raise TestIssue(f"SDK DEBS directory not found: {debs_root}")

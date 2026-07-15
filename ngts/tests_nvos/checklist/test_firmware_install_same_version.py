@@ -276,7 +276,7 @@ def select_random_component(devices: DevicesT) -> str:
         if not has_bmc:
             logger.info("Device does not have BMC.")
         else:
-            components_list = devices.dut.components_list
+            components_list = list(devices.dut.components_list)
 
     # Add SSD for switches that support SSD firmware updates (if not already from components_list)
     if devices.dut.supports_ssd_upgrade and constants.FW_COMPONENT_SSD not in components_list:

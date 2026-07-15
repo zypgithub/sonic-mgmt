@@ -12,6 +12,12 @@ tests_nvos/system/test_system_log.py::test_log_idle:
     conditions:
     - https://redmine.mellanox.com/issues/5100996
 
+tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_configure_feature_state:
+  skip:
+    reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
+    conditions:
+    - https://redmine.mellanox.com/issues/5100996
+
 tests_nvos/interfaces/test_2_mgmt_interfaces.py::test_table_seperation_switch_client:
   skip:
     reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5100996 (port stays down after DHCP renew/disable)'
@@ -137,6 +143,8 @@ tests_nvos/platform/test_platform_environment.py::test_show_platform_environment
     reason: 'Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5098668'
     conditions:
     - https://redmine.mellanox.com/issues/5098668
+    - '''juliet'' in testbed or ''mtvr-q3400-05'' in testbed'
+
 
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment_psu:
   skip:
@@ -166,13 +174,11 @@ tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
 
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
-    reason: Testcase skipped on non Juliet systems, Juliet feature only (as a part of
-      Uberon). Also skipped on juliet-160, juliet-146 and juliet-195 due to hardware
-      issues
+    reason: Testcase skipped on platforms without ERoT components. Also skipped on
+      juliet-160, juliet-146 and juliet-195 due to hardware issues
     conditions_logical_operator: or
     conditions:
-    - '''juliet'' not in testbed and ''rosalind'' not in testbed and ''portia'' not
-      in testbed'
+    - '''juliet'' not in testbed and ''rosalind'' not in testbed'
     - '''juliet-146'' in testbed'
     - '''juliet-160'' in testbed'
     - '''juliet-195'' in testbed'
@@ -215,6 +221,12 @@ tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
     conditions:
     - '''juliet'' not in testbed and ''rosalind'' not in testbed and ''portia'' not
       in testbed'
+
+tests_nvos/system/test_techsupport_feature.py::test_techsupport_expected_files:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5085812 - nmx-telemetry stays 'not ok' (Unhealthy: telemetry) after cluster enable"
+    conditions:
+      - https://redmine.mellanox.com/issues/5085812
 
 tests_nvos/system/gnmi/test_gnmi_server.py::test_gnmi_mapping_table:
   skip:
@@ -320,6 +332,12 @@ tests_nvos/checklist/test_firmware_install_same_version.py::test_fae_sma_firmwar
     conditions:
     - '''surrogate'' not in testbed and ''rosalind'' not in testbed and ''portia'' not
       in testbed'
+
+tests_nvos/checklist/test_firmware_install_same_version.py::test_fae_erot_firmware_install:
+  skip:
+    reason: Testcase skipped on platforms without ERoT components
+    conditions:
+    - '''juliet'' not in testbed and ''rosalind'' not in testbed'
 
 tests_nvos/checklist/test_sma_info.py:
   skip:
@@ -643,12 +661,13 @@ tests_nvos/system/gnmi/test_gnmi_server.py::test_simulate_gnmi_server_failure:
 
 tests_nvos/cluster/nmx_simulator_tests/test_simulated_cluster_partition.py:
   skip:
-    reason: Skip partition tests if device is not JulietSwitch or if it's not a standalone
-      system.
+    reason: "Skip partition tests if device is not JulietSwitch or if it's not a standalone system or RM issue #5149287"
     conditions_logical_operator: or
     conditions:
-    - '''juliet'' not in testbed'
-    - '''juliet-148'' in testbed'
+      - "('juliet' not in testbed and 'rosalind' not in testbed)"
+      - "'juliet-148' in testbed"
+      - "'sws-rtf2-rosalind-198' in testbed"
+      - https://redmine.mellanox.com/issues/5149287
 
 tests_nvos/cluster/nmx_simulator_tests/test_sdn_maintenance_state.py:
   skip:

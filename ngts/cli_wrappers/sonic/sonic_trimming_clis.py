@@ -215,8 +215,8 @@ class SonicTrimmingCli(TrimmingCommon):
         return queue_packet_percentages
 
     def config_optimal_trimming_size(self, chip_type):
-        if chip_type == "SPC5":
-            opt_ts = os.environ.get("OPT_TS", default=MRCConsts.OPT_TS_DEFAULT)
+        if chip_type in ("SPC5", "SPC6"):
+            opt_ts = os.environ.get("OPT_TS", MRCConsts.OPT_TS_DEFAULT)
             self.cli_obj.trimming.enable_trimming_on_lossy_queue()
             self.cli_obj.trimming.configure_trimming_size(opt_ts)
             self.enable_trimming_counterpoll()

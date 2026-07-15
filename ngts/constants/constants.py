@@ -184,16 +184,16 @@ class SonicConst:
     SONIC_NOGA_GROUPS = [SONIC_CANONICAL_NOGA_GROUP, SONIC_COMMUNITY_NOGA_GROUP, SONIC_DPU_NOGA_GROUP]
     T1_SKU_UPSTREAM_PORTS_SPEED = {
         "Mellanox-SN5600-C224O8": "400000",
-        "Mellanox-SN5640-C448O16": "400000"
+        "Mellanox-SN5640-C448O16": "400000",
+        "Mellanox-SN6600_LD-V448P16S2": "800000"
     }
     HWSKU_DOWNSTREAM_PORTS_SPEED = {
         "Mellanox-SN5600-C256S1": 100,
         "Mellanox-SN5600-C224O8": 100,
         "Mellanox-SN5640-C512S2": 100,
         "Mellanox-SN5640-C448O16": 100,
-        "ACS-SN6600_LD-SPIL-8": 200,           # SPC6 leaf: 8×200G split, 512 ports at 200G each
-        "Mellanox-SN6600_LD-P64O128C2": 800,  # SPC6 leaf alt SKU (2+2+4 split) — kept for reference
-        "Mellanox-SN6600_LD-P128C2": 800,     # TODO: confirm correct downstream port speed for SPC6 spine with arch
+        "Mellanox-SN6600_LD-V512C2": 200,
+        "Mellanox-SN6600_LD-V448P16S2": 200
     }
     NO_DYNAMIC_BUFFER_HWSKU_PREFIXES = ('MELLANOX-SN5640', 'MELLANOX-SN6600_LD')
 
@@ -1687,6 +1687,9 @@ class ResultUploaderConst:
     UPLOADER_SCRIPT_RELATIVE_PATH = "test_reporting/report_uploader.py"
     COMMUNITY_DBS_RELATIVE_PATH = "sonic-tool/mars/dbs/community"
     MSFT_PLATFORMS = ["4600C", "4700", "2700"]
+    # Setups whose Noga names do not follow the sonic_<codename>_<host> convention
+    # and would be dropped by filter_canonical_setups. List them here to keep them
+    NON_STANDARD_NAMED_SETUPS = ["sonic_slm-chipless-2700a1-146"]
     MARS_RELEASE = "/auto/sw_tools/Internal/MARS/mars_apps/RELEASE/4_3_3/bin/"
     QUERY_SESSIONS_SCRIPT = os.path.join(MARS_RELEASE, "save_delete_sessions_query.py")
     SAVE_SESSIONS_SCRIPT = os.path.join(MARS_RELEASE, "save_delete_sessions.py")

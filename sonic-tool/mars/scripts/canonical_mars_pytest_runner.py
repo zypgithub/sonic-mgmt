@@ -2,7 +2,6 @@
 
 # Built-in modules
 import sys
-import os
 import re
 
 from reg2_wrapper.common.error_code import ErrorCode
@@ -35,6 +34,24 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         self.add_cmd_argument("--dut_hwsku", required=False, default="", dest="dut_hwsku",
                               help="DUT hwsku")
 
+        self.junit_report_file = None
+
+    def run_pre_commands(self):
+        """Enable the MARS monitor "mini case summary" feature so that the
+        MARS statistics reflect the underlying pytest passed/failed/skipped
+        counts instead of the single wrapper case.
+        See: https://nvidia.atlassian.net/wiki/spaces/SW/pages/2899328410
+        Prerequisites: MARS 4.4.3 / Ver SDK 1.4.185 (April 2025) or later.
+        """
+        rc = super(RunPytest, self).run_pre_commands()
+        if hasattr(self, 'enable_mini_case_summary'):
+            self.enable_mini_case_summary()
+        else:
+            self.Logger.info(
+                "mini_case_summary: SDK does not expose enable_mini_case_summary(); "
+                "feature disabled (requires MARS 4.4.3 / Ver SDK 1.4.185+).")
+        return rc
+
     def run_commands(self):
         rc = ErrorCode.SUCCESS
 
@@ -47,6 +64,15 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
 
         if '--alluredir' not in self.raw_options:
             self.raw_options += ' --alluredir="/tmp/allure-results" '
+
+        # Produce a junit xml report as the authoritative source for the mini
+        # case summary counts. A single report path cannot be shared by
+        # concurrent pytest processes, so with num_of_processes > 1 we rely on
+        # the pytest terminal summary fallback instead.
+        if self.num_of_processes == 1 and not any(
+                opt in self.raw_options for opt in ('--junitxml', '--junit-xml')):
+            self.junit_report_file = '/tmp/junit_{}_{}.xml'.format(self.session_id, self.mars_key_id)
+            self.raw_options += ' --junitxml="{}"'.format(self.junit_report_file)
 
         # Append --remote_test_path only for NVOS tests that declare this option
         # to avoid pytest parse failures in other projects.
@@ -95,10 +121,120 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             player.remove_remote_test_path(player.testPath)
         if rc == ErrorCode.NO_COLLECTION:
             rc = 0  # In case no tests are collected, should not fail mars step
+        self._update_mini_case_summary()
         return rc
 
     def run_post_commands(self):
+        # SDK base post-commands are invoked first so the mini case summary
+        # tokens are written even if the allure upload later raises.
+        super(RunPytest, self).run_post_commands()
         self.collect_allure_report_data()
+
+    def _extract_test_stats_from_junit_xml(self):
+        """Sum passed/failed/skipped counts from the junit xml reports
+        produced on the players. Pytest "error" outcomes (fixture/collection
+        errors) are counted as failed. Returns None when no report was
+        requested or none could be fetched/parsed, so the caller can fall
+        back to parsing the pytest terminal summary."""
+        if not self.junit_report_file:
+            return None
+        try:
+            from rpyc.utils.classic import connect
+            from xml.etree import ElementTree
+        except ImportError as exc:
+            self.Logger.warning("mini_case_summary: junit imports unavailable: {}".format(exc))
+            return None
+
+        passed = failed = skipped = 0
+        parsed_any = False
+        for player in self.Players:
+            try:
+                conn = connect(player.player_ip)
+            except Exception as exc:
+                self.Logger.warning(
+                    "mini_case_summary: failed to connect to player {}: {}".format(
+                        player.player_ip, exc))
+                continue
+            try:
+                content = conn.builtins.open(self.junit_report_file).read()
+                conn.modules.os.remove(self.junit_report_file)
+                root = ElementTree.fromstring(content)
+            except Exception as exc:
+                self.Logger.warning(
+                    "mini_case_summary: failed to fetch/parse junit xml {} from player {}: {}".format(
+                        self.junit_report_file, player.player_ip, exc))
+                continue
+            finally:
+                conn.close()
+            # Count per testcase instead of summing the <testsuite> attributes:
+            # a test that both fails and errors (e.g. call failure + teardown
+            # error) is counted once in "failures" and once in "errors", which
+            # would inflate failed and drive passed below its real value.
+            all_names, failed_names, skipped_names = set(), set(), set()
+            for testcase in root.iter('testcase'):
+                name = (testcase.get('classname', ''), testcase.get('name', ''))
+                all_names.add(name)
+                child_tags = {child.tag.lower() for child in testcase}
+                if child_tags & {'failure', 'error'}:
+                    failed_names.add(name)
+                elif 'skipped' in child_tags:
+                    skipped_names.add(name)
+            failed += len(failed_names)
+            skipped += len(skipped_names - failed_names)
+            passed += len(all_names - failed_names - skipped_names)
+            parsed_any = True
+        return (passed, failed, skipped) if parsed_any else None
+
+    def _extract_test_stats_from_output(self, output):
+        """Aggregate passed/failed/skipped counts from every pytest summary
+        line in the wrapper output. "error" outcomes are counted as failed.
+
+        Pytest emits its final summary as an "=" framed line, for example:
+            ============ 2 passed, 1 failed, 0 skipped in 1.23s =============
+        With num_of_processes > 1 the wrapper log can contain several such
+        lines, so we sum them.
+        """
+        totals = {'passed': 0, 'failed': 0, 'skipped': 0, 'error': 0}
+        for line in output.split('\n'):
+            if '=====' not in line:
+                continue
+            lowered = line.lower()
+            if not any(kw in lowered for kw in totals):
+                continue
+            for kw in totals:
+                match = re.search(r'(\d+)\s+' + kw, lowered)
+                if match:
+                    totals[kw] += int(match.group(1))
+        return totals['passed'], totals['failed'] + totals['error'], totals['skipped']
+
+    def _update_mini_case_summary(self):
+        """Push pytest passed/failed/skipped totals to the MARS monitor
+        mini case summary. Counts are taken from the junit xml report when
+        available, otherwise from the pytest terminal summary in the wrapper
+        output. No-op when the SDK/MARS version is too old."""
+        if not hasattr(self, 'set_mini_case_summary'):
+            return
+        stats = self._extract_test_stats_from_junit_xml()
+        if stats is None:
+            try:
+                output = self.get_output()
+            except Exception as exc:
+                self.Logger.warning(
+                    "mini_case_summary: failed to read wrapper output: {}".format(exc))
+                return
+            if not output:
+                return
+            stats = self._extract_test_stats_from_output(output)
+        passed, failed, skipped = stats
+        if passed == failed == skipped == 0:
+            self.Logger.info(
+                "mini_case_summary: no pytest summary detected; leaving MARS "
+                "statistics as a single regular case.")
+            return
+        self.Logger.info(
+            "mini_case_summary: passed={}, failed={}, skipped={}".format(
+                passed, failed, skipped))
+        self.set_mini_case_summary(passed, failed, skipped)
 
     def collect_allure_report_data(self):
         self.Logger.info('Going to upload allure data to server')

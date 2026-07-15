@@ -13,7 +13,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 skip_test_on_unsupported_os, get_obj_method,
                                                                 validate_perf_dut_ingress_buffer_mode)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, ValidationConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, ValidationConsts, BwFairnessThreshold
 from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.constants import CliType, InfraConst
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
@@ -73,9 +73,11 @@ class TestSPCXRA_x2Split_400G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
+            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       packet_size=packet_size,
                                       run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
@@ -113,6 +115,7 @@ class TestSPCXRA_x2Split_400G:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=None,
                                       run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       packet_size=packet_size,
@@ -168,9 +171,11 @@ class TestSPCXRA_x2Split_400G:
                 self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=PerfConsts.TIMEOUT_FOR_NEXTHOP_RESOLUTION)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
+            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       packet_size=packet_size,
                                       run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,

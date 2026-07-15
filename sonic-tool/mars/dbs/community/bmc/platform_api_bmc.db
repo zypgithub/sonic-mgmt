@@ -52,8 +52,4 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bmc/thermalctld_bmc.cases </cases>
     </test>
 
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bmc/liquid_cooling_leakage_detection_bmc.cases </cases>
-    </test>
-
 </DBDEF>

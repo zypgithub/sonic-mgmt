@@ -3,17 +3,20 @@ import logging.config
 import allure
 import os
 import json
+import time
 import pytest
 import shutil
 from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, Cl_Consts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, Cl_Consts, BwFairnessThreshold, OccupancyVarianceConfig
 from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import validate_bw, validate_bw_utilization_fairness, validate_tc, validate_counters, validate_no_drops_on_tg_ports
+from ngts.helpers.performance.traffic_helpers import (validate_bw, validate_bw_utilization_fairness, validate_tc,
+                                                      validate_counters, validate_no_drops_on_tg_ports,
+                                                      validate_required_counters, validate_tc_occupancy_fairness)
 from ngts.helpers.performance.performance_counter_helpers import validate_performance_counters
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
@@ -22,7 +25,7 @@ from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.tools.infra import get_chip_type
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Optional, List, Dict, Any, Callable
 
 logger = logging.getLogger()
@@ -38,8 +41,8 @@ def get_is_simx(players):
         raise
 
 
-# Type alias for validation functions that take Any, float, and List[str] parameters
-ValidationFunc = Callable[[Any, float, List[str]], None]
+# Type alias for validation functions: (traffic_json, *, violations_list, **kwargs) -> None
+ValidationFunc = Callable[..., None]
 
 
 @dataclass
@@ -77,12 +80,18 @@ class ValidationConfig:
         additional_validations (List[Validation], optional): Additional validations to run from test
         players_to_be_validated (List[str], optional): List of player aliases to run validation on.
             Defaults to DUT only. Can be set to TG aliases for traffic generator validation.
+        required_counters_port_group (str, optional): Port group to check for required counters.
+            If None, all port groups are checked.
+        max_tc_occ_variance_per_port_group (Dict[str, OccupancyVarianceConfig]): Derived automatically
+            from tc_occ_threshold. None when tc_occ_threshold is None (disables this validation).
+            Per-port-group dict when tc_occ_threshold is keyed by port group, otherwise
+            {"default": OccupancyVarianceConfig()} applied to all port groups.
     """
     players: Any
     test_name: str
     scenario: str
     chip_type: str
-    max_bw_utilization_variance: float = PerfConsts.DEFAULT_FAIRNESS_THRESHOLD
+    bw_fairness_threshold_per_port_group: Optional[Dict[str, BwFairnessThreshold]] = field(default_factory=dict)
     run_validate_counters: bool = True
     run_validate_no_drops_on_tg_ports: bool = True
     validate_bw_rx: bool = True
@@ -96,9 +105,15 @@ class ValidationConfig:
     power_threshold: Optional[float] = None
     port_list: Optional[List[str]] = None
     ignore_counter_list: List = field(default_factory=list)
+    required_counter_list: List = field(default_factory=list)
+    required_counters_port_group: Optional[str] = None
     skip_first_counters_iteration: Optional[bool] = False
     additional_validations: Optional[List[Validation]] = field(default_factory=dict)
     players_to_be_validated: List[str] = field(default_factory=lambda: PerfConsts.PERF_SETUP_DUT_ALIASES)
+    max_tc_occ_variance_per_port_group: Optional[Dict[str, OccupancyVarianceConfig]] = field(init=False)
+
+    def __post_init__(self):
+        self.max_tc_occ_variance_per_port_group = OccupancyVarianceConfig.from_tc_occ_threshold(self.tc_occ_threshold)
 
     def get_validations(self) -> Dict[str, Validation]:
         """
@@ -116,7 +131,7 @@ class ValidationConfig:
             _validation_spec(
                 'counters', validate_counters,
                 lambda: {'skip_first_counters_iteration': self.skip_first_counters_iteration,
-                         ValidationConsts.IGNORE_COUNTER_LIST: self.ignore_counter_list},
+                         ValidationConsts.IGNORE_COUNTER_LIST: self.ignore_counter_list + self.required_counter_list},
                 lambda: not is_simx and self.run_validate_counters,
             ),
             _validation_spec(
@@ -126,13 +141,18 @@ class ValidationConfig:
             ),
             _validation_spec(
                 'bw_fairness', validate_bw_utilization_fairness,
-                lambda: {'max_bw_utilization_variance': self.max_bw_utilization_variance},
-                lambda: not is_simx and self.max_bw_utilization_variance is not None,
+                lambda: {'bw_fairness_threshold_per_port_group': self.bw_fairness_threshold_per_port_group},
+                lambda: not is_simx and bool(self.bw_fairness_threshold_per_port_group),
             ),
             _validation_spec(
                 'tc', validate_tc,
                 lambda: {'tc_occ_threshold': self.tc_occ_threshold},
                 lambda: not is_simx and self.tc_occ_threshold is not None,
+            ),
+            _validation_spec(
+                'tc_occ_fairness', validate_tc_occupancy_fairness,
+                lambda: {'max_tc_occ_variance_per_port_group': self.max_tc_occ_variance_per_port_group},
+                lambda: not is_simx and bool(self.max_tc_occ_variance_per_port_group),
             ),
             _validation_spec(
                 'temperature', validate_temperature,
@@ -162,6 +182,12 @@ class ValidationConfig:
                 lambda: {'players': self.players},
                 lambda: is_simx,
             ),
+            _validation_spec(
+                'required_counters', validate_required_counters,
+                lambda: {'required_counter_list': self.required_counter_list,
+                         'port_group_name': self.required_counters_port_group},
+                lambda: not is_simx and bool(self.required_counter_list),
+            ),
         ]
         validations = {
             name: Validation(func, get_extra_args()) if enabled() else None
@@ -174,8 +200,8 @@ class ValidationConfig:
 def unsplit_all_ports(players, players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALIASES,
                       step="basic_test_configuration - unsplit_all_ports", parallel_run=True):
     """
-    Unsplit all ports on SPC5 before applying test configuration.
-    This is needed because SPC5 comes up with ports already split after dvs_start.sh
+    Unsplit all ports on SPC5/SPC6 before applying test configuration.
+    This is needed because SPC5/SPC6 comes up with ports already split after dvs_start.sh
 
     Args:
         players (dict): Dictionary containing player information and CLI interfaces
@@ -183,28 +209,28 @@ def unsplit_all_ports(players, players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALI
         step (str): Description of the current setup step
         parallel_run (bool): If True, unsplits in parallel. If False, unsplits sequentially. Defaults to True
     """
-    spc5_aliases = []
+    spc5_6_aliases = []
     try:
         for player_alias in players_aliases:
             switch_attributes = players[player_alias]['attributes'].noga_query_data['attributes']
             chip_type = get_chip_type(switch_attributes)
-            if chip_type == "SPC5":
-                spc5_aliases.append(player_alias)
+            if chip_type in ["SPC5", "SPC6"]:
+                spc5_6_aliases.append(player_alias)
     except (KeyError, AttributeError) as e:
         raise TestIssue(f"Could not determine chip_type from topology: {e}")
 
-    if not spc5_aliases:
+    if not spc5_6_aliases:
         return
 
-    logger.info(f"Detected SPC5 - unsplitting all ports on all players: {spc5_aliases}")
+    logger.info(f"Detected SPC5/SPC6 - unsplitting all ports on all players: {spc5_6_aliases}")
 
     if parallel_run:
-        call_performance_function_with_threads(players, players_aliases=spc5_aliases,
+        call_performance_function_with_threads(players, players_aliases=spc5_6_aliases,
                                                action="unsplit all ports",
                                                performance_clis_function_name="unsplit_all_ports",
                                                performance_clis_function_args=(), step=step)
     else:
-        for player_alias in spc5_aliases:
+        for player_alias in spc5_6_aliases:
             players[player_alias]['cli'].performance.unsplit_all_ports()
 
 
@@ -486,7 +512,11 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
 
             for name, validation in validations_to_run.items():
                 logger.info(f"Running validation: {name}")
+                violations_before = len(player_violations)
+                t_start = time.monotonic()
                 validation.func(traffic_json, **(validation.extra_args or {}), violations_list=player_violations)
+                elapsed = time.monotonic() - t_start
+                logger.info(f"Running validation: {name}: finished in {elapsed:.3f}s, violations found: {len(player_violations) - violations_before}")
 
             if player_violations:
                 player_header = f"Validation failures on {player_alias}:"

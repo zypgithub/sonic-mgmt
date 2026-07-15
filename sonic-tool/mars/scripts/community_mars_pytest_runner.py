@@ -63,6 +63,9 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                               help="Decide the pytest marker we want to use in the CI test")
         self.add_cmd_argument("--run_test_on_dpu_only", required=False, default=False, dest="run_test_on_dpu_only",
                               help="run tests only on smartswitch dpu")
+        self.add_cmd_argument("--pytest-tout-factor", required=False, default="*1", dest="pytest_tout_factor",
+                              help="Arithmetic operation applied to pytest --timeout and --session-timeout in "
+                                   "raw-options, e.g. '*2', '+600', '-300', '/2'. Default '*1' (no change).")
 
     def _parse_junit_xml(self, content):
 
@@ -167,8 +170,31 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             player.putenv("PATH", "/opt/venv/bin" + os.pathsep + player.getenv("PATH"))
         return ErrorCode.SUCCESS
 
+    def _apply_pytest_tout_factor(self):
+        """Apply the pytest_tout_factor arithmetic operation (e.g. '*2', '+600', '-300', '/2')
+        to pytest --timeout and --session-timeout values inside raw_options."""
+        ops = {'*': lambda v, o: v * o, '/': lambda v, o: v / o,
+               '+': lambda v, o: v + o, '-': lambda v, o: v - o}
+        factor = (self.pytest_tout_factor or "").strip()
+        match_op = re.match(r'^([*/+-])\s*(\d+(?:\.\d+)?)$', factor)
+        if not match_op:
+            self.Logger.warning("Invalid pytest_tout_factor '%s', skipping timeout scaling" % self.pytest_tout_factor)
+            return
+        op, operand = match_op.group(1), float(match_op.group(2))
+        if op == '*' and operand == 1:
+            return
+
+        def _scale(match):
+            new_val = int(ops[op](int(match.group(2)), operand))
+            return "%s %d" % (match.group(1), new_val)
+
+        self.raw_options = re.sub(r'(--timeout|--session-timeout)\s+(\d+)', _scale, self.raw_options)
+        self.Logger.info("Applied pytest_tout_factor='%s' to pytest timeouts" % factor)
+
     def run_commands(self):
         rc = ErrorCode.SUCCESS
+
+        self._apply_pytest_tout_factor()
 
         self.report_file = "junit_%s_%s.xml" % (self.session_id, self.mars_key_id)
         old_allure_server = "10.215.11.120"

@@ -304,7 +304,7 @@ def validate_dynamic_peer_established(bgp_summary, template):
         ), f"BGP peer {dyn_peer1} not in Established state or missing from summary"
         assert (
             dyn_peer2 not in bgp_summary['ipv4Unicast']['peers']
-        ), f"BGP peer {dyn_peer2} should not be in show bgp summary output"
+        ), f"BGP peer {dyn_peer2} should be absent from show bgp summary output"
 
 
 def modify_dynamic_peer_cfg(duthost, template):
@@ -459,7 +459,14 @@ def _check_vnet2_all_dynamic_peers_established(duthost):
         return False
 
 
-def get_expected_unexpected_ptf_ports(cfg_facts, mg_facts, vnet_expected, vnet_unexpected):
+def get_ptf_port_index(interface_name, mg_facts):
+    """
+    Convert Ethernet interface name to PTF port index using the minigraph port map.
+    """
+    return mg_facts['minigraph_ptf_indices'][interface_name]
+
+
+def get_expected_unexpected_ptf_ports(cfg_facts, vnet_expected, vnet_unexpected, mg_facts):
     """
     Return two lists of unique PTF port indices:
     - expected_ptf_ports: ports belonging to vnet_expected
@@ -467,7 +474,6 @@ def get_expected_unexpected_ptf_ports(cfg_facts, mg_facts, vnet_expected, vnet_u
     """
     portchannel_interfaces = cfg_facts.get("PORTCHANNEL_INTERFACE", {})
     portchannel_members = cfg_facts.get("PORTCHANNEL_MEMBER", {})
-    ptf_indices = mg_facts["minigraph_ptf_indices"]
 
     expected_portchannels = set()
     unexpected_portchannels = set()
@@ -490,8 +496,8 @@ def get_expected_unexpected_ptf_ports(cfg_facts, mg_facts, vnet_expected, vnet_u
             except ValueError:
                 # Malformed key (should be pc|member)
                 continue
-            if pc in portchannels and iface in ptf_indices:
-                ptf_ports.add(ptf_indices[iface])
+            if pc in portchannels:
+                ptf_ports.add(get_ptf_port_index(iface, mg_facts))
         return sorted(ptf_ports)
 
     expected_ptf_ports = collect_ptf_ports(expected_portchannels)
@@ -588,7 +594,7 @@ def test_bgp_vnet_route_forwarding(ptfadapter, duthosts, rand_one_dut_hostname, 
         # Discover the destination IP from the live FIB so the test is not
         # tied to a topology-specific hardcoded address.
         dst_ip = _get_vnet1_bgp_dst_ip(duthost)
-        expected_ports, unexpected_ports = get_expected_unexpected_ptf_ports(cfg_facts, mg_facts, "Vnet1", "Vnet2")
+        expected_ports, unexpected_ports = get_expected_unexpected_ptf_ports(cfg_facts, "Vnet1", "Vnet2", mg_facts)
         assert expected_ports, \
             "No PTF ports found for Vnet1; check PORTCHANNEL_INTERFACE vnet_name in cfg_facts"
         assert unexpected_ports, \

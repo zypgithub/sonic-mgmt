@@ -28,6 +28,7 @@ from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType, SonicConst
+from ngts.constants.constants import REGRESSION_TYPE_ENV_VAR, RegressionType
 from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType
 from ngts.constants.constants import SerialLoggerConst
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_objs_from_topo_obj
@@ -812,8 +813,8 @@ def is_debug_kernel_run(engines, should_skip_checking_fixture):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def is_ci_run(setup_name):
-    pytest.is_ci_run = "_CI_" in setup_name
+def is_ci_run():
+    pytest.is_ci_run = os.environ.get(REGRESSION_TYPE_ENV_VAR) in RegressionType.ci_types()
     return pytest.is_ci_run
 
 
@@ -823,8 +824,8 @@ def mars_key_id(request):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def is_mars_run(mars_key_id):
-    pytest.is_mars_run = True if mars_key_id else False
+def is_mars_run():
+    pytest.is_mars_run = os.environ.get(REGRESSION_TYPE_ENV_VAR) in RegressionType.mars_types()
     return pytest.is_mars_run
 
 
@@ -842,7 +843,7 @@ def platform_params(show_platform_summary, setup_name, initial_topology_obj):
     platform_data = DottedDict()
     platform_data.platform = show_platform_summary['platform']
     platform_data.filtered_platform = re.search(
-        r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}\_(?!simx)[a-z]+|sn\d{4}[a-z]?|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|bf.*dpu|N5110_LD|N5100_LD|N5112_LD|N5200_LD|N5600_LD|N5500_LD|N6150_LD|[Nn]6300_LD|[Nn]6100_LD|[Nn]7170_LD)",
+        r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}\_(?!simx)[a-z]+|sn\d{4}[a-z]?|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|bf.*dpu|N5110_LD|N5100_LD|N5112_LD|N5200_LD|N5600_LD|N5500_LD|N6150_LD|[Nn]6300_LD|[Nn]6100_LD|[Nn]7100_LD|[Nn]7170_LD)",
         show_platform_summary['platform'], re.IGNORECASE).group(1)
     if 'air' in setup_name.lower():
         platform_data.hwsku = json.loads(initial_topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])['hwsku']

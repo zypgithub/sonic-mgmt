@@ -207,7 +207,8 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     rep = outcome.get_result()
 
-    if rep.failed and os.environ.get(PytestConst.GET_DUMP_AT_TEST_FALIURE) != "False" and not is_performance_setup(item):
+    failed = rep.failed or (rep.skipped and hasattr(rep, 'wasxfail'))
+    if failed and os.environ.get(PytestConst.GET_DUMP_AT_TEST_FALIURE) != "False" and not is_performance_setup(item):
         logger.debug(f"Entering sysdump creation for {item.name}")
         os.environ.pop(item.name, None)
         session_id = item.config.option.session_id

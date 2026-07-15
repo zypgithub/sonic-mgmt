@@ -131,6 +131,8 @@ class TestCpuRamHddUsage:
         :param request: pytest build-in
         :param expected_ram_usage_dict: expected_ram_usage_dict fixture
         """
+        if is_redmine_issue_active([5152247])[0]:
+            expected_ram_usage_dict['telemetry'] += 10
         do_ram_usage_test(request.node.originalname, self.dut_engine, expected_ram_usage_dict)
 
     @pytest.mark.release_check

@@ -5,7 +5,7 @@ import pytest
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, configure_mloops, create_acl_dump,
                                                                 run_traffic, run_validation, get_topology_obj)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, BwFairnessThreshold
 from ngts.constants.constants import InfraConst
 from ngts.performance_tests.spcx_ra.Alibaba_AR_tests.conftest import (AlibabaScenarioToconfiguration,
                                                                       get_alibaba_traffic, extract_acl_counters,
@@ -88,9 +88,11 @@ class Test_Alibaba_scenarios_with_reset:
                 skip_first_counters_iteration = False
             else:
                 skip_first_counters_iteration = True
+            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[PerfConsts.PACKET_SIZE_LIST[0]]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[PerfConsts.PACKET_SIZE_LIST[0]],
+                                      bw_threshold=bw_threshold,
+                                      bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       packet_size=packet_size,
                                       run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,

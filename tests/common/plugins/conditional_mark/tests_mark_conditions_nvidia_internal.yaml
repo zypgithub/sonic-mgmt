@@ -72,6 +72,18 @@ tests/nightly/runtime/test_runtime.py:
     conditions:
     - "'simx' in platform"
 
+tests/nightly/runtime/test_runtime.py::TestRuntime::test_runtime[show_platform]:
+  xfail:
+    reason: "Testcase might fail due to RM issue: https://redmine.mellanox.com/issues/5083746"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5083746"
+
+tests/nightly/runtime/test_runtime.py::TestRuntime::test_runtime[show_ifaces_status]:
+  xfail:
+    reason: "Testcase might fail due to RM issue: https://redmine.mellanox.com/issues/5083746"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5083746"
+
 tests/nightly/auto_negotition:
   skip:
     reason: "Testcase not supported on simx or on sn6600_ld platform due to RM 4978794"
@@ -399,6 +411,7 @@ tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::tes
     reason: "Testcase ignored due to RM issues"
     conditions_logical_operator: or
     conditions:
+    - "https://redmine.mellanox.com/issues/4977733 and 'sn4280' in platform"
     - "https://redmine.mellanox.com/issues/4970711"
     - "https://redmine.mellanox.com/issues/4975253 and 'sn6600_ld' not in platform"
     - "https://redmine.mellanox.com/issues/4970326"
@@ -457,6 +470,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
     - "'sn6600' in platform and 'simx' in platform"
+    - "https://redmine.mellanox.com/issues/5092874 and 'r-panther-13' in testbed"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_component_version_check:
   skip:
@@ -574,6 +588,12 @@ dash/nasa_debug/test_nasa_debug.py::test_nasa_debug_action:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5099209"
     conditions:
     - "https://redmine.mellanox.com/issues/5099209"
+
+ha/test_ha_npu_process_crash.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5138419"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5138419"
 
 dhcp_relay/test_dhcp_relay.py::test_dhcp_broadcast_not_flooded:
   xfail:
@@ -740,11 +760,17 @@ gnmi/test_gnoi_os.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4958590"
 
-smartswitch/platform_tests/test_reload_dpu.py::test_cold_reboot_dpus[gnoi_based:
+smartswitch/platform_tests/test_reload_dpu.py::test_dpu_status_post_switch_mem_exhaustion:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4958590"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5139554"
     conditions:
-    - "https://redmine.mellanox.com/issues/4958590"
+    - "https://redmine.mellanox.com/issues/5139554"
+
+smartswitch/platform_tests/test_reload_dpu.py::test_dpu_status_post_switch_kernel_panic:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5138419"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5139554"
 
 iface_loopback_action/test_iface_loopback_action_wjh.py:
   skip:
@@ -798,6 +824,24 @@ platform_tests/api/test_bmc.py::TestBMCSessionNonBMC::test_bmc_commands_on_non_b
     conditions:
     - "https://redmine.mellanox.com/issues/5045807"
 
+platform_tests/api/test_switch_host_module.py::TestSwitchHostModuleApi::test_switch_host_status_control:
+  xfail:
+    reason: "Switch-Host reboot-cause shows 'unknown' after BMC-initiated reboot, xfail due to RM issue: https://redmine.mellanox.com/issues/5140682"
+    conditions:
+    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5140682"
+
+platform_tests/api/test_switch_host_module.py::TestChassisBmcModuleApi::test_switch_host_do_power_cycle:
+  xfail:
+    reason: "Switch-Host reboot-cause shows 'unknown' after BMC-initiated reboot, xfail due to RM issue: https://redmine.mellanox.com/issues/5140682"
+    conditions:
+    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5140682"
+
+platform_tests/cli/test_show_bmc.py::TestBmcCliCommands::test_config_chassis_modules:
+  xfail:
+    reason: "Switch-Host reboot-cause shows 'unknown' after BMC-initiated reboot, xfail due to RM issue: https://redmine.mellanox.com/issues/5140682"
+    conditions:
+    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5140682"
+
 platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
   skip:
     reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4258556"
@@ -826,11 +870,11 @@ platform_tests/api/test_pdb.py::TestPdbApi::test_get_name:
 
 platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
   skip:
-    reason: "The test is not supported on the bluefield DPU. Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5065673"
+    reason: "The test is not supported on the bluefield DPU. Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5146055"
     conditions_logical_operator: or
     conditions:
     - "'nvda_bf' in platform"
-    - "https://redmine.mellanox.com/issues/5065673"
+    - "https://redmine.mellanox.com/issues/5146055"
 
 fdb/test_fdb.py::test_fdb:
   skip:
@@ -1235,11 +1279,12 @@ platform_tests/test_sensors.py::test_sensors:
     - "https://redmine.mellanox.com/issues/4261914 and 'sn5640_simx' in platform"
     - "https://redmine.mellanox.com/issues/5023968 and ('slm-111' in testbed or 'slm-110' in testbed)"
   xfail:
-    reason: "Testcase ignored due to RM 4776315 on canonical bobcat setup"
+    reason: "Testcase ignored due to RM 4776315 on canonical bobcat setup, and failure due to https://redmine.mellanox.com/issues/5125814 on r-bison-12"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4776315 and 'bobcat-10' in testbed"
     - "https://redmine.mellanox.com/issues/4441016 and psu_manufacture=='Murata-PS' and psu_capacity=='1500'"
+    - "https://redmine.mellanox.com/issues/5125814 and 'r-bison-12' in testbed"
 
 platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
   skip:
@@ -1664,11 +1709,21 @@ system_health/test_system_health.py::test_service_checker_with_process_exit:
     conditions:
     - "https://redmine.mellanox.com/issues/4988548"
 
+system_health/test_system_health.py::test_system_health_config:
+  xfail:
+    reason: "PSU check is still performed after the system-health is configured to ignore psu device, skip due to https://redmine.mellanox.com/issues/5138574"
+    conditions:
+    - "https://redmine.mellanox.com/issues/5138574"
+
 system_health/test_system_status.py::test_system_is_running:
   xfail:
     reason: "Xfail on BMC due to https://redmine.mellanox.com/issues/5064616"
     conditions:
     - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5064616"
+  skip:
+    reason: "watchdog-control can not load on kvm testbed due to https://github.com/sonic-net/sonic-buildimage/issues/19879"
+    conditions:
+    - "https://github.com/sonic-net/sonic-buildimage/issues/19879 and 'simx' in platform"
 
 ########################## IGNORE WARM REBOOT ON SN6600_LD START ##########################
 arp/test_wr_arp.py:

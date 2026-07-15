@@ -340,11 +340,6 @@ class GenerateGoldenConfigDBModule(object):
                 golden_config_db["DEVICE_METADATA"]["localhost"]["default_pfcwd_status"] = "disable"
                 golden_config_db["DEVICE_METADATA"]["localhost"]["buffer_model"] = "traditional"
 
-        # set counterpoll interval to 2000ms as workaround for Slowness observed in nexthop group and member programming
-        if "FLEX_COUNTER_TABLE" in ori_config_db and 'sn5640' in self.platform:
-            golden_config_db["FLEX_COUNTER_TABLE"] = ori_config_db["FLEX_COUNTER_TABLE"]
-            golden_config_db["FLEX_COUNTER_TABLE"]["PORT"]["POLL_INTERVAL"] = "2000"
-
         return json.dumps(golden_config_db, indent=4)
 
     def check_version_for_bmp(self):
@@ -828,6 +823,12 @@ class GenerateGoldenConfigDBModule(object):
         self.dut_loopbacks (dict with 'ipv4' and 'ipv6' lists from topology).
         """
         switch_id = self.npu_index
+        if not self.duts_list or len(self.duts_list) != 2:
+            logger.warning(
+                "HA config generation skipped: duts_list must have "
+                "exactly 2 entries, got %d",
+                len(self.duts_list) if self.duts_list else 0)
+            return {}
 
         if switch_id not in (0, 1):
             logger.warning(
@@ -1115,7 +1116,7 @@ class GenerateGoldenConfigDBModule(object):
         is handled separately by override_port_table_from_platform().
         """
         SUPPORTED_TOPO = ["ft2-64", "ft2-16", "lt2-p32o64", "lt2-o128", "lt2-o128-d110u14",
-                          "ft2-o128", "lt2-o256-u32d224"]
+                          "ft2-o128", "lt2-o256-u32d224", "lt2-u32d128"]
         if self.topo_name not in SUPPORTED_TOPO:
             return "{}"
         SUPPORTED_PORT_SPEED = ["200000", "400000", "800000"]

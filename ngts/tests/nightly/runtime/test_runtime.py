@@ -105,10 +105,17 @@ class TestRuntime:
             self.results[method_name] = average_time
 
     def validate_results(self):
+        all_failures = []
         with allure.step('Validate results'):
             for method, current_result in self.results.items():
                 with allure.step(f'Validate results of method {method}'):
                     expected_result = self.expected_results_data[method]
                     logger.info(f"Compare the current result {current_result} of method {method} to the"
                                 f" threshold {expected_result} with allowed deviation of {ALLOWED_DEVIATION * 100}%")
-                    verify_up_deviation(current_result, expected_result, ALLOWED_DEVIATION)
+                    try:
+                        verify_up_deviation(current_result, expected_result, ALLOWED_DEVIATION)
+                    except AssertionError as error:
+                        all_failures.append(f"Method {method}: {error}")
+
+        with allure.step('Fail the test if there are any failures'):
+            assert not all_failures, "\n".join(all_failures)

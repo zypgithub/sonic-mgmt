@@ -13,7 +13,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 run_traffic, run_validation,
                                                                 add_test_mongo_metadata, update_port_group_in_df)
 from ngts.constants.constants import InfraConst
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts, BwFairnessThreshold
 from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_one_traffic
@@ -87,10 +87,12 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                         run_traffic(self.players, self.scenario, traffic_jsons)
                     with allure.step(f"Verifying the traffic for trimming size: {trimming_size}, "
                                      f"packet size: {packet_size}"):
+                        bw_threshold = None
                         config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                                   chip_type=self.chip_type,
                                                   run_validate_counters=False,
-                                                  bw_threshold=None,
+                                                  bw_threshold=bw_threshold,
+                                                  bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                                   tc_occ_threshold=None,
                                                   power_threshold=self.power_thresholds_by_chip_type)
                         traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
@@ -156,10 +158,12 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                 with allure.step(f"Verifying the traffic on egress port: {egress_port}"):
                     samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
                     samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
+                    bw_threshold = None
                     config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                               chip_type=self.chip_type,
                                               run_validate_counters=False,
-                                              bw_threshold=None,
+                                              bw_threshold=bw_threshold,
+                                              bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                               tc_occ_threshold=None,
                                               power_threshold=self.power_thresholds_by_chip_type,
                                               samples_params_dict=samples_params_dict)
