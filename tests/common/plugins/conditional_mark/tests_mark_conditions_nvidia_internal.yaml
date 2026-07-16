@@ -212,9 +212,9 @@ tests/nightly/secure:
 
 tests/nightly/secure/test_secure_corrupt_fw/test_secure_corrupt_fw.py:
   xfail:
-    reason: "expected err msg was changed due to RM issue: https://redmine.mellanox.com/issues/5050981"
+    reason: "no err msg output due to RM issue: https://redmine.mellanox.com/issues/5157205"
     conditions:
-    - "https://redmine.mellanox.com/issues/5050981"
+    - "https://redmine.mellanox.com/issues/5157205"
 
 tests/nightly/p4/examples_application/p4_gtp_parser/test_gtp_parser.py:
   skip:
