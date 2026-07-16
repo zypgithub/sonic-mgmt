@@ -1753,9 +1753,11 @@ mvrf/test_mgmtvrf.py::TestReboot::test_warmboot:
 
 pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy:
   xfail:
-    reason: "Test fails on SN2700/SN2700-A1 intermittently: https://redmine.mellanox.com/issues/5024713"
+    reason: "Test fails on SN2700/SN2700-A1 intermittently and on MSN4600-C"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/5024713 and 'sn2700' in platform"
+    - "https://redmine.mellanox.com/issues/5155526 and 'msn4600c' in platform"
 
 pfcwd/test_pfcwd_warm_reboot.py:
   skip:
