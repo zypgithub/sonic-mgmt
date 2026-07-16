@@ -1691,12 +1691,6 @@ fib/test_fib.py::test_nvgre_hash[ipv6:
     conditions:
     - "https://redmine.mellanox.com/issues/5046042 and 'sn6600_ld' in platform"
 
-bgp/test_bgp_update_timer.py:
-  xfail:
-    reason: "Xfail on v6 yopo due to RM issue: https://redmine.mellanox.com/issues/5103064"
-    conditions:
-    - "https://redmine.mellanox.com/issues/5103064 and '-v6-' in topo_name"
-
 bgp/test_bgp_slb.py::test_bgp_slb_neighbor_persistence_across_advanced_reboot[fast:
   skip:
     reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/5042499 on sn6600_LD platform"
