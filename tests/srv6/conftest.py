@@ -146,10 +146,10 @@ def pytest_addoption(parser):
     parser.addoption(
         "--srv6_reboot_type",
         action="store",
-        choices=['random', 'reload', 'cold', 'bgp'],
+        choices=['random', 'reload', 'cold', 'warm', 'bgp'],
         default='random',
         required=False,
-        help="reboot type such as random, reload, cold, bgp"
+        help="reboot type such as random, reload, cold, warm, bgp"
     )
 
     parser.addoption(

@@ -18,7 +18,7 @@ from tests.common.helpers.assertions import pytest_assert
 from tests.common.portstat_utilities import parse_portstat
 from tests.common.utilities import wait_until
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from tests.common.mellanox_data import is_mellanox_device
+from tests.common.mellanox_data import is_mellanox_device, get_chip_type
 from tests.common.dualtor.mux_simulator_control import toggle_all_simulator_ports_to_rand_selected_tor  # noqa: F401
 from tests.common.helpers.srv6_helper import create_srv6_packet, send_verify_srv6_packet, \
     validate_srv6_in_appl_db, validate_srv6_in_asic_db, validate_srv6_route, is_bgp_route_synced
@@ -30,6 +30,18 @@ pytestmark = [
     pytest.mark.topology("t0", "t1"),
     pytest.mark.disable_memory_utilization
 ]
+
+
+# Chips known not to support SRv6 warm-reboot.
+SRV6_WARM_REBOOT_UNSUPPORTED_CHIPS = ("spectrum6",)
+
+
+def is_srv6_warm_reboot_support(duthost):
+    """Return True for Mellanox chips not in the unsupported list; non-Mellanox is not supported."""
+    if not is_mellanox_device(duthost):
+        return False
+    chip_type = get_chip_type(duthost)
+    return chip_type not in SRV6_WARM_REBOOT_UNSUPPORTED_CHIPS
 
 
 def get_ptf_src_port_and_dut_port_and_neighbor(dut, tbinfo):
@@ -318,10 +330,18 @@ class TestSRv6DataPlaneBase(SRv6Base):
                 reboot_type = request.config.getoption("--srv6_reboot_type")
 
                 if reboot_type == "random":
-                    reboot_type = random.choice(["cold", "reload", "bgp"])
+                    reboot_options = ["cold", "reload", "bgp"]
+                    if is_srv6_warm_reboot_support(rand_selected_dut):
+                        reboot_options.append("warm")
+                    reboot_type = random.choice(reboot_options)
 
-                if reboot_type == "cold":
-                    with allure.step('Execute cold reboot'):
+                if reboot_type == "warm" and not is_srv6_warm_reboot_support(rand_selected_dut):
+                    chip_type = get_chip_type(rand_selected_dut) if is_mellanox_device(rand_selected_dut) else None
+                    platform = chip_type or rand_selected_dut.facts['asic_type']
+                    pytest.skip(f"Warm-reboot not supported on {platform}")
+
+                if reboot_type in ("cold", "warm"):
+                    with allure.step(f'Execute {reboot_type} reboot'):
                         reboot(rand_selected_dut, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
                                safe_reboot=True, check_intf_up_ports=True, wait_for_bgp=True)
                 elif reboot_type == "reload":
