@@ -484,6 +484,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4894819 and 'air' in testbed"
+    - "https://redmine.mellanox.com/issues/5149556 and 't1-smartswitch-ha' in topo_name"
 
 tests/push_build_tests/L3/rocev2_acl_counter/test_rocev2_acl_counter_basic.py::TestRocev2AclCounter::test_rocev2_acl_counter_basic:
   xfail:
