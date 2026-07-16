@@ -1328,6 +1328,12 @@ platform_tests/test_reload_config.py::test_reload_configuration:
     conditions:
     - "'simx' in platform"
 
+platform_tests/test_reload_config.py::test_reload_configuration_checks:
+  skip:
+    reason: "This case needs to restart swss and syncd containers, but BMC has no swss/syncd containers, so skip on BMC"
+    conditions:
+    - "'bmc' in topo_type"
+
 platform_tests/test_cpu_memory_usage.py::test_cpu_memory_usage:
   xfail:
     reason: "Testcase ignored due to standalone dpu platform and RM issue: https://redmine.mellanox.com/issues/3754090"
