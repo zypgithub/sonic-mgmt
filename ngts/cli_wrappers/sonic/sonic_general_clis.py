@@ -209,7 +209,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             cmd += ' -f'
         else:
             retry_call(self.is_switch_ready_to_reload, tries=12, delay=10)
-        self.engine.run_cmd(cmd, validate=True)
+        output = self.engine.run_cmd('{} ; echo "RELOAD_RC=$?"'.format(cmd), validate=False)
+        if 'RELOAD_RC=0' not in output:
+            raise Exception('config reload failed (RC != 0), output:\n{}'.format(output))
 
     def save_configuration(self):
         self.engine.run_cmd('sudo config save -y', validate=True)
