@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime
 from enum import StrEnum
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 REGRESSION_TYPE_ENV_VAR = "REGRESSION_TYPE"
 
@@ -1513,6 +1514,8 @@ class BmcDeployConstants:
     # OpenBMC-only. AST2700-A1 is here temporarily; drop it once
     # AST2700-A1 is moved to OpenBMC-only.
     SONIC_BMC_SUPPORTED_HW_TYPES = ('AST2700-A1', 'AST2700-A2')
+    if is_redmine_issue_active([5159518])[0]:
+        SONIC_BMC_SUPPORTED_HW_TYPES += ('AST2700',)
 
     # BMC HWSKU
     BMC_HWSKU = "NVIDIA-AST2700-BMC"
