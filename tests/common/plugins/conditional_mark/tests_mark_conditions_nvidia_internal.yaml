@@ -923,7 +923,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_sfps:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5090286"
     conditions:
-    - "https://redmine.mellanox.com/issues/5090286"
+    - "https://redmine.mellanox.com/issues/5090286 and 'bmc' not in topo_type"
   xfail:
     reason: "sfp test should be updated according to the CPO software control design implementation on sn5810_ld and sn6810_ld platforms"
     conditions_logical_operator: or
@@ -1015,7 +1015,7 @@ platform_tests/mellanox/test_check_sfp_eeprom.py::test_check_sfp_eeprom_with_opt
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5090286"
     conditions:
-    - "https://redmine.mellanox.com/issues/5090286"
+    - "https://redmine.mellanox.com/issues/5090286 and 'bmc' not in topo_type"
 
 platform_tests/sfp/test_sfputil.py:
   skip:
@@ -1023,7 +1023,7 @@ platform_tests/sfp/test_sfputil.py:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
-    - "https://redmine.mellanox.com/issues/5090286"
+    - "https://redmine.mellanox.com/issues/5090286 and 'bmc' not in topo_type"
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_low_power_mode:
   skip:
@@ -1048,13 +1048,7 @@ platform_tests/test_xcvr_info_in_db.py:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
-    - "https://redmine.mellanox.com/issues/5090286"
-  xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4989247 or https://redmine.mellanox.com/issues/4989326"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/4989247 and 'sn6810_ld_simx' in platform"
-    - "https://redmine.mellanox.com/issues/4989326 and 'sn6810_ld_simx' in platform"
+    - "https://redmine.mellanox.com/issues/5090286 and 'bmc' not in topo_type"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_base_mac:
   skip:
@@ -1207,7 +1201,7 @@ platform_tests/api/test_sfp.py::TestSfpApi:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5090286"
     conditions:
-    - "https://redmine.mellanox.com/issues/5090286"
+    - "https://redmine.mellanox.com/issues/5090286 and 'bmc' not in topo_type"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_lpmode_support:
   skip:
