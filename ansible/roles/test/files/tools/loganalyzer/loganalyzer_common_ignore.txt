@@ -433,6 +433,8 @@ r, ".* ERR .*#rsyslogd: librelp error 10008 forwarding to server .* - suspending
 r, ".* ERR rsyslogd: imrelp.*error 'error when receiving data, session broken', object .* - input may not work as intended.*"
 # Ignore related rsyslog librelp error, which is caused by the session closed by peer when receiving data, and it will cause the input not work as intended, but it is safe to ignore the error for now to unblock the test, and we will address the root cause later. (PBI https://msazure.visualstudio.com/One/_workitems/edit/37879332)
 r, ".* ERR rsyslogd: imrelp.*error 'server closed relp session, session broken', object .* - input may not work as intended.*"
+# Ignore transient omrelp outbound connection error when container rsyslog forwards logs via RELP before the host syslog receiver is up.
+r, ".* ERR .*#rsyslogd: omrelp\[.*\]: error 'error opening connection to remote peer'.*"
 
 # Errors for config reload/reboot on mellanox platform
 r, ".* ERR syncd#SDK:.*\[SX_API_INTERNAL.ERR\].*Failed command read at communication channel: Connection reset by peer.*"
