@@ -121,7 +121,11 @@ SETUPS_GROUPS_MAP = {
                               'sonic_bison_r-bison-12': SETUPS_GROUP_1,
                               'sonic_moose_mtvr-moose-11': SETUPS_GROUP_1,
                               'sonic_moose_mtvr-moose-09': SETUPS_GROUP_1,
-                              'sonic_moose_r-moose-02': SETUPS_GROUP_1}
+                              'sonic_moose_r-moose-02': SETUPS_GROUP_1,
+                              'mtvr-panther-05': SETUPS_GROUP_1,
+                              'mtvr-panther-07': SETUPS_GROUP_1,
+                              'mtvr-panther-10': SETUPS_GROUP_1,
+                              'r-panther-91': SETUPS_GROUP_1}
     }
 }
 # In canonical we have odd number of setups.
