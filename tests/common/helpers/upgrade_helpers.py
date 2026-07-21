@@ -70,7 +70,7 @@ def restore_image(localhost, duthosts, rand_one_dut_hostname, upgrade_path_lists
         # restore orignial image
         install_sonic(duthost, restore_to_image, tbinfo)
         # Perform a cold reboot
-        reboot(duthost, localhost)
+        reboot(duthost, localhost, safe_reboot=True)
 
 
 def get_reboot_command(duthost, upgrade_type):
