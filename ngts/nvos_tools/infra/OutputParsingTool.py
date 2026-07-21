@@ -458,14 +458,18 @@ class OutputParsingTool:
             return ResultObj(True, lslogins_output, lslogins_output)
         result = {}
         lines = lslogins_output.splitlines()
-        logs = lines[lines.index('') + 1:]
-        lines = lines[:lines.index('')]
+        if '' in lines:
+            blank_line_index = lines.index('')
+            logs = lines[blank_line_index + 1:][1:]
+            lines = lines[:blank_line_index]
+        else:
+            logs = []
 
         for line in lines:
             splitted_line = line.split(':', 1)
             result[splitted_line[0]] = splitted_line[1].strip()
 
-        result['Last logs'] = logs[1:]
+        result['Last logs'] = logs
         return ResultObj(True, "", result)
 
     @staticmethod
