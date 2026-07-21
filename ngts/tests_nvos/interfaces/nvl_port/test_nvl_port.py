@@ -280,7 +280,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
 
     # Build toggleable_interface list based on what's actually available on the device
     toggleable_interface = []
-    is_mloop_simx = getattr(devices.dut, 'require_mloop_setup', False)
+    is_mloop_simx = devices.dut.require_mloop_setup
 
     # Check for FNM ports (internal fan-out modules)
     if (has_loopbox or not standalone_system) and devices.dut.nvl_fnm_ports:

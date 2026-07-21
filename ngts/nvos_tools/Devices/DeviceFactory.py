@@ -16,8 +16,10 @@ from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, C
                                               JulietNonScaleoutSwitchGB300QS, JulietNonScaleoutSwitchGB300PS,
                                               RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch,
                                               RosalindStackedSwitch, RosalindStackedSimx, RosalindChipless,
-                                              TaipanSwitch, TaipanSingleAsicSwitch, PortiaSimx, PortiaSimxNso, PortiaSA,
-                                              PortiaCpoSwitch, PortiaCpo2Asic, PortiaCpoSA, RosalindSA, RosalindRTF)
+                                              TaipanSwitch, TaipanSingleAsicSwitch, PortiaSwitch, PortiaSimx,
+                                              PortiaSimxNso, PortiaSA,
+                                              PortiaCpoSwitch, PortiaCpo4Asic, PortiaCpoSimx, PortiaCpoSA,
+                                              RosalindSA, RosalindRTF)
 
 logger = logging.getLogger()
 
@@ -78,13 +80,16 @@ class DeviceFactory:
             "N6100_LD_simx - Rosalind_SA": RosalindSA,
             "N6300_LD - RosalindStacked": RosalindStackedSwitch,
             "N6300_LD_simx - RosalindStacked": RosalindStackedSimx,
+            "N7100_LD - Portia": PortiaSwitch,
             "N7170_LD_simx - Portia": PortiaSimx,
             "N7100_LD_NSO_simx - Portia": PortiaSimxNso,
             "N7170_LD_simx - Portia_SA": PortiaSA,
-            # Gen2 CPO Portia tray - real HW device, N7220_LD (4- and 2-ASIC flavors, no 8-ASIC).
+            # Gen2 CPO Portia tray, N7220_LD. Production HW = 8-ASIC (2 SWB floors,
+            # default) or 4-ASIC (de-populated); simx is a reduced 2-ASIC profile.
             # Noga switch_type strings must match these keys.
             "N7220_LD - Portia_CPO": PortiaCpoSwitch,
-            "N7220_LD - Portia_CPO_2ASIC": PortiaCpo2Asic,
+            "N7220_LD - Portia_CPO_4ASIC": PortiaCpo4Asic,
+            "N7220_LD_simx - Portia_CPO": PortiaCpoSimx,
             "N7220_LD - Portia_CPO_SA": PortiaCpoSA
         }
 
