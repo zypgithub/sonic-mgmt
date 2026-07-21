@@ -1912,6 +1912,7 @@ slm-31      ansible_host=10.220.13.31 ansible_hostv6="fe80::dc73:fcff:feb2:477e"
 slm-233-ptf-any ansible_host=slm-233  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7009 10.193.67.29" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="DC:73:FC:6A:29:9E" serial="MT26146014R0" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-09LI-ES1', '0x23': u'MT26146014R0', '0x24': u'DC:73:FC:6A:29:9E', '0x25': u'05/06/2026 13:01:07', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x1163AC5F'}"
 slm-233 ansible_host=slm-233  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7009 10.193.67.29" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="DC:73:FC:6A:29:9E" serial="MT26146014R0" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-09LI-ES1', '0x23': u'MT26146014R0', '0x24': u'DC:73:FC:6A:29:9E', '0x25': u'05/06/2026 13:01:07', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x1163AC5F'}"
 slm-233      ansible_host=10.220.13.233 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN6600_LD-P64O128C2" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000 base_mac=dc:73:fc:6a:29:9e
+slm-233-bmc ansible_host=10.193.67.233 sonic_version=v2 sonic_hwsku=NVIDIA-AST2700-BMC sonic_hw_platform=arm64-aspeed_nvidia_ast2700_bmc-r0 asic_type=aspeed serial_console="ssh -l rcon:7009 10.193.67.29" ptf_host=ptf-slm-233 ptf_portmap="" pdu_host=pdu- model="699-24102-1650-TS1" serial="1582626620041" base_mac=3C:6D:66:FB:AF:E3 syseeprom_info="{'0x21': u'P4102-A01', '0x22': u'699-24102-1650-TS1', '0x23': u'1582626620041', '0x24': u'3C:6D:66:FB:AF:E3', '0x27': u'A01', '0xfe': u'0x8543E4AD'}"
 
 slm-113-ptf-any ansible_host=slm-113  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7015 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:F4:E4" serial="MT2616603H4W" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4W', '0x24': u'84:EB:0C:DC:F4:E4', '0x25': u'04/28/2026 02:54:14', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x9325013A'}"
 slm-113 ansible_host=slm-113  sonic_version=v2  sonic_hwsku=Mellanox-SN6600_LD-P64O128C2             serial_console="ssh -l rcon:7015 10.220.12.236" ptf_host=ptf-dummy ptf_portmap="" pdu_host= base_mac="84:EB:0C:DC:F4:E4" serial="MT2616603H4W" model=SN6600_LD syseeprom_info="{'0x21': u'SN6600_LD', '0x22': u'920-9N62F-00LI-GC0', '0x23': u'MT2616603H4W', '0x24': u'84:EB:0C:DC:F4:E4', '0x25': u'04/28/2026 02:54:14', '0x26': u'16', '0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0021-115200-dev', '0x2a': u'546', '0x2b': u'Nvidia', '0xfe': u'0x9325013A'}"
@@ -3366,6 +3367,7 @@ slm-31
 
 slm-233-ptf-any
 slm-233
+slm-233-bmc
 
 slm-113-ptf-any
 slm-113
@@ -3455,6 +3457,10 @@ ptf-slm-chipless-2700a1-146 ansible_host=10.213.86.104 ansible_ssh_user="{{ look
 # canonical testbed sonic_salamandra_r-salamandra-01 topologies
 ptf-r-salamandra-01 ansible_host=10.213.86.105 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 10.213.86.105 ansible_host=10.213.86.105 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+# canonical testbed sonic_slm-233 topologies
+ptf-slm-233 ansible_host=10.220.163.254 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.220.163.254 ansible_host=10.220.163.254 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-245-2-40 ansible_host=10.245.2.40 protocol=snmp

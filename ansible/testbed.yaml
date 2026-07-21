@@ -14960,6 +14960,23 @@
      - slm-233
   comment: Mellanox MEC testbed
 
+- conf-name: slm-233-bmc-dual-mgmt
+  group-name: slm233bm
+  topo: bmc-dual-mgmt
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-slm-233
+  ptf_ip: 10.220.163.254/22
+  ptf_ipv6:
+  server: server_97
+  vm_base:
+  dut:
+    - slm-233-bmc
+    - slm-233
+  bmc_host: slm-233
+  inv_name: lab
+  auto_recover: 'False'
+  comment: BMC dual-mgmt testbed for slm-233
+
 - conf-name: slm-113-ptf-any
   group-name: vm-t1
   topo: ptf-any

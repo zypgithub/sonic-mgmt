@@ -61,6 +61,7 @@ all:
         vm_host_94:
         vm_host_95:
         vm_host_96:
+        vm_host_97:
     eos:
       children:
         vms_1:
@@ -122,6 +123,7 @@ all:
         vms_94:
         vms_95:
         vms_96:
+        vms_97:
     servers:
       vars:
         topologies:
@@ -297,6 +299,7 @@ all:
         server_94:
         server_95:
         server_96:
+        server_97:
 
 vm_host_1:
   hosts:
@@ -592,6 +595,11 @@ vm_host_96:
   hosts:
     FIT-SONIC-VRT-80_2:
       ansible_host: fit-sonic-vrt-80
+
+vm_host_97:
+  hosts:
+    FIT-SONIC-VRT-MEC-240:
+      ansible_host: fit-sonic-vrt-mec-240
 
 
 vms_0:
@@ -9548,6 +9556,9 @@ vms_96:
     VM7772:
       ansible_host: 10.220.74.119
 
+vms_97:
+  hosts:
+
 
 server_1:
   children:
@@ -9961,3 +9972,10 @@ server_96:
     vms_96:
   vars:
     host_var_file: host_vars/FIT-SONIC-VRT-80_2.yml
+
+server_97:
+  children:
+    vm_host_97:
+    vms_97:
+  vars:
+    host_var_file: host_vars/FIT-SONIC-VRT-MEC-240.yml
