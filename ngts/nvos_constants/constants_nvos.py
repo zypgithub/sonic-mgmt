@@ -1013,6 +1013,11 @@ class EventConsts:
     TEXT = 'text'
     TIME_CREATED = 'time-created'
 
+    # wording pinned from live 25.03 devices (rosalind-mec-2164 / juliet-126)
+    INTERFACE_UP_EVENT = 'Interface operational state is up'
+    # 'time-created' format: '%Y-%m-%d %H:%M:%S' plus a trailing timezone name
+    TIME_CREATED_FORMAT = '%Y-%m-%d %H:%M:%S'
+
     # severity levels
     INFORMATIONAL = 'INFORMATIONAL'
     MAJOR = 'MAJOR'
@@ -2339,6 +2344,18 @@ class Cpov2Consts:
     # consumed via re.match: 'cpo1-stale' must NOT pass as a valid instance name.
     CPO_INSTANCE_REGEX = r'cpo\d+\Z'
     ELS_INSTANCE_REGEX = r'els\d+\Z'
+
+    # `nv show system events` wording (HLD Portia samples); the event's
+    # Component column (JSON 'resource') carries the instance name (cpoN/elsN)
+    CPO_INSERTED_EVENT = "CPO was inserted"
+    CPO_EJECTED_EVENT = "CPO was ejected"
+    LASER_SOURCE_INSERTED_EVENT = "Laser source was inserted"
+    LASER_SOURCE_EJECTED_EVENT = "Laser source was ejected"
+    HW_NOT_OK_EVENT_REGEX = r"HW Component health is not ok: .+"
+    LASER_STATE_NOT_OK_EVENT_REGEX = r"ELS Operational State is not ok: Laser \d+ .+"
+    # recovery events repeat the original text behind this prefix
+    CLEARED_EVENT_PREFIX = "Cleared: "
+    # temperature high/low events are Rel2B; no constant until wording lands
 
 
 class HealthConsts:

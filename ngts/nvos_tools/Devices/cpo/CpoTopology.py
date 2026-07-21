@@ -289,6 +289,11 @@ class CpoTopology:
                     f"{cpo}: expected {item_label}s {expected}, got {list(items)}"
                 )
 
+    @property
+    def lanes_per_laser(self) -> int:
+        """Optical lanes (channels) fed by one ELS laser."""
+        return self.channels_per_cpo // (self.els_per_cpo * self.lasers_per_els)
+
 
 @runtime_checkable
 class CpoCapable(Protocol):

@@ -6,7 +6,6 @@ from ngts.nvos_tools.Devices.cpo.CpoTopology import CpoTopology
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.platform.Cpo import Cpo
 
-
 CPO_SUMMARY_FIELDS = (
     Cpov2Consts.FW_VERSION,
     Cpov2Consts.ASSOCIATED_PORTS,
@@ -116,9 +115,7 @@ def unwrap_instance(data: dict, instance: str) -> dict:
     return nested if isinstance(nested, dict) else data
 
 
-def _assert_named_entries(
-    actual: Mapping, expected: Iterable[str], context: str
-) -> None:
+def _assert_named_entries(actual: Mapping, expected: Iterable[str], context: str) -> None:
     expected_names = set(expected)
     assert set(actual) == expected_names, (
         f"{context} instances differ: expected {sorted(expected_names)}, got {sorted(actual)}"
@@ -131,21 +128,15 @@ def _number(value: object) -> float:
     return float(match.group())
 
 
-def _assert_threshold_order(
-    thresholds: Mapping, fields: Iterable[str], context: str
-) -> None:
+def _assert_threshold_order(thresholds: Mapping, fields: Iterable[str], context: str) -> None:
     assert_fields(thresholds, (Cpov2Consts.WARNING, Cpov2Consts.ALARM), context)
     for field in fields:
         warning = _number(thresholds[Cpov2Consts.WARNING][field])
         alarm = _number(thresholds[Cpov2Consts.ALARM][field])
         if field.endswith(("low", "lower")):
-            assert alarm <= warning, (
-                f"{context} {field}: alarm {alarm} > warning {warning}"
-            )
+            assert alarm <= warning, f"{context} {field}: alarm {alarm} > warning {warning}"
         else:
-            assert alarm >= warning, (
-                f"{context} {field}: alarm {alarm} < warning {warning}"
-            )
+            assert alarm >= warning, f"{context} {field}: alarm {alarm} < warning {warning}"
 
 
 def validate_cpo_summary(summary: Mapping, topology: CpoTopology) -> None:
@@ -156,18 +147,10 @@ def validate_cpo_summary(summary: Mapping, topology: CpoTopology) -> None:
 
 def validate_cpo_detail(cpo: str, detail: Mapping, topology: CpoTopology) -> None:
     assert_fields(detail, CPO_DETAIL_FIELDS, cpo)
-    assert set(Cpo.split_names(detail[Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES])) == set(
-        topology.oes_for_cpo(cpo)
-    )
-    assert set(Cpo.split_names(detail[Cpov2Consts.ASSOCIATED_LASER_SOURCES])) == set(
-        topology.els_for_cpo(cpo)
-    )
-    _assert_named_entries(
-        detail[Cpov2Consts.OE], topology.oes_for_cpo(cpo), f"{cpo} OEs"
-    )
-    _assert_named_entries(
-        detail[Cpov2Consts.CHANNEL], topology.channels_for_cpo(cpo), f"{cpo} channels"
-    )
+    assert set(Cpo.split_names(detail[Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES])) == set(topology.oes_for_cpo(cpo))
+    assert set(Cpo.split_names(detail[Cpov2Consts.ASSOCIATED_LASER_SOURCES])) == set(topology.els_for_cpo(cpo))
+    _assert_named_entries(detail[Cpov2Consts.OE], topology.oes_for_cpo(cpo), f"{cpo} OEs")
+    _assert_named_entries(detail[Cpov2Consts.CHANNEL], topology.channels_for_cpo(cpo), f"{cpo} channels")
     for oe, data in detail[Cpov2Consts.OE].items():
         assert_fields(data, OE_FIELDS, f"{cpo}/{oe}")
     for channel, data in detail[Cpov2Consts.CHANNEL].items():
@@ -186,27 +169,17 @@ def validate_laser_source_summary(summary: Mapping, topology: CpoTopology) -> No
         assert_fields(data, LASER_SOURCE_SUMMARY_FIELDS, els)
 
 
-def validate_laser_source_detail(
-    els: str, detail: Mapping, topology: CpoTopology
-) -> None:
+def validate_laser_source_detail(els: str, detail: Mapping, topology: CpoTopology) -> None:
     assert_fields(detail, LASER_SOURCE_DETAIL_FIELDS, els)
     assert detail[Cpov2Consts.PARENT] == topology.cpo_for_els(els)
-    _assert_named_entries(
-        detail[Cpov2Consts.LASER], topology.lasers_for_els(els), f"{els} lasers"
-    )
+    _assert_named_entries(detail[Cpov2Consts.LASER], topology.lasers_for_els(els), f"{els} lasers")
     for laser, data in detail[Cpov2Consts.LASER].items():
         assert_fields(data, LASER_FIELDS, f"{els}/{laser}")
-        assert_fields(
-            data[Cpov2Consts.LASER_TX_POWER], POWER_FIELDS, f"{els}/{laser}/tx-power"
-        )
+        assert_fields(data[Cpov2Consts.LASER_TX_POWER], POWER_FIELDS, f"{els}/{laser}/tx-power")
     thresholds = detail[Cpov2Consts.THRESHOLD]
     for severity in (Cpov2Consts.WARNING, Cpov2Consts.ALARM):
-        assert_fields(
-            thresholds[severity], LASER_SOURCE_THRESHOLD_FIELDS, f"{els}/{severity}"
-        )
-    _assert_threshold_order(
-        thresholds, LASER_SOURCE_THRESHOLD_FIELDS, f"{els} thresholds"
-    )
+        assert_fields(thresholds[severity], LASER_SOURCE_THRESHOLD_FIELDS, f"{els}/{severity}")
+    _assert_threshold_order(thresholds, LASER_SOURCE_THRESHOLD_FIELDS, f"{els} thresholds")
 
 
 def validate_interface_cpo(port: str, detail: Mapping, cpo_detail: Mapping) -> str:
@@ -214,13 +187,9 @@ def validate_interface_cpo(port: str, detail: Mapping, cpo_detail: Mapping) -> s
     parent = detail[Cpov2Consts.PARENT]
     assert port in Cpo.split_names(cpo_detail[Cpov2Consts.ASSOCIATED_PORTS])
     for subtree in (Cpov2Consts.OE, Cpov2Consts.CHANNEL):
-        assert set(detail[subtree]) <= set(cpo_detail[subtree]), (
-            f"{port} {subtree} is not a subset of {parent}"
-        )
+        assert set(detail[subtree]) <= set(cpo_detail[subtree]), f"{port} {subtree} is not a subset of {parent}"
         for name, entry in detail[subtree].items():
-            assert_same_shape(
-                entry, cpo_detail[subtree][name], f"{port}/{subtree}/{name}"
-            )
+            assert_same_shape(entry, cpo_detail[subtree][name], f"{port}/{subtree}/{name}")
     return parent
 
 
@@ -228,9 +197,7 @@ def read_interface_cpo(port: str, engine) -> dict:
     return Interface(parent_obj=None, port_name=port).cpo.parse_show(dut_engine=engine)
 
 
-def validate_healthy_instances(
-    component: str, data: Mapping, expected: Iterable[str]
-) -> None:
+def validate_healthy_instances(component: str, data: Mapping, expected: Iterable[str]) -> None:
     instances = data[component][HealthConsts.Component.INSTANCE]
     _assert_named_entries(instances, expected, f"health {component}")
     for instance, health in instances.items():

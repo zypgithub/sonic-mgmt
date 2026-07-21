@@ -1,6 +1,6 @@
 """Offline unit tests for CpoTopology (Gen2 CPO expected-topology model).
 
-Phase 0 validation gate of CPO_TEST_PLAN.md. Pure Python - no DUT, no engines.
+Pure Python - no DUT, no engines.
 
 Run offline (no setup) with:
     python -m pytest ngts/tests_nvos/unit_tests/cpo -c ngts/pytest.ini \
@@ -16,6 +16,7 @@ import pytest
 from ngts.nvos_tools.Devices.cpo.CpoTopology import CpoTopology, OeNaming
 
 PORTIA_SIMX_CPO_COUNT = 4
+PORTIA_LANES_PER_LASER = 4  # 64 channels / 16 lasers per (single) ELS
 
 
 @pytest.fixture
@@ -38,6 +39,7 @@ class TestCounts:
         assert topology.els_count == 4
         assert topology.laser_count == 64
         assert topology.channel_count == 256
+        assert topology.lanes_per_laser == PORTIA_LANES_PER_LASER
 
     def test_single_asic_counts(self):
         single = CpoTopology(cpo_count=1)
@@ -190,9 +192,7 @@ class TestAssertConsistent:
         return {
             "cpo_to_oes": {c: topology.oes_for_cpo(c) for c in topology.cpo_names()},
             "cpo_to_els": {c: topology.els_for_cpo(c) for c in topology.cpo_names()},
-            "cpo_to_channels": {
-                c: topology.channels_for_cpo(c) for c in topology.cpo_names()
-            },
+            "cpo_to_channels": {c: topology.channels_for_cpo(c) for c in topology.cpo_names()},
         }
 
     def test_good_maps_pass(self, topology):
@@ -206,9 +206,7 @@ class TestAssertConsistent:
             "sw1p1s2": "cpo1",
             "sw8p1s1": "cpo2",
         }
-        result = topology.assert_consistent(
-            cpo_to_ports=cpo_to_ports, port_to_cpo=port_to_cpo
-        )
+        result = topology.assert_consistent(cpo_to_ports=cpo_to_ports, port_to_cpo=port_to_cpo)
         assert result.result, result.info
 
     def test_missing_cpo_key_fails(self, topology):
@@ -259,9 +257,7 @@ class TestAssertConsistent:
     def test_port_mismatch_fails(self, topology):
         cpo_to_ports = {"cpo1": ["sw1p1s1"], "cpo2": ["sw8p1s1"]}
         port_to_cpo = {"sw1p1s1": "cpo2", "sw8p1s1": "cpo2"}
-        result = topology.assert_consistent(
-            cpo_to_ports=cpo_to_ports, port_to_cpo=port_to_cpo
-        )
+        result = topology.assert_consistent(cpo_to_ports=cpo_to_ports, port_to_cpo=port_to_cpo)
         assert not result.result
 
     def test_one_sided_port_maps_rejected(self, topology):
@@ -286,7 +282,5 @@ class TestAssertConsistent:
         """With per-CPO OE naming every CPO legitimately reports oe1..oeN, so the
         global-uniqueness check must not apply (mirrors channels)."""
         topology = CpoTopology(cpo_count=2, oe_naming=OeNaming.PER_CPO)
-        result = topology.assert_consistent(
-            cpo_to_oes={c: topology.oes_for_cpo(c) for c in topology.cpo_names()}
-        )
+        result = topology.assert_consistent(cpo_to_oes={c: topology.oes_for_cpo(c) for c in topology.cpo_names()})
         assert result.result, result.info

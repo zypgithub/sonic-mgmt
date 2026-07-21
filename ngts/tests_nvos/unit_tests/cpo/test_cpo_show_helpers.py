@@ -15,11 +15,10 @@ from ngts.tests_nvos.platform.cpo.helpers import (
 )
 from ngts.tests_nvos.unit_tests.cpo import sample_outputs as samples
 
-
 TOPOLOGY = samples.TOPOLOGY
 
 
-def test_phase2_show_fixtures_satisfy_field_contracts():
+def test_show_fixtures_satisfy_field_contracts():
     validate_cpo_summary(samples.SHOW_PLATFORM_CPO, TOPOLOGY)
     validate_laser_source_summary(samples.SHOW_PLATFORM_LASER_SOURCE, TOPOLOGY)
     for cpo, detail in samples.SHOW_PLATFORM_CPO_DETAIL.items():
@@ -28,15 +27,10 @@ def test_phase2_show_fixtures_satisfy_field_contracts():
         validate_laser_source_detail(els, detail, TOPOLOGY)
 
 
-def test_phase2_interface_fixture_is_platform_subset():
+def test_interface_fixture_is_platform_subset():
     interface_detail = samples.SHOW_INTERFACE_CPO_SW8P1S1
     parent = interface_detail[Cpov2Consts.PARENT]
-    assert (
-        validate_interface_cpo(
-            "sw8p1s1", interface_detail, samples.SHOW_PLATFORM_CPO_DETAIL[parent]
-        ) ==
-        parent
-    )
+    assert validate_interface_cpo("sw8p1s1", interface_detail, samples.SHOW_PLATFORM_CPO_DETAIL[parent]) == parent
 
 
 def test_detailed_topology_maps_include_channels():
@@ -75,6 +69,4 @@ def test_health_contract_requires_expected_healthy_instances():
         HealthConsts.Component.UNHEALTHY_COUNT
     ] = "1"
     with pytest.raises(AssertionError, match="non-zero unhealthy count"):
-        validate_healthy_instances(
-            HealthConsts.Component.CPO, health, TOPOLOGY.cpo_names()
-        )
+        validate_healthy_instances(HealthConsts.Component.CPO, health, TOPOLOGY.cpo_names())

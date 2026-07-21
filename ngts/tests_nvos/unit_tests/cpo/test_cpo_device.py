@@ -1,4 +1,4 @@
-"""Offline unit tests for the Gen2 CPO device layer (Phase 0 validation gate).
+"""Offline unit tests for the Gen2 CPO device layer.
 
 Covers DeviceFactory resolution, PortiaCpoCapability attachment and the flat
 name projections - no DUT needed (device objects are built locally).
@@ -25,11 +25,7 @@ PORTIA_PLAIN_SA_KEY = "N7170_LD_simx - Portia_SA"
 
 def expected_cpo_trunk_ports(asic_amount):
     """Seven used optical groups per ASIC; each exposes eight 200G subports."""
-    return [
-        f"sw{sw}p1s{subport}"
-        for sw in range(1, 7 * asic_amount + 1)
-        for subport in range(1, 9)
-    ]
+    return [f"sw{sw}p1s{subport}" for sw in range(1, 7 * asic_amount + 1) for subport in range(1, 9)]
 
 
 @pytest.fixture(autouse=True)
@@ -146,11 +142,8 @@ def test_port_model(cpo_switch):
     assert cpo_switch.nvl_trunk_ports_list == expected_cpo_trunk_ports(4)
     assert cpo_switch.nvl_trunk_ports_list[:3] == ["sw1p1s1", "sw1p1s2", "sw1p1s3"]
     assert cpo_switch.nvl_trunk_ports_list[-1] == "sw28p1s8"
-    assert (
-        cpo_switch.SW_GROUPS_PER_ASIC * cpo_switch.SW_SUBPORTS_PER_GROUP +
-        cpo_switch.SPARE_CHANNELS_PER_ASIC ==
-        cpo_switch.cpo.channels_per_cpo
-    )
+    channels = cpo_switch.SW_GROUPS_PER_ASIC * cpo_switch.SW_SUBPORTS_PER_GROUP + cpo_switch.SPARE_CHANNELS_PER_ASIC
+    assert channels == cpo_switch.cpo.channels_per_cpo
 
 
 def test_real_device_attributes(cpo_switch):

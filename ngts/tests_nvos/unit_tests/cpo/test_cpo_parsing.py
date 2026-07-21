@@ -1,4 +1,4 @@
-"""Offline parser tests against the HLD sample outputs (Phase 1 validation gate).
+"""Offline parser tests against the HLD sample outputs.
 
 Verifies that the Cpov2Consts field names match the HLD output shapes, that the
 JSON parsing path used by the framework handles them, and that relationship
@@ -13,6 +13,7 @@ import copy
 import json
 
 from ngts.nvos_constants.constants_nvos import Cpov2Consts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Cpo import Cpo
 from ngts.tests_nvos.unit_tests.cpo import sample_outputs as samples
@@ -22,9 +23,7 @@ TOPOLOGY = samples.TOPOLOGY
 
 def _parse_json_round_trip(data: dict) -> dict:
     """Feed the fixture through the same JSON parsing the framework show() uses."""
-    return OutputParsingTool.parse_json_str_to_dictionary(
-        json.dumps(data)
-    ).get_returned_value()
+    return OutputParsingTool.parse_json_str_to_dictionary(json.dumps(data)).get_returned_value()
 
 
 class TestCpoShowFields:
@@ -122,9 +121,7 @@ class TestLaserSourceShowFields:
             assert field in detail, f"missing {field} in laser-source detail"
 
     def test_threshold_fields(self):
-        threshold = samples.SHOW_PLATFORM_LASER_SOURCE_DETAIL["els1"][
-            Cpov2Consts.THRESHOLD
-        ]
+        threshold = samples.SHOW_PLATFORM_LASER_SOURCE_DETAIL["els1"][Cpov2Consts.THRESHOLD]
         for severity in (Cpov2Consts.WARNING, Cpov2Consts.ALARM):
             for field in (Cpov2Consts.TX_POWER_UPPER, Cpov2Consts.TX_POWER_LOWER):
                 assert field in threshold[severity]
@@ -179,9 +176,7 @@ class TestFaeSystemCpoFields:
                 assert step in steps, f"{els}: missing step {step}"
 
     def test_els_initialization_per_laser(self):
-        per_laser = samples.SHOW_FAE_ELS_INITIALIZATION_PER_LASER["els1"][
-            Cpov2Consts.ELS_INITIALIZATION
-        ]
+        per_laser = samples.SHOW_FAE_ELS_INITIALIZATION_PER_LASER["els1"][Cpov2Consts.ELS_INITIALIZATION]
         assert len(per_laser) == TOPOLOGY.lasers_per_els
         # per HLD, the per-laser breakdown keys lasers as laser1.. (no dash) and
         # reports 'fiber-tuning' (unlike the summary table's 'laser-tuning')
@@ -208,9 +203,7 @@ class TestTopologyMapsFromShowOutput:
 
     def test_summary_output_is_consistent_with_topology(self):
         """The documented usage: assert_consistent(**build_topology_maps(...))."""
-        maps = Cpo.build_topology_maps(
-            samples.SHOW_PLATFORM_CPO, port_to_cpo=samples.PORT_TO_CPO
-        )
+        maps = Cpo.build_topology_maps(samples.SHOW_PLATFORM_CPO, port_to_cpo=samples.PORT_TO_CPO)
         result = TOPOLOGY.assert_consistent(**maps)
         assert result.result, result.info
 
@@ -232,8 +225,34 @@ class TestTopologyMapsFromShowOutput:
     def test_port_mismatch_is_detected(self):
         port_to_cpo = dict(samples.PORT_TO_CPO)
         port_to_cpo["sw1p1s1"] = "cpo3"  # contradicts cpo1's associated-ports
-        maps = Cpo.build_topology_maps(
-            samples.SHOW_PLATFORM_CPO, port_to_cpo=port_to_cpo
-        )
+        maps = Cpo.build_topology_maps(samples.SHOW_PLATFORM_CPO, port_to_cpo=port_to_cpo)
         result = TOPOLOGY.assert_consistent(**maps)
         assert not result.result
+
+
+class TestInterfaceLinkParsing:
+    """Real `nv show interface <port> link` captures through the framework parser.
+
+    This is the exact chain the CPO reset/link tests use on-DUT: raw JSON in,
+    the nested `state` dict flattened to its single key.
+    """
+
+    def _parse_link(self, data: dict) -> dict:
+        return OutputParsingTool.parse_show_interface_link_output_to_dictionary(json.dumps(data)).get_returned_value()
+
+    def test_up_capture_state_is_flattened(self):
+        parsed = self._parse_link(samples.SHOW_INTERFACE_SW_LINK_NVL5_UP)
+        assert parsed[IbInterfaceConsts.LINK_STATE] == "up"
+        assert parsed["physical-state"] == "LinkUp"
+
+    def test_down_capture_state_and_pruned_fields(self):
+        parsed = self._parse_link(samples.SHOW_INTERFACE_SW_LINK_NVL5_DOWN)
+        assert parsed[IbInterfaceConsts.LINK_STATE] == "down"
+        assert parsed["plr"]["margin-threshold"] is None
+        for negotiated_field in ("lanes", "speed", "mtu", "op-vls"):
+            assert negotiated_field not in parsed
+
+    def test_nvl6_acp_capture_round_trip(self):
+        parsed = self._parse_link(samples.SHOW_INTERFACE_ACP_LINK_NVL6)
+        assert parsed[IbInterfaceConsts.LINK_STATE] == "up"
+        assert parsed["fec"] == "octal-fec"
