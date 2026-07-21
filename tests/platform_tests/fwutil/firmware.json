@@ -480,13 +480,13 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI000622/FUI000622.mpfa",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI000627/FUI000627.mpfa",
 						"version": "CPLD000439_REV0206",
 						"reboot": ["power off", "cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI000598/FUI000598.mpfa",
-						"version": "CPLD000439_REV0204",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI000622/FUI000622.mpfa",
+						"version": "CPLD000439_REV0206",
 						"reboot": ["power off", "cold"]
 					}
 				],
