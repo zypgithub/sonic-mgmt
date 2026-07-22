@@ -161,6 +161,10 @@ class TC_CONST(object):
     PORT_AMB_DEF = 1
     AMBIENT_DEF = 2
 
+    # Mocked module EEPROM max temperature values (millicelsius) for val_max_clamp scenarios
+    MODULE_EEPROM_TEMP_MAX_ABOVE_CLAMP = 75000  # 75°C — clamp should apply
+    MODULE_EEPROM_TEMP_MAX_BELOW_CLAMP = 60000  # 60°C — clamp should not apply
+
 
 class SysfsNotExistError(Exception):
     """
@@ -592,8 +596,10 @@ def update_effective_val_min_max(mock_sensor, tc_config_dict, sensor_type, senso
       - Config value starts with "!" → use constant directly
       - Otherwise → read from the corresponding sysfs file, config value as fallback
 
-    For module sensors, val_min/val_max are derived from temp_crit + offsets:
-        val_max = read(module{N}_temp_crit) + val_max_offset
+    For module sensors, val_min/val_max are derived from temp_crit, an optional clamp, and offsets:
+        effective_temp_max = min(read(module{N}_temp_crit), val_max_clamp) if configured
+                             read(module{N}_temp_crit) otherwise
+        val_max = effective_temp_max + val_max_offset
         val_min = val_max + val_min_offset
 
     For asic sensors:
@@ -610,13 +616,20 @@ def update_effective_val_min_max(mock_sensor, tc_config_dict, sensor_type, senso
 
     if sensor_type == "module":
         temp_crit_path = sensor_file_path.replace("_temp_input", "_temp_crit")
-        val_max = _resolve_thermal_threshold(mock_sensor, config_val_max, temp_crit_path)
+        eeprom_max = _resolve_thermal_threshold(mock_sensor, config_val_max, temp_crit_path)
+        val_max_clamp = sensor_config.get("val_max_clamp")
+        effective_temp_max = eeprom_max
+        if val_max_clamp is not None:
+            val_max_clamp = int(val_max_clamp)
+            effective_temp_max = min(eeprom_max, val_max_clamp)
+            logger.info(f"Module effective temp max: min(eeprom_max={eeprom_max}, "
+                        f"val_max_clamp={val_max_clamp}) = {effective_temp_max}")
         # Offsets are defined in the TC loop's internal default config
         # (hw_management_thermal_control.py thermal_module_sensor), not in tc_config.json.
         # Defaults: val_max_offset=0, val_min_offset=-20000
         val_max_offset = sensor_config.get("val_max_offset", 0)
         val_min_offset = sensor_config.get("val_min_offset", -20000)
-        val_max = val_max + val_max_offset
+        val_max = effective_temp_max + val_max_offset
         val_min = val_max + val_min_offset
     elif sensor_type == "asic":
         # sensor_file_path is like .../thermal/asic (no _temp_input suffix for asic)

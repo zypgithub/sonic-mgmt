@@ -126,6 +126,56 @@ class TestNewTc:
         self.dut_engine.run_cmd("sudo systemctl start hw-management-thermal-updater")
         self.dut_engine.run_cmd("docker exec pmon supervisorctl start thermalctld")
 
+    def _run_temperature_sweep(self, mock_sensor, tc_config_dict, sensor_type, file_path_list):
+        """
+        Mock sensor temperature from val_min to val_max and back, verifying PWM and RPM at each step.
+        """
+        dev_parameters_name = SENSOR_DATA[sensor_type]['dev_parameters_name']
+
+        update_effective_val_min_max(mock_sensor, tc_config_dict, sensor_type, file_path_list[0])
+
+        temperature_max = get_temperature_digit(tc_config_dict['dev_parameters'][dev_parameters_name]['val_max'])
+        temperature_min = get_temperature_digit(tc_config_dict['dev_parameters'][dev_parameters_name]['val_min'])
+        logger.info(
+            f"\n sensor_type:{sensor_type}, \n sensor_path: {file_path_list},"
+            f" \n dev_parameters_name :{dev_parameters_name},"
+            f" \n temp max:{temperature_max}, \ntemp min: {temperature_min}")
+
+        initial_pwm = get_pwm(mock_sensor)
+        logger.info(f"Initial PWM before mocking: {initial_pwm}")
+
+        def mock_temp_and_check(file_path, temperature, initial_pwm):
+            mock_sensor.mock_temperature(file_path, temperature)
+            verify_pwd_and_rpm_are_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature,
+                                                  initial_pwm=initial_pwm)
+
+        tested_temperature_file = file_path_list[0]
+        with allure.step(f'Mock {tested_temperature_file} to  temperature_min:{temperature_min}'):
+            mock_temp_and_check(tested_temperature_file, temperature_min, initial_pwm)
+
+        if sensor_type == "ambient":
+            with allure.step(f'For ambient, Mock {file_path_list[1]} to  temperature_max:{temperature_max}'):
+                mock_sensor.mock_temperature(file_path_list[1], temperature_max)
+
+        temp_change_step = 10000
+        temperature = temperature_min + temp_change_step
+        with allure.step(
+                f'Mock temperature of {tested_temperature_file} increase from {temperature_min} to '
+                f'{temperature_max} with step {temp_change_step}'):
+            while temperature <= temperature_max:
+                with allure.step(f'mock {sensor_type} temperature increase to {temperature}'):
+                    mock_temp_and_check(tested_temperature_file, temperature, initial_pwm)
+                    temperature += temp_change_step
+
+        temperature = temperature_max - temp_change_step
+        with allure.step(
+                f'Mock temperature of {tested_temperature_file} decrease from {temperature_max} to '
+                f'{temperature_min} with step {temp_change_step}'):
+            while temperature >= temperature_min:
+                with allure.step(f'mock {sensor_type} temperature decrease to {temperature}'):
+                    mock_temp_and_check(tested_temperature_file, temperature, initial_pwm)
+                    temperature -= temp_change_step
+
     @allure.title('test temperature sweep')
     def test_temperature_sweep(self, request, get_dut_supported_sensors_and_tc_config, platform_params):
         """
@@ -152,14 +202,11 @@ class TestNewTc:
             asic
             cpu-pack
             voltmon1_temp_input
-            module{X}
+            module{X} — when val_max_clamp is configured, sweeps with mocked EEPROM max above and below it
             ambient
             Gearbox
         """
         sensor_temperature_test_list, tc_config_dict_orig = get_dut_supported_sensors_and_tc_config
-        # Deep copy to avoid mutating the package-scoped fixture when
-        # update_effective_val_min_max() writes dynamic values back in-place.
-        tc_config_dict = copy.deepcopy(tc_config_dict_orig)
         sensor_type = request.config.getoption("--sensor_type")
         if sensor_type == "all":
             tested_sensors = sensor_temperature_test_list
@@ -175,11 +222,6 @@ class TestNewTc:
         if tested_sensors[0] in ['module', 'asic'] and self.cli_objects.dut.im.is_im_enabled():
             pytest.skip(f"Skip mock temperature for sensor {tested_sensors} as it is not supported in IM enabled setup")
 
-        def mock_temp_and_check(file_path, temperature, initial_pwm):
-            mock_sensor.mock_temperature(file_path, temperature)
-            verify_pwd_and_rpm_are_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature,
-                                                  initial_pwm=initial_pwm)
-
         for sensor_type in tested_sensors:
             # Stop services that would overwrite mocked asic/module temp files.
             # cpu_pack/ambient are maintained by kernel drivers — no services
@@ -190,57 +232,38 @@ class TestNewTc:
             try:
                 with MockSensors(self.dut_engine, self.cli_objects) as mock_sensor:
                     file_path_list = get_sensor_temperature_file_name(sensor_type, platform_params)
+
                     dev_parameters_name = SENSOR_DATA[sensor_type]['dev_parameters_name']
+                    sensor_config = tc_config_dict_orig['dev_parameters'][dev_parameters_name]
 
-                    # Update tc_config_dict in-place with the effective val_min/val_max
-                    # that the TC loop actually uses. For module/asic sensors this reads
-                    # temp_crit/temp_norm from sysfs and applies offsets. For sensors
-                    # with "!" prefix this uses the constant directly.
-                    update_effective_val_min_max(mock_sensor, tc_config_dict, sensor_type, file_path_list[0])
-
-                    temperature_max = get_temperature_digit(
-                        tc_config_dict['dev_parameters'][dev_parameters_name]['val_max'])
-                    temperature_min = get_temperature_digit(
-                        tc_config_dict['dev_parameters'][dev_parameters_name]['val_min'])
-                    logger.info(
-                        f"\n sensor_type:{sensor_type}, \n sensor_path: {file_path_list},"
-                        f" \n dev_parameters_name :{dev_parameters_name},"
-                        f" \n temp max:{temperature_max}, \ntemp min: {temperature_min}")
-
-                    # Capture initial PWM before any mocking — this reflects the baseline
-                    # PWM driven by all other (non-mocked) sensors and stays constant
-                    # throughout the entire increase/decrease sweep.
-                    initial_pwm = get_pwm(mock_sensor)
-                    logger.info(f"Initial PWM before mocking: {initial_pwm}")
-
-                    tested_temperature_file = file_path_list[0]
-                    with allure.step(f'Mock {tested_temperature_file} to  temperature_min:{temperature_min}'):
-                        mock_temp_and_check(tested_temperature_file, temperature_min, initial_pwm)
-
-                    if sensor_type == "ambient":
-                        # for ambient, we have port_amb and fan_amb,
-                        # pwm will be changed based on the min(port_amb_temp, fan_amb_temp).
-                        # to test pwm will be changed based the tested amb, set the temp of the other one amb to max
-                        with allure.step(f'For ambient, Mock {file_path_list[1]} to  temperature_max:{temperature_max}'):
-                            mock_sensor.mock_temperature(file_path_list[1], temperature_max)
-
-                    # 10 degree centigrade
-                    temp_change_step = 10000
-                    temperature = temperature_min + temp_change_step
-                    with allure.step(
-                            f'Mock temperature of {tested_temperature_file} increase from {temperature_min} to {temperature_max} with step {temp_change_step}'):
-                        while temperature <= temperature_max:
-                            with allure.step(f'mock {sensor_type} temperature increase to {temperature}'):
-                                mock_temp_and_check(tested_temperature_file, temperature, initial_pwm)
-                                temperature += temp_change_step
-
-                    temperature = temperature_max - temp_change_step
-                    with allure.step(
-                            f'Mock temperature of {tested_temperature_file} decrease from {temperature_max} to {temperature_min} with step {temp_change_step}'):
-                        while temperature >= temperature_min:
-                            with allure.step(f'mock {sensor_type} temperature decrease to {temperature}'):
-                                mock_temp_and_check(tested_temperature_file, temperature, initial_pwm)
-                                temperature -= temp_change_step
+                    if sensor_type == "module" and "val_max_clamp" in sensor_config:
+                        temp_crit_path = file_path_list[0].replace("_temp_input", "_temp_crit")
+                        val_max_clamp = int(sensor_config['val_max_clamp'])
+                        val_max_offset = sensor_config.get("val_max_offset", 0)
+                        module_clamp_scenarios = [
+                            ("clamp_applies", TC_CONST.MODULE_EEPROM_TEMP_MAX_ABOVE_CLAMP),
+                            ("clamp_not_applied", TC_CONST.MODULE_EEPROM_TEMP_MAX_BELOW_CLAMP)
+                        ]
+                        for scenario_name, mocked_eeprom_max in module_clamp_scenarios:
+                            expected_val_max = min(mocked_eeprom_max, val_max_clamp) + val_max_offset
+                            scenario_log = (
+                                f"Module val_max_clamp {scenario_name}: mock {temp_crit_path}="
+                                f"{mocked_eeprom_max}, expected val_max={expected_val_max}"
+                            )
+                            logger.info(scenario_log)
+                            with allure.step(scenario_log):
+                                tc_config_scenario = copy.deepcopy(tc_config_dict_orig)
+                                mock_sensor.mock_value(temp_crit_path, mocked_eeprom_max)
+                                update_effective_val_min_max(mock_sensor, tc_config_scenario, sensor_type, file_path_list[0])
+                                actual_val_max = get_temperature_digit(tc_config_scenario['dev_parameters'][dev_parameters_name]['val_max'])
+                                assert actual_val_max == expected_val_max, (
+                                    f"Effective module val_max {actual_val_max} != expected {expected_val_max}")
+                                self._run_temperature_sweep(
+                                    mock_sensor, tc_config_scenario, sensor_type, file_path_list)
+                    else:
+                        tc_config_dict = copy.deepcopy(tc_config_dict_orig)
+                        self._run_temperature_sweep(
+                            mock_sensor, tc_config_dict, sensor_type, file_path_list)
             finally:
                 if need_stop_services:
                     self._start_thermal_services()
