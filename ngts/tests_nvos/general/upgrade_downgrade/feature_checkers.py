@@ -68,7 +68,6 @@ from ngts.nvos_tools.infra.CrlValidator import ClientConfig, RevokeConfig
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration import Port, nvos_consts as ib_consts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
-from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.SSDTool import SSDTool
 from ngts.nvos_tools.infra.NmxRbacTool import NmxRbacTool
@@ -1624,7 +1623,7 @@ def _check_ssd_firmware_auto_upgrade(
 
     # Step 1: Verify device is on latest SSD version
     with allure.step('Verify device is on latest SSD version'):
-        BmcTool.verify_platform_component_version(ssd_component, latest_version_name)
+        FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
 
     # Downgrade SSD firmware to previous version
     _, previous_filename, previous_version_name = FWComponentsTool.get_fw_component_version_previous(FW_COMPONENT_SSD)
@@ -1633,11 +1632,12 @@ def _check_ssd_firmware_auto_upgrade(
     yield  # NVOS upgrade happens here (includes latest SSD firmware in bundle)
 
     with allure.step("Verify SSD firmware after upgrade"):
-        BmcTool.verify_platform_component_version(ssd_component, latest_version_name)
+        FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
 
 
 # the checker must be called e.g. test_rbac
 _CHECKERS: list[CheckerFn] = [
+    _check_ssd_firmware_auto_upgrade,
     _check_nmx_cert,
     _check_api_mtls_old,
     _check_cert_mgmt,

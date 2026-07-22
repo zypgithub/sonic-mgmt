@@ -3,6 +3,8 @@ import random
 import string
 import threading
 import time
+import configparser
+import tarfile
 
 import pytest
 
@@ -27,6 +29,50 @@ from ngts.tests_nvos.system.reboot_telemetry_helpers import (
     gnmi_client_for_dut,
 )
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_in_out_or_err
+
+
+@pytest.mark.ssd
+@pytest.mark.parametrize("platform_component_with_clear", ["ssd"], indirect=True)
+def test_ssd_pkg(platform_component_with_clear):
+    """Verify list.ini in the latest SSD pkg has Newer_FW_Version > SSD_FW_Version for each model."""
+    component_name = platform_component_with_clear.get_resource_basename().lower()
+    pkg_path, filename, _ = FWComponentsTool.get_fw_component_version_latest(component_name)
+    assert os.path.isfile(pkg_path), f"SSD package not found: {pkg_path}"
+
+    def _version_key(char):
+        if char.isalpha():
+            return 2
+        if char.isdigit():
+            return 1
+        assert False, f"unexpected character in SSD version: {char!r}"
+
+    def _is_newer(newer, current):
+        if len(newer) != len(current):
+            return len(newer) > len(current)
+        for cur, new in zip(current, newer):
+            if _version_key(cur) != _version_key(new):
+                return _version_key(new) > _version_key(cur)
+            if cur != new:
+                return new > cur
+        return False
+
+    with allure.step(f'Read list.ini from {filename}'):
+        with tarfile.open(pkg_path, 'r:*') as tar:
+            member = next((m for m in tar.getmembers() if os.path.basename(m.name) == 'list.ini'), None)
+            assert member, f"list.ini not found in {filename}"
+            parser = configparser.ConfigParser()
+            parser.read_string(tar.extractfile(member).read().decode())
+
+    models_validated = 0
+    for section in parser.sections():
+        if not parser.has_option(section, 'SSD_FW_Version'):
+            continue
+        current = parser.get(section, 'SSD_FW_Version')
+        newer = parser.get(section, 'Newer_FW_Version')
+        with allure.step(f"{section}: SSD_FW_Version={current}, Newer_FW_Version={newer}"):
+            assert _is_newer(newer, current), f"{section}: {newer!r} must be > {current!r}"
+        models_validated += 1
+    assert models_validated > 0, f"No SSD model entries found in {filename} list.ini"
 
 
 @pytest.mark.timeout(60 * MINUTE, func_only=True)
@@ -62,7 +108,7 @@ def test_ssd_install(engines, devices, topology_obj, random_api, platform_compon
 
         # Verify device is on latest version
         with allure.step('Verify device is on latest SSD version'):
-            BmcTool.verify_platform_component_version(platform_component_with_clear, latest_version_name)
+            FWComponentsTool.verify_platform_component_version(platform_component_with_clear, latest_version_name)
 
         # Get expected operation duration for SSD install without reboot
         duration_threshold = devices.dut.expected_operation_durations['install ssd']
@@ -102,7 +148,7 @@ def test_ssd_install(engines, devices, topology_obj, random_api, platform_compon
 
         # Verify correct versioning for installed fw package
         with allure.step(f'Verify SSD firmware version is {version_name}'):
-            BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+            FWComponentsTool.verify_platform_component_version(platform_component_with_clear, version_name)
             assert_gnmi_firmware_version_matches_nvue(
                 gnmi_client, PlatformConsts.FW_SSD, version_name
             )
@@ -115,7 +161,7 @@ def test_ssd_install(engines, devices, topology_obj, random_api, platform_compon
             ).verify_result()
 
         with allure.step(f'Verify SSD firmware version is {latest_version_name}'):
-            BmcTool.verify_platform_component_version(platform_component_with_clear, latest_version_name)
+            FWComponentsTool.verify_platform_component_version(platform_component_with_clear, latest_version_name)
             assert_gnmi_firmware_version_matches_nvue(
                 gnmi_client, PlatformConsts.FW_SSD, latest_version_name
             )
@@ -218,8 +264,9 @@ def test_ssd_install_interruption_recovery(engines, devices, topology_obj, rando
     shutdown_thread = None
     recovered_version = None
 
+    component_name = ssd_component.get_resource_basename().lower()
     # Get latest version info
-    latest_path, latest_filename, latest_version_name = FWComponentsTool.get_fw_component_version_latest(ssd_component.get_resource_basename().lower())
+    latest_path, latest_filename, latest_version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
     if latest_version_name is None:
         pytest.skip(f"Package {latest_filename!r} does not support SSD model")
 
@@ -229,7 +276,7 @@ def test_ssd_install_interruption_recovery(engines, devices, topology_obj, rando
             FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
 
         # Step 2: Fetch previous SSD firmware
-        ssd_previous_path, ssd_previous_filename, ssd_previous_version = FWComponentsTool.get_fw_component_version_previous('ssd')
+        ssd_previous_path, ssd_previous_filename, ssd_previous_version = FWComponentsTool.get_fw_component_version_previous(component_name)
         with allure.step(f'Fetch SSD firmware {ssd_previous_version}'):
             ssd_component.action_fetch(ssd_previous_path).verify_result()
 
@@ -302,7 +349,7 @@ def test_ssd_install_interruption_recovery(engines, devices, topology_obj, rando
                 ).verify_result()
 
                 # Verify restoration
-                BmcTool.verify_platform_component_version(ssd_component, latest_version_name)
+                FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
 
 
 def _verify_ssd_dump_in_techsupport(engines, test_name):

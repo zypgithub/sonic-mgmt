@@ -39,7 +39,10 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_constants.constants_nvos import HealthConsts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import FW_COMPONENT_SSD
 from ngts.tests_nvos.system.reboot_telemetry_helpers import REBOOT_REASON_SHOW_EXEMPTED_ERR_MSGS
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.ngts_types import EnginesT, DevicesT
@@ -124,6 +127,18 @@ def _check_system_health(**kwargs) -> None:
     with allure.step("Check system health"):
         health = System().health.parse_show()
         assert health['status'] == HealthConsts.OK, f"system health is not ok: {health}"
+
+
+@_requires_action(helpers.Action.UPGRADE, helpers.Action.DOWNGRADE, helpers.Action.ROLLBACK)
+def _check_ssd_firmware_latest(devices: DevicesT, **kwargs) -> None:
+
+    _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+    if latest_version_name is None:
+        logger.info("Skipping SSD firmware check: non supported SSD model")
+        return
+
+    with allure.step("Verify SSD firmware is at latest version"):
+        FWComponentsTool.verify_platform_component_version(Platform().firmware.ssd, latest_version_name)
 
 
 @_requires_action(helpers.Action.UPGRADE)
@@ -243,6 +258,7 @@ _CHECKERS: List[CheckerFn] = [
     _check_eth1,
     _check_system_health,
     _check_system_version,
+    _check_ssd_firmware_latest,
     _check_reboot_reason,
     _check_curl,
     _check_dockers,
