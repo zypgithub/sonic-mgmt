@@ -2828,9 +2828,9 @@ generic_config_updater/test_bgp_prefix.py::test_bgp_prefix_tc1_suite:
       - "'isolated' in topo_name"
       - "https://github.com/sonic-net/sonic-buildimage/issues/27818"
   xfail:
-    reason: "BGP allowed-prefix GCU validation fails across platforms, tracked by https://github.com/sonic-net/sonic-mgmt/issues/25549"
+    reason: "BGP allowed-prefix GCU validation fails across platforms, tracked by https://github.com/sonic-net/sonic-buildimage/issues/27818"
     conditions:
-      - "https://github.com/sonic-net/sonic-mgmt/issues/25549"
+      - "https://github.com/sonic-net/sonic-buildimage/issues/27818"
 
 generic_config_updater/test_bgp_speaker.py::test_bgp_speaker_tc1_test_config:
   xfail:
