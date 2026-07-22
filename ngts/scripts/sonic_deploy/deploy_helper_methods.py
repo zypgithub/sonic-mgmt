@@ -690,8 +690,6 @@ class DeployOrchestrator:
                 deploy_sequential=self.context.deploy_sequential
             )
 
-        DeployTopologyHelper.customize_testbed_yaml_file(self.context.setup_info, self.context.sonic_topo, self.context.neighbor_mode)
-
         return self.pre_install_threads
 
     def execute_installation(self):
@@ -792,6 +790,7 @@ class DeployOrchestrator:
     def execute_post_installation_steps(self):
         cli_obj = self.context.primary_cli_obj
 
+        DeployTopologyHelper.customize_testbed_yaml_file(self.context.setup_info, self.context.sonic_topo, self.context.neighbor_mode)
         cli_obj.post_installation_steps(self.context, DeployImageHelper)
 
         replace_nos = self.context.request.config.getoption('--target_cli_type')
