@@ -831,11 +831,23 @@ platform_tests/cli/test_show_bmc.py::TestBmcCliCommands::test_config_chassis_mod
     conditions:
     - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5140682"
 
-platform_tests/cli/test_show_bmc.py::TestBmcCliCommands::test_show_platform_temperature:
+platform_tests/daemon/test_bmcctld.py::TestBmcctldDaemon::test_bmcctld_rack_manager_command:
   xfail:
     reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/5140682 on BMC platform"
     conditions:
-      - "https://redmine.mellanox.com/issues/5152933"
+    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/5140682"
+
+platform_tests/daemon/test_bmcctld.py::TestBmcctldDaemon::test_bmcctld_event_trigger:
+  skip:
+    reason: "Case check swss/synd contain on switch. Skip it on r-salamandra-01 and slm-chipless-2700a1-146 due to they are chipless"
+    conditions:
+    - "'bmc' in topo_type and ('r-salamandra-01' in testbed or 'slm-chipless-2700a1-146' in testbed)"
+
+platform_tests/daemon/test_bmcctld.py::TestBmcctldDaemon::test_bmc_reboot_does_not_affect_switch_host:
+  skip:
+    reason: "Case check swss/synd contain on switch. Skip it on r-salamandra-01 and slm-chipless-2700a1-146 due to they are chipless"
+    conditions:
+    - "'bmc' in topo_type and ('r-salamandra-01' in testbed or 'slm-chipless-2700a1-146' in testbed)"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
   skip:
@@ -1372,10 +1384,6 @@ process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical
     - "https://redmine.mellanox.com/issues/5100919"
     - "'bobcat' in testbed"
     - "'ptf' in topo_name or 't1' in topo_name"
-  skip:
-    reason: "BMC does not support power cycle until FR https://redmine.mellanox.com/issues/4941740 ready"
-    conditions:
-    - "'bmc' in topo_type and https://redmine.mellanox.com/issues/4941740"
 
 process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat:
   skip:
