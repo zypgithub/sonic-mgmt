@@ -57,5 +57,6 @@
   apt:
     name: docker-ce
     update_cache: yes
+    lock_timeout: 300
   become: yes
   environment: "{{ proxy_env | default({}) }}"
