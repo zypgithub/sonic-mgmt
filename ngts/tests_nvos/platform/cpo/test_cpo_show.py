@@ -116,9 +116,17 @@ def test_cpo_show_interface(engines, devices, random_api):
     expected_ports = set(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list)
     assert expected_ports <= set(interfaces), "CPO device interface inventory is incomplete"
 
+    # cpo does not exist in the acp command tree, so the query must FAIL as an
+    # invalid/unknown command - an empty or successful "no CPO" output is a bug
+    # (exact CLI wording pinned on the first DUT run)
     acp_port = devices.dut.nvl_access_ports_list[0]
     output = Interface(parent_obj=None, port_name=acp_port).cpo.show(dut_engine=engines.dut, should_succeed=False)
+    assert output.strip(), f"{acp_port} cpo query returned empty output instead of a command error"
     assert "traceback" not in output.lower(), f"{acp_port} CPO rejection produced a traceback"
+    rejection_markers = ("invalid", "unknown", "error", "usage", "incomplete", "not valid")
+    assert any(marker in output.lower() for marker in rejection_markers), (
+        f"{acp_port} cpo query did not fail as an unknown command: {output!r}"
+    )
 
 
 @pytest.mark.platform

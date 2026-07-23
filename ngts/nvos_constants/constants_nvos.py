@@ -2253,6 +2253,16 @@ class Cpov2Consts:
     ASSOCIATED_LASER_SOURCES = "associated-laser-sources"
     ASSOCIATED_OPTICAL_ENGINES = "associated-optical-engines"
 
+    # `status` values: the CPO is not user-removable and
+    # reports up/down (down when its ELS is removed; down with an empty
+    # error-status is NOT unhealthy). The replaceable ELS keeps presence
+    # semantics. Values compared case-insensitively until the CLI casing is
+    # pinned on a DUT.
+    CPO_STATUS_UP = "up"
+    CPO_STATUS_DOWN = "down"
+    ELS_STATUS_INSERTED = "Inserted"
+    ELS_STATUS_REMOVED = "Removed"
+
     # sub-trees
     THRESHOLDS = "thresholds"
     OE = "oe"

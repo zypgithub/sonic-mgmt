@@ -43,6 +43,7 @@ from ngts.tests_nvos.platform.cpo.event_helpers import (
 from ngts.tests_nvos.platform.cpo.helpers import (
     unwrap_instance,
     validate_cpo_detail,
+    validate_healthy_instances,
     validate_laser_source_detail,
 )
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
@@ -67,18 +68,23 @@ def _read_els(platform: Platform, els: str, engine) -> dict:
     return unwrap_instance(platform.laser_source.els_id[els].parse_show(dut_engine=engine), els)
 
 
-def _is_inserted(detail: dict) -> bool:
-    return str(detail.get(Cpov2Consts.STATUS, "")).lower() == "inserted"
+def _has_status(detail: dict, expected: str) -> bool:
+    return str(detail.get(Cpov2Consts.STATUS, "")).lower() == expected.lower()
 
 
 def _wait_for_cpo_and_els_recovery(platform: Platform, cpo: str, els: str, engine) -> tuple[dict, dict]:
-    step = f"Wait for {cpo} and {els} to return to Inserted (timeout={CPO_RECOVERY_SAFETY_TIMEOUT_SECONDS}s)"
+    # The CPO recovers to up (not Inserted); the replaceable ELS keeps
+    # presence semantics and recovers to Inserted
+    step = f"Wait for {cpo} to return to up and {els} to Inserted (timeout={CPO_RECOVERY_SAFETY_TIMEOUT_SECONDS}s)"
     with allure.step(step):
         return poll_until(
             lambda: (_read_cpo(platform, cpo, engine), _read_els(platform, els, engine)),
-            lambda details: all(_is_inserted(detail) for detail in details),
+            lambda details: (
+                _has_status(details[0], Cpov2Consts.CPO_STATUS_UP) and
+                _has_status(details[1], Cpov2Consts.ELS_STATUS_INSERTED)
+            ),
             timeout_seconds=CPO_RECOVERY_SAFETY_TIMEOUT_SECONDS,
-            description=f"{cpo} and {els} to return to Inserted",
+            description=f"{cpo} to return to up and {els} to Inserted",
             acceptable_exceptions=TRANSIENT_READ_ERRORS,
         )
 
@@ -176,7 +182,7 @@ def _wait_for_ejection(system: System, baseline: ResetBaseline, observed: Observ
     """Gate on the outage starting before any recovery check.
 
     The reset CLI returns before status/events flip, so a recovery poll issued
-    immediately could pass on stale pre-reset Inserted state; the ejected
+    immediately could pass on stale pre-reset up/Inserted state; the ejected
     events of both cascade partners prove the removal window opened.
     """
     for component, instance in _cascade_targets(baseline):
@@ -243,7 +249,8 @@ def test_cpo_reset_actions(engines, devices, random_api):
     3. After every reset, first gate on the outage actually starting: both
        partners' ejected events (CPO/ELS scopes) or a carrier-down-count
        increase on an associated port (laser scope).
-    4. Then verify recovery: wait for both objects to return to Inserted,
+    4. Then verify recovery: wait for the CPO to return to up and the ELS
+       to Inserted,
        re-run the detail validators, verify the mapping survived, and wait for
        every associated sw port to re-link.
     5. After the CPO and ELS resets: require an ejected -> inserted event
@@ -309,6 +316,30 @@ def test_cpo_reset_actions(engines, devices, random_api):
                 _cascade_targets(baseline),
                 timeout_seconds=CPO_RECOVERY_SAFETY_TIMEOUT_SECONDS,
             )
+
+
+@pytest.mark.platform
+@pytest.mark.cpov2
+def test_cpo_fault_injection(engines, devices, random_api):
+    """Verify the injected-fault health/event contract end to end.
+
+    1. Verify the baseline: every CPO and laser-source health instance is
+       HEALTHY with a zero unhealthy count.
+    2. Inject an error on one CPO, then one ELS and one laser, and verify the
+       fault contract: non-empty error-status, WARNING event + unhealthy-count
+       increment, the Cleared counterpart on recovery, and tech-support
+       generation succeeding during the fault window.
+    """
+    system = System()
+    with allure.step("Verify the all-HEALTHY CPO and laser-source baseline"):
+        health = system.health.component.parse_show(dut_engine=engines.dut)
+        validate_healthy_instances(HealthConsts.Component.CPO, health, devices.dut.cpo_list)
+        validate_healthy_instances(HealthConsts.Component.Laser_Source, health, devices.dut.laser_source_list)
+
+    pytest.skip(
+        "Fault injection is not implemented: the FW register error-injection "
+        "mechanism is undefined (O-8) - only the healthy baseline is verified"
+    )
 
 
 @pytest.mark.interface

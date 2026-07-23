@@ -33,6 +33,22 @@ def test_interface_fixture_is_platform_subset():
     assert validate_interface_cpo("sw8p1s1", interface_detail, samples.SHOW_PLATFORM_CPO_DETAIL[parent]) == parent
 
 
+def test_interface_header_must_be_inherited_from_parent():
+    interface_detail = copy.deepcopy(samples.SHOW_INTERFACE_CPO_SW8P1S1)
+    parent = interface_detail[Cpov2Consts.PARENT]
+    interface_detail[Cpov2Consts.ASSOCIATED_PORTS] = "sw8p1s1"
+    with pytest.raises(AssertionError, match="differs from its parent CPO header"):
+        validate_interface_cpo("sw8p1s1", interface_detail, samples.SHOW_PLATFORM_CPO_DETAIL[parent])
+
+
+def test_interface_must_show_only_its_own_channel_slice():
+    interface_detail = copy.deepcopy(samples.SHOW_INTERFACE_CPO_SW8P1S1)
+    parent = interface_detail[Cpov2Consts.PARENT]
+    interface_detail[Cpov2Consts.CHANNEL] = copy.deepcopy(samples.SHOW_PLATFORM_CPO_DETAIL[parent][Cpov2Consts.CHANNEL])
+    with pytest.raises(AssertionError, match="channel slice"):
+        validate_interface_cpo("sw8p1s1", interface_detail, samples.SHOW_PLATFORM_CPO_DETAIL[parent])
+
+
 def test_detailed_topology_maps_include_channels():
     maps = Cpo.build_topology_maps(samples.SHOW_PLATFORM_CPO_DETAIL)
     assert maps["cpo_to_channels"]["cpo1"] == TOPOLOGY.channels_for_cpo("cpo1")

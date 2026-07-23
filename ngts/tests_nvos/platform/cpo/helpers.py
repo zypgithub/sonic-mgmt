@@ -92,6 +92,26 @@ LASER_FIELDS = (
     Cpov2Consts.LASER_TX_POWER,
 )
 INTERFACE_CPO_FIELDS = CPO_DETAIL_FIELDS + (Cpov2Consts.PARENT,)
+# `nv show interface <port> cpo` header fields inherited AS-IS from the parent
+# CPO (full associated-* lists, not the port's subset); only the oe/channel
+# blocks are the port's slice.
+INTERFACE_HEADER_FIELDS = (
+    Cpov2Consts.STATUS,
+    Cpov2Consts.ERROR_STATUS,
+    Cpov2Consts.IDENTIFIER,
+    Cpov2Consts.FW_VERSION,
+    Cpov2Consts.ASSOCIATED_PORTS,
+    Cpov2Consts.ASSOCIATED_LASER_SOURCES,
+    Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES,
+    Cpov2Consts.THRESHOLDS,
+)
+# associated-* fields may render as a comma-separated string or a JSON list
+# (see Cpo.split_names), so header inheritance compares them as name sets.
+_INTERFACE_HEADER_NAME_LISTS = (
+    Cpov2Consts.ASSOCIATED_PORTS,
+    Cpov2Consts.ASSOCIATED_LASER_SOURCES,
+    Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES,
+)
 _NUMBER_PATTERN = re.compile(r"[-+]?\d+(?:\.\d+)?")
 
 
@@ -186,6 +206,20 @@ def validate_interface_cpo(port: str, detail: Mapping, cpo_detail: Mapping) -> s
     assert_fields(detail, INTERFACE_CPO_FIELDS, port)
     parent = detail[Cpov2Consts.PARENT]
     assert port in Cpo.split_names(cpo_detail[Cpov2Consts.ASSOCIATED_PORTS])
+    for field in INTERFACE_HEADER_FIELDS:
+        if field in _INTERFACE_HEADER_NAME_LISTS:
+            matches = set(Cpo.split_names(detail[field])) == set(Cpo.split_names(cpo_detail[field]))
+        elif field == Cpov2Consts.STATUS:
+            matches = str(detail[field]).lower() == str(cpo_detail[field]).lower()
+        else:
+            matches = detail[field] == cpo_detail[field]
+        assert matches, f"{port} {field} differs from its parent CPO header"
+    # the port's slice: exactly its own OE and channel(s), nothing else of the
+    # CPO (exact expected identity needs the DB mapping - TP O-10)
+    assert len(detail[Cpov2Consts.OE]) == 1, f"{port} must show exactly one OE, got {sorted(detail[Cpov2Consts.OE])}"
+    assert 0 < len(detail[Cpov2Consts.CHANNEL]) < len(cpo_detail[Cpov2Consts.CHANNEL]), (
+        f"{port} must show only its own channel slice, got {len(detail[Cpov2Consts.CHANNEL])} channels"
+    )
     for subtree in (Cpov2Consts.OE, Cpov2Consts.CHANNEL):
         assert set(detail[subtree]) <= set(cpo_detail[subtree]), f"{port} {subtree} is not a subset of {parent}"
         for name, entry in detail[subtree].items():

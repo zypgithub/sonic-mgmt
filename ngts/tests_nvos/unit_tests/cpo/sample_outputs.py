@@ -61,9 +61,13 @@ def _cpo_thresholds() -> dict:
 
 
 def make_cpo_detail(cpo: str) -> dict:
-    """`nv show platform cpo <cpo-id>` (HLD 'nv show platform cpo cpoN', Portia)."""
+    """`nv show platform cpo <cpo-id>` (HLD 'nv show platform cpo cpoN', Portia).
+
+    CPO status is up/down (the HLD's Inserted is stale); the ELS keeps
+    Inserted/Removed.
+    """
     return {
-        "status": "Inserted",
+        "status": "up",
         "error-status": "N/A",
         "identifier": "CPO Virtual Module",
         "fw-version": "42.40.15",
@@ -136,18 +140,16 @@ def make_laser_source_detail(els: str) -> dict:
     }
 
 
-def make_interface_cpo(port: str, cpo: str, oe: str, channels: list[str]) -> dict:
-    """`nv show interface <port> cpo` for a Portia CPO trunk subport."""
+def make_interface_cpo(cpo: str, oe: str, channels: list[str]) -> dict:
+    """`nv show interface <port> cpo` for a Portia CPO trunk subport.
+
+    The header is inherited AS-IS from the parent CPO (full associated-*
+    lists); only the oe/channel blocks are the port's slice.
+    """
+    parent_detail = make_cpo_detail(cpo)
     return {
         "parent": cpo,
-        "status": "Inserted",
-        "error-status": "N/A",
-        "identifier": "CPO Virtual Module",
-        "fw-version": "42.40.15",
-        "associated-ports": port,
-        "associated-laser-sources": ", ".join(TOPOLOGY.els_for_cpo(cpo)),
-        "associated-optical-engines": oe,
-        "thresholds": _cpo_thresholds(),
+        **{field: parent_detail[field] for field in parent_detail if field not in ("oe", "channel")},
         "oe": {oe: _oe_entry(1)},
         "channel": {ch: _channel_entry() for ch in channels},
     }
@@ -182,9 +184,7 @@ SHOW_PLATFORM_LASER_SOURCE = {
 
 SHOW_PLATFORM_LASER_SOURCE_DETAIL = {els: make_laser_source_detail(els) for els in TOPOLOGY.els_names()}
 
-SHOW_INTERFACE_CPO_SW8P1S1 = make_interface_cpo(
-    port="sw8p1s1", cpo="cpo2", oe="oe6", channels=["channel-17", "channel-18"]
-)
+SHOW_INTERFACE_CPO_SW8P1S1 = make_interface_cpo(cpo="cpo2", oe="oe6", channels=["channel-17", "channel-18"])
 
 # port -> parent cpo, as reported by `nv show interface <port> cpo` per port
 PORT_TO_CPO = {port: cpo for cpo, ports in _PORTS_PER_CPO.items() for port in ports}
