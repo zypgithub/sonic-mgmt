@@ -184,16 +184,16 @@
     # libvirt-qemu user are both installed by host_setup.yml; with
     # package_installation=false the caller is responsible for ensuring
     # those exist out-of-band.
-    - name: Allow libvirt-qemu to traverse home directory
-      acl:
-        path: "{{ home_path }}"
-        entity: libvirt-qemu
-        etype: user
-        permissions: x
-        state: present
-      become: yes
-      when: package_installation | bool
-
+    #[Nvidia-Internal] Skip this step internally as we are not using the home path for VM disk images.
+    #- name: Allow libvirt-qemu to traverse home directory
+    #  acl:
+    #    path: "{{ home_path }}"
+    #    entity: libvirt-qemu
+    #    etype: user
+    #    permissions: x
+    #    state: present
+    #  become: yes
+    #  when: package_installation | bool
 # ---- VM setup ----
 - name: Require veos or SONiC or cisco VMs by default
   set_fact:
