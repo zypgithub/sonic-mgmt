@@ -60,7 +60,17 @@ def _cpo_thresholds() -> dict:
     }
 
 
-def make_cpo_detail(cpo: str) -> dict:
+def make_cpo_summary(cpo: str, ports: list[str] | None = None) -> dict:
+    """One CPO's entry in `nv show platform cpo` (summary)."""
+    return {
+        "fw-version": "42.40.15",
+        "associated-ports": ", ".join(ports if ports is not None else _PORTS_PER_CPO[cpo]),
+        "associated-laser-sources": ", ".join(TOPOLOGY.els_for_cpo(cpo)),
+        "associated-optical-engines": ", ".join(TOPOLOGY.oes_for_cpo(cpo)),
+    }
+
+
+def make_cpo_detail(cpo: str, ports: list[str] | None = None) -> dict:
     """`nv show platform cpo <cpo-id>` (HLD 'nv show platform cpo cpoN', Portia).
 
     CPO status is up/down (the HLD's Inserted is stale); the ELS keeps
@@ -71,7 +81,7 @@ def make_cpo_detail(cpo: str) -> dict:
         "error-status": "N/A",
         "identifier": "CPO Virtual Module",
         "fw-version": "42.40.15",
-        "associated-ports": ", ".join(_PORTS_PER_CPO[cpo]),
+        "associated-ports": ", ".join(ports if ports is not None else _PORTS_PER_CPO[cpo]),
         "associated-laser-sources": ", ".join(TOPOLOGY.els_for_cpo(cpo)),
         "associated-optical-engines": ", ".join(TOPOLOGY.oes_for_cpo(cpo)),
         "thresholds": _cpo_thresholds(),
@@ -156,15 +166,7 @@ def make_interface_cpo(cpo: str, oe: str, channels: list[str]) -> dict:
 
 
 # `nv show platform cpo` (summary) - keyed by CPO name
-SHOW_PLATFORM_CPO = {
-    cpo: {
-        "fw-version": "42.40.15",
-        "associated-ports": ", ".join(_PORTS_PER_CPO[cpo]),
-        "associated-laser-sources": ", ".join(TOPOLOGY.els_for_cpo(cpo)),
-        "associated-optical-engines": ", ".join(TOPOLOGY.oes_for_cpo(cpo)),
-    }
-    for cpo in TOPOLOGY.cpo_names()
-}
+SHOW_PLATFORM_CPO = {cpo: make_cpo_summary(cpo) for cpo in TOPOLOGY.cpo_names()}
 
 # `nv show platform cpo <cpo-id>` for every CPO - keyed by CPO name
 SHOW_PLATFORM_CPO_DETAIL = {cpo: make_cpo_detail(cpo) for cpo in TOPOLOGY.cpo_names()}
