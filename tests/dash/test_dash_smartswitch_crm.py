@@ -8,7 +8,7 @@ from collections import defaultdict
 from jinja2 import Template
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.errors import RunAnsibleModuleFail
-from gnmi_utils import apply_messages
+from tests.common.dash_utils import apply_dash_configs
 from tests.common.helpers.crm import get_used_percent, CRM_UPDATE_TIME, CRM_POLLING_INTERVAL, \
     EXPECT_EXCEEDED, EXPECT_CLEAR, THR_VERIFY_CMDS
 import configs.privatelink_config as pl
@@ -46,25 +46,25 @@ def build_privatelink_config_messages(dpuhost):
     routes + PE VNET mapping (optional bluefield inbound route rule) ->
     meter rules -> ENI -> ENI route group.
     """
-    route_and_mapping = {
-        **pl.PE_VNET_MAPPING_CONFIG,
-        **pl.PE_SUBNET_ROUTE_CONFIG,
-        **pl.VM_SUBNET_ROUTE_CONFIG,
-    }
+    route_and_mapping = [
+        pl.PE_VNET_MAPPING_CONFIG,
+        pl.PE_SUBNET_ROUTE_CONFIG,
+        pl.VM_SUBNET_ROUTE_CONFIG,
+    ]
     if "bluefield" in dpuhost.facts.get("asic_type", ""):
-        route_and_mapping = {**route_and_mapping, **pl.INBOUND_VNI_ROUTE_RULE_CONFIG}
-    return {
-        **pl.APPLIANCE_CONFIG,
-        **pl.ROUTING_TYPE_PL_CONFIG,
-        **pl.VNET_CONFIG,
-        **pl.ROUTE_GROUP1_CONFIG,
-        **pl.METER_POLICY_V4_CONFIG,
-        **route_and_mapping,
-        **pl.METER_RULE1_V4_CONFIG,
-        **pl.METER_RULE2_V4_CONFIG,
-        **pl.ENI_CONFIG,
-        **pl.ENI_ROUTE_GROUP1_CONFIG,
-    }
+        route_and_mapping.append(pl.INBOUND_VNI_ROUTE_RULE_CONFIG)
+    return [
+        pl.APPLIANCE_CONFIG,
+        pl.ROUTING_TYPE_PL_CONFIG,
+        pl.VNET_CONFIG,
+        pl.ROUTE_GROUP1_CONFIG,
+        pl.METER_POLICY_V4_CONFIG,
+        *route_and_mapping,
+        pl.METER_RULE1_V4_CONFIG,
+        pl.METER_RULE2_V4_CONFIG,
+        pl.ENI_CONFIG,
+        pl.ENI_ROUTE_GROUP1_CONFIG,
+    ]
 
 
 def wait_until_crm_dash_eni_applied(dpuhost, default_crm_facts, timeout=90, interval=1):
@@ -298,7 +298,7 @@ def apply_resources_configs(default_crm_facts, localhost, duthost, ptfhost, dpuh
     """
     logger.info("Apply the Privatelink DASH configurations (aligned with test_dash_privatelink).")
     config_messages = build_privatelink_config_messages(dpuhost)
-    apply_messages(localhost, duthost, ptfhost, config_messages, dpuhost.dpu_index, wait_after_apply=0)
+    apply_dash_configs(localhost, duthost, ptfhost, dpuhost.dpu_index, *config_messages)
     wait_until_crm_dash_eni_applied(dpuhost, default_crm_facts)
     pytest.crm_res_cleanup_required = True
 
@@ -481,8 +481,8 @@ class TestDashCRM:
         """
         Validate that after cleanup CRM resources - CRM output the same as it was before test case(without config)
         """
-        apply_messages(self.localhost, self.duthost, self.ptfhost,
-                       build_privatelink_config_messages(self.dpuhost), self.dpu_index, set_db=False)
+        apply_dash_configs(self.localhost, self.duthost, self.ptfhost, self.dpu_index,
+                           *build_privatelink_config_messages(self.dpuhost), set_db=False)
 
         pytest.crm_res_cleanup_required = False
 

@@ -446,7 +446,7 @@ def validate_bw_utilization_fairness(traffic_json: Dict[str, Any], bw_fairness_t
             Port groups absent from the dict are skipped. Use the key "default" for flat (non-grouped) samples.
         violations_list: List to append violations to.
     """
-    logger = logging.getLogger()
+    logger.info(f"validate_bw_utilization_fairness: started (bw_fairness_threshold_per_port_group={bw_fairness_threshold_per_port_group})")
     for port_group_name, port_group_threshold in bw_fairness_threshold_per_port_group.items():
         for direction_name, threshold in [("tx", port_group_threshold.tx), ("rx", port_group_threshold.rx)]:
             if threshold is not None and (not isinstance(threshold, (int, float)) or not (0 <= threshold <= 1)):
@@ -454,7 +454,6 @@ def validate_bw_utilization_fairness(traffic_json: Dict[str, Any], bw_fairness_t
                     f"bw_fairness_threshold_per_port_group[{port_group_name!r}].{direction_name} must be a number between 0 and 1, got {threshold!r}"
                 )
                 return
-    logger.info(f"validate_bw_utilization_fairness: started (bw_fairness_threshold_per_port_group={bw_fairness_threshold_per_port_group})")
     with allure.step(f"Validate per-port BW utilization fairness per port group"):
         bw_samples = traffic_json.get(ValidationConsts.BW_SAMPLES)
         if not bw_samples:

@@ -480,26 +480,26 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI000598/FUI000598.mpfa",
-						"version": "CPLD000439_REV0204",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI000627/FUI000627.mpfa",
+						"version": "CPLD000439_REV0206",
 						"reboot": ["power off", "cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI000589/FUI000589.mpfa",
-						"version": "CPLD000439_REV0203",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI000622/FUI000622.mpfa",
+						"version": "CPLD000439_REV0206",
 						"reboot": ["power off", "cold"]
 					}
 				],
 				"BMC": {
 					"AST2600": [
 						{
-							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0501/SPC6_AST2600_BMC/dev/non_otp/erot_sign_prod/sw_bmc_arm_spc6_ast2600_88.0060.0501.fwpkg",
-							"version": "88.0060.0501",
+							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.2110/SPC6_AST2600_BMC/dev/non_otp/erot_sign_prod/sw_bmc_arm_spc6_ast2600_bmc_88.0060.2110.fwpkg",
+							"version": "88.0060.2110",
 							"reboot": ["power off"]
 						},
 						{
-							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0207/SPC6_AST2600_BMC/dev/non_otp/erot_sign_prod/sw_bmc_arm_spc6_ast2600_88.0060.0207.fwpkg",
-							"version": "88.0060.0207",
+							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0501/SPC6_AST2600_BMC/dev/non_otp/erot_sign_prod/sw_bmc_arm_spc6_ast2600_88.0060.0501.fwpkg",
+							"version": "88.0060.0501",
 							"reboot": ["power off"]
 						}
 					],

@@ -34,10 +34,15 @@ NETWORK_NAME = "containers_network"
 GET_NETWORK_CMD = "docker network ls | grep '{}'".format(NETWORK_NAME)
 SONIC_MGMT_SSH_PORT = 2222
 SONIC_MGMT_RPYC_PORT = 18812
+CREATE_CONTAINER_MAX_TRIES = 10
 NVOS = "NVOS"
 SONIC = "SONIC"
 SETUPS_LOCATION = {SONIC: "/.autodirect/sw_regression/system/SONIC/MARS/conf/setups",
                    NVOS: "/.autodirect/sysgwork/G/MARS_conf/stm_nvos/setups"}
+# Team-specific NFS area (bind-mounted on the hypervisor via constants.*_MOUNTPOINTS) where
+# container diagnostics tarballs are archived, so they don't flood the MARS console log.
+DIAGNOSTICS_NFS_DIR = {SONIC: "/auto/sw_regression/system/SONIC/MARS/container_diagnostics",
+                       NVOS: "/auto/sw_regression/system/NVOS/MARS/container_diagnostics"}
 
 def _test_server_needs_ipv6(topo):
     """
@@ -198,11 +203,12 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     @param topology_file_path: topology file path (used to detect project type via get_setup_type)
     """
     container_iface_mac = mac_address
+    setup_type = get_setup_type(topology_file_path)
     create_mgmt_network(conn)
     mountpoints = dict(constants.COMMON_MOUNTPOINTS)
     if not air_setup:
         mountpoints.update(constants.BARE_METAL_MOUNTPOINTS)
-    if get_setup_type(topology_file_path) == NVOS:
+    if setup_type == NVOS:
         mountpoints.update(constants.NVOS_MOUNTPOINTS)
     else:
         mountpoints.update(constants.SONIC_MOUNTPOINTS)
@@ -241,8 +247,13 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     logger.info("Try to remove existing docker container anyway")
     conn.run("docker rm -f {CONTAINER_NAME}".format(CONTAINER_NAME=container_name), warn=True)
 
-    @retry(exceptions=AssertionError, tries=10, delay=60)
+    # dict, not int: mutated in place so the closure count survives @retry without `nonlocal` (Py2.7 has none)
+    create_attempt = {"count": 0}
+
+    @retry(exceptions=AssertionError, tries=CREATE_CONTAINER_MAX_TRIES, delay=60)
     def _create_container():
+        create_attempt["count"] += 1
+        logger.info("Container creation attempt {}/{}".format(create_attempt["count"], CREATE_CONTAINER_MAX_TRIES))
         conn.run(cmd, warn=True)
         logger.info("Created container, wait a few seconds for it to start")
         time.sleep(5)
@@ -256,12 +267,21 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
         if not container_state["Running"]:
             logger.error("The created container is not started, try to restart it")
             if not start_container(conn, container_name, max_retries=1):
-                logger.error("Restart container failed. "
-                             "Remove the container and delay 60s before recreating.")
+                logger.error("Restart container failed (attempt {}/{}). "
+                             "Remove the container and delay 60s before recreating."
+                             .format(create_attempt["count"], CREATE_CONTAINER_MAX_TRIES))
+                if create_attempt["count"] >= CREATE_CONTAINER_MAX_TRIES:
+                    dump_container_diagnostics(conn, container_name, setup_type)
                 conn.run("docker rm -f {CONTAINER_NAME}".format(CONTAINER_NAME=container_name), warn=True)
                 assert False, "Failed to create the container."
     _create_container()
-    validate_docker_is_up(conn, container_name)
+    try:
+        validate_docker_is_up(conn, container_name)
+    except Exception:
+        logger.error("Container {} did not respond right after creation - dumping diagnostics"
+                     .format(container_name))
+        dump_container_diagnostics(conn, container_name, setup_type)
+        raise
     logger.info("Configure container after starting it")
     copy_script_cmd = "docker cp {SCRIPT_PATH} " \
                       "{CONTAINER_NAME}:/etc/profile.d/".format(SCRIPT_PATH=secrets_vars_script_path,
@@ -363,6 +383,43 @@ def configure_docker_route(conn, container_name, enable_ipv6=False):
         logger.error("Exception: %s" % repr(e))
         logger.error("Configure route & dhclient on container failed.")
         return False
+
+def dump_container_diagnostics(conn, container_name, setup_type):
+    """
+    @summary:
+     Capture container- and hypervisor-level diagnostics for a container that failed to
+     come up or died before the script finished.
+     All commands run with warn=True: the container may already be gone, and a failing
+     diagnostic command must not mask the real failure being reported.
+    :param conn: Fabric connection to the hypervisor (Player) host
+    :param container_name: Docker container name - collected for, and used as the per-container subdir
+    :param setup_type: SONIC or NVOS - selects the NFS area the archive is stored in
+    """
+    logger.error("################### Collecting diagnostics for {} ###################".format(container_name))
+    # timestamp keeps successive failures on the same container from overwriting each other
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    staging_dir = "/tmp/diag_{}_{}".format(container_name, stamp)
+    nfs_dir = "{}/{}".format(DIAGNOSTICS_NFS_DIR.get(setup_type, DIAGNOSTICS_NFS_DIR[SONIC]), container_name)
+    archive_path = "{}/{}.tar.gz".format(nfs_dir, stamp)
+    diagnostics = {
+        "docker_inspect.txt": "docker inspect {}".format(container_name),
+        "docker_logs.txt": "docker logs --timestamps --tail 500 {}".format(container_name),
+        "docker_events.txt": "docker events --since 30m --until 0m --filter container={}".format(container_name),
+        "journalctl_kernel.txt": "journalctl -k --since '30 minutes ago' --no-pager",
+        "journalctl_docker.txt": "journalctl -u docker --since '30 minutes ago' --no-pager",
+        "free.txt": "free -m",
+        "df.txt": "df -h",
+    }
+    # hide=True: keep the (potentially large) diagnostic output out of the MARS console log;
+    # it lives in the archive instead.
+    conn.run("rm -rf {0} && mkdir -p {0}".format(staging_dir), warn=True, hide=True)
+    for filename, cmd in diagnostics.items():
+        conn.run("{{ {0}; }} > {1}/{2} 2>&1".format(cmd, staging_dir, filename), warn=True, hide=True)
+    conn.run("mkdir -p {}".format(nfs_dir), warn=True, hide=True)
+    conn.run("tar -czf {0} -C {1} .".format(archive_path, staging_dir), warn=True, hide=True)
+    conn.run("rm -rf {}".format(staging_dir), warn=True, hide=True)
+    logger.error("Diagnostics for {} archived to {}".format(container_name, archive_path))
+    logger.error("################### End diagnostics for {} ###################".format(container_name))
 
 def cleanup_dangling_docker_images(test_server):
     """
@@ -474,7 +531,16 @@ def main():
                                enable_ipv6, args.topo)
 
     logger.info("Try to delete dangling docker images to save space")
-    cleanup_dangling_docker_images(test_server)
+    # docker system prune also removes stopped containers - verify the container is alive
+    # and dump its diagnostics BEFORE the prune can erase the evidence; prune runs either way.
+    try:
+        validate_docker_is_up(test_server, container_name)
+    except Exception as err:
+        logger.error("Container {} is not up right before docker prune: {}".format(container_name, err))
+        dump_container_diagnostics(test_server, container_name, get_setup_type(args.topo))
+        raise
+    finally:
+        cleanup_dangling_docker_images(test_server)
     logger.info("################### DONE ###################")
 
 

@@ -511,12 +511,15 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
             logging.info(f"[{player_alias}] Validations to run: {list(validations_to_run.keys())}\n")
 
             for name, validation in validations_to_run.items():
-                logger.info(f"Running validation: {name}")
-                violations_before = len(player_violations)
-                t_start = time.monotonic()
-                validation.func(traffic_json, **(validation.extra_args or {}), violations_list=player_violations)
-                elapsed = time.monotonic() - t_start
-                logger.info(f"Running validation: {name}: finished in {elapsed:.3f}s, violations found: {len(player_violations) - violations_before}")
+                try:
+                    logger.info(f"Running validation: {name}")
+                    violations_before = len(player_violations)
+                    t_start = time.monotonic()
+                    validation.func(traffic_json, **(validation.extra_args or {}), violations_list=player_violations)
+                    elapsed = time.monotonic() - t_start
+                    logger.info(f"Running validation: {name}: finished in {elapsed:.3f}s, violations found: {len(player_violations) - violations_before}")
+                except Exception as e:
+                    player_violations.append(f"Validation '{name}' raised an unexpected error: {e}")
 
             if player_violations:
                 player_header = f"Validation failures on {player_alias}:"

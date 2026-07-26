@@ -105,4 +105,20 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_npu_reboot.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_bfd_pin.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_config_reload.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_eni_out_of_order.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ha_split_brain.cases </cases>
+    </test>
+
 </DBDEF>

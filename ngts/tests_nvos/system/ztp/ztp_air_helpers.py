@@ -18,7 +18,7 @@ OOB_USER = NvidiaAirConstants.NVIDIA_AIR_OOB_MGMT_SERVER_USER
 
 # Seconds to wait after factory reset before SSH-ing in.
 # SSH connections trigger config changes that cancel ZTP.
-ZTP_CONFIGURE_TIME = 180
+ZTP_CONFIGURE_TIME = 330
 
 ZTP_JOURNAL_SUCCESS_PATTERN = 'ZTP successfully completed'
 ZTP_JOURNAL_FAILURE_PATTERN = r'ZTP failed'

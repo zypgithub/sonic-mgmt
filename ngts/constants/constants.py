@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime
 from enum import StrEnum
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 REGRESSION_TYPE_ENV_VAR = "REGRESSION_TYPE"
 
@@ -1344,7 +1345,7 @@ class MarsConstants:
         "dualtor-aa-64-breakout", "t0-88-o8c80", "ptp-256", "ptp-130", "t1-isolated-d28u1", 't1-isolated-d28u4',
         "t1-isolated-d56u2", "t0-isolated-d32u32s2", "t0-isolated-v6-d32u32s2", "t0-isolated-d2u254s2", "t0-isolated-d32u32s2-mix",
         "t1-isolated-v6-d56u1-lag", "t1-48-lag", "t1-isolated-d56u1-lag", "t0-isolated-d128u128s2", "t0-isolated-d2u510s2", "t1-isolated-d510u2",
-        "bmc-dual-mgmt"
+        "bmc-dual-mgmt", "t1-isolated-d32u1s2", "t2-isolated-d128s2"
     )
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa", "dualtor-64-breakout", "dualtor-aa-64-breakout")
     TOPO_ARRAY_HA = ("t1-smartswitch-ha",)
@@ -1513,6 +1514,8 @@ class BmcDeployConstants:
     # OpenBMC-only. AST2700-A1 is here temporarily; drop it once
     # AST2700-A1 is moved to OpenBMC-only.
     SONIC_BMC_SUPPORTED_HW_TYPES = ('AST2700-A1', 'AST2700-A2')
+    if is_redmine_issue_active([5159518])[0]:
+        SONIC_BMC_SUPPORTED_HW_TYPES += ('AST2700',)
 
     # BMC HWSKU
     BMC_HWSKU = "NVIDIA-AST2700-BMC"
@@ -1662,6 +1665,8 @@ class VxlanConstants:
 class SanitizerConst:
     SENDER_MAIL = 'noreply@sanitizer.com'
     ASAN_APPS = ["what-just-happened"]
+    # Extra wait (seconds) for ASAN/sanitizer reboot vs regular image (Redmine #5134692).
+    SANITIZER_REBOOT_EXTRA_WAIT_SEC = 60
 
     NVOS_MAIL = 'nbu-system-sw-mlnxos20-ext@exchange.nvidia.com'
     SONIC_MAIL = "nbu-system-sw-sonic-ver@exchange.nvidia.com"
@@ -1953,7 +1958,7 @@ class WJHConsts:
 
 class FanoutVersionConsts:
     EXPECTED_MLNX_VERSION = ["3.10.4206", "3.10.4302"]
-    EXPECTED_SONIC_VERSION_LIST = ["202511_RC.119-8bde1a082_Internal", "202511_RC.129-48da86131_Internal", "master_SPC6_ES.52-7abae559a_Internal"]
+    EXPECTED_SONIC_VERSION_LIST = ["202511_RC.119-8bde1a082_Internal", "202511_RC.129-48da86131_Internal", "202605_RC.48-89ab9327d9_Internal"]
 
 
 class SerialConsts:

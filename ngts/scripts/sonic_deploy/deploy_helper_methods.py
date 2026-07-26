@@ -34,6 +34,7 @@ from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.dvs.dvs_general_clis import DvsGeneralCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
+from ngts.cli_wrappers.sonic.sonic_ip_clis import SonicIpCli
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.helpers.run_process_on_host import run_process_on_host, wait_until_background_procs_done
 from ngts.common.util import download_file_to_dut, save_specified_installed_dpus, get_installed_dpu_info
@@ -689,8 +690,6 @@ class DeployOrchestrator:
                 deploy_sequential=self.context.deploy_sequential
             )
 
-        DeployTopologyHelper.customize_testbed_yaml_file(self.context.setup_info, self.context.sonic_topo, self.context.neighbor_mode)
-
         return self.pre_install_threads
 
     def execute_installation(self):
@@ -791,6 +790,7 @@ class DeployOrchestrator:
     def execute_post_installation_steps(self):
         cli_obj = self.context.primary_cli_obj
 
+        DeployTopologyHelper.customize_testbed_yaml_file(self.context.setup_info, self.context.sonic_topo, self.context.neighbor_mode)
         cli_obj.post_installation_steps(self.context, DeployImageHelper)
 
         replace_nos = self.context.request.config.getoption('--target_cli_type')
@@ -891,9 +891,14 @@ class DeployOrchestrator:
                 deploy_cmd = get_deploy_minigraph_cmd().format(SWITCH=dut_name, TOPO=ctx.sonic_topo)
                 logger.info(f"Running CMD: {deploy_cmd}")
                 execute_script(deploy_cmd, ansible_path, validate=True, timeout=900)
+
+            bmc_params['engine'].disconnect()
             with allure.step('Wait for BMC is ready after config reload'):
                 DeployBmcHelper._wait_bmc_sonic_db_ready(bmc_params)
                 DeployBmcHelper._wait_bmc_containers_running(bmc_params)
+            # Apply DNS servers after deploy-mg
+            with allure.step('Apply DNS servers configuration on BMC'):
+                DeployBmcHelper._apply_dns_servers(bmc_params)
             # Disable extra services not available on the BMC. Must run after deploy-mg:
             # 'config load_minigraph' / 'config reload' resets FEATURE state.
             if is_redmine_issue_active([5057220])[0] or is_redmine_issue_active([5057221])[0]:
@@ -1126,6 +1131,7 @@ class DeployBmcHelper:
                 DeployBmcHelper._wait_bmc_login_with_power_cycle(
                     context, dut_alias, serial_engine
                 )
+                bmc_params['engine'].disconnect()
                 DeployBmcHelper._verify_bmc_login(bmc_params)
 
             # sshd comes up well before the SONiC stack after the install reboots.
@@ -1134,6 +1140,9 @@ class DeployBmcHelper:
             # otherwise they race the boot and fail ('Unable to connect to redis').
             with allure.step('Wait for BMC SONiC DB to be ready'):
                 DeployBmcHelper._wait_bmc_sonic_db_ready(bmc_params)
+
+            with allure.step('Disable ZTP on BMC'):
+                DeployBmcHelper._disable_ztp(bmc_params)
 
             # Install the DHCP recovery workaround before the reboot below, so this
             # reboot (and every later reboot / power-cycle during tests) self-heals
@@ -1218,6 +1227,7 @@ class DeployBmcHelper:
             'bmc_bootconf': specific.get(
                 'bmc_bootconf', BmcDeployConstants.UBOOT_BOOTCONF_DEFAULT
             ),
+            'engine': context.topology_obj.players['bmc']['engine'],
         }
 
     @staticmethod
@@ -1453,11 +1463,7 @@ class DeployBmcHelper:
         until login succeeds (same pattern as _wait_bmc_sonic_db_ready); otherwise a
         transient not-ready window aborts the whole BMC install.
         """
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
+        engine = bmc_params['engine']
         retry_call(engine.run_cmd, fargs=["uname -a"],
                    tries=tries, delay=delay, logger=logger)
 
@@ -1473,11 +1479,7 @@ class DeployBmcHelper:
         """
         db_errors = ("Unable to connect", "Invalid database name",
                      "Connection refused", "doesn't exist")
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
+        engine = bmc_params['engine']
 
         def _check():
             db = engine.run_cmd("sonic-db-cli CONFIG_DB PING")
@@ -1520,11 +1522,7 @@ class DeployBmcHelper:
         service_src = os.path.join(common_dir, BmcDeployConstants.BMC_DHCP_WA_SERVICE_SRC)
         timer_src = os.path.join(common_dir, BmcDeployConstants.BMC_DHCP_WA_TIMER_SRC)
 
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
+        engine = bmc_params['engine']
 
         # Stage the files in /tmp (writable for the admin user), then move them
         # into place with sudo.
@@ -1561,11 +1559,7 @@ class DeployBmcHelper:
         """
         Wait BMC containers are running
         """
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
+        engine = bmc_params['engine']
         general_cli = GeneralCliCommon(engine)
 
         def _check():
@@ -1591,11 +1585,7 @@ class DeployBmcHelper:
         'sudo systemctl start chrony; sleep N; sudo chronyc -a makestep'
         from the BMC shell. Assumes sudo is NOPASSWD for the BMC admin.
         """
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
+        engine = bmc_params['engine']
         logger.info(
             f"BMC clock before sync: {engine.run_cmd('date').strip()}"
         )
@@ -1607,15 +1597,31 @@ class DeployBmcHelper:
         )
 
     @staticmethod
+    def _apply_dns_servers(bmc_params):
+        """
+        Configure the DNS servers on the BMC.
+        """
+        engine = bmc_params['engine']
+        SonicIpCli(engine).apply_dns_servers_into_resolv_conf(is_air_setup=False)
+        logger.info(
+            f"BMC DNS nameservers after apply: "
+            f"{engine.run_cmd('show dns nameserver').strip()}"
+        )
+
+    @staticmethod
+    def _disable_ztp(bmc_params):
+        """
+        Disable ZTP on the BMC.
+        """
+        engine = bmc_params['engine']
+        engine.run_cmd("sudo config ztp disable -y")
+
+    @staticmethod
     def _disable_unavailable_services(bmc_params):
         """
         Disabled mgmt-framework, radv, snmp, swss, syncd and if not available eventd
         """
-        engine = LinuxSshEngine(
-            bmc_params['bmc_ip'],
-            username=BmcDeployConstants.BMC_SONIC_OS_USERNAME,
-            password=BmcDeployConstants.BMC_SONIC_OS_PASSWORD,
-        )
+        engine = bmc_params['engine']
         services_to_disable = []
         if is_redmine_issue_active([5057220])[0]:
             services_to_disable.append("eventd")

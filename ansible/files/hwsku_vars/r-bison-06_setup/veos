@@ -81,6 +81,7 @@ all:
           - t0-isolated-d2u510
           - t0-isolated-d2u510s2
           - t0-isolated-d256u256s2
+          - t2-isolated-d128s2
       children:
         server_88:
         server_89:

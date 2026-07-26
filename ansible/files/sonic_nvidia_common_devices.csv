@@ -110,8 +110,6 @@ r-panther-simx-23,110.213.88.23,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-125,10.215.12.125,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-165,10.215.12.165,ACS-MSN2700,DevSonic,,sonic
 r-salamandra-01,10.209.48.43,ACS-SN6600_LD,DevSonic,,sonic
-r-salamandra-01-bmc,10.209.48.34,bmc,DevSonic,,sonic
-slm-chipless-2700a1-146-bmc,10.7.111.146,bmc,DevSonic,,sonic
 salamandra-chipless-109,10.209.48.109,ACS-SN6600_LD,DevSonic,,sonic
 slm-30,10.220.13.30,Mellanox-SN6600_LD-P64O128C2,DevSonic,,sonic
 slm-31,10.220.13.31,Mellanox-SN6600_LD-P64O128C2,DevSonic,,sonic

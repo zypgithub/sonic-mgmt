@@ -41,6 +41,23 @@
     </test>
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/pretest.cases </cases>
+        <ignore>
+            <condition>
+                <key> topology </key>
+                <op> in </op>
+                <value> [t1-smartswitch-ha] </value>
+            </condition>
+        </ignore>
+    </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/pretest_ha.cases </cases>
+        <ignore>
+            <condition>
+                <key> topology </key>
+                <op> not in </op>
+                <value> [t1-smartswitch-ha] </value>
+            </condition>
+        </ignore>
     </test>
     <test>
         <cases>

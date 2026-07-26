@@ -740,10 +740,10 @@ class TestSSIP:
 
         reboot_type = request.config.getoption("--ssip_reboot_type")
         # TODO: remove this override once warm/fast reboot is supported on sn6600_ld
-        # (https://redmine.mellanox.com/issues/5008193).
+        # (https://redmine.mellanox.com/issues/5154543).
         sn6600_ld_warm_unsupported = (
             "sn6600_ld" in self.duthost.facts.get("platform", "")
-            and is_redmine_issue_active([5008193])[0]
+            and is_redmine_issue_active([5154543])[0]
         )
         if reboot_type == "random":
             reboot_type_list = ["cold", "warm", "fast", "soft"]
@@ -752,7 +752,7 @@ class TestSSIP:
             reboot_type = random.choice(reboot_type_list)
         elif reboot_type in ("warm", "fast") and sn6600_ld_warm_unsupported:
             logger.info("Overriding {} reboot with cold reboot on sn6600_ld due to "
-                        "RM 5008193 (warm/fast-reboot unsupported on this platform).".format(reboot_type))
+                        "RM 5154543 (warm/fast-reboot unsupported on this platform).".format(reboot_type))
             reboot_type = "cold"
         with allure.step("Do {}".format(reboot_type)):
             reboot(self.duthost, localhost, reboot_type=reboot_type, reboot_helper=None, reboot_kwargs=None)

@@ -30,7 +30,7 @@ from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli, OnieInstallati
 from ngts.constants.constants import CliType, FanoutConfigFile
 from ngts.constants.constants import SonicConst, InfraConst, ConfigDbJsonConst, PerformanceSetupConstants, \
     AppExtensionInstallationConstants, DefaultCredentialConstants, BluefieldConstants, \
-    PlatformTypesConstants, SonicDeployConstants
+    PlatformTypesConstants, SonicDeployConstants, SanitizerConst
 from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.breakout_helpers import get_port_current_breakout_mode, get_all_split_ports_parents, \
     get_split_mode_supported_breakout_modes, get_split_mode_supported_speeds, get_all_unsplit_ports
@@ -41,7 +41,7 @@ from ngts.helpers.run_process_on_host import run_process_on_host
 
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.helpers.system_helpers import copy_files_to_syncd
-from ngts.scripts.check_and_store_sanitizer_dump import check_sanitizer_and_store_dump
+from ngts.helpers.sanitizer_helper import check_sanitizer_and_store_dump
 from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps, detect_asic_count
 from ngts.scripts.sonic_deploy.os_upgrade_flag import set_os_upgrade_flag
 
@@ -55,6 +55,7 @@ logger = logging.getLogger()
 DUMMY_COMMAND = 'echo dummy_command'
 NOT_SUPPORTED_DPB_SKU_LIST = ['Mellanox-SN5810_LD-O128A2', 'ACS-SN6810_LD']
 PLATFORMS_TO_NOT_UPDATE_PLATFORM_PARAMS = ['sn6600_ld', 'sn4280']
+SANITIZER_REBOOT_EXTRA_WAIT_SEC = SanitizerConst.SANITIZER_REBOOT_EXTRA_WAIT_SEC
 
 
 class SonicGeneralCli:
@@ -208,7 +209,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             cmd += ' -f'
         else:
             retry_call(self.is_switch_ready_to_reload, tries=12, delay=10)
-        self.engine.run_cmd(cmd, validate=True)
+        output = self.engine.run_cmd('{} ; echo "RELOAD_RC=$?"'.format(cmd), validate=False)
+        if 'RELOAD_RC=0' not in output:
+            raise Exception('config reload failed (RC != 0), output:\n{}'.format(output))
 
     def save_configuration(self):
         self.engine.run_cmd('sudo config save -y', validate=True)
@@ -249,13 +252,36 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.port_reload_reboot_checks(ports_list, platform_params=platform_params)
             self.check_and_apply_dns()
 
-    def safe_reboot_flow(self, topology_obj, reboot_type='reboot', wait_after_ping=45):
+    def safe_reboot_flow(self, topology_obj, reboot_type='reboot', wait_after_ping=45,
+                         check_sanitizer_after_reboot=True):
         logs_in_tmpfs = self.is_logs_in_tmpfs()
         self.copy_logs_before_reboot(logs_in_tmpfs)
-        self.engine.reload([f'sudo {reboot_type}'], wait_after_ping=wait_after_ping)
-        self.restore_logs_after_reboot(logs_in_tmpfs)
         sanitizer = topology_obj.players['dut']['sanitizer']
+
+        # ASAN/sanitizer images take significantly longer to stop swss/syncd
+        # (graceful stop_services_asan so ASAN reports are flushed). If the
+        # reboot command is run in the foreground of an SSH channel that is
+        # then closed before /sbin/reboot is reached, the reboot script gets
+        # SIGHUP mid-flow and the switch is left up with swss/syncd stopped.
+        # See Redmine #5134692. Detach reboot from the SSH session and give
+        # `reload()` extra headroom to detect shutdown.
         if sanitizer:
+            reboot_cmd = (
+                "nohup sudo /sbin/{rt} "
+                "</dev/null >/dev/null 2>&1 & disown"
+            ).format(rt=reboot_type)
+            effective_wait_after_ping = wait_after_ping + SANITIZER_REBOOT_EXTRA_WAIT_SEC
+            logger.info("ASAN/sanitizer image detected: using detached reboot "
+                        "and extending wait_after_ping %ss -> %ss",
+                        wait_after_ping, effective_wait_after_ping)
+        else:
+            reboot_cmd = f'sudo {reboot_type}'
+            effective_wait_after_ping = wait_after_ping
+
+        self.engine.reload([reboot_cmd], wait_after_ping=effective_wait_after_ping)
+        self.restore_logs_after_reboot(logs_in_tmpfs)
+
+        if check_sanitizer_after_reboot and sanitizer:
             test_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
             dumps_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
             check_sanitizer_and_store_dump(self.engine, dumps_folder, test_name)

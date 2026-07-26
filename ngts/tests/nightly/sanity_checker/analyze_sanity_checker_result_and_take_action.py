@@ -51,15 +51,19 @@ def get_sanity_checker_result_from_allure_result():
         if filename.endswith("result.json"):
             test_result_file_list.append(filename)
 
-    sanity_checker_case_res_dict = {}
+    # Save latest result of each case, as rerun can override failed cases
+    latest_run_per_case = {}
 
-    # get sanity case result
     for filename in test_result_file_list:
         with open(os.path.join(ALLURE_RESULT_FOLDER, filename)) as f:
             case_res = json.load(f)
             case_name = case_res.get("name", "")
             if case_name in SANITY_CHECKER_TEST_ACTION_MAP:
-                sanity_checker_case_res_dict[case_name] = case_res["status"]
+                start = case_res.get("start", 0)
+                if case_name not in latest_run_per_case or start > latest_run_per_case[case_name]["start"]:
+                    latest_run_per_case[case_name] = {"start": start, "status": case_res["status"]}
+
+    sanity_checker_case_res_dict = {name: data["status"] for name, data in latest_run_per_case.items()}
     logger.info(f"sanity check case results: {sanity_checker_case_res_dict}")
     return sanity_checker_case_res_dict
 
