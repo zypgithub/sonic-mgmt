@@ -26,6 +26,7 @@ class TestNewTc:
         self.cli_objects = cli_objects
         self.dut_engine = engines.dut
         self.topology_obj = topology_obj
+        self.blacklisted_modules = []
 
     def _wait_tc_loop_resume(self, retries=30):
         """Wait for the hw-management TC loop to exit suspend mode.
@@ -70,6 +71,23 @@ class TestNewTc:
         # suspend thermal control to prevent sensor_read_error protection from locking PWM at 100%
         self.cli_objects.dut.hw_mgmt.suspend_thermal_control()
 
+        # Blacklist all module sensors to prevent TC loop from detecting
+        # "missing" module temp files after thermalctld is stopped.
+        module_files = self.dut_engine.run_cmd(
+            f"ls -1 {TC_CONST.HW_THERMAL_FOLDER}/module*_temp_input 2>/dev/null"
+        ).strip().splitlines()
+        self.blacklisted_modules = []
+        cmds = []
+        for temp_file in module_files:
+            if temp_file == "":
+                pytest.fail("No module temp files found")
+            module_name = os.path.basename(temp_file.strip()).replace("_temp_input", "")
+            bl_file = os.path.join(TC_CONST.HW_THERMAL_FOLDER, f"{module_name}_blacklist")
+            cmds.append(f"sudo touch {bl_file} && sudo chown admin {bl_file} && sudo echo 1 > {bl_file}")
+            self.blacklisted_modules.append(bl_file)
+        if cmds:
+            self.dut_engine.run_cmd(" && ".join(cmds))
+
         self.dut_engine.run_cmd("docker exec pmon supervisorctl stop thermalctld")
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-sync")
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-thermal-updater")
@@ -98,6 +116,12 @@ class TestNewTc:
 
     def _start_thermal_services(self):
         """Restart services stopped by _stop_thermal_services()."""
+        # Clean up blacklist files
+        bl_files = getattr(self, 'blacklisted_modules', [])
+        if bl_files:
+            self.dut_engine.run_cmd(f"sudo rm -f {' '.join(bl_files)}")
+        self.blacklisted_modules = []
+
         self.dut_engine.run_cmd("sudo systemctl start hw-management-sync")
         self.dut_engine.run_cmd("sudo systemctl start hw-management-thermal-updater")
         self.dut_engine.run_cmd("docker exec pmon supervisorctl start thermalctld")

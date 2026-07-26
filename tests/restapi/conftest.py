@@ -169,17 +169,17 @@ def is_support_warm_fast_reboot(duthosts, rand_one_dut_hostname):
     duthost = duthosts[rand_one_dut_hostname]
     support_warm_fast_reboot = True
     # TODO: remove the sn6600_ld branch once warm/fast reboot is supported on sn6600_ld
-    # (https://redmine.mellanox.com/issues/5008193).
+    # (https://redmine.mellanox.com/issues/5154543).
     sn6600_ld_warm_unsupported = (
         "sn6600_ld" in duthost.facts.get("platform", "")
-        and is_redmine_issue_active([5008193])[0]
+        and is_redmine_issue_active([5154543])[0]
     )
     if 'isolated' in duthosts.tbinfo['topo']['name'] or \
             duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_smartswitch") or \
             sn6600_ld_warm_unsupported:
         support_warm_fast_reboot = False
         if sn6600_ld_warm_unsupported:
-            logging.info("Skipping warm and fast reboot tests on sn6600_ld due to RM 5008193")
+            logging.info("Skipping warm and fast reboot tests on sn6600_ld due to RM 5154543")
         else:
             logging.info("Skipping warm and fast reboot tests for isolated topology or smartswitch")
         logging.info("Applying cert config")

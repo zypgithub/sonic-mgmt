@@ -10,6 +10,7 @@ logger = logging.getLogger()
 
 @pytest.mark.disable_loganalyzer
 @pytest.mark.push_gate
+@pytest.mark.build
 @pytest.mark.parametrize("arp_request_type", ["broadcast", "unicast"])
 @allure.title('DUT reply ARP request')
 def test_dut_reply_arp_response(engines, cli_objects, players, interfaces, arp_request_type):

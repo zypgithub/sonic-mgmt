@@ -694,11 +694,11 @@ def test_reboot(rand_selected_dut, tbinfo, ptfhost, localhost, fine_params, mg_f
         global_hash_capabilities: module level fixture to get the dut hash capabilities
     """
     # TODO: remove this skip once warm/fast reboot is supported on sn6600_ld
-    # (https://redmine.mellanox.com/issues/5008193).
+    # (https://redmine.mellanox.com/issues/5154543).
     if reboot_type in ("warm", "fast") \
             and "sn6600_ld" in rand_selected_dut.facts.get("platform", "") \
-            and is_redmine_issue_active([5008193])[0]:
-        pytest.skip("warm/fast reboot is not supported on sn6600_ld (RM 5008193)")
+            and is_redmine_issue_active([5154543])[0]:
+        pytest.skip("warm/fast reboot is not supported on sn6600_ld (RM 5154543)")
     ecmp_algorithm, ecmp_test_hash_field, ipver, inner_ipver, encap_type = fine_params.split('-')
     skip_unsupported_field_for_ecmp_test(ecmp_test_hash_field, encap_type)
     with allure.step('Randomly select an ecmp hash field to test '

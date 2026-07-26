@@ -711,7 +711,7 @@ class TestQoSSaiDSCPQueueMapping_IPIP_Base():
         ):
             with allure.step("Do warm-reboot"):
                 from infra.tools.redmine.redmine_api import is_redmine_issue_active
-                if not ("sn6600_ld" in rand_selected_dut.facts.get("platform", "") and is_redmine_issue_active([5008193])[0]):
+                if not ("sn6600_ld" in rand_selected_dut.facts.get("platform", "") and is_redmine_issue_active([5154543])[0]):
                     reboot(duthost, localhost, reboot_type="warm", safe_reboot=True, check_intf_up_ports=True,
                            wait_warmboot_finalizer=True, ignore_loganalyzer=loganalyzer)
 

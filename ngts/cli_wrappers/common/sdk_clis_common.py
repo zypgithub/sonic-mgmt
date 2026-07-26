@@ -112,10 +112,10 @@ class SdkCliCommon():
     def get_perf_sys_sdk_tar_file_name(self, sdk_branch):
         file_name = PerfConsts.PERF_SYS_SDK_TAR_FILE_TEMPLATE.format(SDK_BRANCH=sdk_branch)
         path = PerfConsts.PERF_SYS_SDK_TAR_FILE_PATH
-        if not os.path.exists(path, file_name):
+        if not os.path.exists(os.path.join(path, file_name)):
             logger.warning(f"Performance system SDK tar file {file_name} not found in {path}, use master as default")
             file_name = PerfConsts.PERF_SYS_SDK_TAR_FILE_TEMPLATE.format(SDK_BRANCH='master')
-        if not os.path.exists(path, file_name):
+        if not os.path.exists(os.path.join(path, file_name)):
             raise TestIssue(f"Performance system SDK tar file {file_name} for master not found in {path}, please check the sdk branch")
         return path, file_name
 

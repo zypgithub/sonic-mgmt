@@ -4,6 +4,7 @@ import random
 from typing import Dict
 
 import pytest
+from retry import retry
 
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT
@@ -48,6 +49,22 @@ def verify_installation(erot_names, expected_version, gnmi_client=None):
                 assert_gnmi_firmware_version_matches_nvue(
                     gnmi_client, erot_name, expected_version
                 )
+
+
+@retry(AssertionError, tries=37, delay=5)  # poll every 5s, up to ~3 min
+def wait_all_erot_bg_copy_completed(erot_names):
+    """Poll until background-copy is 'completed' on all ERoT components.
+
+    An install request is rejected with 'ERoT is busy' while any component is still
+    copying, so this must pass before issuing the next install (replaces a fixed sleep).
+    """
+    platform = Platform()
+    for erot_name in erot_names:
+        firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
+            platform.firmware.erot_id[erot_name].show()).get_returned_value()
+        status = firmware_shown[PlatformConsts.FW_BACKGROUND_COPY_STATUS]
+        assert status.lower() == "completed", \
+            f"{erot_name} background-copy not completed yet (got: {status})"
 
 
 def get_active_inactive_slots(erot_name):
@@ -112,13 +129,15 @@ class BaseFWUpgradeTest:
                 OperationTime.verify_operation_time(res_obj.duration, 'install erot',
                                                     threshold=switch.expected_operation_durations.get('install erot')).verify_result()
 
-            with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
-                time.sleep(MINUTE)
+            with allure.step("Wait until background-copy is completed on all ERoT components"):
+                wait_all_erot_bg_copy_completed(fw_components_names)
             with allure.step(f"Verifying installation was successful for each erot component"):
                 verify_installation(fw_components_names, prev_version, gnmi_client=gnmi_client)
                 # Has bug opened
                 # verify_active_inactive_slots(component_name, active_slot, inactive_slot)
         finally:
+            with allure.step("Wait until background-copy is completed on all ERoT components"):
+                wait_all_erot_bg_copy_completed(fw_components_names)
             res_obj = fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename, test_name)
             with allure.step(f"verify operation time for install erot {curr_version!r} (duration: {res_obj.duration:.2f})"):
                 OperationTime.verify_operation_time(res_obj.duration, 'install erot',

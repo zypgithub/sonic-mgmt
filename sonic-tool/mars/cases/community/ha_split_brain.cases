@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CASEDEF>
+    <global>
+        <Test>
+            <info> SmartSwitch HA Split Brain Test </info>
+            <name> smartswitch_ha_split_brain </name>
+            <owner> </owner>
+            <pre></pre>
+            <post></post>
+        </Test>
+        <Case>
+            <tags> SmartSwitch HA SplitBrain </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
+            <tout> 55555 </tout>
+        </Case>
+    </global>
+
+    <case>
+        <info> smartswitch_ha_split_brain  </info>
+        <name> smartswitch_ha_split_brain </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1600 --session-timeout 3200 --allure_server_addr=\"10.215.11.120\" --dpu-pattern dut-a-dpu-0,dut-b-dpu-0\'" --test-scripts ha/test_ha_split_brain.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+</CASEDEF>

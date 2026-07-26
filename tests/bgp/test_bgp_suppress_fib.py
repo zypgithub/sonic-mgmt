@@ -860,10 +860,10 @@ def param_reboot(request, duthost, localhost, loganalyzer):
     reboot_type = request.config.getoption("--bgp_suppress_fib_reboot_type")
     reboot_type_list = ["reload", "cold", "warm", "fast"]
     # TODO: remove this override once warm/fast reboot is supported on sn6600_ld
-    # (https://redmine.mellanox.com/issues/5008193).
+    # (https://redmine.mellanox.com/issues/5154543).
     sn6600_ld_warm_unsupported = (
         "sn6600_ld" in duthost.facts.get("platform", "")
-        and is_redmine_issue_active([5008193])[0]
+        and is_redmine_issue_active([5154543])[0]
     )
     if sn6600_ld_warm_unsupported:
         reboot_type_list = [rt for rt in reboot_type_list if rt not in ("warm", "fast")]
@@ -872,7 +872,7 @@ def param_reboot(request, duthost, localhost, loganalyzer):
         logger.info("Randomly choose {} from {}".format(reboot_type, reboot_type_list))
     elif reboot_type in ("warm", "fast") and sn6600_ld_warm_unsupported:
         logger.info("Overriding {} reboot with cold reboot on sn6600_ld due to "
-                    "RM 5008193 (warm/fast-reboot unsupported on this platform).".format(reboot_type))
+                    "RM 5154543 (warm/fast-reboot unsupported on this platform).".format(reboot_type))
         reboot_type = "cold"
 
     if reboot_type == "reload":

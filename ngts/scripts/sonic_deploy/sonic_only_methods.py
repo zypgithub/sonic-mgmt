@@ -172,7 +172,8 @@ class SonicInstallationSteps:
                 "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and
                 (not dut_name.startswith('slm-') or dut_name in SonicDeployConstants.SLM_GEN_MG_ALLOWLIST) and
                 not setup_name.endswith('-ha') and
-                "r-bison-18" != dut_name and "r-bison-08" != dut_name):
+                "r-bison-18" != dut_name and "r-bison-08" != dut_name and "r-bison-06" != dut_name and
+                "r-bison-20" != dut_name and "r-bison-22" != dut_name and "r-bison-16" != dut_name):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             if is_scale_topo:
                 logger.info(f"Scale topo {sonic_topo}: running gen-mg foreground to avoid a race condition with add-topo for converged topos")
@@ -648,7 +649,8 @@ class SonicInstallationSteps:
                 need_gen_mingraph = True
         if ("r-bison-06" in setup_name or "r-bison-08" in setup_name or "r-bison-16" in setup_name or
                 "r-bison-18" in setup_name or "r-bison-20" in setup_name or "r-bison-22" in setup_name):
-            hwskus = ['Mellanox-SN5640-C512X2', 'Mellanox-SN5640-C508O1X2', 'Mellanox-SN5640-O128X2']
+            hwskus = ['Mellanox-SN5640-C512S2', 'Mellanox-SN5640-C448O16', 'Mellanox-SN5640-C512X2',
+                      'Mellanox-SN5640-C508O1X2', 'Mellanox-SN5640-O128X2']
             need_gen_mingraph = True
 
         for hwsku in hwskus:
