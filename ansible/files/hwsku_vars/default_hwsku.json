@@ -291,7 +291,7 @@
         "support_hwsku": ["NVIDIA-AST2700-BMC"]
     },
     "mtvr-panther-10_setup": {
-        "default_hwsku": "Mellanox-SN2700",
+        "default_hwsku": "Mellanox-SN2700-A1",
         "support_hwsku": ["Mellanox-SN2700-A1", "Mellanox-SN2700-A1-C28D8", "Mellanox-SN2700-A1-D48C8"]
     },
     "r-panther-91_setup": {
