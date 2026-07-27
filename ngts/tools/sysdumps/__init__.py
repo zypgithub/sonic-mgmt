@@ -11,9 +11,10 @@ import allure
 from ngts.scripts.collect_simx_logs_on_not_success import collect_hypervisor_logs
 from ngts.scripts.sonic_deploy.community_only_methods import is_dualtor_topo
 import pytest
+import yaml
 
 from ngts.conftest import update_topology_with_cli_class
-from ngts.constants.constants import SETUPS_WITH_NON_DEFAULT_PTF, PytestConst
+from ngts.constants.constants import PytestConst
 from ngts.helpers.general_helper import get_dut_cli_objs_from_topo_obj, is_bmc_testbed
 from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
 from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, \
@@ -37,11 +38,42 @@ def get_topology_obj(item):
     return topology
 
 
-def collect_ptf_logs(hyper_engine, dumps_folder, setup_name):
+def _resolve_ptf_container_name(setup_name, testbed_file_path, testbed_info=None):
+    if not testbed_info:
+        if not setup_name or not testbed_file_path:
+            raise ValueError("setup_name and testbed_file are required to locate the PTF container")
+        with open(testbed_file_path, "r") as testbed_stream:
+            testbed_entries = yaml.safe_load(testbed_stream) or []
+        matching_entries = [
+            entry for entry in testbed_entries
+            if entry.get('conf-name') == setup_name or
+            entry.get('conf-name', '').startswith(f'{setup_name}-')
+        ]
+        group_names = {entry.get('group-name') for entry in matching_entries if entry.get('group-name')}
+        if len(group_names) != 1:
+            raise ValueError(
+                f"Expected one PTF group for setup '{setup_name}', found {sorted(group_names)}"
+            )
+        group_name = group_names.pop()
+    else:
+        group_name = testbed_info.get('group-name')
+
+    if not group_name:
+        raise ValueError(f"Testbed info for setup '{setup_name}' has no group-name")
+
+    return f'ptf_{group_name}'
+
+
+def collect_ptf_logs(hyper_engine, dumps_folder, setup_name, testbed_file_path, testbed_info=None):
     ptf_log_file = 'ptf_logs.{}.tgz'.format(time.time_ns())
     dest_file = dumps_folder + '/' + ptf_log_file
-    ptf_docker_name = f'ptf_vm-t{2 if setup_name in SETUPS_WITH_NON_DEFAULT_PTF else 1}'
     try:
+        ptf_docker_name = _resolve_ptf_container_name(
+            setup_name,
+            testbed_file_path,
+            testbed_info=testbed_info
+        )
+        logger.info("Collecting PTF logs from container %s", ptf_docker_name)
         with allure.step('Generate ptf log tar file {}'.format(ptf_log_file)):
             hyper_engine.run_cmd(
                 'docker exec {} tar -czvf /tmp/{} --exclude=/tmp/{} /tmp/ /var/log/tac_plus_daily.log'.format(
@@ -185,9 +217,14 @@ def generate_and_copy_dump(item, dumps_folder, topology_obj, duration):
     # and PTF/dualtor log collection does not apply.
     if switch_type == TopologyConsts.SONIC and not is_bmc_testbed(testbed):
         hypervisor_engine = topology_obj.players['hypervisor']['engine']
-        setup_name = item.config.option.setup_name
         if 'ptf-any' not in testbed:
-            collect_ptf_logs(hypervisor_engine, dumps_folder, setup_name)
+            collect_ptf_logs(
+                hypervisor_engine,
+                dumps_folder,
+                item.config.option.setup_name,
+                getattr(item.config.option, 'testbed_file', None),
+                testbed_info=item.funcargs.get('tbinfo')
+            )
         if is_dualtor_topo(testbed):
             collect_dualtor_logs(hypervisor_engine, dumps_folder)
         if 'upgrade_path' in item.name and 'sonic' in item.config.option.neighbor_type:
