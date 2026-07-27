@@ -5580,6 +5580,10 @@ snmp/test_snmp_lldp.py::test_snmp_lldp:
     reason: "ipv6 mgmt ip is not supported"
     conditions:
       - "is_mgmt_ipv6_only==True"
+  xfail:
+    reason: "LLDP neighbor flapping can make the SNMP and lldpctl snapshots inconsistent."
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/26512 and 't0-isolated-d256u256s2' in topo_name"
 
 snmp/test_snmp_loopback.py::test_snmp_loopback:
   skip:
