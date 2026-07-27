@@ -39,7 +39,7 @@ class TestLossyLossless:
             test_name = set_allure_lossy_lossless_title(request, scenario_name)
 
         self.traffic_jsons = get_lossy_lossless_basic_traffic(self.players, self.conf_args, num_lossy_packets,
-                                                              num_lossless_packets)
+                                                              num_lossless_packets, self.chip_type)
 
         with allure.step(f"Run traffic on all the ports. "
                          f"lossy percentage is {(num_lossy_packets / (num_lossy_packets + num_lossless_packets)) * 100}%.\n"
@@ -47,7 +47,9 @@ class TestLossyLossless:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
+            # Note that ECN counters are expected, due to required low ECN thresholds, due to mix of lossy and lossless traffic
+            # to make sure packets aren't dropped on RED.
+            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT
             required_counter_list = ['tx_ecn_marked_tc_4'] if num_lossy_packets > 0 and num_lossless_packets > 0 else []
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type, bw_threshold=bw_threshold,

@@ -105,13 +105,21 @@ class PerfConsts:
     PERF_SETUP_DUT_ALIASES = [DUT_ALIAS]
     ECN_CAPABLE_TRANSPORT = 1
     # Sample Parameters
+    # DISABLE_HFT_ON_SPC6: temporary workaround for RM #5165343. Remove once resolved.
+    DISABLE_HFT_ENV_VAR = "DISABLE_HFT"
+    DISABLE_HFT = "True" if is_redmine_issue_active([5165343])[0] else "False"
     SAMPLES_PARAMS = {
         "SAMPLE_DURATION": 30,
         "BW_SAMPLE_DELAY": 5,
         "TC_SAMPLE_DELAY": 5,
         "COUNTERS_SAMPLE_DELAY": 5,
-        "CLEAR_COUNTERS": "True"
+        "CLEAR_COUNTERS": "True",
+        "COLLECT_TC_LATENCY": "False",
+        "COLLECT_SDK_DUMP": "False",
+        DISABLE_HFT_ENV_VAR: DISABLE_HFT,
     }
+    COLLECT_TC_LATENCY_ENV_VAR = "COLLECT_TC_LATENCY"
+    COLLECT_SDK_DUMP_ENV_VAR = "COLLECT_SDK_DUMP"
     SENSORS_CMD_ENV_VAR = "SENSORS_CMD"
     DEFAULT_SENSORS_CMD = r"sensors *-i2c-5-*"
     SPC6_SENSORS_CMD = "sensors"
@@ -127,6 +135,7 @@ class PerfConsts:
     OCC_TH_DICT = {ValidationConsts.OCC_AVG: OCC_AVG_TH}
     TEMPERATURE_TH = 105
     LOW_AR_THRESHOLD = 190
+    LOW_AR_THRESHOLD_SPC6 = 280
     MED_AR_THRESHOLD = 800
     HIGH_AR_THRESHOLD = 2000
     SDK_GENERATION_SECONDS_THRESHOLD = 30
@@ -150,6 +159,7 @@ class PerfConsts:
     SDK_DUMP_FILE_SYSTEM = '/var/log/sdk_dbg'
     SHARED_SDK_DUMPS_DIR = "/auto/sw_system_project/switch_performance/results/dumps"
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
+    SPC6_DVS_CUSTOM_CONFIG_FILE = "/usr/share/dvs_manager_eth_spectrum6_bu_128ports_4x_2bonus.xml"
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
     LATEST_SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/lastrc_{SDK_BRANCH}/DEBS/"
     SYNCD_PIP_INDEX_URL = 'https://urm.nvidia.com/artifactory/api/pypi/nv-shared-pypi/simple'
@@ -609,25 +619,26 @@ class SPCXRAConsts:
         return SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH
 
     DUT_TX_UTIL_AUTO_TH_DICT = {
-        PerfConsts.PACKET_SIZE_4K: {
-            "left_ports": {ValidationConsts.TX: 0.92, ValidationConsts.RX: 0.92},
-            "right_ports": {ValidationConsts.TX: 0.92, ValidationConsts.RX: 0.92}
-        }
+        "left_ports": {ValidationConsts.TX: 0.92, ValidationConsts.RX: 0.92},
+        "right_ports": {ValidationConsts.TX: 0.92, ValidationConsts.RX: 0.92}
     }
     DUT_TX_UTIL_IBM_TH_DICT = {
-        PerfConsts.PACKET_SIZE_4K: {
-            "left_ports": {ValidationConsts.TX: DUT_TX_UTIL_IBM_BW_TH, ValidationConsts.RX: DUT_TX_UTIL_IBM_BW_TH},
-            "right_ports": {ValidationConsts.TX: DUT_TX_UTIL_IBM_BW_TH, ValidationConsts.RX: DUT_TX_UTIL_IBM_BW_TH}
-        }
+        "left_ports": {ValidationConsts.TX: DUT_TX_UTIL_IBM_BW_TH, ValidationConsts.RX: DUT_TX_UTIL_IBM_BW_TH},
+        "right_ports": {ValidationConsts.TX: DUT_TX_UTIL_IBM_BW_TH, ValidationConsts.RX: DUT_TX_UTIL_IBM_BW_TH}
     }
     if is_redmine_issue_active([4667031])[0]:
-        DUT_TX_UTIL_AUTO_TH_DICT[PerfConsts.PACKET_SIZE_4K][ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
-        DUT_TX_UTIL_IBM_TH_DICT[PerfConsts.PACKET_SIZE_4K][ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
+        DUT_TX_UTIL_AUTO_TH_DICT[ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
+        DUT_TX_UTIL_IBM_TH_DICT[ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
 
-    PACKET_NUM_400G_x2 = 8
-    PACKET_NUM_800G_x1 = 20
+# Per-chip traffic-packet counts, indexed by chip_type.
+    # SPC6 lanes are 200G (vs 100G on SPC4/SPC5), so SPC6 uses 1.5x the
+    # SPC4/SPC5 packet count at the same per-port speed.
+    # All callers must index by chip_type, e.g. PACKET_NUM_800G_x1[chip_type].
+    PACKET_NUM_200G_x4 = {"SPC4": 6, "SPC5": 6, "SPC6": 9}
+    PACKET_NUM_400G_x2 = {"SPC4": 8, "SPC5": 8, "SPC6": 12}
+    PACKET_NUM_800G_x1 = {"SPC4": 20, "SPC5": 20, "SPC6": 30}
     PACKET_NUM_800G_x2 = PACKET_NUM_800G_x1
-    PACKET_NUM_800G_x1_WITH_INCREMENTAL_DIPS = 72
+    PACKET_NUM_800G_x1_WITH_INCREMENTAL_DIPS = {"SPC4": 72, "SPC5": 72, "SPC6": 108}
 
 
 class MongoDbConsts:
@@ -706,6 +717,96 @@ class PortMappingOptionsConsts:
 
 
 class MRCConsts:
+    # Cumulus SRv6 scheduler configuration:
+    # - Select one entry from CUMULUS_DWRR_PROFILES with CUMULUS_DWRR_PROFILE.
+    # - A TC listed in "weights" is configured in DWRR mode; its value becomes NVUE bw-percent.
+    # - A TC listed in "strict_tcs" is configured in strict mode (no DWRR weight).
+    # - To change a TC from strict to DWRR, remove it from "strict_tcs" and add it to "weights".
+    # - To change a TC from DWRR to strict, remove it from "weights" and add it to "strict_tcs".
+    # - Weights must be integers from 1 through 100 and their configured total cannot exceed 100.
+    CUMULUS_DWRR_PROFILE = "default"
+    CUMULUS_DWRR_PROFILES = {
+        "sonic": {
+            "weights": {1: 8, 2: 18, 3: 22, 4: 22},
+            "strict_tcs": []
+        },
+        "custom": {
+            "weights": {1: 8, 2: 18, 3: 22, 4: 48},
+            "strict_tcs": []
+        },
+        "default": {
+            "weights": {},
+            "strict_tcs": []
+        }
+    }
+    # Per-TC egress lossy-buffer shared-alpha overrides (NVUE values such as "alpha_8").
+    # Empty dict preserves lossy-multi-tc defaults for all TCs. Keys are TC ids 0-7.
+    # Example — override MRC/trimming TCs 1-4:
+    # Empty dict preserves lossy-multi-tc defaults for all TCs. Example override:
+    #   CUMULUS_EGRESS_LOSSY_SHARED_ALPHA_BY_TC = {1: "alpha_1_4", 2: "alpha_1_4", 3: "alpha_1_4", 4: "alpha_4"}
+    CUMULUS_EGRESS_LOSSY_SHARED_ALPHA_BY_TC = {}
+    # Deprecated: use CUMULUS_EGRESS_LOSSY_SHARED_ALPHA_BY_TC[4] instead. When set and TC4 is
+    # absent from the dict, applies only to TC4 (backward compatible).
+    CUMULUS_TC4_SHARED_ALPHA = None
+    # Per-chip / per-TC egress lossy-buffer reservation in cells. Empty outer/inner dicts preserve
+    # the profile defaults. Values are converted to bytes using the ASIC cell size.
+    # Example for SPC6 only: {"SPC6": {4: 50}} renders reserved: 12800
+    # (50 cells * 256 bytes/cell). SPC4/SPC5 stay unchanged when omitted.
+    CUMULUS_EGRESS_LOSSY_RESERVED_CELLS_BY_CHIP_TYPE = {}
+
+    @staticmethod
+    def get_cumulus_egress_lossy_shared_alpha_by_tc():
+        """Return sorted TC→alpha map for Cumulus egress-lossy-buffer overrides.
+
+        Merges CUMULUS_EGRESS_LOSSY_SHARED_ALPHA_BY_TC with legacy CUMULUS_TC4_SHARED_ALPHA
+        (legacy applies only when TC4 is not already in the dict). Entries with None values
+        are omitted.
+
+        Returns:
+            dict: Mapping of traffic class id to NVUE shared-alpha string, or empty dict.
+        """
+        shared_alpha_by_tc = {
+            tc: alpha for tc, alpha in (MRCConsts.CUMULUS_EGRESS_LOSSY_SHARED_ALPHA_BY_TC or {}).items()
+            if alpha is not None
+        }
+        if MRCConsts.CUMULUS_TC4_SHARED_ALPHA is not None:
+            shared_alpha_by_tc.setdefault(4, MRCConsts.CUMULUS_TC4_SHARED_ALPHA)
+        return dict(sorted(shared_alpha_by_tc.items()))
+
+    @staticmethod
+    def get_cumulus_egress_lossy_reserved_cells_by_tc(chip_type):
+        """Return per-TC reservation cells for the given chip type.
+
+        Args:
+            chip_type: ASIC generation, such as ``SPC5`` or ``SPC6``.
+
+        Returns:
+            dict: Mapping of traffic class id to reserved cells, or an empty dict.
+        """
+        reserved_by_chip = MRCConsts.CUMULUS_EGRESS_LOSSY_RESERVED_CELLS_BY_CHIP_TYPE or {}
+        return dict(reserved_by_chip.get(chip_type) or {})
+
+    @staticmethod
+    def get_cumulus_egress_lossy_reserved_bytes_by_tc(chip_type):
+        """Convert configured per-TC reservation cells to NVUE bytes for a chip.
+
+        Args:
+            chip_type: ASIC generation, such as ``SPC5`` or ``SPC6``.
+
+        Returns:
+            dict: Mapping of traffic class id to reserved bytes, or an empty dict.
+
+        Raises:
+            ValueError: If reservations are configured for an unsupported chip type.
+        """
+        reserved_cells_by_tc = MRCConsts.get_cumulus_egress_lossy_reserved_cells_by_tc(chip_type)
+        if not reserved_cells_by_tc:
+            return {}
+        cell_size = MRCConsts.BUFFER_CELL_SIZE_BY_CHIP_TYPE.get(chip_type)
+        if cell_size is None:
+            raise ValueError(f"No buffer cell size configured for chip type '{chip_type}'")
+        return dict(sorted((tc, cells * cell_size) for tc, cells in reserved_cells_by_tc.items()))
+
     DOWNLINKS = "Downlinks"
     UPLINKS = "Uplinks"
     T1_MANY_TO_FEW_INGRESS_PORTS_NUM_BY_CHIP_TYPE = {
@@ -797,6 +898,11 @@ class MRCConsts:
     CL_TRIMMING_DUT_TX_UTIL_TH = 0.5
     BUFFER_CELL_SIZE = 192
     BUFFER_CELL_SIZE_SPC6 = 256
+    BUFFER_CELL_SIZE_BY_CHIP_TYPE = {
+        "SPC4": BUFFER_CELL_SIZE,
+        "SPC5": BUFFER_CELL_SIZE,
+        "SPC6": BUFFER_CELL_SIZE_SPC6
+    }
     SPC5_POOL_SIZE_MB = 105
     SPC5_POOL_SIZE_BYTES = SPC5_POOL_SIZE_MB * 1000 * 1000
     SPC4_POOL_SIZE_BYTES = 158230080
@@ -846,6 +952,7 @@ class MRCConsts:
     MRC_TRIMMED_TC = 4
     OPT_TS = 'OPT_TS'
     OPT_TS_DEFAULT = 256
+    OPT_TS_DEFAULT_SPC6 = 256
     MINIMAL_TRIM_SIZE = 256
     MAX_TRIM_SIZE_CHECKING_RANGE = 512
     TRIMMING_TC = '4'
@@ -860,6 +967,12 @@ class MRCConsts:
     TRIMMING_QUEUE_NUM = [int(TRIMMING_TC)]
     MRC_CONTROL_TC = '4'
     GFP_DATA_TC = '5'
+
+    @staticmethod
+    def get_opt_ts_default(chip_type):
+        """Return the default optimal trimming size for the ASIC generation."""
+        return MRCConsts.OPT_TS_DEFAULT_SPC6 if chip_type == "SPC6" else MRCConsts.OPT_TS_DEFAULT
+
     WORKLOAD_1_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC), int(MRC_RETRANSMISSION_TC), int(TRIMMING_TC)]
     WORKLOAD_2_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC), int(MRC_RETRANSMISSION_TC), int(TRIMMING_TC), int(GFP_DATA_TC)]
 
@@ -876,6 +989,16 @@ class MRCConsts:
     SHAPER_VALUE_AFTER_TEST = 1.0
     TC_OCC_ALLOWED_DEVIATION = 0.15
     TC_OCC_ALLOWED_DEVIATION_BISECTION = 1
+
+    # MRC1 + MRC2 data packets per stream for many-to-one SRv6 tests (workload_1 default is 6).
+    MANY_TO_ONE_MRC_NUM_PACKETS_BY_CHIP_TYPE = {
+        "SPC6": 15,
+    }
+
+    @staticmethod
+    def get_many_to_one_mrc_num_packets(chip_type):
+        """Return MRC data packet count for many-to-one, or None to use workload_1 default (6)."""
+        return MRCConsts.MANY_TO_ONE_MRC_NUM_PACKETS_BY_CHIP_TYPE.get(chip_type)
 
     # Drop Over Max constants per chip type
     DROP_OVER_MAX_BY_CHIP_TYPE = {
@@ -917,11 +1040,11 @@ class PowerConsts:
         "SPC6": {
             r"swb_mps29816_\d+_STRESS_VDD_rail\d+": 400,
             r"swb_mps29816_\d+_STRESS_HVDD_T\d+_rail\d+": 222,
-            r"swb_mps29816_\d+_STRESS_DVDD_T\d+_rail\d+": 35,
+            r"swb_mps29816_\d+_STRESS_DVDD_T\d+_rail\d+": 99999,
             r"swb_mps29816_\d+_STRESS_VDDHBID_T\d+(?:_T\d+)?_rail\d+": 150,
             r"swb_mps29816_\d+_STRESS_AVDD_T\d+_rail\d+": 55,
             r"VCORE TILES \d & \d \(VDD_Tx\)": 150,
-            r"DVDD TILES \d & \d \(DVDD_Tx\)": 35,
+            r"DVDD TILES \d & \d \(DVDD_Tx\)": 99999,
             r"HVDD TILES \(HVDD_T\d+\)": 222,
             r"VDDSCC": 55,
             r"VCORE MAIN \(VDD_M\)": 400,
@@ -929,7 +1052,7 @@ class PowerConsts:
             r"OSFP PHY": 45,
             r"PDB CONVERTER": 200,
             r"Misc PMIC": 600,
-            "TOTAL": 2500,
+            "TOTAL": 9999999999,
             "HVDD_TILES_TH": 444,
         }
     }
