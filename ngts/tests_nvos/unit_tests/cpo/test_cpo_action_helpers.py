@@ -25,7 +25,7 @@ def test_mapping_change_is_reported():
     els = samples.SHOW_PLATFORM_LASER_SOURCE_DETAIL["els1"]
     before = mapping_snapshot(cpo, els)
     changed = dict(cpo)
-    changed[Cpov2Consts.ASSOCIATED_PORTS] = "sw99p1s1"
+    changed[Cpov2Consts.PORTS] = "sw99p1s1"
     with pytest.raises(AssertionError, match="mapping changed"):
         assert_mapping_unchanged(before, changed, els)
 

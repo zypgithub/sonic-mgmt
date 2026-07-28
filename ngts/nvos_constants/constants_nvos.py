@@ -2281,9 +2281,12 @@ class Cpov2Consts:
     IDENTIFIER = "identifier"
     FW_VERSION = "fw-version"
     PARENT = "parent"
-    ASSOCIATED_PORTS = "associated-ports"
-    ASSOCIATED_LASER_SOURCES = "associated-laser-sources"
-    ASSOCIATED_OPTICAL_ENGINES = "associated-optical-engines"
+    # Mapping fields. The HLD spells these `associated-ports` /
+    # `associated-laser-sources`; the shipped CLI drops the prefix.
+    PORTS = "ports"
+    LASER_SOURCES = "laser-sources"
+    # OE membership has no mapping field of its own: the nested OE container
+    # (OE below) carries both the names and their data, so its keys are the map.
 
     # `status` values: the CPO is not user-removable and
     # reports up/down (down when its ELS is removed; down with an empty
@@ -2295,10 +2298,11 @@ class Cpov2Consts:
     ELS_STATUS_INSERTED = "Inserted"
     ELS_STATUS_REMOVED = "Removed"
 
-    # sub-trees
+    # sub-trees - these double as the CLI path segments of the drill-down
+    # commands (`... cpo1 optical-engines oe1`, `... cpo1 channels channel-3`)
     THRESHOLDS = "thresholds"
-    OE = "oe"
-    CHANNEL = "channel"
+    OE = "optical-engines"
+    CHANNEL = "channels"
     LASER = "laser"
 
     # channel fields
@@ -2308,7 +2312,7 @@ class Cpov2Consts:
     CH_TX_LOS = "tx-los"
     CH_TX_FAULT = "tx-fault"
     CH_LASER_SOURCE_INPUT_POWER = "laser-source-input-power"
-    CH_FAULT_OPCODE = "fault-opcode"
+    CH_FAULT_OPCODE = "advanced-fault-opcode"
     CH_DP_STATE = "dp-state"
 
     # optical-engine fields
@@ -2346,17 +2350,23 @@ class Cpov2Consts:
     DIAGNOSTICS_STATUS = "diagnostics-status"
     TEMPERATURE = "temperature"
     POWER = "power"
-    ALARM = "alarm"
+    ALARM_STATUS = "alarm-status"
     ALARM_SEVERITY = "alarm-severity"
 
-    # thresholds: `nv show platform cpo <id>` uses THRESHOLDS (plural) with
-    # rx/tx-power-high/low; `... laser-source <id>` uses THRESHOLD (singular)
-    # with tx-power-upper/lower (per HLD samples)
+    # thresholds: `nv show platform cpo <id>` uses THRESHOLDS (plural), keyed by
+    # measured value (rx-power / tx-power / laser-source-input-power) with the
+    # four bounds below nested under each.
+    HIGH_ALARM = "high-alarm"
+    LOW_ALARM = "low-alarm"
+    HIGH_WARNING = "high-warning"
+    LOW_WARNING = "low-warning"
+
+    # `... laser-source <id>` uses THRESHOLD (singular), nested the other way
+    # round: severity first (WARNING/ALARM) then tx-power-upper/lower (per HLD
+    # samples). WARNING/ALARM are severity levels - distinct from the
+    # ALARM_STATUS on/off flag of a measured value.
     WARNING = "warning"
-    RX_POWER_HIGH = "rx-power-high"
-    RX_POWER_LOW = "rx-power-low"
-    TX_POWER_HIGH = "tx-power-high"
-    TX_POWER_LOW = "tx-power-low"
+    ALARM = "alarm"
     TX_POWER_UPPER = "tx-power-upper"
     TX_POWER_LOWER = "tx-power-lower"
     THRESHOLD = "threshold"

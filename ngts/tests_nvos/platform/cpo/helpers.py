@@ -4,31 +4,36 @@ from collections.abc import Iterable, Mapping
 from ngts.nvos_constants.constants_nvos import Cpov2Consts, HealthConsts
 from ngts.nvos_tools.Devices.cpo.CpoTopology import CpoTopology
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Cpo import Cpo
 
 CPO_SUMMARY_FIELDS = (
     Cpov2Consts.FW_VERSION,
-    Cpov2Consts.ASSOCIATED_PORTS,
-    Cpov2Consts.ASSOCIATED_LASER_SOURCES,
-    Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES,
+    Cpov2Consts.PORTS,
+    Cpov2Consts.LASER_SOURCES,
 )
 CPO_DETAIL_FIELDS = (
     Cpov2Consts.STATUS,
     Cpov2Consts.ERROR_STATUS,
     Cpov2Consts.IDENTIFIER,
     Cpov2Consts.FW_VERSION,
-    Cpov2Consts.ASSOCIATED_PORTS,
-    Cpov2Consts.ASSOCIATED_LASER_SOURCES,
-    Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES,
+    Cpov2Consts.PORTS,
+    Cpov2Consts.LASER_SOURCES,
     Cpov2Consts.THRESHOLDS,
     Cpov2Consts.OE,
     Cpov2Consts.CHANNEL,
 )
-CPO_THRESHOLD_FIELDS = (
-    Cpov2Consts.RX_POWER_HIGH,
-    Cpov2Consts.RX_POWER_LOW,
-    Cpov2Consts.TX_POWER_HIGH,
-    Cpov2Consts.TX_POWER_LOW,
+# `thresholds` is keyed by measured value, each carrying the four bounds
+CPO_THRESHOLD_TYPES = (
+    Cpov2Consts.CH_LASER_SOURCE_INPUT_POWER,
+    Cpov2Consts.CH_RX_POWER,
+    Cpov2Consts.CH_TX_POWER,
+)
+CPO_THRESHOLD_BOUNDS = (
+    Cpov2Consts.HIGH_ALARM,
+    Cpov2Consts.LOW_ALARM,
+    Cpov2Consts.HIGH_WARNING,
+    Cpov2Consts.LOW_WARNING,
 )
 OE_FIELDS = (
     Cpov2Consts.IDENTIFIER,
@@ -45,7 +50,7 @@ CHANNEL_FIELDS = (
     Cpov2Consts.CH_FAULT_OPCODE,
     Cpov2Consts.CH_DP_STATE,
 )
-POWER_FIELDS = (Cpov2Consts.POWER, Cpov2Consts.ALARM, Cpov2Consts.ALARM_SEVERITY)
+POWER_FIELDS = (Cpov2Consts.POWER, Cpov2Consts.ALARM_STATUS, Cpov2Consts.ALARM_SEVERITY)
 LASER_SOURCE_SUMMARY_FIELDS = (
     Cpov2Consts.IDENTIFIER,
     Cpov2Consts.ELS_VENDOR_NAME,
@@ -93,35 +98,24 @@ LASER_FIELDS = (
 )
 INTERFACE_CPO_FIELDS = CPO_DETAIL_FIELDS + (Cpov2Consts.PARENT,)
 # `nv show interface <port> cpo` header fields inherited AS-IS from the parent
-# CPO (full associated-* lists, not the port's subset); only the oe/channel
-# blocks are the port's slice.
+# CPO (full mapping lists, not the port's subset); only the oe/channel blocks
+# are the port's slice.
 INTERFACE_HEADER_FIELDS = (
     Cpov2Consts.STATUS,
     Cpov2Consts.ERROR_STATUS,
     Cpov2Consts.IDENTIFIER,
     Cpov2Consts.FW_VERSION,
-    Cpov2Consts.ASSOCIATED_PORTS,
-    Cpov2Consts.ASSOCIATED_LASER_SOURCES,
-    Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES,
+    Cpov2Consts.PORTS,
+    Cpov2Consts.LASER_SOURCES,
     Cpov2Consts.THRESHOLDS,
 )
-# associated-* fields may render as a comma-separated string or a JSON list
+# mapping fields may render as a comma-separated string or a JSON list
 # (see Cpo.split_names), so header inheritance compares them as name sets.
 _INTERFACE_HEADER_NAME_LISTS = (
-    Cpov2Consts.ASSOCIATED_PORTS,
-    Cpov2Consts.ASSOCIATED_LASER_SOURCES,
-    Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES,
+    Cpov2Consts.PORTS,
+    Cpov2Consts.LASER_SOURCES,
 )
 _NUMBER_PATTERN = re.compile(r"[-+]?\d+(?:\.\d+)?")
-
-
-def assert_fields(data: Mapping, fields: Iterable[str], context: str) -> None:
-    missing = set(fields) - data.keys()
-    assert not missing, f"{context} missing fields: {sorted(missing)}"
-
-
-def assert_same_shape(actual: Mapping, expected: Mapping, context: str) -> None:
-    assert set(actual) == set(expected), f"{context} fields differ from parent subtree"
 
 
 def sample_names(names: Iterable[str]) -> list[str]:
@@ -135,21 +129,16 @@ def unwrap_instance(data: dict, instance: str) -> dict:
     return nested if isinstance(nested, dict) else data
 
 
-def _assert_named_entries(actual: Mapping, expected: Iterable[str], context: str) -> None:
-    expected_names = set(expected)
-    assert set(actual) == expected_names, (
-        f"{context} instances differ: expected {sorted(expected_names)}, got {sorted(actual)}"
-    )
-
-
 def _number(value: object) -> float:
     match = _NUMBER_PATTERN.search(str(value))
     assert match, f"value has no numeric part: {value!r}"
     return float(match.group())
 
 
-def _assert_threshold_order(thresholds: Mapping, fields: Iterable[str], context: str) -> None:
-    assert_fields(thresholds, (Cpov2Consts.WARNING, Cpov2Consts.ALARM), context)
+def _assert_severity_first_threshold_order(thresholds: Mapping, fields: Iterable[str], context: str) -> None:
+    """Order check for the severity-first shape (`laser-source` THRESHOLD)."""
+    severities = (Cpov2Consts.WARNING, Cpov2Consts.ALARM)
+    ValidationTool.validate_subset_in_superset(severities, thresholds).verify_result()
     for field in fields:
         warning = _number(thresholds[Cpov2Consts.WARNING][field])
         alarm = _number(thresholds[Cpov2Consts.ALARM][field])
@@ -159,53 +148,72 @@ def _assert_threshold_order(thresholds: Mapping, fields: Iterable[str], context:
             assert alarm >= warning, f"{context} {field}: alarm {alarm} < warning {warning}"
 
 
+def _assert_cpo_threshold_order(thresholds: Mapping, context: str) -> None:
+    """Order check for the measured-value-first shape (`platform cpo` THRESHOLDS).
+
+    Each measured value carries its own four bounds, so alarm must sit outside
+    warning on both ends and the low pair must sit below the high pair.
+    """
+    ValidationTool.validate_subset_in_superset(CPO_THRESHOLD_TYPES, thresholds).verify_result()
+    for measured in CPO_THRESHOLD_TYPES:
+        bounds = thresholds[measured]
+        where = f"{context}/{measured}"
+        ValidationTool.validate_subset_in_superset(CPO_THRESHOLD_BOUNDS, bounds).verify_result()
+        low_alarm = _number(bounds[Cpov2Consts.LOW_ALARM])
+        low_warning = _number(bounds[Cpov2Consts.LOW_WARNING])
+        high_warning = _number(bounds[Cpov2Consts.HIGH_WARNING])
+        high_alarm = _number(bounds[Cpov2Consts.HIGH_ALARM])
+        assert low_alarm <= low_warning, f"{where}: low-alarm {low_alarm} > low-warning {low_warning}"
+        assert high_warning <= high_alarm, f"{where}: high-warning {high_warning} > high-alarm {high_alarm}"
+        assert low_warning <= high_warning, f"{where}: low-warning {low_warning} > high-warning {high_warning}"
+
+
 def validate_cpo_summary(summary: Mapping, topology: CpoTopology) -> None:
-    _assert_named_entries(summary, topology.cpo_names(), "CPO summary")
-    for cpo, data in summary.items():
-        assert_fields(data, CPO_SUMMARY_FIELDS, cpo)
+    ValidationTool.validate_set_equal(summary, topology.cpo_names()).verify_result()
+    for data in summary.values():
+        ValidationTool.validate_subset_in_superset(CPO_SUMMARY_FIELDS, data).verify_result()
 
 
 def validate_cpo_detail(cpo: str, detail: Mapping, topology: CpoTopology) -> None:
-    assert_fields(detail, CPO_DETAIL_FIELDS, cpo)
-    assert set(Cpo.split_names(detail[Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES])) == set(topology.oes_for_cpo(cpo))
-    assert set(Cpo.split_names(detail[Cpov2Consts.ASSOCIATED_LASER_SOURCES])) == set(topology.els_for_cpo(cpo))
-    _assert_named_entries(detail[Cpov2Consts.OE], topology.oes_for_cpo(cpo), f"{cpo} OEs")
-    _assert_named_entries(detail[Cpov2Consts.CHANNEL], topology.channels_for_cpo(cpo), f"{cpo} channels")
-    for oe, data in detail[Cpov2Consts.OE].items():
-        assert_fields(data, OE_FIELDS, f"{cpo}/{oe}")
-    for channel, data in detail[Cpov2Consts.CHANNEL].items():
-        assert_fields(data, CHANNEL_FIELDS, f"{cpo}/{channel}")
+    ValidationTool.validate_subset_in_superset(CPO_DETAIL_FIELDS, detail).verify_result()
+    laser_sources = Cpo.split_names(detail[Cpov2Consts.LASER_SOURCES])
+    ValidationTool.validate_set_equal(laser_sources, topology.els_for_cpo(cpo)).verify_result()
+    ValidationTool.validate_set_equal(detail[Cpov2Consts.OE], topology.oes_for_cpo(cpo)).verify_result()
+    ValidationTool.validate_set_equal(detail[Cpov2Consts.CHANNEL], topology.channels_for_cpo(cpo)).verify_result()
+    for data in detail[Cpov2Consts.OE].values():
+        ValidationTool.validate_subset_in_superset(OE_FIELDS, data).verify_result()
+    for data in detail[Cpov2Consts.CHANNEL].values():
+        ValidationTool.validate_subset_in_superset(CHANNEL_FIELDS, data).verify_result()
         for field in (Cpov2Consts.CH_RX_POWER, Cpov2Consts.CH_TX_POWER):
-            assert_fields(data[field], POWER_FIELDS, f"{cpo}/{channel}/{field}")
-    thresholds = detail[Cpov2Consts.THRESHOLDS]
-    for severity in (Cpov2Consts.WARNING, Cpov2Consts.ALARM):
-        assert_fields(thresholds[severity], CPO_THRESHOLD_FIELDS, f"{cpo}/{severity}")
-    _assert_threshold_order(thresholds, CPO_THRESHOLD_FIELDS, f"{cpo} thresholds")
+            ValidationTool.validate_subset_in_superset(POWER_FIELDS, data[field]).verify_result()
+    _assert_cpo_threshold_order(detail[Cpov2Consts.THRESHOLDS], f"{cpo} thresholds")
 
 
 def validate_laser_source_summary(summary: Mapping, topology: CpoTopology) -> None:
-    _assert_named_entries(summary, topology.els_names(), "laser-source summary")
-    for els, data in summary.items():
-        assert_fields(data, LASER_SOURCE_SUMMARY_FIELDS, els)
+    ValidationTool.validate_set_equal(summary, topology.els_names()).verify_result()
+    for data in summary.values():
+        ValidationTool.validate_subset_in_superset(LASER_SOURCE_SUMMARY_FIELDS, data).verify_result()
 
 
 def validate_laser_source_detail(els: str, detail: Mapping, topology: CpoTopology) -> None:
-    assert_fields(detail, LASER_SOURCE_DETAIL_FIELDS, els)
+    ValidationTool.validate_subset_in_superset(LASER_SOURCE_DETAIL_FIELDS, detail).verify_result()
     assert detail[Cpov2Consts.PARENT] == topology.cpo_for_els(els)
-    _assert_named_entries(detail[Cpov2Consts.LASER], topology.lasers_for_els(els), f"{els} lasers")
-    for laser, data in detail[Cpov2Consts.LASER].items():
-        assert_fields(data, LASER_FIELDS, f"{els}/{laser}")
-        assert_fields(data[Cpov2Consts.LASER_TX_POWER], POWER_FIELDS, f"{els}/{laser}/tx-power")
+    ValidationTool.validate_set_equal(detail[Cpov2Consts.LASER], topology.lasers_for_els(els)).verify_result()
+    for data in detail[Cpov2Consts.LASER].values():
+        ValidationTool.validate_subset_in_superset(LASER_FIELDS, data).verify_result()
+        tx_power = data[Cpov2Consts.LASER_TX_POWER]
+        ValidationTool.validate_subset_in_superset(POWER_FIELDS, tx_power).verify_result()
     thresholds = detail[Cpov2Consts.THRESHOLD]
     for severity in (Cpov2Consts.WARNING, Cpov2Consts.ALARM):
-        assert_fields(thresholds[severity], LASER_SOURCE_THRESHOLD_FIELDS, f"{els}/{severity}")
-    _assert_threshold_order(thresholds, LASER_SOURCE_THRESHOLD_FIELDS, f"{els} thresholds")
+        bounds = thresholds[severity]
+        ValidationTool.validate_subset_in_superset(LASER_SOURCE_THRESHOLD_FIELDS, bounds).verify_result()
+    _assert_severity_first_threshold_order(thresholds, LASER_SOURCE_THRESHOLD_FIELDS, f"{els} thresholds")
 
 
 def validate_interface_cpo(port: str, detail: Mapping, cpo_detail: Mapping) -> str:
-    assert_fields(detail, INTERFACE_CPO_FIELDS, port)
+    ValidationTool.validate_subset_in_superset(INTERFACE_CPO_FIELDS, detail).verify_result()
     parent = detail[Cpov2Consts.PARENT]
-    assert port in Cpo.split_names(cpo_detail[Cpov2Consts.ASSOCIATED_PORTS])
+    assert port in Cpo.split_names(cpo_detail[Cpov2Consts.PORTS])
     for field in INTERFACE_HEADER_FIELDS:
         if field in _INTERFACE_HEADER_NAME_LISTS:
             matches = set(Cpo.split_names(detail[field])) == set(Cpo.split_names(cpo_detail[field]))
@@ -221,9 +229,9 @@ def validate_interface_cpo(port: str, detail: Mapping, cpo_detail: Mapping) -> s
         f"{port} must show only its own channel slice, got {len(detail[Cpov2Consts.CHANNEL])} channels"
     )
     for subtree in (Cpov2Consts.OE, Cpov2Consts.CHANNEL):
-        assert set(detail[subtree]) <= set(cpo_detail[subtree]), f"{port} {subtree} is not a subset of {parent}"
+        ValidationTool.validate_subset_in_superset(detail[subtree], cpo_detail[subtree]).verify_result()
         for name, entry in detail[subtree].items():
-            assert_same_shape(entry, cpo_detail[subtree][name], f"{port}/{subtree}/{name}")
+            ValidationTool.validate_set_equal(entry, cpo_detail[subtree][name]).verify_result()
     return parent
 
 
@@ -233,9 +241,8 @@ def read_interface_cpo(port: str, engine) -> dict:
 
 def validate_healthy_instances(component: str, data: Mapping, expected: Iterable[str]) -> None:
     instances = data[component][HealthConsts.Component.INSTANCE]
-    _assert_named_entries(instances, expected, f"health {component}")
-    for instance, health in instances.items():
-        assert health[HealthConsts.Component.STATE] == HealthConsts.Component.HEALTHY
-        assert int(health[HealthConsts.Component.UNHEALTHY_COUNT]) == 0, (
-            f"{component}/{instance} has a non-zero unhealthy count"
-        )
+    ValidationTool.validate_set_equal(instances, expected).verify_result()
+    fields = [HealthConsts.Component.STATE, HealthConsts.Component.UNHEALTHY_COUNT]
+    values = [HealthConsts.Component.HEALTHY, 0]
+    for health in instances.values():
+        ValidationTool.validate_fields_values_in_output(fields, values, health).verify_result()

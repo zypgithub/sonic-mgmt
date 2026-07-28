@@ -131,13 +131,13 @@ class TestNvueShowCommands:
         cpo1 = _platform().cpo.cpo_id["cpo1"]
 
         cpo1.oe.show(dut_engine=engine)
-        assert engine.commands[-1] == "nv show platform cpo cpo1 oe" + self.SUFFIX
+        assert engine.commands[-1] == "nv show platform cpo cpo1 optical-engines" + self.SUFFIX
 
         cpo1.oe.oe_id["oe1"].show(dut_engine=engine)
-        assert engine.commands[-1] == "nv show platform cpo cpo1 oe oe1" + self.SUFFIX
+        assert engine.commands[-1] == "nv show platform cpo cpo1 optical-engines oe1" + self.SUFFIX
 
         cpo1.channel.channel_id["channel-3"].show(dut_engine=engine)
-        assert engine.commands[-1] == "nv show platform cpo cpo1 channel channel-3" + self.SUFFIX
+        assert engine.commands[-1] == "nv show platform cpo cpo1 channels channel-3" + self.SUFFIX
 
     def test_show_platform_laser_source(self, nvue, engine):
         platform = _platform()
@@ -156,7 +156,7 @@ class TestNvueShowCommands:
         assert engine.commands[-1] == "nv show interface sw1p1s1 cpo" + self.SUFFIX
 
         interface_cpo.oe.oe_id["oe2"].show(dut_engine=engine)
-        assert engine.commands[-1] == "nv show interface sw1p1s1 cpo oe oe2" + self.SUFFIX
+        assert engine.commands[-1] == "nv show interface sw1p1s1 cpo optical-engines oe2" + self.SUFFIX
 
     def test_show_fae_system_cpo(self, nvue, engine):
         fae = _fae()
@@ -250,10 +250,10 @@ class TestOpenApiCommands:
     def test_show_drill_down_paths(self, openapi, engine, rest_calls):
         platform = _platform()
         platform.cpo.cpo_id["cpo1"].oe.oe_id["oe1"].show(dut_engine=engine)
-        assert rest_calls[-1]["path"] == "/platform/cpo/cpo1/oe/oe1"
+        assert rest_calls[-1]["path"] == "/platform/cpo/cpo1/optical-engines/oe1"
 
         platform.cpo.cpo_id["cpo1"].channel.channel_id["channel-3"].show(dut_engine=engine)
-        assert rest_calls[-1]["path"] == "/platform/cpo/cpo1/channel/channel-3"
+        assert rest_calls[-1]["path"] == "/platform/cpo/cpo1/channels/channel-3"
 
         platform.laser_source.els_id["els1"].laser.laser_id["laser-2"].show(dut_engine=engine)
         assert rest_calls[-1]["path"] == "/platform/laser-source/els1/laser/laser-2"

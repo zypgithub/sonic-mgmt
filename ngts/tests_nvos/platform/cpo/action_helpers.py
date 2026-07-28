@@ -35,9 +35,9 @@ def mapping_snapshot(cpo_detail: Mapping, els_detail: Mapping) -> dict[str, obje
         return tuple(sorted(str(item).strip() for item in values if str(item).strip()))
 
     return {
-        Cpov2Consts.ASSOCIATED_PORTS: names(cpo_detail[Cpov2Consts.ASSOCIATED_PORTS]),
-        Cpov2Consts.ASSOCIATED_LASER_SOURCES: names(cpo_detail[Cpov2Consts.ASSOCIATED_LASER_SOURCES]),
-        Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES: names(cpo_detail[Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES]),
+        Cpov2Consts.PORTS: names(cpo_detail[Cpov2Consts.PORTS]),
+        Cpov2Consts.LASER_SOURCES: names(cpo_detail[Cpov2Consts.LASER_SOURCES]),
+        Cpov2Consts.OE: names(cpo_detail[Cpov2Consts.OE]),
         Cpov2Consts.PARENT: els_detail[Cpov2Consts.PARENT],
     }
 

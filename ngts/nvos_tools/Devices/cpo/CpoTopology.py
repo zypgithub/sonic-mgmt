@@ -149,8 +149,8 @@ class CpoTopology:
 
         In the platform model OE/ELS are top-level components which the CPO
         references (gNMI: components/component[name=cpoN]/subcomponents/
-        subcomponent[name=...] leafrefs; CLI: associated-laser-sources /
-        associated-optical-engines) - they are not contained children.
+        subcomponent[name=...] leafrefs; CLI: the `laser-sources` field and the
+        `optical-engines` container) - they are not contained children.
         """
         return self.els_for_cpo(cpo) + self.oes_for_cpo(cpo)
 
@@ -246,7 +246,7 @@ class CpoTopology:
             for port, cpo in port_to_cpo.items():
                 if port not in cpo_to_ports.get(cpo, []):
                     errors.append(
-                        f"port {port} maps to {cpo} but is not in its associated-ports"
+                        f"port {port} maps to {cpo} but is not in its ports"
                     )
 
         if errors:

@@ -38,9 +38,8 @@ class TestCpoShowFields:
             Cpov2Consts.ERROR_STATUS,
             Cpov2Consts.IDENTIFIER,
             Cpov2Consts.FW_VERSION,
-            Cpov2Consts.ASSOCIATED_PORTS,
-            Cpov2Consts.ASSOCIATED_LASER_SOURCES,
-            Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES,
+            Cpov2Consts.PORTS,
+            Cpov2Consts.LASER_SOURCES,
             Cpov2Consts.THRESHOLDS,
             Cpov2Consts.OE,
             Cpov2Consts.CHANNEL,
@@ -49,14 +48,18 @@ class TestCpoShowFields:
 
     def test_cpo_thresholds_fields(self):
         thresholds = samples.SHOW_PLATFORM_CPO_DETAIL["cpo1"][Cpov2Consts.THRESHOLDS]
-        for severity in (Cpov2Consts.WARNING, Cpov2Consts.ALARM):
+        for measured in (
+            Cpov2Consts.CH_LASER_SOURCE_INPUT_POWER,
+            Cpov2Consts.CH_RX_POWER,
+            Cpov2Consts.CH_TX_POWER,
+        ):
             for field in (
-                Cpov2Consts.RX_POWER_HIGH,
-                Cpov2Consts.RX_POWER_LOW,
-                Cpov2Consts.TX_POWER_HIGH,
-                Cpov2Consts.TX_POWER_LOW,
+                Cpov2Consts.HIGH_ALARM,
+                Cpov2Consts.LOW_ALARM,
+                Cpov2Consts.HIGH_WARNING,
+                Cpov2Consts.LOW_WARNING,
             ):
-                assert field in thresholds[severity]
+                assert field in thresholds[measured]
 
     def test_cpo_channel_fields(self):
         detail = samples.SHOW_PLATFORM_CPO_DETAIL["cpo1"]
@@ -76,7 +79,7 @@ class TestCpoShowFields:
         for measured in (Cpov2Consts.CH_RX_POWER, Cpov2Consts.CH_TX_POWER):
             for field in (
                 Cpov2Consts.POWER,
-                Cpov2Consts.ALARM,
+                Cpov2Consts.ALARM_STATUS,
                 Cpov2Consts.ALARM_SEVERITY,
             ):
                 assert field in channel[measured]
@@ -161,8 +164,7 @@ class TestInterfaceCpoFields:
         for field in (
             Cpov2Consts.PARENT,
             Cpov2Consts.STATUS,
-            Cpov2Consts.ASSOCIATED_PORTS,
-            Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES,
+            Cpov2Consts.PORTS,
             Cpov2Consts.OE,
             Cpov2Consts.CHANNEL,
         ):
@@ -204,30 +206,28 @@ class TestTopologyMapsFromShowOutput:
     def test_summary_output_is_consistent_with_topology(self):
         """The documented usage: assert_consistent(**build_topology_maps(...))."""
         maps = Cpo.build_topology_maps(samples.SHOW_PLATFORM_CPO, port_to_cpo=samples.PORT_TO_CPO)
-        result = TOPOLOGY.assert_consistent(**maps)
-        assert result.result, result.info
+        TOPOLOGY.assert_consistent(**maps).verify_result()
 
     def test_detail_output_is_consistent_with_topology(self):
         """Without port_to_cpo the helper omits the port maps, so the splat
         still forms a valid assert_consistent call."""
         maps = Cpo.build_topology_maps(samples.SHOW_PLATFORM_CPO_DETAIL)
         assert "cpo_to_ports" not in maps and "port_to_cpo" not in maps
-        result = TOPOLOGY.assert_consistent(**maps)
-        assert result.result, result.info
+        TOPOLOGY.assert_consistent(**maps).verify_result()
 
     def test_corrupted_output_is_detected(self):
         corrupted = copy.deepcopy(samples.SHOW_PLATFORM_CPO)
         # cpo2 claims an OE that belongs to cpo1
-        corrupted["cpo2"][Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES] = "oe1, oe6, oe7, oe8"
-        result = TOPOLOGY.assert_consistent(**Cpo.build_topology_maps(corrupted))
-        assert not result.result
+        corrupted["cpo2"][Cpov2Consts.OE].pop("oe5")
+        corrupted["cpo2"][Cpov2Consts.OE]["oe1"] = {}
+        maps = Cpo.build_topology_maps(corrupted)
+        TOPOLOGY.assert_consistent(**maps).verify_result(should_succeed=False)
 
     def test_port_mismatch_is_detected(self):
         port_to_cpo = dict(samples.PORT_TO_CPO)
-        port_to_cpo["sw1p1s1"] = "cpo3"  # contradicts cpo1's associated-ports
+        port_to_cpo["sw1p1s1"] = "cpo3"  # contradicts cpo1's ports
         maps = Cpo.build_topology_maps(samples.SHOW_PLATFORM_CPO, port_to_cpo=port_to_cpo)
-        result = TOPOLOGY.assert_consistent(**maps)
-        assert not result.result
+        TOPOLOGY.assert_consistent(**maps).verify_result(should_succeed=False)
 
 
 class TestInterfaceLinkParsing:

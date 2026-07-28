@@ -20,17 +20,17 @@ _PORTS_PER_CPO = {
 
 def _channel_entry() -> dict:
     return {
-        "rx-power": {"power": "-1.0 dBm", "alarm": "off", "alarm-severity": "none"},
-        "tx-power": {"power": "-0.6 dBm", "alarm": "off", "alarm-severity": "none"},
+        "rx-power": {"power": "-1.0 dBm", "alarm-status": "off", "alarm-severity": "none"},
+        "tx-power": {"power": "-0.6 dBm", "alarm-status": "off", "alarm-severity": "none"},
         "rx-los": "False",
         "tx-los": "False",
         "tx-fault": "False",
         "laser-source-input-power": {
             "power": "-1.0 dBm",
-            "alarm": "off",
+            "alarm-status": "off",
             "alarm-severity": "none",
         },
-        "fault-opcode": 0,
+        "advanced-fault-opcode": 0,
         "dp-state": "Initialized",
     }
 
@@ -44,29 +44,44 @@ def _oe_entry(serial_suffix: int) -> dict:
 
 
 def _cpo_thresholds() -> dict:
+    """Keyed by measured value, each with its own four bounds."""
     return {
-        "warning": {
-            "rx-power-high": "2.0 dBm",
-            "rx-power-low": "-8.0 dBm",
-            "tx-power-high": "2.0 dBm",
-            "tx-power-low": "-6.0 dBm",
+        "laser-source-input-power": {
+            "high-alarm": "5.0 dBm",
+            "low-alarm": "-14.0 dBm",
+            "high-warning": "4.0 dBm",
+            "low-warning": "-12.0 dBm",
         },
-        "alarm": {
-            "rx-power-high": "3.0 dBm",
-            "rx-power-low": "-10.0 dBm",
-            "tx-power-high": "3.0 dBm",
-            "tx-power-low": "-8.0 dBm",
+        "rx-power": {
+            "high-alarm": "3.0 dBm",
+            "low-alarm": "-10.0 dBm",
+            "high-warning": "2.0 dBm",
+            "low-warning": "-8.0 dBm",
+        },
+        "tx-power": {
+            "high-alarm": "3.0 dBm",
+            "low-alarm": "-8.0 dBm",
+            "high-warning": "2.0 dBm",
+            "low-warning": "-6.0 dBm",
         },
     }
 
 
+def _oe_container(cpo: str) -> dict:
+    return {oe: _oe_entry(i) for i, oe in enumerate(TOPOLOGY.oes_for_cpo(cpo), start=1)}
+
+
 def make_cpo_summary(cpo: str, ports: list[str] | None = None) -> dict:
-    """One CPO's entry in `nv show platform cpo` (summary)."""
+    """One CPO's entry in `nv show platform cpo` (summary).
+
+    The OE container is what carries OE membership - there is no OE mapping
+    field.
+    """
     return {
         "fw-version": "42.40.15",
-        "associated-ports": ", ".join(ports if ports is not None else _PORTS_PER_CPO[cpo]),
-        "associated-laser-sources": ", ".join(TOPOLOGY.els_for_cpo(cpo)),
-        "associated-optical-engines": ", ".join(TOPOLOGY.oes_for_cpo(cpo)),
+        "ports": ", ".join(ports if ports is not None else _PORTS_PER_CPO[cpo]),
+        "laser-sources": ", ".join(TOPOLOGY.els_for_cpo(cpo)),
+        "optical-engines": _oe_container(cpo),
     }
 
 
@@ -81,12 +96,11 @@ def make_cpo_detail(cpo: str, ports: list[str] | None = None) -> dict:
         "error-status": "N/A",
         "identifier": "CPO Virtual Module",
         "fw-version": "42.40.15",
-        "associated-ports": ", ".join(ports if ports is not None else _PORTS_PER_CPO[cpo]),
-        "associated-laser-sources": ", ".join(TOPOLOGY.els_for_cpo(cpo)),
-        "associated-optical-engines": ", ".join(TOPOLOGY.oes_for_cpo(cpo)),
+        "ports": ", ".join(ports if ports is not None else _PORTS_PER_CPO[cpo]),
+        "laser-sources": ", ".join(TOPOLOGY.els_for_cpo(cpo)),
         "thresholds": _cpo_thresholds(),
-        "oe": {oe: _oe_entry(i) for i, oe in enumerate(TOPOLOGY.oes_for_cpo(cpo), start=1)},
-        "channel": {ch: _channel_entry() for ch in TOPOLOGY.channel_names()},
+        "optical-engines": _oe_container(cpo),
+        "channels": {ch: _channel_entry() for ch in TOPOLOGY.channel_names()},
     }
 
 
@@ -102,7 +116,7 @@ def _laser_entry() -> dict:
         "laser-mpd-current": "0.12mA",
         "laser-bias-current": {
             "current": "12.2 mA",
-            "alarm": "off",
+            "alarm-status": "off",
             "alarm-severity": "none",
             "threshold": {
                 "high-alarm": "14.0 mA",
@@ -117,7 +131,7 @@ def _laser_entry() -> dict:
         "laser-health": "25 mV",
         "tec-health": "15 mV",
         "frequency-error": "2.3 GHz",
-        "tx-power": {"power": "32 mW", "alarm": "off", "alarm-severity": "none"},
+        "tx-power": {"power": "32 mW", "alarm-status": "off", "alarm-severity": "none"},
     }
 
 
@@ -157,11 +171,12 @@ def make_interface_cpo(cpo: str, oe: str, channels: list[str]) -> dict:
     lists); only the oe/channel blocks are the port's slice.
     """
     parent_detail = make_cpo_detail(cpo)
+    sliced = ("optical-engines", "channels")
     return {
         "parent": cpo,
-        **{field: parent_detail[field] for field in parent_detail if field not in ("oe", "channel")},
-        "oe": {oe: _oe_entry(1)},
-        "channel": {ch: _channel_entry() for ch in channels},
+        **{field: parent_detail[field] for field in parent_detail if field not in sliced},
+        "optical-engines": {oe: _oe_entry(1)},
+        "channels": {ch: _channel_entry() for ch in channels},
     }
 
 

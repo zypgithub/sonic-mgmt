@@ -5,11 +5,11 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import Cpov2Consts, HealthConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Cpo import Cpo
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.platform.cpo.helpers import (
-    assert_same_shape,
     read_interface_cpo,
     sample_names,
     unwrap_instance,
@@ -55,13 +55,13 @@ def test_cpo_show_platform(engines, devices, random_api):
                 platform.cpo.cpo_id[cpo].oe.oe_id[oe].parse_show(dut_engine=engines.dut),
                 oe,
             )
-            assert_same_shape(drilldown, detail[Cpov2Consts.OE][oe], f"{cpo}/{oe}")
+            ValidationTool.validate_set_equal(drilldown, detail[Cpov2Consts.OE][oe]).verify_result()
         for channel in sample_names(topology.channels_for_cpo(cpo)):
             drilldown = unwrap_instance(
                 platform.cpo.cpo_id[cpo].channel.channel_id[channel].parse_show(dut_engine=engines.dut),
                 channel,
             )
-            assert_same_shape(drilldown, detail[Cpov2Consts.CHANNEL][channel], f"{cpo}/{channel}")
+            ValidationTool.validate_set_equal(drilldown, detail[Cpov2Consts.CHANNEL][channel]).verify_result()
 
     transceivers = platform.transceiver.parse_show(dut_engine=engines.dut)
     legacy_objects = {name for name in transceivers if LEGACY_CPO_INSTANCE_PATTERN.fullmatch(name)}
@@ -88,7 +88,7 @@ def test_cpo_show_laser_source(engines, devices, random_api):
                 platform.laser_source.els_id[els].laser.laser_id[laser].parse_show(dut_engine=engines.dut),
                 laser,
             )
-            assert_same_shape(drilldown, detail[Cpov2Consts.LASER][laser], f"{els}/{laser}")
+            ValidationTool.validate_set_equal(drilldown, detail[Cpov2Consts.LASER][laser]).verify_result()
 
 
 @pytest.mark.platform
@@ -104,17 +104,17 @@ def test_cpo_show_interface(engines, devices, random_api):
     interface = Interface(parent_obj=None, port_name=port)
     for oe in detail[Cpov2Consts.OE]:
         drilldown = unwrap_instance(interface.cpo.oe.oe_id[oe].parse_show(dut_engine=engines.dut), oe)
-        assert_same_shape(drilldown, detail[Cpov2Consts.OE][oe], f"{port}/{oe}")
+        ValidationTool.validate_set_equal(drilldown, detail[Cpov2Consts.OE][oe]).verify_result()
     for channel in sample_names(detail[Cpov2Consts.CHANNEL]):
         drilldown = unwrap_instance(
             interface.cpo.channel.channel_id[channel].parse_show(dut_engine=engines.dut),
             channel,
         )
-        assert_same_shape(drilldown, detail[Cpov2Consts.CHANNEL][channel], f"{port}/{channel}")
+        ValidationTool.validate_set_equal(drilldown, detail[Cpov2Consts.CHANNEL][channel]).verify_result()
 
     interfaces = Interface(parent_obj=None).parse_show(dut_engine=engines.dut)
-    expected_ports = set(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list)
-    assert expected_ports <= set(interfaces), "CPO device interface inventory is incomplete"
+    expected_ports = devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list
+    ValidationTool.validate_subset_in_superset(expected_ports, interfaces).verify_result()
 
     # cpo does not exist in the acp command tree, so the query must FAIL as an
     # invalid/unknown command - an empty or successful "no CPO" output is a bug
@@ -124,9 +124,7 @@ def test_cpo_show_interface(engines, devices, random_api):
     assert output.strip(), f"{acp_port} cpo query returned empty output instead of a command error"
     assert "traceback" not in output.lower(), f"{acp_port} CPO rejection produced a traceback"
     rejection_markers = ("invalid", "unknown", "error", "usage", "incomplete", "not valid")
-    assert any(marker in output.lower() for marker in rejection_markers), (
-        f"{acp_port} cpo query did not fail as an unknown command: {output!r}"
-    )
+    ValidationTool.verify_any_string_in_string(output.lower(), rejection_markers).verify_result()
 
 
 @pytest.mark.platform
@@ -151,14 +149,14 @@ def test_cpo_topology_consistency(engines, devices, random_api):
 
     port_to_cpo = {}
     for cpo, detail in cpo_details.items():
-        for port in Cpo.split_names(detail[Cpov2Consts.ASSOCIATED_PORTS]):
+        for port in Cpo.split_names(detail[Cpov2Consts.PORTS]):
             interface_detail = read_interface_cpo(port, engines.dut)
             parent = validate_interface_cpo(port, interface_detail, detail)
             assert parent == cpo, f"{port} reports parent {parent}, expected {cpo}"
             port_to_cpo[port] = parent
 
-    assert set(port_to_cpo) == set(devices.dut.nvl_trunk_ports_list)
-    assert not set(port_to_cpo) & set(devices.dut.nvl_access_ports_list)
+    ValidationTool.validate_set_equal(port_to_cpo, devices.dut.nvl_trunk_ports_list).verify_result()
+    ValidationTool.validate_set_disjoint(devices.dut.nvl_access_ports_list, port_to_cpo).verify_result()
     for els, detail in laser_details.items():
         validate_laser_source_detail(els, detail, topology)
 

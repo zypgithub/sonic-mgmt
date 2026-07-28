@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class OeComponent(BaseComponent):
-    """A single optical engine: `nv show platform cpo cpoN oe oeM`."""
+    """A single optical engine: `nv show platform cpo cpoN optical-engines oeM`."""
 
     def __init__(self, parent_obj=None, oe_id=None):
         super().__init__(parent=parent_obj, path=f"/{oe_id}")
@@ -20,7 +20,7 @@ class OeComponent(BaseComponent):
 
 
 class OeCollection(BaseComponent):
-    """The `oe` list container under a CPO: `nv show platform cpo cpoN oe [oeM]`."""
+    """The OE list container under a CPO: `nv show platform cpo cpoN optical-engines [oeM]`."""
 
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path=f"/{Cpov2Consts.OE}")
@@ -30,7 +30,7 @@ class OeCollection(BaseComponent):
 
 
 class ChannelComponent(BaseComponent):
-    """A single CPO channel: `nv show platform cpo cpoN channel channel-M`."""
+    """A single CPO channel: `nv show platform cpo cpoN channels channel-M`."""
 
     def __init__(self, parent_obj=None, channel_id=None):
         super().__init__(parent=parent_obj, path=f"/{channel_id}")
@@ -38,7 +38,7 @@ class ChannelComponent(BaseComponent):
 
 
 class ChannelCollection(BaseComponent):
-    """The `channel` list container under a CPO: `nv show platform cpo cpoN channel [channel-M]`."""
+    """The channel list container under a CPO: `nv show platform cpo cpoN channels [channel-M]`."""
 
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path=f"/{Cpov2Consts.CHANNEL}")
@@ -52,9 +52,10 @@ class CpoComponent(BaseComponent):
 
     The `oe`/`channel` children mirror the YANG list containers (the same keys
     that nest their data in this component's show output), so drill-down paths
-    include the collection segment: `platform cpo cpo1 oe oe1`. Note the
-    CPO->OE/ELS *relationship* is still a reference (gNMI ``subcomponents``
-    leafrefs; CLI ``associated-*`` fields) - OE/ELS remain top-level components.
+    include the collection segment: `platform cpo cpo1 optical-engines oe1`.
+    The CPO->ELS *relationship* is a reference (gNMI ``subcomponents`` leafrefs;
+    CLI ``laser-sources``), while OE membership is read straight off the nested
+    `optical-engines` container keys.
     """
 
     def __init__(self, parent_obj=None, cpo_id=None):
@@ -96,7 +97,7 @@ class Cpo(BaseComponent):
 
     @staticmethod
     def split_names(value: str | list[str] | None) -> list[str]:
-        """Normalize an 'associated-*' field into a list of names.
+        """Normalize a mapping field into a list of names.
 
         The CLI may render such fields as a comma-separated string
         ('oe1, oe2, oe3') or as a JSON list - accept both.
@@ -118,16 +119,16 @@ class Cpo(BaseComponent):
         :param cpo_show_by_name: parsed show dict per CPO, keyed by CPO name.
         :param port_to_cpo: port -> parent CPO map (from `nv show interface <port>
             cpo`). assert_consistent requires the two port maps together, so
-            cpo_to_ports (from associated-ports) is only included - along with
+            cpo_to_ports (from the `ports` field) is only included - along with
             port_to_cpo itself - when this argument is given.
         """
         maps: dict = {
             "cpo_to_oes": {
-                cpo: Cpo.split_names(data.get(Cpov2Consts.ASSOCIATED_OPTICAL_ENGINES))
+                cpo: list(data.get(Cpov2Consts.OE, {}))
                 for cpo, data in cpo_show_by_name.items()
             },
             "cpo_to_els": {
-                cpo: Cpo.split_names(data.get(Cpov2Consts.ASSOCIATED_LASER_SOURCES))
+                cpo: Cpo.split_names(data.get(Cpov2Consts.LASER_SOURCES))
                 for cpo, data in cpo_show_by_name.items()
             },
         }
@@ -140,7 +141,7 @@ class Cpo(BaseComponent):
             }
         if port_to_cpo is not None:
             maps["cpo_to_ports"] = {
-                cpo: Cpo.split_names(data.get(Cpov2Consts.ASSOCIATED_PORTS))
+                cpo: Cpo.split_names(data.get(Cpov2Consts.PORTS))
                 for cpo, data in cpo_show_by_name.items()
             }
             maps["port_to_cpo"] = port_to_cpo

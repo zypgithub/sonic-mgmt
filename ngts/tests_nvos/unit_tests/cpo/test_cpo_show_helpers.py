@@ -36,7 +36,7 @@ def test_interface_fixture_is_platform_subset():
 def test_interface_header_must_be_inherited_from_parent():
     interface_detail = copy.deepcopy(samples.SHOW_INTERFACE_CPO_SW8P1S1)
     parent = interface_detail[Cpov2Consts.PARENT]
-    interface_detail[Cpov2Consts.ASSOCIATED_PORTS] = "sw8p1s1"
+    interface_detail[Cpov2Consts.PORTS] = "sw8p1s1"
     with pytest.raises(AssertionError, match="differs from its parent CPO header"):
         validate_interface_cpo("sw8p1s1", interface_detail, samples.SHOW_PLATFORM_CPO_DETAIL[parent])
 
@@ -84,5 +84,5 @@ def test_health_contract_requires_expected_healthy_instances():
     health[HealthConsts.Component.CPO][HealthConsts.Component.INSTANCE]["cpo1"][
         HealthConsts.Component.UNHEALTHY_COUNT
     ] = "1"
-    with pytest.raises(AssertionError, match="non-zero unhealthy count"):
+    with pytest.raises(AssertionError, match=HealthConsts.Component.UNHEALTHY_COUNT):
         validate_healthy_instances(HealthConsts.Component.CPO, health, TOPOLOGY.cpo_names())

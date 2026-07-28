@@ -196,8 +196,7 @@ class TestAssertConsistent:
         }
 
     def test_good_maps_pass(self, topology):
-        result = topology.assert_consistent(**self._good_maps(topology))
-        assert result.result, result.info
+        topology.assert_consistent(**self._good_maps(topology)).verify_result()
 
     def test_ports_cross_reference_pass(self, topology):
         cpo_to_ports = {"cpo1": ["sw1p1s1", "sw1p1s2"], "cpo2": ["sw8p1s1"]}
@@ -206,28 +205,24 @@ class TestAssertConsistent:
             "sw1p1s2": "cpo1",
             "sw8p1s1": "cpo2",
         }
-        result = topology.assert_consistent(cpo_to_ports=cpo_to_ports, port_to_cpo=port_to_cpo)
-        assert result.result, result.info
+        topology.assert_consistent(cpo_to_ports=cpo_to_ports, port_to_cpo=port_to_cpo).verify_result()
 
     def test_missing_cpo_key_fails(self, topology):
         maps = self._good_maps(topology)
         del maps["cpo_to_oes"]["cpo4"]
-        result = topology.assert_consistent(cpo_to_oes=maps["cpo_to_oes"])
-        assert not result.result
-        assert "cpo_to_oes" in result.info
+        info = topology.assert_consistent(cpo_to_oes=maps["cpo_to_oes"]).verify_result(should_succeed=False)
+        assert "cpo_to_oes" in info
 
     def test_wrong_oe_count_fails(self, topology):
         maps = self._good_maps(topology)
         maps["cpo_to_oes"]["cpo1"] = maps["cpo_to_oes"]["cpo1"][:-1]
-        result = topology.assert_consistent(cpo_to_oes=maps["cpo_to_oes"])
-        assert not result.result
+        topology.assert_consistent(cpo_to_oes=maps["cpo_to_oes"]).verify_result(should_succeed=False)
 
     def test_duplicated_oe_across_cpos_fails(self, topology):
         maps = self._good_maps(topology)
         maps["cpo_to_oes"]["cpo2"] = maps["cpo_to_oes"]["cpo1"]
-        result = topology.assert_consistent(cpo_to_oes=maps["cpo_to_oes"])
-        assert not result.result
-        assert "cpo2" in result.info
+        info = topology.assert_consistent(cpo_to_oes=maps["cpo_to_oes"]).verify_result(should_succeed=False)
+        assert "cpo2" in info
 
     def test_oe_ownership_swap_fails(self, topology):
         """Swapping two CPOs' OE sets keeps counts and global uniqueness intact;
@@ -235,9 +230,8 @@ class TestAssertConsistent:
         maps = self._good_maps(topology)
         oes = maps["cpo_to_oes"]
         oes["cpo1"], oes["cpo2"] = oes["cpo2"], oes["cpo1"]
-        result = topology.assert_consistent(cpo_to_oes=oes)
-        assert not result.result
-        assert "cpo1" in result.info and "cpo2" in result.info
+        info = topology.assert_consistent(cpo_to_oes=oes).verify_result(should_succeed=False)
+        assert "cpo1" in info and "cpo2" in info
 
     def test_duplicate_channel_names_fail(self, topology):
         """A duplicated channel keeps the count right - membership catches it."""
@@ -245,20 +239,19 @@ class TestAssertConsistent:
         channels = list(maps["cpo_to_channels"]["cpo1"])
         channels[1] = channels[0]
         maps["cpo_to_channels"]["cpo1"] = channels
-        result = topology.assert_consistent(cpo_to_channels=maps["cpo_to_channels"])
-        assert not result.result
+        topology.assert_consistent(cpo_to_channels=maps["cpo_to_channels"]).verify_result(should_succeed=False)
 
     def test_phantom_channel_name_fails(self, topology):
         maps = self._good_maps(topology)
         maps["cpo_to_channels"]["cpo1"][-1] = "channel-999"
-        result = topology.assert_consistent(cpo_to_channels=maps["cpo_to_channels"])
-        assert not result.result
+        topology.assert_consistent(cpo_to_channels=maps["cpo_to_channels"]).verify_result(should_succeed=False)
 
     def test_port_mismatch_fails(self, topology):
         cpo_to_ports = {"cpo1": ["sw1p1s1"], "cpo2": ["sw8p1s1"]}
         port_to_cpo = {"sw1p1s1": "cpo2", "sw8p1s1": "cpo2"}
-        result = topology.assert_consistent(cpo_to_ports=cpo_to_ports, port_to_cpo=port_to_cpo)
-        assert not result.result
+        topology.assert_consistent(
+            cpo_to_ports=cpo_to_ports, port_to_cpo=port_to_cpo
+        ).verify_result(should_succeed=False)
 
     def test_one_sided_port_maps_rejected(self, topology):
         """The port check is a two-way cross-reference; supplying only one side
@@ -271,16 +264,15 @@ class TestAssertConsistent:
     def test_unknown_cpo_in_port_maps_fails(self, topology):
         """A port attributed to a nonexistent CPO must fail even when the two
         port maps agree with each other."""
-        result = topology.assert_consistent(
+        info = topology.assert_consistent(
             cpo_to_ports={"cpo9": ["sw1p1s1"]},
             port_to_cpo={"sw1p1s1": "cpo9"},
-        )
-        assert not result.result
-        assert "unknown CPO" in result.info
+        ).verify_result(should_succeed=False)
+        assert "unknown CPO" in info
 
     def test_per_cpo_naming_valid_report_passes(self):
         """With per-CPO OE naming every CPO legitimately reports oe1..oeN, so the
         global-uniqueness check must not apply (mirrors channels)."""
         topology = CpoTopology(cpo_count=2, oe_naming=OeNaming.PER_CPO)
-        result = topology.assert_consistent(cpo_to_oes={c: topology.oes_for_cpo(c) for c in topology.cpo_names()})
-        assert result.result, result.info
+        oes = {c: topology.oes_for_cpo(c) for c in topology.cpo_names()}
+        topology.assert_consistent(cpo_to_oes=oes).verify_result()

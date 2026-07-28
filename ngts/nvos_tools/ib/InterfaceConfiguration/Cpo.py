@@ -7,8 +7,8 @@ class InterfaceCpo(BaseComponent):
 
     Shows CPO telemetry relevant to a given interface: parent CPO identity, the
     relevant OE and a subset of channels (a slice of `nv show platform cpo cpoN`).
-    The `oe`/`channel` drill-downs reuse the platform CPO collections - only the
-    mount point differs.
+    The `optical-engines`/`channels` drill-downs reuse the platform CPO
+    collections - only the mount point differs.
     """
 
     def __init__(self, parent_obj=None):

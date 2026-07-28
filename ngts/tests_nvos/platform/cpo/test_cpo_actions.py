@@ -270,7 +270,7 @@ def test_cpo_reset_actions(engines, devices, random_api):
         els_before = _read_els(platform, els, engines.dut)
         validate_cpo_detail(cpo, cpo_before, topology)
         validate_laser_source_detail(els, els_before, topology)
-        affected_ports = [Port(name) for name in Cpo.split_names(cpo_before[Cpov2Consts.ASSOCIATED_PORTS])]
+        affected_ports = [Port(name) for name in Cpo.split_names(cpo_before[Cpov2Consts.PORTS])]
         assert affected_ports, f"{cpo} reports no associated sw ports"
         unexpected_ports = {port.name for port in affected_ports if port.name not in devices.dut.nvl_trunk_ports_list}
         assert not unexpected_ports, f"{cpo} reports non-sw associated ports: {sorted(unexpected_ports)}"
