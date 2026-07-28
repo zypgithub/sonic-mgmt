@@ -1,25 +1,11 @@
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import ClassVar, Protocol, TypeGuard, runtime_checkable
 
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 logger = logging.getLogger(__name__)
-
-
-class OeNaming(StrEnum):
-    """How optical-engine (OE) instances are numbered on a CPO device.
-
-    StrEnum (Python 3.11+) members ARE `str` instances, so `OeNaming.GLOBAL`
-    compares/serializes exactly like the string "global" (CLI/JSON friendly),
-    while still giving a closed, type-checked set of valid choices instead of
-    free-form strings.
-    """
-
-    GLOBAL = "global"  # oe1..oe(cpo_count*oe_per_cpo) across the whole device
-    PER_CPO = "per_cpo"  # oe1..oe(oe_per_cpo) restarting inside every CPO
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +31,6 @@ class CpoTopology:
     lasers_per_els: int = 16
     lanes_per_oe: int = 16
     channels_per_cpo: int = 64
-    oe_naming: OeNaming = OeNaming.GLOBAL
 
     # Name prefixes. ClassVar => shared class constants, NOT dataclass fields, so
     # they are excluded from __init__, from equality and from __slots__.
@@ -56,10 +41,6 @@ class CpoTopology:
     CHANNEL_PREFIX: ClassVar[str] = "channel-"
 
     def __post_init__(self) -> None:
-        # Normalize oe_naming so a plain "global"/"per_cpo" string is accepted and
-        # stored as the enum member; an invalid value raises ValueError here.
-        # object.__setattr__ is required to write a field on a frozen dataclass.
-        object.__setattr__(self, "oe_naming", OeNaming(self.oe_naming))
         for count_field in (
             "cpo_count",
             "oe_per_cpo",
@@ -78,6 +59,13 @@ class CpoTopology:
                 self.channels_per_cpo,
                 expected_channels,
             )
+        # derived, so it needs its own check: floor division would otherwise
+        # yield a silent 0 that only surfaces much later in laser_sibling_ports
+        if self.lanes_per_laser <= 0:
+            raise ValueError(
+                f"channels_per_cpo={self.channels_per_cpo} cannot feed "
+                f"els_per_cpo*lasers_per_els={self.els_per_cpo * self.lasers_per_els} lasers"
+            )
 
     # ------------------------------------------------------------------ counts
     @property
@@ -88,14 +76,6 @@ class CpoTopology:
     def els_count(self) -> int:
         return self.cpo_count * self.els_per_cpo
 
-    @property
-    def laser_count(self) -> int:
-        return self.els_count * self.lasers_per_els
-
-    @property
-    def channel_count(self) -> int:
-        return self.cpo_count * self.channels_per_cpo
-
     # ------------------------------------------------------------------- names
     def cpo_names(self) -> list[str]:
         return [f"{self.CPO_PREFIX}{i}" for i in range(1, self.cpo_count + 1)]
@@ -104,11 +84,7 @@ class CpoTopology:
         return [f"{self.ELS_PREFIX}{i}" for i in range(1, self.els_count + 1)]
 
     def oe_names(self) -> list[str]:
-        if self.oe_naming is OeNaming.PER_CPO:
-            names: list[str] = []
-            for cpo in self.cpo_names():
-                names.extend(self.oes_for_cpo(cpo))
-            return names
+        """OE names are global: oe1..oe(cpo_count*oe_per_cpo) across the device."""
         return [f"{self.OE_PREFIX}{i}" for i in range(1, self.oe_count + 1)]
 
     def laser_names(self) -> list[str]:
@@ -124,9 +100,7 @@ class CpoTopology:
     # ----------------------------------------------------------- relationships
     def oes_for_cpo(self, cpo: str | int) -> list[str]:
         idx = self._index(cpo, self.CPO_PREFIX, self.cpo_count)
-        start = (
-            1 if self.oe_naming is OeNaming.PER_CPO else (idx - 1) * self.oe_per_cpo + 1
-        )
+        start = (idx - 1) * self.oe_per_cpo + 1
         return [f"{self.OE_PREFIX}{i}" for i in range(start, start + self.oe_per_cpo)]
 
     def els_for_cpo(self, cpo: str | int) -> list[str]:
@@ -154,19 +128,9 @@ class CpoTopology:
         """
         return self.els_for_cpo(cpo) + self.oes_for_cpo(cpo)
 
-    def asic_for_cpo(self, cpo: str | int) -> int:
-        """0-based ASIC id owning this CPO (1 CPO per ASIC, matches cpo_modules.json)."""
-        return self._index(cpo, self.CPO_PREFIX, self.cpo_count) - 1
-
     def cpo_for_els(self, els: str | int) -> str:
         idx = self._index(els, self.ELS_PREFIX, self.els_count)
         return f"{self.CPO_PREFIX}{(idx - 1) // self.els_per_cpo + 1}"
-
-    def cpo_for_oe(self, oe: str | int) -> str:
-        if self.oe_naming is OeNaming.PER_CPO:
-            raise ValueError("cpo_for_oe is ambiguous with per-CPO OE naming")
-        idx = self._index(oe, self.OE_PREFIX, self.oe_count)
-        return f"{self.CPO_PREFIX}{(idx - 1) // self.oe_per_cpo + 1}"
 
     def _index(self, name: str | int, prefix: str, count: int) -> int:
         """Parse a 1-based instance index out of a name/int and range-check it."""
@@ -214,8 +178,6 @@ class CpoTopology:
 
         if cpo_to_oes is not None:
             self._check_cpo_keys(cpo_to_oes, expected_cpos, "cpo_to_oes", errors)
-            # NOTE: with per-CPO OE naming every CPO's expected set is oe1..oeN,
-            # so membership degrades to a per-CPO check there by construction
             self._check_membership(cpo_to_oes, self.oes_for_cpo, "OE", errors)
 
         if cpo_to_els is not None:

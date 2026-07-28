@@ -100,14 +100,8 @@ INTERFACE_CPO_FIELDS = CPO_DETAIL_FIELDS + (Cpov2Consts.PARENT,)
 # `nv show interface <port> cpo` header fields inherited AS-IS from the parent
 # CPO (full mapping lists, not the port's subset); only the oe/channel blocks
 # are the port's slice.
-INTERFACE_HEADER_FIELDS = (
-    Cpov2Consts.STATUS,
-    Cpov2Consts.ERROR_STATUS,
-    Cpov2Consts.IDENTIFIER,
-    Cpov2Consts.FW_VERSION,
-    Cpov2Consts.PORTS,
-    Cpov2Consts.LASER_SOURCES,
-    Cpov2Consts.THRESHOLDS,
+INTERFACE_HEADER_FIELDS = tuple(
+    field for field in CPO_DETAIL_FIELDS if field not in (Cpov2Consts.OE, Cpov2Consts.CHANNEL)
 )
 # mapping fields may render as a comma-separated string or a JSON list
 # (see Cpo.split_names), so header inheritance compares them as name sets.
@@ -225,9 +219,12 @@ def validate_interface_cpo(port: str, detail: Mapping, cpo_detail: Mapping) -> s
     # the port's slice: exactly its own OE and channel(s), nothing else of the
     # CPO (exact expected identity needs the DB mapping - TP O-10)
     assert len(detail[Cpov2Consts.OE]) == 1, f"{port} must show exactly one OE, got {sorted(detail[Cpov2Consts.OE])}"
-    assert 0 < len(detail[Cpov2Consts.CHANNEL]) < len(cpo_detail[Cpov2Consts.CHANNEL]), (
-        f"{port} must show only its own channel slice, got {len(detail[Cpov2Consts.CHANNEL])} channels"
-    )
+    assert detail[Cpov2Consts.CHANNEL], f"{port} shows no channels"
+    if len(Cpo.split_names(cpo_detail[Cpov2Consts.PORTS])) > 1:
+        assert len(detail[Cpov2Consts.CHANNEL]) < len(cpo_detail[Cpov2Consts.CHANNEL]), (
+            f"{port} must show only its own channel slice, got all "
+            f"{len(detail[Cpov2Consts.CHANNEL])} channels of the CPO"
+        )
     for subtree in (Cpov2Consts.OE, Cpov2Consts.CHANNEL):
         ValidationTool.validate_subset_in_superset(detail[subtree], cpo_detail[subtree]).verify_result()
         for name, entry in detail[subtree].items():
@@ -237,6 +234,14 @@ def validate_interface_cpo(port: str, detail: Mapping, cpo_detail: Mapping) -> s
 
 def read_interface_cpo(port: str, engine) -> dict:
     return Interface(parent_obj=None, port_name=port).cpo.parse_show(dut_engine=engine)
+
+
+def read_cpo(platform, cpo: str, engine) -> dict:
+    return unwrap_instance(platform.cpo.cpo_id[cpo].parse_show(dut_engine=engine), cpo)
+
+
+def read_els(platform, els: str, engine) -> dict:
+    return unwrap_instance(platform.laser_source.els_id[els].parse_show(dut_engine=engine), els)
 
 
 def validate_healthy_instances(component: str, data: Mapping, expected: Iterable[str]) -> None:

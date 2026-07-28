@@ -41,9 +41,9 @@ from ngts.tests_nvos.platform.cpo.event_helpers import (
     wait_for_ports_up_events,
 )
 from ngts.tests_nvos.platform.cpo.helpers import (
-    unwrap_instance,
+    read_cpo,
+    read_els,
     validate_cpo_detail,
-    validate_healthy_instances,
     validate_laser_source_detail,
 )
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
@@ -60,14 +60,6 @@ class ResetBaseline:
     affected_ports: tuple[Port, ...]
 
 
-def _read_cpo(platform: Platform, cpo: str, engine) -> dict:
-    return unwrap_instance(platform.cpo.cpo_id[cpo].parse_show(dut_engine=engine), cpo)
-
-
-def _read_els(platform: Platform, els: str, engine) -> dict:
-    return unwrap_instance(platform.laser_source.els_id[els].parse_show(dut_engine=engine), els)
-
-
 def _has_status(detail: dict, expected: str) -> bool:
     return str(detail.get(Cpov2Consts.STATUS, "")).lower() == expected.lower()
 
@@ -78,7 +70,7 @@ def _wait_for_cpo_and_els_recovery(platform: Platform, cpo: str, els: str, engin
     step = f"Wait for {cpo} to return to up and {els} to Inserted (timeout={CPO_RECOVERY_SAFETY_TIMEOUT_SECONDS}s)"
     with allure.step(step):
         return poll_until(
-            lambda: (_read_cpo(platform, cpo, engine), _read_els(platform, els, engine)),
+            lambda: (read_cpo(platform, cpo, engine), read_els(platform, els, engine)),
             lambda details: (
                 _has_status(details[0], Cpov2Consts.CPO_STATUS_UP) and
                 _has_status(details[1], Cpov2Consts.ELS_STATUS_INSERTED)
@@ -107,14 +99,16 @@ def _carrier_down_counts(ports: tuple[Port, ...], engine) -> dict[str, int]:
 def _verify_ports_relinked(
     system: System, baseline: ResetBaseline, observed: ObservabilityBaseline, context: str
 ) -> None:
-    """Prove every affected sw port re-linked after the reset and time it.
+    """Prove every affected sw port re-linked after the reset.
 
-    Link-up time is measured from the reset baseline to each port's up-event
-    DUT timestamp and verified against the NVL7 sw-port budget.
+    The NVL7 link-up budget is deliberately not asserted here: the only anchor
+    available is the pre-reset snapshot, so the elapsed time also covers the
+    module power-cycle and FW init. The recovery timeout bounds it instead;
+    test_cpo_link_up_time owns the budget itself.
     """
     port_names = {port.name for port in baseline.affected_ports}
     with allure.step(f"Wait for up events on all {len(port_names)} {baseline.cpo} sw ports"):
-        up_times = wait_for_ports_up_events(
+        wait_for_ports_up_events(
             lambda: system.events.find_events(
                 lambda event: event.get(EventConsts.RESOURCE) in port_names,
                 since_event_id=observed.max_event_id,
@@ -123,7 +117,6 @@ def _verify_ports_relinked(
             context=context,
             timeout_seconds=CPO_RECOVERY_SAFETY_TIMEOUT_SECONDS,
         )
-    assert_link_up_within_budget(up_times, observed.dut_start_time, CPO_SW_LINK_UP_TIMEOUT_SECONDS, context)
 
 
 def _set_port_state(port: Port, state: str, engine) -> None:
@@ -227,15 +220,11 @@ def _verify_reset_observability(
             targets,
             timeout_seconds=CPO_RECOVERY_SAFETY_TIMEOUT_SECONDS,
         )
-    syslog_checked = verify_transition_syslog(
-        system.log,
-        engine,
-        (baseline.cpo, baseline.els),
-        observed.dut_start_time,
-    )
-    if not syslog_checked:
-        with allure.step("SKIPPED: O-6 syslog wording undefined - no log assertions performed"):
-            pass
+    if not verify_transition_syslog(system.log, engine, (baseline.cpo, baseline.els), observed.dut_start_time):
+        allure.attach(
+            "O-6 syslog check skipped",
+            f"remove/add syslog wording is undefined; {baseline.cpo}/{baseline.els} log lines were not asserted",
+        )
 
 
 @pytest.mark.platform
@@ -266,8 +255,8 @@ def test_cpo_reset_actions(engines, devices, random_api):
     laser = topology.lasers_for_els(els)[1]
 
     with allure.step(f"Capture the {cpo}/{els} baseline, mapping snapshot and associated sw ports"):
-        cpo_before = _read_cpo(platform, cpo, engines.dut)
-        els_before = _read_els(platform, els, engines.dut)
+        cpo_before = read_cpo(platform, cpo, engines.dut)
+        els_before = read_els(platform, els, engines.dut)
         validate_cpo_detail(cpo, cpo_before, topology)
         validate_laser_source_detail(els, els_before, topology)
         affected_ports = [Port(name) for name in Cpo.split_names(cpo_before[Cpov2Consts.PORTS])]
@@ -320,26 +309,16 @@ def test_cpo_reset_actions(engines, devices, random_api):
 
 @pytest.mark.platform
 @pytest.mark.cpov2
+@pytest.mark.skip(reason="O-8: the FW register error-injection mechanism is undefined")
 def test_cpo_fault_injection(engines, devices, random_api):
-    """Verify the injected-fault health/event contract end to end.
+    """Inject an error on one CPO, then one ELS and one laser, and verify the
+    fault contract: non-empty error-status, WARNING event + unhealthy-count
+    increment, the Cleared counterpart on recovery, and tech-support generation
+    succeeding during the fault window.
 
-    1. Verify the baseline: every CPO and laser-source health instance is
-       HEALTHY with a zero unhealthy count.
-    2. Inject an error on one CPO, then one ELS and one laser, and verify the
-       fault contract: non-empty error-status, WARNING event + unhealthy-count
-       increment, the Cleared counterpart on recovery, and tech-support
-       generation succeeding during the fault window.
+    The all-HEALTHY baseline this needs is already covered by
+    test_cpo_show_health.
     """
-    system = System()
-    with allure.step("Verify the all-HEALTHY CPO and laser-source baseline"):
-        health = system.health.component.parse_show(dut_engine=engines.dut)
-        validate_healthy_instances(HealthConsts.Component.CPO, health, devices.dut.cpo_list)
-        validate_healthy_instances(HealthConsts.Component.Laser_Source, health, devices.dut.laser_source_list)
-
-    pytest.skip(
-        "Fault injection is not implemented: the FW register error-injection "
-        "mechanism is undefined (O-8) - only the healthy baseline is verified"
-    )
 
 
 @pytest.mark.interface

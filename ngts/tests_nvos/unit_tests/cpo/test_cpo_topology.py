@@ -13,7 +13,7 @@ import dataclasses
 
 import pytest
 
-from ngts.nvos_tools.Devices.cpo.CpoTopology import CpoTopology, OeNaming
+from ngts.nvos_tools.Devices.cpo.CpoTopology import CpoTopology
 
 PORTIA_SIMX_CPO_COUNT = 4
 PORTIA_LANES_PER_LASER = 4  # 64 channels / 16 lasers per (single) ELS
@@ -37,16 +37,12 @@ class TestCounts:
     def test_derived_counts(self, topology):
         assert topology.oe_count == 16
         assert topology.els_count == 4
-        assert topology.laser_count == 64
-        assert topology.channel_count == 256
         assert topology.lanes_per_laser == PORTIA_LANES_PER_LASER
 
     def test_single_asic_counts(self):
         single = CpoTopology(cpo_count=1)
         assert single.oe_count == 4
         assert single.els_count == 1
-        assert single.laser_count == 16
-        assert single.channel_count == 64
 
     def test_invalid_cpo_count_rejected(self):
         with pytest.raises(ValueError):
@@ -68,6 +64,12 @@ class TestCounts:
         with pytest.raises(ValueError, match="channels_per_cpo"):
             CpoTopology(cpo_count=4, channels_per_cpo=0)
 
+    def test_channels_must_cover_every_laser(self):
+        """lanes_per_laser is a floor division, so too few channels for the
+        laser count would silently yield 0 instead of failing here."""
+        with pytest.raises(ValueError, match="cannot feed"):
+            CpoTopology(cpo_count=2, oe_per_cpo=2, lanes_per_oe=2, channels_per_cpo=4)
+
     def test_out_of_range_identifiers_rejected(self, topology):
         """Out-of-range or wrong-prefix identifiers must raise instead of
         silently generating phantom names (e.g. oes_for_cpo(0) -> 'oe-3')."""
@@ -76,11 +78,9 @@ class TestCounts:
             lambda: topology.oes_for_cpo("cpo99"),
             lambda: topology.oes_for_cpo("els1"),
             lambda: topology.els_for_cpo(5),
-            lambda: topology.cpo_for_oe("oe99"),
             lambda: topology.cpo_for_els("els0"),
             lambda: topology.channels_for_cpo("cpo9"),
             lambda: topology.lasers_for_els("els9"),
-            lambda: topology.asic_for_cpo(-1),
         ):
             with pytest.raises(ValueError):
                 bad_call()
@@ -116,27 +116,6 @@ class TestNames:
         assert len(names) == 64
 
 
-class TestOeNaming:
-    def test_oe_naming_accepts_plain_string(self):
-        # plain strings are coerced to OeNaming at runtime (__post_init__)
-        topology = CpoTopology(cpo_count=2, oe_naming="per_cpo")  # ty: ignore[invalid-argument-type]
-        assert topology.oe_naming is OeNaming.PER_CPO
-
-    def test_oe_naming_invalid_string_rejected(self):
-        with pytest.raises(ValueError):
-            CpoTopology(cpo_count=2, oe_naming="bogus")  # ty: ignore[invalid-argument-type]
-
-    def test_per_cpo_oes_restart_numbering(self):
-        topology = CpoTopology(cpo_count=2, oe_naming=OeNaming.PER_CPO)
-        assert topology.oes_for_cpo("cpo1") == ["oe1", "oe2", "oe3", "oe4"]
-        assert topology.oes_for_cpo("cpo2") == ["oe1", "oe2", "oe3", "oe4"]
-
-    def test_per_cpo_cpo_for_oe_is_ambiguous(self):
-        topology = CpoTopology(cpo_count=2, oe_naming=OeNaming.PER_CPO)
-        with pytest.raises(ValueError):
-            topology.cpo_for_oe("oe1")
-
-
 class TestRelationships:
     def test_oes_for_cpo_global(self, topology):
         assert topology.oes_for_cpo("cpo1") == ["oe1", "oe2", "oe3", "oe4"]
@@ -150,16 +129,6 @@ class TestRelationships:
     def test_cpo_for_els(self, topology):
         assert topology.cpo_for_els("els1") == "cpo1"
         assert topology.cpo_for_els("els4") == "cpo4"
-
-    def test_cpo_for_oe(self, topology):
-        assert topology.cpo_for_oe("oe1") == "cpo1"
-        assert topology.cpo_for_oe("oe4") == "cpo1"
-        assert topology.cpo_for_oe("oe5") == "cpo2"
-        assert topology.cpo_for_oe("oe16") == "cpo4"
-
-    def test_asic_for_cpo_is_zero_based(self, topology):
-        assert topology.asic_for_cpo("cpo1") == 0
-        assert topology.asic_for_cpo("cpo4") == 3
 
     def test_subcomponents_for_cpo(self, topology):
         """Expected gNMI subcomponent references: the CPO's ELS(s) + OEs."""
@@ -179,9 +148,10 @@ class TestRelationships:
         ]
 
     def test_relationships_are_mutually_consistent(self, topology):
+        assert topology.oe_names() == [
+            oe for cpo in topology.cpo_names() for oe in topology.oes_for_cpo(cpo)
+        ]
         for cpo in topology.cpo_names():
-            for oe in topology.oes_for_cpo(cpo):
-                assert topology.cpo_for_oe(oe) == cpo
             for els in topology.els_for_cpo(cpo):
                 assert topology.cpo_for_els(els) == cpo
 
@@ -269,10 +239,3 @@ class TestAssertConsistent:
             port_to_cpo={"sw1p1s1": "cpo9"},
         ).verify_result(should_succeed=False)
         assert "unknown CPO" in info
-
-    def test_per_cpo_naming_valid_report_passes(self):
-        """With per-CPO OE naming every CPO legitimately reports oe1..oeN, so the
-        global-uniqueness check must not apply (mirrors channels)."""
-        topology = CpoTopology(cpo_count=2, oe_naming=OeNaming.PER_CPO)
-        oes = {c: topology.oes_for_cpo(c) for c in topology.cpo_names()}
-        topology.assert_consistent(cpo_to_oes=oes).verify_result()

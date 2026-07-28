@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from ngts.nvos_constants.constants_nvos import ActionConsts, Cpov2Consts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -24,7 +25,7 @@ class OeCollection(BaseComponent):
 
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path=f"/{Cpov2Consts.OE}")
-        self.oe_id: Dict[str, OeComponent] = DefaultDict(
+        self.oe_id: dict[str, OeComponent] = DefaultDict(
             lambda oe_id: OeComponent(self, oe_id=oe_id)
         )
 
@@ -42,7 +43,7 @@ class ChannelCollection(BaseComponent):
 
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path=f"/{Cpov2Consts.CHANNEL}")
-        self.channel_id: Dict[str, ChannelComponent] = DefaultDict(
+        self.channel_id: dict[str, ChannelComponent] = DefaultDict(
             lambda channel_id: ChannelComponent(self, channel_id=channel_id)
         )
 
@@ -78,16 +79,9 @@ class Cpo(BaseComponent):
 
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path="/cpo")
-        self.cpo_id: Dict[str, CpoComponent] = DefaultDict(
+        self.cpo_id: dict[str, CpoComponent] = DefaultDict(
             lambda cpo_id: CpoComponent(self, cpo_id=cpo_id)
         )
-
-    def show_detailed(self, dut_engine: LinuxSshEngine | None = None) -> str:
-        return self.show(op_param="--view=detail", dut_engine=dut_engine)
-
-    def get_list_of_cpos(self, dut_engine: LinuxSshEngine | None = None) -> list[str]:
-        """Names of all CPOs reported by `nv show platform cpo`."""
-        return list(self.parse_show(dut_engine=dut_engine).keys())
 
     def set(self, op_param_name="", op_param_value=""):
         raise Exception("set is not implemented for /platform/cpo")
@@ -96,11 +90,13 @@ class Cpo(BaseComponent):
         raise Exception("unset is not implemented for /platform/cpo")
 
     @staticmethod
-    def split_names(value: str | list[str] | None) -> list[str]:
+    def split_names(value: str | Iterable[str] | None) -> list[str]:
         """Normalize a mapping field into a list of names.
 
         The CLI may render such fields as a comma-separated string
-        ('oe1, oe2, oe3') or as a JSON list - accept both.
+        ('oe1, oe2, oe3') or as a JSON list - accept both.  Any iterable of
+        names works, so a JSON object such as the `oe` container can be passed
+        directly and yields its keys.
         """
         if value is None:
             return []

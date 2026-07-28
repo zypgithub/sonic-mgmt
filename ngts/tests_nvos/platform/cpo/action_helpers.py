@@ -1,7 +1,7 @@
 """Pure helpers for CPO reset and link-up tests.
 
-Keep this module independent of the DUT object model. That makes lifecycle
-rules and Portia port grouping testable without hardware.
+Keep this module free of DUT state and engines. That makes lifecycle rules and
+Portia port grouping testable without hardware.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from collections.abc import Callable, Iterable, Mapping
 
 from ngts.nvos_constants.constants_nvos import Cpov2Consts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import InternalNvosConsts
+from ngts.nvos_tools.platform.Cpo import Cpo
 
 CPO_SW_LINK_UP_TIMEOUT_SECONDS: int = InternalNvosConsts.NVL7_SW_LINK_UP_TIMEOUT
 CPO_RECOVERY_SAFETY_TIMEOUT_SECONDS = InternalNvosConsts.DEFAULT_TIMEOUT
@@ -24,20 +25,9 @@ _INTEGER_PATTERN = re.compile(r"^\s*(\d[\d,]*)\s*$")
 
 def mapping_snapshot(cpo_detail: Mapping, els_detail: Mapping) -> dict[str, object]:
     """Capture relationships that must survive CPO/ELS reset operations."""
-
-    def names(value: object) -> tuple[str, ...]:
-        if isinstance(value, str):
-            values = value.split(",")
-        elif isinstance(value, Iterable):
-            values = value
-        else:
-            values = (value,)
-        return tuple(sorted(str(item).strip() for item in values if str(item).strip()))
-
+    mapping_fields = (Cpov2Consts.PORTS, Cpov2Consts.LASER_SOURCES, Cpov2Consts.OE)
     return {
-        Cpov2Consts.PORTS: names(cpo_detail[Cpov2Consts.PORTS]),
-        Cpov2Consts.LASER_SOURCES: names(cpo_detail[Cpov2Consts.LASER_SOURCES]),
-        Cpov2Consts.OE: names(cpo_detail[Cpov2Consts.OE]),
+        **{field: tuple(sorted(Cpo.split_names(cpo_detail[field]))) for field in mapping_fields},
         Cpov2Consts.PARENT: els_detail[Cpov2Consts.PARENT],
     }
 

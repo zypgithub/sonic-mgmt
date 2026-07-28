@@ -89,49 +89,38 @@ def wait_for_insertion_cycle(  # noqa: PLR0913 - clock/sleep injection keeps pol
     inserted_description: str,
     context: str,
     timeout_seconds: float = CPO_EVENT_POLL_TIMEOUT_SECONDS,
+    require_inserted: bool = True,
     **poll_overrides,
 ) -> tuple[list[EventMatch], list[EventMatch]]:
     """Poll the events table until a remove -> add cycle is visible and ordered.
 
     ``read_component_events`` returns (id, body) matches for one instance,
     e.g. a closure over ``Events.find_events(component_event_predicate(name),
-    since_event_id)``.
+    since_event_id)``. ``require_inserted=False`` stops at the ejected event -
+    see ``wait_for_ejected_event``.
     """
     poll_overrides.setdefault("acceptable_exceptions", TRANSIENT_READ_ERRORS)
+    wanted = "ejected and inserted events" if require_inserted else "ejected event"
     ejected, inserted = poll_until(
         lambda: split_insertion_cycle(read_component_events(), ejected_description, inserted_description),
-        lambda cycle: bool(cycle[0]) and bool(cycle[1]),
+        lambda cycle: bool(cycle[0]) and (bool(cycle[1]) or not require_inserted),
         timeout_seconds=timeout_seconds,
-        description=f"{context}: ejected and inserted events",
+        description=f"{context}: {wanted}",
         **poll_overrides,
     )
-    assert_insertion_follows_removal(ejected, inserted, context)
+    if require_inserted:
+        assert_insertion_follows_removal(ejected, inserted, context)
     return ejected, inserted
 
 
-def wait_for_ejected_event(  # noqa: PLR0913 - clock/sleep injection keeps polling tests deterministic
-    read_component_events: Callable[[], Iterable[EventMatch]],
-    *,
-    ejected_description: str,
-    inserted_description: str,
-    context: str,
-    timeout_seconds: float = CPO_EVENT_POLL_TIMEOUT_SECONDS,
-    **poll_overrides,
-) -> list[EventMatch]:
+def wait_for_ejected_event(read_component_events: Callable[[], Iterable[EventMatch]], **kwargs) -> list[EventMatch]:
     """Gate on the outage actually starting before verifying recovery.
 
     A reset CLI returns before status/events flip, so an immediate ``Inserted``
     read can be pre-reset state; the ejected event is the durable proof that
     the removal window opened.
     """
-    poll_overrides.setdefault("acceptable_exceptions", TRANSIENT_READ_ERRORS)
-    ejected, _ = poll_until(
-        lambda: split_insertion_cycle(read_component_events(), ejected_description, inserted_description),
-        lambda cycle: bool(cycle[0]),
-        timeout_seconds=timeout_seconds,
-        description=f"{context}: ejected event",
-        **poll_overrides,
-    )
+    ejected, _ = wait_for_insertion_cycle(read_component_events, require_inserted=False, **kwargs)
     return ejected
 
 

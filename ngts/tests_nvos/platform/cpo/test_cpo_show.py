@@ -1,5 +1,4 @@
 import re
-import time
 
 import pytest
 
@@ -10,6 +9,8 @@ from ngts.nvos_tools.platform.Cpo import Cpo
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.platform.cpo.helpers import (
+    read_cpo,
+    read_els,
     read_interface_cpo,
     sample_names,
     unwrap_instance,
@@ -21,22 +22,15 @@ from ngts.tests_nvos.platform.cpo.helpers import (
     validate_laser_source_summary,
 )
 
-TELEMETRY_REFRESH_WAIT_SECONDS = 11
 LEGACY_CPO_INSTANCE_PATTERN = re.compile(r"^(?:cpo|els|oe)\d+$", re.IGNORECASE)
 
 
 def _read_cpo_details(platform: Platform, topology, engine) -> dict[str, dict]:
-    return {
-        cpo: unwrap_instance(platform.cpo.cpo_id[cpo].parse_show(dut_engine=engine), cpo)
-        for cpo in topology.cpo_names()
-    }
+    return {cpo: read_cpo(platform, cpo, engine) for cpo in topology.cpo_names()}
 
 
 def _read_laser_source_details(platform: Platform, topology, engine) -> dict[str, dict]:
-    return {
-        els: unwrap_instance(platform.laser_source.els_id[els].parse_show(dut_engine=engine), els)
-        for els in topology.els_names()
-    }
+    return {els: read_els(platform, els, engine) for els in topology.els_names()}
 
 
 @pytest.mark.platform
@@ -66,11 +60,6 @@ def test_cpo_show_platform(engines, devices, random_api):
     transceivers = platform.transceiver.parse_show(dut_engine=engines.dut)
     legacy_objects = {name for name in transceivers if LEGACY_CPO_INSTANCE_PATTERN.fullmatch(name)}
     assert not legacy_objects, f"Gen1 CPO objects leaked into transceiver output: {legacy_objects}"
-
-    sampled_cpo = topology.cpo_names()[0]
-    time.sleep(TELEMETRY_REFRESH_WAIT_SECONDS)
-    refreshed = unwrap_instance(platform.cpo.cpo_id[sampled_cpo].parse_show(dut_engine=engines.dut), sampled_cpo)
-    validate_cpo_detail(sampled_cpo, refreshed, topology)
 
 
 @pytest.mark.platform

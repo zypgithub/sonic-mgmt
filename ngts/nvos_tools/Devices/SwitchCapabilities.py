@@ -9,7 +9,7 @@ from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
 import logging
 
-from ngts.nvos_tools.Devices.cpo.CpoTopology import CpoTopology, OeNaming
+from ngts.nvos_tools.Devices.cpo.CpoTopology import CpoTopology
 
 if TYPE_CHECKING:
     from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
@@ -145,37 +145,34 @@ class PortiaCpoCapability(BaseCapability):
         cpo_count: Override the number of CPOs. Defaults to the device's
             ``asic_amount`` (1 CPO per ASIC).
         oe_per_cpo / els_per_cpo / lasers_per_els / lanes_per_oe /
-        channels_per_cpo / oe_naming: Optional CpoTopology field overrides for a
+        channels_per_cpo: Optional CpoTopology field overrides for a
             future CPO device whose vModule layout differs from the Portia default.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - one keyword per CpoTopology field that can be overridden
         self,
+        *,
         cpo_count: int | None = None,
         oe_per_cpo: int | None = None,
         els_per_cpo: int | None = None,
         lasers_per_els: int | None = None,
         lanes_per_oe: int | None = None,
         channels_per_cpo: int | None = None,
-        oe_naming: OeNaming | None = None,
     ) -> None:
         self._cpo_count: int | None = cpo_count
         # Collect only the overrides that were explicitly given; the rest keep
-        # CpoTopology's defaults. Typed as int | OeNaming (never Any).
-        overrides: dict[str, int | OeNaming] = {}
-        if oe_per_cpo is not None:
-            overrides["oe_per_cpo"] = oe_per_cpo
-        if els_per_cpo is not None:
-            overrides["els_per_cpo"] = els_per_cpo
-        if lasers_per_els is not None:
-            overrides["lasers_per_els"] = lasers_per_els
-        if lanes_per_oe is not None:
-            overrides["lanes_per_oe"] = lanes_per_oe
-        if channels_per_cpo is not None:
-            overrides["channels_per_cpo"] = channels_per_cpo
-        if oe_naming is not None:
-            overrides["oe_naming"] = oe_naming
-        self._topology_overrides: dict[str, int | OeNaming] = overrides
+        # CpoTopology's defaults.
+        self._topology_overrides: dict[str, int] = {
+            field: value
+            for field, value in (
+                ("oe_per_cpo", oe_per_cpo),
+                ("els_per_cpo", els_per_cpo),
+                ("lasers_per_els", lasers_per_els),
+                ("lanes_per_oe", lanes_per_oe),
+                ("channels_per_cpo", channels_per_cpo),
+            )
+            if value is not None
+        }
 
     def _build_topology(self, switch_instance: "BaseSwitch") -> CpoTopology:
         # cpo_count defaults to the device's asic_amount (1 CPO / vModule per ASIC).
