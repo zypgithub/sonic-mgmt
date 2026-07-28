@@ -151,7 +151,7 @@ def _get_enabled_un_sid_modes(request):
 
 def _verify_un_forwarding(setup_uN, ptfadapter, ptfhost, with_srh):
     run_srv6_traffic_test(
-        setup_uN['duthost'], setup_uN['dut_mac'], setup_uN['ptf_src_port'],
+        setup_uN['duthost'], setup_uN['dut_mac'], setup_uN['ptf_src_ports'],
         setup_uN['neighbor_ip'], ptfadapter, ptfhost, with_srh
     )
 
@@ -602,6 +602,8 @@ def test_srv6_no_sid_blackhole(setup_uN, ptfadapter, ptfhost, with_srh, request)
     neighbor_ip = setup_uN['neighbor_ip']
     ptf_port_ids = setup_uN['ptf_port_ids']
     sonic_db_cli = "sonic-db-cli" + setup_uN['cli_options']
+
+    ptf_src_port = ptf_src_ports[0] if isinstance(ptf_src_ports, list) else ptf_src_ports
 
     def _run_blackhole_test():
         pytest_assert(wait_until(20, 5, 0, verify_asic_db_sid_entry_exist, duthost, sonic_db_cli),
