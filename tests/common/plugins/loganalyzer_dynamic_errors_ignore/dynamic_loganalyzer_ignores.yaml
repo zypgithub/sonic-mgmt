@@ -750,14 +750,6 @@
 
 # NVOS
 - Errors_list:
-  - '.* ERR nvued:   ERROR: lifecycle.py:\d+ Failed verify eth interface configuration.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_mtu
-    - tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg
-
-# NVOS
-- Errors_list:
   - '.*ERR nvued:   ERROR: cluster_utils.py:\d+ File name package_info.json does not exist in package.*'
   Conditions:
   - Affected_test_cases:
@@ -771,31 +763,6 @@
   Conditions:
   - Affected_test_cases:
     - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
-
-# NVOS
-- Errors_list:
-  - '.* ERR rsyslogd: omfwd: could not get addrinfo for hostname .*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_configurations
-    - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_configurations_openapi
-
-# NVOS
-- Errors_list:
-  - '.* ERR admin: .*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_server_severity_levels
-    - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_server_severity_levels_openapi
-
-# NVOS
-- Errors_list:
-  - '.* ERR rsyslogd: omfwd: remote server.*'
-  - '.* ERR rsyslogd: cannot connect to.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_protocol
-    - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_protocol_openapi
 
 # NVOS - ignore log info message for not a bug
 - Errors_list:
@@ -816,20 +783,6 @@
     - tests_nvos/system/test_techsupport_feature.py::test_techsupport_folder_name
     - tests_nvos/system/test_system_profile_change.py::test_system_profile_adaptive_routing
 
-# NVOS
-- Errors_list:
-  - '.* ERR nvued:   ERROR: lifecycle.py:\d+ Failed verify ib interface configuration.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_speed_invalid
-
-# NVOS
-- Errors_list:
-  - '.* ERR nvued:   ERROR: lifecycle.py:\d+ Failed verify ipoib interface configuration.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/interfaces/test_ib0_interface_mtu.py::test_interface_ib0_mtu_disabled_sm
-
 # NVOS Errors which should be ignored in tests which doing reset service
 - Errors_list:
   - '.* ERR health-statsd#health_history: ib-utils: Container .* is not running.*'
@@ -840,68 +793,11 @@
 
 # NVOS
 - Errors_list:
-  - '.* ERR nvued:   ERROR: lifecycle.py:\d+ Failed to run timedatectl#012Traceback \(most recent call last\):#012  File.*'
-  - '.*ERR systemd-timedated\[\d+\]: Failed to set local time: Invalid argument.*'
-  - '.*Failed to run timedatectl.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/clock/test_system_clock.py::test_change_invalid_datetime_ntp_off_error_flow_openapi
-    - tests_nvos/system/clock/test_system_clock.py::test_change_invalid_datetime_ntp_on_error_flow_openapi
-    - tests_nvos/system/clock/test_system_clock.py::test_change_invalid_datetime_ntp_off_error_flow
-    - tests_nvos/system/clock/test_system_clock.py::test_change_invalid_datetime_ntp_on_error_flow
-
-# NVOS
-- Errors_list:
   - '.* .* ERR nvued:   ERROR: lifecycle.py:\d+ File not found.*'
   Conditions:
   - Affected_test_cases:
     - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_delete
     - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_upload
-
-# NVOS
-- Errors_list:
-  - '.* ERR nvued:   ERROR: lifecycle.py:\d+ User requested a .* reboot, but NVOS cant perform it.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/test_system_reboot.py::test_reboot_command_type
-
-# NVOS
-- Errors_list:
-  - '.* ERR kernel: \[ \d+.\d+\] ib_core: Method 1 already in use'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state_openapi
-
-# NVOS : Errors which should be ignored in tests which doing reboot/reload
-- Errors_list:
-  - '.* ERR health-statsd#health_history: Containers: is not Status ok.*'
-  - '.* ERR health-statsd#health_history: Disk check: is not Status ok.*'
-  - '.* ERR health-statsd#health_history: memory_check: is not Status ok.*'
-  - '.* ERR health-statsd#health_history: Summary: Not OK.*'
-  - '.* ERR health-statsd#health_history: pmon: Container.*'
-  - '.* ERR systemd\[1\]: Failed to start LSB: LDAP connection daemon.*'
-  - '.* ERR watchdogutil: Failed to get watchdog module'
-  - '.* ERR systemd\[1\]: Failed to start LSB: LDAP connection daemon.*'
-  - '.* ERR watchdogutil: Failed to get watchdog module.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/test_system_reboot.py
-    - tests_nvos/general/config_commands/test_save_after_reboot.py::test_save_reboot
-    - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_run
-    - tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_firmware
-
-# NVOS : Error - Bug 3494774 related
-- Errors_list:
-  - '.* ERR nvued:   ERROR: lifecycle.py:\d+ File not found.*'
-  - '.* ERR nvued:   ERROR: format_checkers.py:\d+.*'
-  - '.* ERR nvued: message repeated 3 times: \[   ERROR: format_checkers.py:\d+.*'
-  - '.* ERR nvued:   ERROR: format_checkers.py:\d+ Instance ffff:.*'
-  - '.* ERR nvued: message repeated 3 times: \[   ERROR: format_checkers.py:\d+ Instance ffff.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/test_system_documents.py::test_upload_document
-    - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_upload
-    - tests_nvos/system/test_techsupport_commands.py::test_techsupport_upload_and_delete
 
 # NVOS
 - Errors_list:
@@ -919,15 +815,6 @@
 
 # NVOS
 - Errors_list:
-  - '.*ERR health-statsd#health_history: bad_device: device is out of power.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_user_config_file
-    - tests_nvos/system/test_system_health.py::test_system_health_files_with_rotation
-    - tests_nvos/system/test_system_health.py::test_system_health_files
-
-# NVOS
-- Errors_list:
   - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
   - '.*ERR health-statsd#health_history: FAN\d\/\d: is broken.*'
   - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
@@ -935,54 +822,6 @@
   Conditions:
   - Affected_test_cases:
     - tests_nvos/system/test_system_health.py::test_ignore_health_issue
-
-# NVOS - snmp error flows
-- Errors_list:
-  - ".*ERR health-statsd#health_history: snmp:snmp-subagent: 'snmp-subagent' is not running.*"
-  - ".*ERR health-statsd#health_history: snmp:snmpd: 'snmpd' is not running.*"
-  - ".*ERR health-statsd#health_history: snmp: Container 'snmp' is not running.*"
-  - '.*ERR container: docker cmd: start for snmp failed with.*'
-  - '.*ERR systemd\[\d+\]: Failed to start SNMP container.*'
-  - '.*warn=True _uses_shell=False.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/test_system_snmp.py::test_system_snmp_load_test
-    - tests_nvos/system/test_system_snmp.py::test_system_snmp_redis_crash
-    - tests_nvos/system/test_system_snmp.py::test_snmp_default_values_fields
-    - tests_nvos/system/test_system_snmp.py::test_system_snmp_negative
-
-# NVOS
-- Errors_list:
-  - '.*ERR health-statsd#health_history: Summary: Not OK.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/test_system_snmp.py::test_system_snmp_load_test
-    - tests_nvos/system/test_system_snmp.py::test_system_snmp_redis_crash
-    - tests_nvos/system/test_system_snmp.py::test_snmp_default_values_fields
-    - tests_nvos/system/test_system_snmp.py::test_system_snmp_load_test
-    - tests_nvos/system/test_system_snmp.py::test_system_snmp_redis_crash
-    - tests_nvos/system/test_system_snmp.py::test_snmp_default_values_fields
-    - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_user_config_file
-    - tests_nvos/system/test_system_health.py::test_system_health_files_with_rotation
-    - tests_nvos/system/test_system_health.py::test_system_health_files
-    - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_docker_stop
-    - tests_nvos/system/test_system_health.py::test_simulate_fan_speed_fault
-    - tests_nvos/system/test_system_snmp.py::test_system_snmp_negative
-
-# NVOS
-- Errors_list:
-  - '.*Loading Cached Option:enable_crashd = FALSE.*'
-  - '.*mlnx_create_port: Failed convert attribute list to string.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/interfaces/test_port_split.py
-
-# NVOS - log issue
-- Errors_list:
-  - '.*Failed to start ib-utils container.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
 
 # NVOS
 - Errors_list:
@@ -1077,54 +916,12 @@
   - Affected_test_cases:
     - tests_nvos/system/ztp/test_system_ztp.py::test_ztp_startup_file_commands_list
 
-# NVOS gorilla-100 PSU2 is missing.
-- Errors_list:
-  - ".*ERR health-statsd#health_history: gnmi-server: Container 'gnmi-server' is not running.*"
-  - '.*ERR health-statsd#health_history: Summary: Not OK.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/system/gnmi/test_gnmi_server.py::test_simulate_gnmi_server_failure
-
-# NVOS
 - Errors_list:
   - '.*timer: Not using persistent file timestamp .* as it is in the future.*'
   Conditions:
   - Redmine:
     - 3585813
 
-# NVOS
-- Errors_list:
-  - ".*ansible-command Invoked with _raw_params=python /tmp/loganalyzer.py.*"
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/interfaces/test_port_split.py::test_split_port_redis_db_crash
-
-# NVOS
-- Errors_list:
-  - ".*multicast join failed for.*"
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/interfaces/test_ib0_interface_ip.py::test_ib0_interface_ipv6_address
-
-# NVOS
-# The below errors should be ignored, because it is caused by redis db crash and it is an expected behaviour
-- Errors_list:
-  - '.*\[SAI_PORT.ERR\] mlnx_sai_port_ib.c\[3265\]- mlnx_create_port: Failed convert attribute list to string.'
-  - '.*\[SAI_PORT.ERR\] mlnx_sai_port_ib.c\[3265\]- mlnx_create_port: Failed convert attribute list to string.'
-  - '.*\[COMMAND_IFC.ERR\] sxd_ioctl (CTRL_CMD_ACCESS_REG - pmtu) FW error: \[BAD PARAMETER\]'
-  - '.*Register access failed (reg_id=0x5003, status=0x7)'
-  - '.*\[ACCESS_REG_INFRA.ERR\] REG pmtu: Failed accessing register through CMD IFC'
-  - '.*mlnx_set_get_pmtu_register: mlnx_set_get_pmtu_register: failed in PMTU device.*'
-  - '.*\[SAI_PORT.ERR\] mlnx_sai_port_ib.c\[687\]- mlnx_set_mtu_admin: Failed set PMTU for local port.*'
-  - '.*\[SAI_PORT.ERR\] mlnx_sai_port_ib.c\[775\]- mlnx_port_mtu_set: Failed to set mtu to port.*'
-  - '.*\[SAI_UTILS.ERR\] mlnx_sai_utils.c\[2019\]- sai_set_attribute: Failed set attrib dispatch'
-  - '.*\[SAI_PORT.ERR\] mlnx_sai_port_ib.c\[2047\]- mlnx_set_port_attribute: Failed set port attribute key port.*'
-  - '.*sendApiResponse: api SAI_COMMON_API_SET failed in syncd mode: SAI_STATUS_FAILURE'
-  Conditions:
-  - Affected_test_cases:
-    - tests_nvos/interfaces/test_port_split.py::test_split_port_redis_db_crash
-
-# NVOS
 - Errors_list:
   - '.* ERR pmon#xcvrd: Failed to write EEPROM data sfp.+write limited .*'
   - '.* ERR pmon#xcvrd: CMIS:.*FAILED.*'
