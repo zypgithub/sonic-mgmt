@@ -28,7 +28,8 @@ from ngts.nvos_constants.constants_nvos import (
     TcpDumpConsts,
 )
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
-from ngts.nvos_tools.Devices.SwitchCapabilities import CpoCapability, NoPSUCapability, SwitchCapabilityHandler
+from ngts.nvos_tools.Devices.SwitchCapabilities import CpoCapability, NoPSUCapability, PortiaCpoCapability, \
+    SwitchCapabilityHandler
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, InternalNvosConsts, PhyRecoveryConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -3576,26 +3577,37 @@ class RosalindStackedSwitch(RosalindSwitch):
 # -------------------------- RosalindStackedSimx Switch ---------------------
 
 
-class RosalindStackedSimx(RosalindStackedSwitch):
+class SimxDevice:
+    """Overlay for simx-emulated flavors of real switch classes.
+
+    Holds only the emulation gaps shared by every simx flavor: the device is
+    marked as simx and requires the mloop loopback setup for links to come up.
+    Platform/SKU differences (asic amount, ports, sensors) stay in the switch
+    classes. Must precede the switch class in the bases list:
+    class FooSimx(SimxDevice, FooSwitch).
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_simx = True
+        self.require_mloop_setup = True
+
+
+class RosalindStackedSimx(SimxDevice, RosalindStackedSwitch):
 
     def __init__(self):
         super().__init__(asic_amount=4)
 
-    def _init_constants(self):
-        super()._init_constants()
-        self.require_mloop_setup = True
-
 # -------------------------- RosalindSimx Switch ----------------------------
 
 
-class RosalindSimx(RosalindSwitch):
+class RosalindSimx(SimxDevice, RosalindSwitch):
 
     def update_show_platform_output(self, platform_output):
         pass
 
     def __init__(self, asic_amount=4):
         super().__init__(asic_amount=asic_amount)
-        self.require_mloop_setup = True
 
     def _init_constants(self):
         super()._init_constants()
@@ -3722,17 +3734,19 @@ class RosalindRTF(RosalindSwitch):
         self.supported_nvl_speeds.remove('200G')
 
 
-# -------------------------- PortiaSimx Switch ----------------------------
+# -------------------------- Portia Switch ----------------------------
 
 
-class PortiaSimx(RosalindSwitch):
+class PortiaSwitch(RosalindSwitch):
+    """Portia (QM5 / NVL7) platform base - real-HW truth shared by every flavor."""
 
     def update_show_platform_output(self, platform_output):
+        # no per-part-number asic-revision map for Portia yet - the revision
+        # stays pinned in show_platform_output (revisit on real HW)
         pass
 
     def __init__(self, asic_amount=4):
         super().__init__(asic_amount=asic_amount)
-        self.require_mloop_setup = True
 
     def _init_constants(self):
         super()._init_constants()
@@ -3747,10 +3761,11 @@ class PortiaSimx(RosalindSwitch):
             for core_clock in self.fae_supported_core_clocks
         }
         self.access_port_speed = '200G'
+        # real HW tray identity; the simx-only N7170_LD profile overrides these
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n7170_ld-r0")
+            "x86_64-nvidia_n7100_ld-r0")
         self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N7170_LD",
+            PlatformConsts.SYSTEM_TYPE: "N7100_LD",
             "asic-model": self.asic_type,
             PlatformConsts.ASIC_REVISION: PlatformConsts.FW_ASIC_REVISION_VALUE,
         })
@@ -3771,8 +3786,31 @@ class PortiaSimx(RosalindSwitch):
         super()._init_gnmi_consts()
         self.components_gnmi_xpath = [xpath for xpath in self.components_gnmi_xpath if xpath != self.erot_xpath]
 
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({
+            "model": ExpectedString(regex="920-9K51W-00L7-GS0"),
+        })
+
     def _init_temperature(self):
         super()._init_temperature()
+        # TODO: interim two-floor inventory - the ASICn entries scale with
+        # asic_amount, but the PMIC/PDB/HSC sensor set below is the one-floor
+        # (4-ASIC) inventory. The second SWB floor's naming (floor-local vs
+        # global PMIC numbering, extra PDB/HSC instances) must be pinned from
+        # real 8-ASIC HW output before extending it.
+        self.temperature_sensors = (
+            [f"ASIC{asic_num}" for asic_num in range(1, self.asic_amount + 1)] +
+            [
+                "CPU-Pack-Temp",
+                "Drive-Temp",
+                "HSC-VinDC-Temp",
+                "PDB-Conv-1-Temp",
+                "PDB-Conv-2-Temp",
+            ] +
+            [f"PMIC-{pmic_num}-Temp" for pmic_num in range(1, 19)] +
+            ["SODIMM-1-Temp", "SODIMM-2-Temp"]
+        )
         self.voltage_sensors = [
             "PDB-HSC-Volt-In",
             "PDB-HSC-Volt-Out",
@@ -3781,6 +3819,9 @@ class PortiaSimx(RosalindSwitch):
             "PDB-PwrConv2-In-1",
             "PDB-PwrConv2-Out-1",
         ]
+        # TODO: PMIC numbering beyond ASIC4 is unverified - on 8 ASICs this
+        # formula yields PMIC-17..32 for the second floor, colliding with the
+        # fixed PMIC-17/18 CPU/COMEX names below; pin from real 8-ASIC HW.
         for asic_num in range(1, self.asic_amount + 1):
             first_pmic_num = (asic_num - 1) * 4 + 1
             self.voltage_sensors.extend([
@@ -3815,6 +3856,21 @@ class PortiaSimx(RosalindSwitch):
         self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
 
 
+# -------------------------- PortiaSimx Switch ----------------------------
+
+
+class PortiaSimx(SimxDevice, PortiaSwitch):
+    """Simx-only N7170_LD profile - real Portia HW (PortiaSwitch) is N7100_LD."""
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n7170_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N7170_LD",
+        })
+
+
 # -------------------------- PortiaSimxNso Switch ----------------------------
 
 
@@ -3842,6 +3898,85 @@ class PortiaSimxNso(PortiaSimx):
 
 
 class PortiaSA(PortiaSimx):
+
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+
+# -------------------------- Portia CPO Switch ----------------------------
+
+
+class PortiaCpoSwitch(PortiaSwitch):
+    """Portia (QM5 / NVL7) CPO switch tray (N7220_LD) with Gen2 CPO vModule support.
+
+    Applies PortiaCpoCapability, which attaches a first-class CpoTopology as
+    self.cpo (one CPO / vModule per ASIC, 4 OEs + 1 ELS each). One NVOS device
+    spans both SWB floors: fully populated production = 2 SWBs / 8 ASICs
+    (default), de-populated production = 1 SWB / 4 ASICs (PortiaCpo4Asic).
+    Simx uses a reduced 2-ASIC profile (PortiaCpoSimx) - not a hardware SKU.
+
+    Port model: per ASIC, 72 GPU-facing access ports (acp) over the backplane
+    and 56 CPO scale-out trunk interfaces exposed as 7 swX groups x 8
+    subports (p1s1-p1s8). The eighth 8-channel optical group is a spare and is
+    not exposed as an interface. swX numbering is global and compact across
+    ASICs (ASIC1: sw1-sw7, ASIC2: sw8-sw14, ...). acp ports are not
+    CPO-associated.
+    """
+
+    ACP_PORTS_PER_ASIC = 72
+    SW_GROUPS_PER_ASIC = 7
+    SW_SUBPORTS_PER_GROUP = 8
+    SPARE_CHANNELS_PER_ASIC = 8
+
+    def __init__(self, asic_amount=8):
+        super().__init__(asic_amount=asic_amount)
+        SwitchCapabilityHandler.apply_capability(self, PortiaCpoCapability())
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n7220_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N7220_LD",
+        })
+        # sw scale-out ports are 1-lane NVL7 simplex (200G PAM-4 per lane), unlike
+        # the inherited 2-lane 400G trunk ports - confirm exact string on DUT
+        self.nvl_trunk_port_speed = '200G'
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({
+            "model": ExpectedString(regex="920-9K57P-00L7-GS0"),
+        })
+
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.nvl_access_ports_list = [f'acp{num}' for num in range(1, self.ACP_PORTS_PER_ASIC * self.asic_amount + 1)]
+        self.nvl_trunk_ports_list = [f'sw{sw}p1s{subport}'
+                                     for sw in range(1, self.SW_GROUPS_PER_ASIC * self.asic_amount + 1)
+                                     for subport in range(1, self.SW_SUBPORTS_PER_GROUP + 1)]
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
+
+
+class PortiaCpo4Asic(PortiaCpoSwitch):
+    """De-populated production tray: 1 SWB floor / 4 ASICs."""
+
+    def __init__(self):
+        super().__init__(asic_amount=4)
+
+
+class PortiaCpoSimx(SimxDevice, PortiaCpoSwitch):
+    """Reduced 2-ASIC simx profile - a verification resource decision, not a
+    hardware SKU; test logic must stay topology-driven and never read the
+    2-ASIC layout as a production limit."""
+
+    def __init__(self):
+        super().__init__(asic_amount=2)
+
+
+class PortiaCpoSA(PortiaCpoSwitch):
+    """Single-ASIC developer/unit profile, not a production topology."""
 
     def __init__(self):
         super().__init__(asic_amount=1)
