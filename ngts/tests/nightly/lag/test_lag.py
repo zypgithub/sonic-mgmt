@@ -1,5 +1,7 @@
 import allure
+import json
 import logging
+import os
 import re
 import ipaddress
 import time
@@ -25,6 +27,9 @@ from ngts.helpers.interface_helpers import get_service_port
 logger = logging.getLogger()
 PORTCHANNEL_NAME = 'PortChannel1111'
 BASE_PKT = 'Ether(dst="{}")/IP(src="50.0.0.2",dst="50.0.0.3")/{}()/Raw()'
+SDK_LAG_QUERY_SCRIPT = 'get_sdk_lag_count.py'
+SDK_LAG_QUERY_TIMEOUT_SEC = 120
+SDK_LAG_QUERY_INTERVAL_SEC = 10
 CHIP_LAGS_LIM = {
     'SPC': 64,
     'SPC2': 110,    # TODO SDK support 128, but currently 128 doesn't work
@@ -477,14 +482,10 @@ def test_lags_scale(topology_obj, engines, cleanup_list, platform_params):
         pytest.skip("Skip performance and scalability tests on ASAN image")
 
     try:
-        # workaround for issue in teardown.
-        # removing of LAGs take time. But in show and ASIC_DB it is presented as already removed.
-        # the current indicate that LAG was removed is only logging:
-        #           "NOTICE teamd#teammgrd: :- removeLag: Stop port channel PortChannel128"
-        # TODO create logic for checking the logging.
-        cleanup_list.append((time.sleep, (120,)))
-
         dut_cli = topology_obj.players['dut']['cli']
+
+        wait_for_sdk_lag_count(engines.dut, expected_count=0)
+        cleanup_list.append((wait_for_sdk_lag_count, (engines.dut, 0)))
 
         chip_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['chip_type']
         number_of_lags = CHIP_LAGS_LIM[chip_type]
@@ -530,6 +531,83 @@ def test_lags_scale(topology_obj, engines, cleanup_list, platform_params):
             )
     except BaseException as err:
         raise AssertionError(err)
+
+
+def prepare_sdk_lag_query(dut_engine):
+    script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), SDK_LAG_QUERY_SCRIPT)
+    dut_engine.copy_file(
+        source_file=script_path,
+        file_system='/tmp',
+        dest_file=SDK_LAG_QUERY_SCRIPT,
+        overwrite_file=True,
+    )
+    dut_engine.run_cmd(
+        'docker cp /tmp/{script} syncd:/{script}'.format(
+            script=SDK_LAG_QUERY_SCRIPT,
+        ),
+        validate=True,
+    )
+
+
+def get_sdk_lag_state(dut_engine):
+    output = dut_engine.run_cmd(
+        'docker exec syncd python3 /{script}'.format(
+            script=SDK_LAG_QUERY_SCRIPT,
+        ),
+        validate=True,
+    )
+    for line in reversed(str(output).splitlines()):
+        try:
+            state = json.loads(line.strip())
+        except ValueError:
+            continue
+
+        if not isinstance(state, dict):
+            continue
+        lag_ids = state.get('lag_ids')
+        if isinstance(lag_ids, list):
+            state['count'] = len(lag_ids)
+            return state
+
+    raise RuntimeError("Invalid SDK LAG query output: {}".format(output))
+
+
+def verify_sdk_lag_count(dut_engine, expected_count):
+    sdk_state = get_sdk_lag_state(dut_engine)
+    if sdk_state['count'] != expected_count:
+        raise AssertionError(
+            "SDK LAG IDs have not been released: expected={}, actual={}, IDs={}".format(
+                expected_count,
+                sdk_state['count'],
+                sdk_state['lag_ids'],
+            )
+        )
+    return sdk_state
+
+
+def wait_for_sdk_lag_count(dut_engine, expected_count):
+    logger.info(
+        "Waiting for SDK LAG count on syncd to reach %s (timeout=%ss, interval=%ss)",
+        expected_count,
+        SDK_LAG_QUERY_TIMEOUT_SEC,
+        SDK_LAG_QUERY_INTERVAL_SEC,
+    )
+    prepare_sdk_lag_query(dut_engine)
+    tries = SDK_LAG_QUERY_TIMEOUT_SEC // SDK_LAG_QUERY_INTERVAL_SEC + 1
+    sdk_state = retry_call(
+        verify_sdk_lag_count,
+        fargs=[dut_engine, expected_count],
+        exceptions=(AssertionError, RuntimeError),
+        tries=tries,
+        delay=SDK_LAG_QUERY_INTERVAL_SEC,
+        logger=logger,
+    )
+    logger.info(
+        "SDK LAG count on syncd reached %s, IDs=%s",
+        sdk_state['count'],
+        sdk_state['lag_ids'],
+    )
+    return sdk_state
 
 
 def get_lag_lb_members(interfaces, member_interfaces):
