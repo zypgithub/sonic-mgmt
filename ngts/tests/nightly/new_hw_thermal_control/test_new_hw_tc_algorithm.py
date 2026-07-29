@@ -270,7 +270,7 @@ class TestNewTc:
 
     @pytest.mark.parametrize("sensor_err_type", SENSOR_ERR_TEST_DATA.keys())
     @allure.title('test sensor errors')
-    def test_sensor_errors(self, get_dut_supported_sensors_and_tc_config, sensor_err_type):
+    def test_sensor_errors(self, get_dut_supported_sensors_and_tc_config, sensor_err_type, loganalyzer):
         """
         This test is to verify sensor errors behaviors
         1. Mock the temperature for tested sensors to a minimum(30c)
@@ -301,6 +301,13 @@ class TestNewTc:
                     pytest.skip("Only one psu, skipping this test")
                 sensor_err_file, expected_pwm, mock_value = get_sensor_err_test_data(
                     sensor_err_type, mock_sensor, tc_config_dict, self.cli_objects)
+                if sensor_err_type == "psu_err_present" and loganalyzer:
+                    psu_status_match = re.search(r"psu(\d+)_status$", sensor_err_file)
+                    assert psu_status_match, f"Unexpected PSU status file path: {sensor_err_file}"
+                    psu_id = psu_status_match.group(1)
+                    expected_psu_absence_log = rf".*ERR pmon#psud\[\d+\]: PSU {psu_id} is not present.*"
+                    for analyzer in loganalyzer.values():
+                        analyzer.ignore_regex.append(expected_psu_absence_log)
                 sensor_read_error_type = None
                 if "sensor_read_error" == sensor_err_file:
                     sensor_read_error_type = random.choice(SENSOR_ERR_TEST_DATA["sensor_read_error"])
