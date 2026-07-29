@@ -53,7 +53,7 @@ def verify_bgp_peer(neighbor_type, nbrhost, localip, expected_bgp_router_id, is_
 
 def verify_bgp(enum_asic_index, duthost, expected_bgp_router_id, neighbor_type, nbrhosts, tbinfo):
     is_v6_topo = is_ipv6_only_topology(tbinfo)
-    vtysh_cmd = "vtysh -c \"show ipv6 bgp summary\"" if is_v6_topo else "vtysh -c \"show ip bgp summary\""
+    vtysh_cmd = "vtysh -c \"show bgp ipv6 summary\"" if is_v6_topo else "vtysh -c \"show ip bgp summary\""
     vtysh_cmd = get_vtysh_cmd_for_asic(duthost, enum_asic_index, vtysh_cmd)
     bounded_cmd = "timeout -k {} {} {}".format(
         VTYSH_SHOW_CMD_KILL_GRACE_SEC, VTYSH_SHOW_CMD_TIMEOUT_SEC, vtysh_cmd)
@@ -276,7 +276,7 @@ def test_bgp_router_id_set_ipv6(duthosts, enum_frontend_dut_hostname, enum_front
         cmd = get_vtysh_cmd_for_asic(
             duthost,
             enum_frontend_asic_index,
-            "vtysh -c \"show ipv6 bgp neighbor {} advertised-routes\"".format(remote_ip)
+            "vtysh -c \"show bgp ipv6 neighbor {} advertised-routes\"".format(remote_ip)
         )
         output = duthost.shell("{} | grep {}".format(cmd, loopback_ipv6), module_ignore_errors=True)
         pytest_assert(output["rc"] == 0, (
