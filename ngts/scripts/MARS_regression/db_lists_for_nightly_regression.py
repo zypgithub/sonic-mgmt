@@ -61,6 +61,8 @@ COMMUNITY_SET2_TEST_GROUP_MAP = {
     'community/dualtor.db': PLATFORM_DEPENDENT,
     'community/memory.db': PLATFORM_DEPENDENT,
     'community/link.db': PLATFORM_AGNOSTIC_GROUP1,
+    'community/macsec.db': PLATFORM_DEPENDENT,
+    'community/voq.db': PLATFORM_DEPENDENT,
     'community/upgrade_related.db': PLATFORM_DEPENDENT,
     'community/sed_password.db': PLATFORM_DEPENDENT
 }
