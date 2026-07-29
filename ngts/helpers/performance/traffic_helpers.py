@@ -1001,7 +1001,7 @@ def validate_required_counters(traffic_json, required_counter_list, violations_l
                     found_in_sample = True
                     break
             if not found_in_sample:
-                violations_list.append(f"Required counter '{counter}' was 0 in sample {sample_id} in port group {port_group_name}")
+                violations_list.append(f"Required counter '{counter}' was 0 in sample {sample_id}")
 
 
 def validate_counters_sample(sample_id, counters_sample, ignore_counter_list, violations_list):

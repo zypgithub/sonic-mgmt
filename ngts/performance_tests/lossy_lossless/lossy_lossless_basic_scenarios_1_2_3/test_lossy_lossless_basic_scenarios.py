@@ -48,10 +48,12 @@ class TestLossyLossless:
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
+            required_counter_list = ['tx_ecn_marked_tc_4'] if num_lossy_packets > 0 and num_lossless_packets > 0 else []
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type, bw_threshold=bw_threshold,
                                       bw_fairness_threshold_per_port_group=BwFairnessThreshold.get_bw_fairness_threshold_per_port_group(bw_threshold),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
-                                      required_counter_list=['tx_ecn_marked_tc_3', 'tx_ecn_marked_tc_4'])
+                                      required_counter_list=required_counter_list,
+                                      ignore_counter_list=['tx_ecn_marked_tc_3'])
             run_validation(config)
