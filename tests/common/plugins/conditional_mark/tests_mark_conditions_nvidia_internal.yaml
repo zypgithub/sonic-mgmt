@@ -1366,11 +1366,11 @@ smartswitch/platform_tests/test_platform_dpu.py::test_system_health_summary:
     conditions:
     - "https://redmine.mellanox.com/issues/5075817"
 
-smartswitch/platform_tests/test_reload_dpu.py:
-  skip:
-    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/5075817"
+smartswitch/platform_tests/test_reload_dpu.py::test_cold_reboot_dpus[gnoi:
+  xfail:
+    reason: "Xfailed due to: RM#5165789"
     conditions:
-    - "https://redmine.mellanox.com/issues/5075817"
+    - "https://redmine.mellanox.com/issues/5165789"
 
 process_monitoring/test_critical_process_monitoring.py:
   skip:
