@@ -777,18 +777,6 @@ gnmi/test_gnoi_os.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4958590"
 
-smartswitch/platform_tests/test_reload_dpu.py::test_dpu_status_post_switch_mem_exhaustion:
-  xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5139554"
-    conditions:
-    - "https://redmine.mellanox.com/issues/5139554"
-
-smartswitch/platform_tests/test_reload_dpu.py::test_dpu_status_post_switch_kernel_panic:
-  xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/5138419"
-    conditions:
-    - "https://redmine.mellanox.com/issues/5139554"
-
 iface_loopback_action/test_iface_loopback_action_wjh.py:
   skip:
     reason: "Testcase ignored due to dualtor topology."
