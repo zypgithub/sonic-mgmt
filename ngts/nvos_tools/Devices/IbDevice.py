@@ -663,6 +663,9 @@ class IbSwitch(BaseSwitch):
             "nv show fae platform bkv",
             "nv show fae system sto-debug"
         ]
+        # NVL7 CPO trunk-port PHY-recovery leaves + counters debug: pruned everywhere except CPO
+        # NVL7 (removed from the list in PortiaCpoSwitch; PortiaSimx/NPO deliberately keeps them pruned).
+        self.unsupported_commands_list.extend(PhyRecoveryConsts.NVL7_PRUNED_COMMANDS)
 
         self.memory_size: list[float] = [15.0]
         self.supported_disk_list: list[SSDConsts.SSDType] = [
@@ -1799,6 +1802,8 @@ class NvLinkSwitch(IbSwitch):
                                           "nv show fae interface acp1 link low-power",
                                           "nv set fae interface acp1 link low-power state",
                                           "nv unset fae interface acp1 link low-power state"]
+        # NVL7 CPO trunk-port PHY-recovery leaves + counters debug are pruned on NVL5.
+        self.unsupported_commands_list.extend(PhyRecoveryConsts.NVL7_PRUNED_COMMANDS)
         self.mgmt_ports = ['eth0', 'eth1']
         self.default_phy_recovery_counters = {
             PhyRecoveryConsts.UNINTENTIONAL_LINK_DOWN_EVENTS: 0,
@@ -2985,6 +2990,10 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                                           "nv set fae interface {port} link link-training",
                                           "nv set fae interface {port} link low-power state",
                                           "nv unset fae interface {port} link low-power state"]
+        # NVL7 CPO trunk-port PHY-recovery leaves + counters debug are pruned on NVL6.
+        # (Removed in PortiaCpoSwitch (CPO NVL7), where they ARE supported; PortiaSimx/NPO keeps
+        # them pruned.)
+        self.unsupported_commands_list.extend(PhyRecoveryConsts.NVL7_PRUNED_COMMANDS)
 
         # Rosalind does not have fans, PSUs, or transceivers (liquid cooled)
         self.fan_list = []
@@ -3942,6 +3951,17 @@ class PortiaCpoSwitch(PortiaSwitch):
         # sw scale-out ports are 1-lane NVL7 simplex (200G PAM-4 per lane), unlike
         # the inherited 2-lane 400G trunk ports - confirm exact string on DUT
         self.nvl_trunk_port_speed = '200G'
+
+        # ---- NVL7 CPO trunk-port PHY recovery (HLD_NVOS_CPO_PHY_RECOVERY_NVL7) ----
+        # The 5 new leaves + "counters debug" node are supported ONLY on CPO NVL7 (this class and
+        # its subclasses; is_cpo_capable() True). Non-CPO NVL7 (PortiaSimx/Nso) keep them pruned.
+        # Debug step-counters default to 0 (before any recovery / after clear); source of truth for
+        # the counters-debug default assertion.
+        self.default_phy_recovery_debug_counters = dict(PhyRecoveryConsts.NVL7_DEFAULT_DEBUG_COUNTERS)
+        # Un-prune the new leaves + counters debug (they ARE supported on CPO trunk ports).
+        for cmd in PhyRecoveryConsts.NVL7_PRUNED_COMMANDS:
+            if cmd in self.unsupported_commands_list:
+                self.unsupported_commands_list.remove(cmd)
 
     def _init_platform_lists(self):
         super()._init_platform_lists()

@@ -353,7 +353,125 @@ class PhyRecoveryConsts:
     }
 
     NVL5_MODES = [ENABLED, DISABLED, FW_DEFAULT]
+    # NVL7 CPO trunk ports reuse NVL6_MODES as-is (the NVL6 recovery-status / link-down-timeout
+    # mode+timeout semantics are inherited, see HLD "Subsystem Requirements Overview").
     NVL6_MODES = [ENABLED, DISABLED, AUTO]
+
+    # ===================================================================================
+    # NVL7 CPO trunk-port PHY recovery (extends NVL5/NVL6 phy-recovery)
+    # HLD: HLD_NVOS_CPO_PHY_RECOVERY_NVL7 - "NVUE CLI - New configuration leaves" (Table 4)
+    # These 5 leaves + the "counters debug" node exist ONLY on NVL7 CPO trunk ports (sw*),
+    # and are pruned (absent/not settable) on access ports (acp*) and on NVL5/NVL6/non-NVLink.
+    # ===================================================================================
+    RECOVERY_POLICY_CONFIG = 'recovery-policy-config'
+    RECOVERY_TX_RE_ITERATION = 'recovery-tx-re-iteration'
+    RECOVERY_TX_TOGGLE_DELAY = 'recovery-tx-toggle-delay'
+    RECOVERY_TX_TOGGLE_TIME = 'recovery-tx-toggle-time'
+    RECOVERY_RX_ALGO_TIME = 'recovery-rx-algo-time'
+
+    class RecoveryPolicyConfig:
+        """Values for the ``recovery-policy-config`` leaf (HLD Table 4)."""
+        FW_DEFAULT = 'fw-default'
+        EXPLICIT_CONFIG_CONTROLS = 'explicit-config-controls'
+        RECOVERY_OFF = 'recovery-off'
+        ROBUST_OPTIMIZED = 'robust-optimized'
+        GRADUAL_RECOVERY = 'gradual-recovery'
+
+        ALL = [FW_DEFAULT, EXPLICIT_CONFIG_CONTROLS, RECOVERY_OFF, ROBUST_OPTIMIZED, GRADUAL_RECOVERY]
+
+    class RecoveryTxReIteration:
+        """Values for the ``recovery-tx-re-iteration`` leaf (HLD Table 4)."""
+        FW_DEFAULT = 'fw-default'
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+        ALL = [FW_DEFAULT, ENABLED, DISABLED]
+
+    # Numeric leaves accept int msec 0..255 (HLD Table 4).
+    # Per dev (2026-07-17): NVL7 show echoes the CONFIGURED value LITERALLY (timer 0 shows as 0,
+    # fw-default shows as "fw-default"); there is NO FW-resolved display (that HLD line was stale).
+    NVL7_TIMER_MIN = 0
+    NVL7_TIMER_MAX = 255
+    NVL7_TIMER_LEAVES = [RECOVERY_TX_TOGGLE_DELAY, RECOVERY_TX_TOGGLE_TIME, RECOVERY_RX_ALGO_TIME]
+
+    # The 5 new NVL7 CPO leaves (order matches HLD Table 4).
+    NVL7_NEW_LEAVES = [
+        RECOVERY_POLICY_CONFIG,
+        RECOVERY_TX_TOGGLE_DELAY,
+        RECOVERY_TX_TOGGLE_TIME,
+        RECOVERY_RX_ALGO_TIME,
+        RECOVERY_TX_RE_ITERATION,
+    ]
+
+    # Literal default show values for the 5 new leaves (confirmed by dev 2026-07-17).
+    NVL7_NEW_LEAF_DEFAULTS = {
+        RECOVERY_POLICY_CONFIG: RecoveryPolicyConfig.FW_DEFAULT,
+        RECOVERY_TX_RE_ITERATION: RecoveryTxReIteration.FW_DEFAULT,
+        RECOVERY_TX_TOGGLE_DELAY: 0,
+        RECOVERY_TX_TOGGLE_TIME: 0,
+        RECOVERY_RX_ALGO_TIME: 0,
+    }
+
+    # New FAE-only debug step-counters (read-only).
+    # HLD: "counters debug leaf" column (Table 7) / object model "+--ro debug".
+    # nv show fae interface <intf> counters debug
+    TIME_IN_LAST_STEP_1 = 'time-in-last-step-1'
+    TIME_IN_LAST_STEP_2 = 'time-in-last-step-2'
+    TOTAL_TIME_IN_STEP_1 = 'total-time-in-step-1'
+    TOTAL_TIME_IN_STEP_2 = 'total-time-in-step-2'
+    TOTAL_STEP_1_COUNT = 'total-step-1-count'
+    TOTAL_STEP_2_COUNT = 'total-step-2-count'
+
+    NVL7_DEBUG_COUNTERS = [
+        TIME_IN_LAST_STEP_1,
+        TIME_IN_LAST_STEP_2,
+        TOTAL_TIME_IN_STEP_1,
+        TOTAL_TIME_IN_STEP_2,
+        TOTAL_STEP_1_COUNT,
+        TOTAL_STEP_2_COUNT,
+    ]
+    # Debug step-counters are all 0 before any recovery has been triggered / after clear.
+    NVL7_DEFAULT_DEBUG_COUNTERS = {counter: 0 for counter in NVL7_DEBUG_COUNTERS}
+
+    # ``counters debug`` node path (for building the FAE-only counters debug command).
+    COUNTERS_DEBUG = 'debug'
+
+    # ---- FAE command prefixes (for device unsupported_commands_list pruning entries) ----
+    # NOTE: {port} is a literal template filled later by the device layer, so it is escaped
+    # as {{port}} inside the f-string comprehension (class-body comprehensions cannot read
+    # sibling class attributes in their body, hence the prefix is inlined).
+    SHOW_FAE_COUNTERS_DEBUG_COMMAND = "nv show fae interface {port} counters debug"
+
+    # Set commands for the 5 new leaves - added to unsupported_commands_list on
+    # NVL5 / NVL6 / IB so pruning tests and bad-flow gating skip them there.
+    # Each carries a VALID sample value: a value-less set errors on ANY device as merely
+    # incomplete, so only a valued set (accepted where exposed, rejected where pruned)
+    # actually proves the leaf is pruned.
+    NVL7_NEW_LEAF_SAMPLE_VALUES = {
+        RECOVERY_POLICY_CONFIG: RecoveryPolicyConfig.ROBUST_OPTIMIZED,
+        RECOVERY_TX_TOGGLE_DELAY: 1,
+        RECOVERY_TX_TOGGLE_TIME: 1,
+        RECOVERY_RX_ALGO_TIME: 1,
+        RECOVERY_TX_RE_ITERATION: RecoveryTxReIteration.ENABLED,
+    }
+    NVL7_NEW_LEAF_SET_COMMANDS = [
+        f"nv set fae interface {{port}} link phy-recovery {leaf} {value}"
+        for leaf, value in NVL7_NEW_LEAF_SAMPLE_VALUES.items()
+    ]
+    # Full pruning command list (5 set-leaf commands + counters debug show) for off-NVL7 devices.
+    NVL7_PRUNED_COMMANDS = NVL7_NEW_LEAF_SET_COMMANDS + [SHOW_FAE_COUNTERS_DEBUG_COMMAND]
+
+    # ---- NVL7 new-leaf bad-flow / pruning expected-error fragments (any-of match) ----
+    # Only schema-shaped fragments (avoid over-broad bare words like 'Error'/'Invalid' that match
+    # almost anything). Tentative wording per dev (2026-07-17), Omer to post the exact strings:
+    #   NVUE   -> "Invalid config" + an unsupported-parameter mention
+    #   OpenAPI-> HTTP 422 "is not valid under any of the given schemas"
+    # Keep these any-of fragments until Omer confirms, then tighten.
+    NVL7_ERR_ENUM_INVALID = ["is not one of"]
+    NVL7_ERR_NUMERIC_OVER_MAX = ["Valid range", "greater than the maximum"]
+    NVL7_ERR_NUMERIC_NEGATIVE = ["Valid range", "less than the minimum"]
+    NVL7_ERR_NUMERIC_NON_NUMERIC = ["is not of type", "is not one of"]
+    NVL7_ERR_PRUNED_SET = ["is not one of", "does not exist"]
 
 
 class TxBwLossMonitorConsts:
