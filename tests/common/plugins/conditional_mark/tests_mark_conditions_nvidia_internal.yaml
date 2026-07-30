@@ -314,9 +314,11 @@ tests/nightly/sensors/test_psu.py::test_psu_sensor_key_prefix:
 
 tests/push_build_tests:
   skip:
-    reason: "All push gate tests skipped on ASAN image due to RM issue: https://redmine.mellanox.com/issues/5079498"
+    reason: "All push gate tests skipped on ASAN image due to RM issue: https://redmine.mellanox.com/issues/5079498 or skipped due to RM#5179574 on specific testbeds"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/5079498 and 'ASAN' in build_version"
+    - "https://redmine.mellanox.com/issues/5179574 and ('r-leopard-56' in testbed or 'r-lionfish-07' in testbed or 'r-panther-13' in testbed)"
 
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
