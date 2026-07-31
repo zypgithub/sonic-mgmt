@@ -54,16 +54,6 @@
     </case>
 
     <case>
-        <info> Test PSU Power threshold  </info>
-        <name> test_psu_power_threshold.py </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 600 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/mellanox/test_psu_power_threshold.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
         <info> Enhance Reboot Cause Test </info>
         <name> test_reboot_cause </name>
         <cmd>
@@ -104,77 +94,11 @@
     </case>
 
     <case>
-        <info> Test SFP Show </info>
-        <name> sfp_show </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/sfp/test_sfpshow.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <info> Test SFP Show Transceivers </info>
-        <name> sfp_show_transceivers </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/sfp/test_show_intf_xcvr.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <ignore>
-            <!-- weekend case -->
-            <condition>
-                <key> skip_weekend_cases </key>
-                <op> == </op>
-                <value> yes </value>
-            </condition>
-        </ignore>
-        <info> Test SFP Util Weekly </info>
-        <name> sfp_util_weekly </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <ignore>
-            <!-- daily case  -->
-            <condition>
-                <key> skip_weekend_cases </key>
-                <op> != </op>
-                <value> yes </value>
-            </condition>
-        </ignore>
-        <info> Test SFP Util Daily </info>
-        <name> sfp_util </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --limited_ports --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
         <info> Test XCVR Info in DB Case </info>
         <name> xcvr_info_in_db </name>
         <cmd>
              <params>
                  <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/test_xcvr_info_in_db.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <info> Test Check SFP eeprom Case </info>
-        <name> sfp_eeprom </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1000 --session-timeout 1000 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/mellanox/test_check_sfp_eeprom.py </static_args>
              </params>
         </cmd>
     </case>
@@ -233,17 +157,6 @@
     </case>
 
     <case>
-        <info> Test Chassis Fan API Case </info>
-        <name> platform_api_chassis_fans </name>
-
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_chassis_fans.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
         <info> Test Thermal API Case </info>
         <name> platform_api_thermal </name>
 
@@ -257,81 +170,6 @@
     <!-- Mellanox does not support this test case for now, all test case in this
             section will be skipped during run time.
     -->
-
-    <case>
-        <info> Test PSU API Case  </info>
-        <name> platform_api_psu_tempreture </name>
-
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals -k=\"test_temperature\" --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_psu.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <info> Test PSU API Case </info>
-        <name> platform_api_psu </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_psu.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <info> Test PDB API Case  </info>
-        <name> platform_api_pdb_temperature </name>
-
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals -k=\"test_temperature\" --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_pdb.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <info> Test PDB API Case </info>
-        <name> platform_api_pdb </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_pdb.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <info> Test PSU Fan API Case </info>
-        <name> platform_api_psu_fans </name>
-
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1000 --session-timeout 1000 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_psu_fans.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <info> Test Fan Drawer API Case </info>
-        <name> platform_api_fan_drawer </name>
-
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_fan_drawer.py </static_args>
-             </params>
-        </cmd>
-    </case>
-
-    <case>
-        <info> Test Fan Drawer Fans API Case </info>
-        <name> platform_api_fan_drawer_fans </name>
-
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_fan_drawer_fans.py </static_args>
-             </params>
-        </cmd>
-    </case>
 
     <!-- All thermal API test case failed on both 201911 and master.
         The reason is that:
@@ -348,15 +186,6 @@
             component is not initialized.
     -->
 
-    <case>
-        <info> Test SFP API Case</info>
-        <name> platform_api_sfp </name>
-        <cmd>
-             <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 2100 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts platform_tests/api/test_sfp.py </static_args>
-             </params>
-        </cmd>
-    </case>
     <case>
         <info> Test CPU memory usage Case </info>
         <name> cpu_memory_usage </name>
@@ -508,16 +337,6 @@
              </params>
         </cmd>
     </case>
-    <case>
-        <info> IM functional </info>
-        <name> independent module functional</name>
-        <cmd>
-            <params>
-                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=stdout  -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --disable_memory_utilization\'" --test-scripts  platform_tests/sfp/software_control/test_software_control.py::TestSoftwareControlFunctional </static_args>
-            </params>
-        </cmd>
-    </case>
-
     <case>
         <ignore>
             <!-- daily case  -->
