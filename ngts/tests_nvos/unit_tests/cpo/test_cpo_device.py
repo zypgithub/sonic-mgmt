@@ -21,8 +21,8 @@ PORTIA_CPO_4ASIC_KEY = "N7220_LD - Portia_CPO_4ASIC"
 PORTIA_CPO_SIMX_KEY = "N7220_LD_simx - Portia_CPO"
 PORTIA_CPO_SA_KEY = "N7220_LD - Portia_CPO_SA"
 PORTIA_PLAIN_HW_KEY = "N7100_LD - Portia"
-PORTIA_PLAIN_KEY = "N7170_LD_simx - Portia"
-PORTIA_PLAIN_SA_KEY = "N7170_LD_simx - Portia_SA"
+PORTIA_PLAIN_KEY = "N7200_LD_simx - Portia"
+PORTIA_PLAIN_SA_KEY = "N7200_LD_simx - Portia_SA"
 
 
 def expected_cpo_trunk_ports(asic_amount):
@@ -107,8 +107,6 @@ def test_non_cpo_portia_has_no_cpo_or_trunk_ports(switch_env_vars, switch_type):
 
 
 def test_plain_portia_hw_and_simx_flavors(switch_env_vars):
-    """The real-HW base is the N7100_LD tray (PN 920-9K51W-00L7-GS0); the simx
-    flavor overlays SimxDevice and presents the simx-only N7170_LD profile."""
     from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
     from ngts.nvos_tools.Devices.IbDevice import PortiaSimx, PortiaSwitch
 
@@ -124,7 +122,7 @@ def test_plain_portia_hw_and_simx_flavors(switch_env_vars):
     assert isinstance(simx, PortiaSwitch)
     assert simx.is_simx is True
     assert simx.require_mloop_setup is True
-    assert simx.show_platform_output["system-type"] == "N7170_LD"
+    assert simx.show_platform_output["system-type"] == "N7200_LD"
     assert hw.asic_amount == simx.asic_amount == 4
 
 

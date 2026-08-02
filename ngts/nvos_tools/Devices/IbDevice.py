@@ -3770,7 +3770,6 @@ class PortiaSwitch(RosalindSwitch):
             for core_clock in self.fae_supported_core_clocks
         }
         self.access_port_speed = '200G'
-        # real HW tray identity; the simx-only N7170_LD profile overrides these
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n7100_ld-r0")
         self.show_platform_output.update({
@@ -3869,14 +3868,12 @@ class PortiaSwitch(RosalindSwitch):
 
 
 class PortiaSimx(SimxDevice, PortiaSwitch):
-    """Simx-only N7170_LD profile - real Portia HW (PortiaSwitch) is N7100_LD."""
-
     def _init_constants(self):
         super()._init_constants()
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n7170_ld-r0")
+            "x86_64-nvidia_n7200_ld-r0")
         self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N7170_LD",
+            PlatformConsts.SYSTEM_TYPE: "N7200_LD",
         })
 
 
