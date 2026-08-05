@@ -31,6 +31,9 @@ from ngts.nvos_constants.constants_nvos import DatabaseConst
 from ngts.tests_nvos.platform.test_platform_environment_leakage import rewrite_files
 
 
+cumulus_owner = "yleibovichwe"
+
+
 logger = logging.getLogger()
 
 
