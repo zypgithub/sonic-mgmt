@@ -1385,6 +1385,10 @@ process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical
     - "https://redmine.mellanox.com/issues/5100919"
     - "'bobcat' in testbed"
     - "'ptf' in topo_name or 't1' in topo_name"
+  skip:
+    reason: "skip on simx due to no pdu control"
+    conditions:
+    - "'simx' in platform"
 
 process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat:
   skip:
