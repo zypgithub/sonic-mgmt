@@ -4555,6 +4555,12 @@ qos/test_pfc_counters.py::test_pfc_unpause:
     conditions:
       - "asic_type in ['marvell-teralynx'] and platform in ['x86_64-wistron_6512_32r-r0', 'x86_64-wistron_sw_to3200k-r0']"
 
+qos/test_pfc_counters.py::test_pfc_frames_not_counted_as_rx_ok:
+  xfail:
+    reason: "On mellanox sn2700 devices, the test can fail due to long run time https://github.com/sonic-net/sonic-mgmt/issues/26831"
+    conditions:
+    - "https://github.com/sonic-net/sonic-mgmt/issues/26831 and 'sn2700' in platform"
+
 qos/test_pfc_pause.py:
   skip:
     reason: "This test is not run on this asic type, version, topology, or lossy topologies currently and also skip for 202412 for now"
