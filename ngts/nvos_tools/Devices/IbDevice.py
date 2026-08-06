@@ -3747,7 +3747,9 @@ class RosalindRTF(RosalindSwitch):
 
 
 class PortiaSwitch(RosalindSwitch):
-    """Portia (QM5 / NVL7) platform base - real-HW truth shared by every flavor."""
+    """Four-ASIC non-expandable NVL72 Portia tray (N7200_LD)."""
+
+    FNM_PORTS_PER_ASIC = 2
 
     def update_show_platform_output(self, platform_output):
         # no per-part-number asic-revision map for Portia yet - the revision
@@ -3771,9 +3773,9 @@ class PortiaSwitch(RosalindSwitch):
         }
         self.access_port_speed = '200G'
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n7100_ld-r0")
+            "x86_64-nvidia_n7200_ld-r0")
         self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N7100_LD",
+            PlatformConsts.SYSTEM_TYPE: "N7200_LD",
             "asic-model": self.asic_type,
             PlatformConsts.ASIC_REVISION: PlatformConsts.FW_ASIC_REVISION_VALUE,
         })
@@ -3797,7 +3799,7 @@ class PortiaSwitch(RosalindSwitch):
     def _init_platform_lists(self):
         super()._init_platform_lists()
         self.platform_inventory_switch_values.update({
-            "model": ExpectedString(regex="920-9K51W-00L7-GS0"),
+            "model": ExpectedString(regex="920-9K51W-02L7-GS0"),
         })
 
     def _init_temperature(self):
@@ -3859,7 +3861,9 @@ class PortiaSwitch(RosalindSwitch):
         self.network_ports = self.mgmt_ports + ['lo']
         self.nvl_access_ports_list = [f'acp{num}' for num in range(1, 144 * self.asic_amount + 1)]
         self.nvl_trunk_ports_list = []
-        self.nvl_internal_fnm_ports = [f'fnma{asic}p{port_num}' for asic in range(self.asic_amount) for port_num in range(1, self.asic_amount + 1)]
+        self.nvl_internal_fnm_ports = [f'fnma{asic}p{port_num}'
+                                       for asic in range(self.asic_amount)
+                                       for port_num in range(1, self.FNM_PORTS_PER_ASIC + 1)]
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
         self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
 
@@ -3868,71 +3872,29 @@ class PortiaSwitch(RosalindSwitch):
 
 
 class PortiaSimx(SimxDevice, PortiaSwitch):
-    def _init_constants(self):
-        super()._init_constants()
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n7200_ld-r0")
-        self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N7200_LD",
-        })
-
-
-# -------------------------- PortiaSimxNso Switch ----------------------------
-
-
-class PortiaSimxNso(PortiaSimx):
-
-    def __init__(self):
-        super().__init__(asic_amount=2)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n7100_ld-r0")
-        self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N7100_LD",
-        })
-
-    def _init_platform_lists(self):
-        super()._init_platform_lists()
-        self.platform_inventory_switch_values.update({
-            "model": ExpectedString(regex="920-9K51W-00L7-GS0"),
-        })
-
-
-# -------------------------- PortiaSA Switch ----------------------------
-
-
-class PortiaSA(PortiaSimx):
-
-    def __init__(self):
-        super().__init__(asic_amount=1)
+    """Four-ASIC non-expandable NVL72 SIMX tray (N7200_LD)."""
 
 
 # -------------------------- Portia CPO Switch ----------------------------
 
 
 class PortiaCpoSwitch(PortiaSwitch):
-    """Portia (QM5 / NVL7) CPO switch tray (N7220_LD) with Gen2 CPO vModule support.
+    """Expandable Portia CPO tray (N7300_LD) with Gen2 CPO vModule support.
 
     Applies PortiaCpoCapability, which attaches a first-class CpoTopology as
     self.cpo (one CPO / vModule per ASIC, 4 OEs + 1 ELS each). One NVOS device
-    spans both SWB floors: fully populated production = 2 SWBs / 8 ASICs
-    (default), de-populated production = 1 SWB / 4 ASICs (PortiaCpo4Asic).
-    Simx uses a reduced 2-ASIC profile (PortiaCpoSimx) - not a hardware SKU.
+    spans both SWB floors. SIMX supports the full 8-ASIC model and the reduced
+    2-ASIC TA model.
 
     Port model: per ASIC, 72 GPU-facing access ports (acp) over the backplane
-    and 56 CPO scale-out trunk interfaces exposed as 7 swX groups x 8
-    subports (p1s1-p1s8). The eighth 8-channel optical group is a spare and is
-    not exposed as an interface. swX numbering is global and compact across
-    ASICs (ASIC1: sw1-sw7, ASIC2: sw8-sw14, ...). acp ports are not
-    CPO-associated.
+    and 64 CPO scale-out trunk interfaces exposed as 8 swX groups x 8
+    subports (p1s1-p1s8). swX numbering is global and compact across ASICs
+    (ASIC1: sw1-sw8, ASIC2: sw9-sw16, ...). acp ports are not CPO-associated.
     """
 
     ACP_PORTS_PER_ASIC = 72
-    SW_GROUPS_PER_ASIC = 7
+    SW_GROUPS_PER_ASIC = 8
     SW_SUBPORTS_PER_GROUP = 8
-    SPARE_CHANNELS_PER_ASIC = 8
 
     def __init__(self, asic_amount=8):
         super().__init__(asic_amount=asic_amount)
@@ -3941,9 +3903,9 @@ class PortiaCpoSwitch(PortiaSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n7220_ld-r0")
+            "x86_64-nvidia_n7300_ld-r0")
         self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N7220_LD",
+            PlatformConsts.SYSTEM_TYPE: "N7300_LD",
         })
         # sw scale-out ports are 1-lane NVL7 simplex (200G PAM-4 per lane), unlike
         # the inherited 2-lane 400G trunk ports - confirm exact string on DUT
@@ -3951,7 +3913,7 @@ class PortiaCpoSwitch(PortiaSwitch):
 
         # ---- NVL7 CPO trunk-port PHY recovery (HLD_NVOS_CPO_PHY_RECOVERY_NVL7) ----
         # The 5 new leaves + "counters debug" node are supported ONLY on CPO NVL7 (this class and
-        # its subclasses; is_cpo_capable() True). Non-CPO NVL7 (PortiaSimx/Nso) keep them pruned.
+        # its subclasses; is_cpo_capable() True). N7200 and N7400 keep them pruned.
         # Debug step-counters default to 0 (before any recovery / after clear); source of truth for
         # the counters-debug default assertion.
         self.default_phy_recovery_debug_counters = dict(PhyRecoveryConsts.NVL7_DEFAULT_DEBUG_COUNTERS)
@@ -3976,27 +3938,80 @@ class PortiaCpoSwitch(PortiaSwitch):
         self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
 
 
-class PortiaCpo4Asic(PortiaCpoSwitch):
-    """De-populated production tray: 1 SWB floor / 4 ASICs."""
-
-    def __init__(self):
-        super().__init__(asic_amount=4)
-
-
 class PortiaCpoSimx(SimxDevice, PortiaCpoSwitch):
-    """Reduced 2-ASIC simx profile - a verification resource decision, not a
-    hardware SKU; test logic must stay topology-driven and never read the
-    2-ASIC layout as a production limit."""
+    """Full 8-ASIC N7300_LD SIMX profile."""
+
+
+class PortiaCpoTASimx(SimxDevice, PortiaCpoSwitch):
+    """Reduced 2-ASIC N7300_LD_TA profile, available only in SIMX."""
 
     def __init__(self):
         super().__init__(asic_amount=2)
 
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n7300_ld_ta-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N7300_LD_TA",
+        })
 
-class PortiaCpoSA(PortiaCpoSwitch):
-    """Single-ASIC developer/unit profile, not a production topology."""
+
+# -------------------------- Portia NPO Switch ----------------------------
+
+
+class PortiaNpoSwitch(PortiaSwitch):
+    """Expandable Portia NPO tray (N7400_LD): 576 internal and 512 external ports."""
+
+    ACP_PORTS_PER_ASIC = 72
+    SW_GROUPS_PER_ASIC = 8
+    SW_SUBPORTS_PER_GROUP = 8
+
+    def __init__(self, asic_amount=8):
+        super().__init__(asic_amount=asic_amount)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n7400_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N7400_LD",
+        })
+        self.nvl_trunk_port_speed = '200G'
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({
+            "model": ExpectedString(regex="920-9K57E-00L7-GS0"),
+        })
+
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.nvl_access_ports_list = [f'acp{num}' for num in range(1, self.ACP_PORTS_PER_ASIC * self.asic_amount + 1)]
+        self.nvl_trunk_ports_list = [f'sw{sw}p1s{subport}'
+                                     for sw in range(1, self.SW_GROUPS_PER_ASIC * self.asic_amount + 1)
+                                     for subport in range(1, self.SW_SUBPORTS_PER_GROUP + 1)]
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
+
+
+class PortiaNpoSimx(SimxDevice, PortiaNpoSwitch):
+    """Full 8-ASIC N7400_LD SIMX profile."""
+
+
+class PortiaNpoTASimx(SimxDevice, PortiaNpoSwitch):
+    """Reduced 2-ASIC N7400_LD_TA profile, available only in SIMX."""
 
     def __init__(self):
-        super().__init__(asic_amount=1)
+        super().__init__(asic_amount=2)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n7400_ld_ta-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N7400_LD_TA",
+        })
 
 
 # -------------------------- Caiman Switch ----------------------------

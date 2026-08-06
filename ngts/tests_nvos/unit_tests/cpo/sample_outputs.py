@@ -2,8 +2,8 @@
 
 These are the JSON-mode equivalents of the HLD's human-readable samples, used
 as offline parser fixtures. Shapes and field names
-follow the HLD; values are representative. Generated for the default Portia
-simx topology (4 CPOs, 4 OEs + 1 ELS each, 64 channels, 16 lasers).
+follow the HLD; values are representative. Generated for a four-ASIC Portia
+SIMX test topology (4 CPOs, 4 OEs + 1 ELS each, 64 channels, 16 lasers).
 """
 
 from ngts.nvos_tools.Devices.cpo.CpoTopology import CpoTopology
@@ -13,7 +13,7 @@ TOPOLOGY = CpoTopology(cpo_count=4)
 # 2 ports per CPO in this fixture; the real port count comes from the DUT and is
 # only cross-checked (cpo_to_ports vs port_to_cpo), never asserted as a constant.
 _PORTS_PER_CPO = {
-    cpo: [f"sw{(idx - 1) * 7 + 1}p1s1", f"sw{(idx - 1) * 7 + 1}p1s2"]
+    cpo: [f"sw{(idx - 1) * 8 + 1}p1s1", f"sw{(idx - 1) * 8 + 1}p1s2"]
     for idx, cpo in enumerate(TOPOLOGY.cpo_names(), start=1)
 }
 
@@ -201,7 +201,7 @@ SHOW_PLATFORM_LASER_SOURCE = {
 
 SHOW_PLATFORM_LASER_SOURCE_DETAIL = {els: make_laser_source_detail(els) for els in TOPOLOGY.els_names()}
 
-SHOW_INTERFACE_CPO_SW8P1S1 = make_interface_cpo(cpo="cpo2", oe="oe6", channels=["channel-17", "channel-18"])
+SHOW_INTERFACE_CPO_SW9P1S1 = make_interface_cpo(cpo="cpo2", oe="oe6", channels=["channel-17", "channel-18"])
 
 # port -> parent cpo, as reported by `nv show interface <port> cpo` per port
 PORT_TO_CPO = {port: cpo for cpo, ports in _PORTS_PER_CPO.items() for port in ports}
